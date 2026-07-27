@@ -97,6 +97,13 @@ export function ChatwootWidget({ locale = 'en', user = null }: Props) {
     const WIDGET_Z = '200'
     const BUBBLE_BOTTOM_DEFAULT = '20px'
 
+    // Below this width Chatwoot expands the widget window to fullscreen
+    // (top: 0), which would otherwise render underneath the site header
+    // (.nb1-nav, z-index 9000, position fixed/sticky) — same breakpoint and
+    // height as the header itself (see Header/Component.client.tsx).
+    const MOBILE_BREAKPOINT = 860
+    const HEADER_HEIGHT_MOBILE = 68
+
     const getStickyBar = () =>
       document.querySelector<HTMLElement>('.yp-sticky, .nb1-sticky-cta, .nb1-plan-sticky')
 
@@ -107,7 +114,17 @@ export function ChatwootWidget({ locale = 'en', user = null }: Props) {
       if (!bubble) return false
 
       bubble.style.setProperty('z-index', BUBBLE_Z, 'important')
-      if (widget) widget.style.setProperty('z-index', WIDGET_Z, 'important')
+      if (widget) {
+        widget.style.setProperty('z-index', WIDGET_Z, 'important')
+
+        if (window.innerWidth <= MOBILE_BREAKPOINT) {
+          widget.style.setProperty('top', `${HEADER_HEIGHT_MOBILE}px`, 'important')
+          widget.style.setProperty('height', `calc(100% - ${HEADER_HEIGHT_MOBILE}px)`, 'important')
+        } else {
+          widget.style.removeProperty('top')
+          widget.style.removeProperty('height')
+        }
+      }
 
       const bar = getStickyBar()
       const barVisible = bar?.classList.contains('show')
@@ -149,12 +166,15 @@ export function ChatwootWidget({ locale = 'en', user = null }: Props) {
 
     // Re-apply on scroll — catches cases where the bar slides in during scroll
     window.addEventListener('scroll', applyStyles, { passive: true })
+    // Re-apply on resize — toggles the mobile top-offset on orientation change / window resize
+    window.addEventListener('resize', applyStyles)
 
     return () => {
       if (pollInterval) clearInterval(pollInterval)
       if (pollTimeout) clearTimeout(pollTimeout)
       mutationObs?.disconnect()
       window.removeEventListener('scroll', applyStyles)
+      window.removeEventListener('resize', applyStyles)
     }
   }, [locale])
 
