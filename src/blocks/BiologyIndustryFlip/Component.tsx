@@ -154,20 +154,20 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           inset: 0;
           transform-style: preserve-3d;
           transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          will-change: transform;
         }
         .bif-cstat.flipped .bif-cstat-inner {
           transform: rotateY(180deg);
         }
-        .bif-cstat-face {
+        /* The card's "glass" chrome lives on its own flat, non-rotated layer.
+           Firefox fails to honor backface-visibility:hidden on an element that
+           also carries backdrop-filter, which let the back face's mirrored text
+           bleed through the front face (and vice versa) once flipped. Keeping
+           backdrop-filter off the rotated faces entirely avoids that bug. */
+        .bif-cstat-shell {
           position: absolute;
           inset: 0;
-          -webkit-backface-visibility: hidden;
-          backface-visibility: hidden;
-          display: flex;
-          flex-direction: column;
           border-radius: 16px;
-          padding: 28px 26px;
-          overflow: hidden;
           transition: box-shadow 0.25s ease;
           background: linear-gradient(157deg, rgba(255, 255, 255, 0.72) 0%, rgba(234, 245, 249, 0.5) 100%);
           border: 1px solid rgba(150, 185, 205, 0.32);
@@ -176,8 +176,9 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           box-shadow:
             0 28px 56px -30px rgba(18, 49, 77, 0.24),
             inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          pointer-events: none;
         }
-        .bif-cstat-face::before {
+        .bif-cstat-shell::before {
           content: '';
           position: absolute;
           left: 26px;
@@ -187,14 +188,29 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           border-radius: 0 0 3px 3px;
           background: #0a8fb0;
         }
-        .bif-cstat-back {
-          transform: rotateY(180deg);
-        }
-        .bif-cstat:hover .bif-cstat-face {
+        .bif-cstat:hover .bif-cstat-shell {
           box-shadow:
             0 36px 68px -32px rgba(18, 49, 77, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 1),
             inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+        }
+        .bif-cstat-face {
+          position: absolute;
+          inset: 0;
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          display: flex;
+          flex-direction: column;
+          padding: 28px 26px;
+        }
+        /* Firefox can fail to compute backface-visibility correctly for a face
+           with no 3D transform of its own — give the front an explicit identity
+           rotation so both faces go through the same 3D code path. */
+        .bif-cstat-front {
+          transform: rotateY(0deg);
+        }
+        .bif-cstat-back {
+          transform: rotateY(180deg);
         }
         .bif-n {
           font-family: 'Instrument Sans', 'Inter', sans-serif;
@@ -306,6 +322,7 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
         <div className="bif-case-stats">
           {rows.map((s, i) => (
             <div className="bif-cstat" role="button" tabIndex={0} aria-expanded="false" key={i}>
+              <div className="bif-cstat-shell" aria-hidden="true" />
               <div className="bif-cstat-inner">
                 <div className="bif-cstat-face bif-cstat-front">
                   <div className="bif-n">{s.number}</div>

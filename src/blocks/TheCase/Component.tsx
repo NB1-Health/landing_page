@@ -257,28 +257,29 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           inset: 0;
           transform-style: preserve-3d;
           transition: transform 0.6s cubic-bezier(.4,0,.2,1);
+          will-change: transform;
         }
         .cstat-inner.flipped {
           transform: rotateY(180deg);
         }
-        .cstat-face {
+        /* The card's "glass" chrome lives on its own flat, non-rotated layer.
+           Firefox fails to honor backface-visibility:hidden on an element that
+           also carries backdrop-filter, which let the back face's mirrored text
+           bleed through the front face (and vice versa) once flipped. Keeping
+           backdrop-filter off the rotated faces entirely avoids that bug. */
+        .cstat-shell {
           position: absolute;
           inset: 0;
-          -webkit-backface-visibility: hidden;
-          backface-visibility: hidden;
-          display: flex;
-          flex-direction: column;
+          border-radius: 16px;
           background: linear-gradient(157deg, rgba(255,255,255,.60) 0%, rgba(234,245,249,.44) 100%);
           border: 1px solid rgba(150,185,205,.32);
           -webkit-backdrop-filter: blur(18px) saturate(1.4);
           backdrop-filter: blur(18px) saturate(1.4);
-          border-radius: 16px;
-          padding: 28px 26px;
           box-shadow: 0 28px 56px -30px rgba(18,49,77,.24), inset 0 1px 0 rgba(255,255,255,.7);
-          overflow: hidden;
           transition: box-shadow 0.25s ease, background 0.25s ease;
+          pointer-events: none;
         }
-        .cstat-face::before {
+        .cstat-shell::before {
           content: '';
           position: absolute;
           left: 26px;
@@ -288,9 +289,24 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           border-radius: 0 0 3px 3px;
           background: #0A8FB0;
         }
-        .cstat:hover .cstat-face {
+        .cstat:hover .cstat-shell {
           background: linear-gradient(157deg, rgba(255,255,255,.72) 0%, rgba(232,246,250,.56) 100%);
           box-shadow: 0 36px 68px -32px rgba(18,49,77,.30), inset 0 1px 0 rgba(255,255,255,1), inset 0 0 0 1px rgba(255,255,255,.36);
+        }
+        .cstat-face {
+          position: absolute;
+          inset: 0;
+          -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+          display: flex;
+          flex-direction: column;
+          padding: 28px 26px;
+        }
+        /* Firefox can fail to compute backface-visibility correctly for a face
+           with no 3D transform of its own — give the front an explicit identity
+           rotation so both faces go through the same 3D code path. */
+        .cstat-front {
+          transform: rotateY(0deg);
         }
         .cstat-back {
           transform: rotateY(180deg);
@@ -428,6 +444,7 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
                   onClick={() => toggle(i)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(i) } }}
                 >
+                  <div className="cstat-shell" aria-hidden="true" />
                   <div className={`cstat-inner${flipped.has(i) ? ' flipped' : ''}`}>
                     {/* front */}
                     <div className="cstat-face cstat-front">

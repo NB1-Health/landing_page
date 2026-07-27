@@ -2753,7 +2753,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   </div>
                 </div>
 
-                {/* Klarna */}
+                {/* Klarna temporarily disabled: it cannot be charged off-session for recurring billing. */}
+                {false && (
                 <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
                   <button
                     type="button"
@@ -2769,6 +2770,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     <p className="nb1-pm-note">{t.payment.klarnaNote}</p>
                   </div>
                 </div>
+                )}
 
                 {/* SEPA */}
                 {/* <div className={`nb1-pm-row${payMethod === 'sepa' ? ' active' : ''}`}>

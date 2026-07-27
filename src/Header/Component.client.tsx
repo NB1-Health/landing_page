@@ -577,7 +577,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     .nb1-burger[aria-expanded="true"] span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
     .nb1-scrim { position:fixed; inset:68px 0 0; z-index:8998; background:rgba(8,18,30,.2); opacity:0; visibility:hidden; transition:opacity .25s,visibility .25s; }
     .nb1-scrim.open { opacity:1; visibility:visible; }
-    .nb1-sheet { position:fixed; left:0; right:0; top:68px; z-index:8999; background:rgba(247,250,251,.92); -webkit-backdrop-filter:blur(26px); backdrop-filter:blur(26px); border-bottom:1px solid rgba(18,49,77,.10); box-shadow:0 26px 44px -26px rgba(12,30,52,.34); padding:6px 0 20px; transform:translateY(-14px); opacity:0; visibility:hidden; transition:transform .28s cubic-bezier(.16,.84,.44,1),opacity .2s,visibility .28s; }
+    .nb1-sheet { position:fixed; left:0; right:0; top:68px; z-index:8999; background:rgba(247,250,251,.92); -webkit-backdrop-filter:blur(26px); backdrop-filter:blur(26px); border-bottom:1px solid rgba(18,49,77,.10); box-shadow:0 26px 44px -26px rgba(12,30,52,.34); padding:6px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateY(-14px); opacity:0; visibility:hidden; transition:transform .28s cubic-bezier(.16,.84,.44,1),opacity .2s,visibility .28s; max-height:calc(100vh - 68px); max-height:calc(100dvh - 68px); overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
     .nb1-sheet.open { transform:translateY(0); opacity:1; visibility:visible; }
     .nb1-sheet a { display:block; padding:16px 28px; font-size:17px; font-weight:500; color:rgb(18,49,77); border-bottom:1px solid rgba(18,49,77,.08); text-decoration:none; }
     .nb1-sheet a:hover { color:rgb(10,143,176); }
