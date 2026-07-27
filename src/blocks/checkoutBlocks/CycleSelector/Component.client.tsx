@@ -12,7 +12,13 @@ import {
   formatSavingsLabel,
   computeSavings,
 } from '@/lib/plans/clientUtils'
-import { pushEvent, mintEventId, buildNb1Item } from '@/lib/dataLayer'
+import {
+  buildNb1Item,
+  getOrCreateCheckoutId,
+  mintEventId,
+  pushEventAndNavigate,
+} from '@/lib/dataLayer'
+import { isUnmodifiedPrimaryNavigation } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
 import { getStoredPlanSelection, storePlanSelection } from '@/lib/plans/selectionStore'
 
@@ -622,20 +628,23 @@ export const CycleSelectorClient: React.FC<Props> = ({
           <a
             href={activeHref}
             className="nb1-cs-go"
-            onClick={() => {
+            onClick={(event) => {
+              if (!isUnmodifiedPrimaryNavigation(event)) return
               const params = new URL(activeHref, window.location.href).searchParams
               const cycleKey = params.get('cycle') ?? '4'
               const planKey = params.get('plan') ?? planFamily ?? 'core'
               const rate = rateMapRef.current[`${planKey}:${cycleKey}`]
               if (rate != null) {
+                event.preventDefault()
                 const atcId = mintEventId()
                 const atcItem = buildNb1Item(planKey, cycleKey, rate, {
                   planTitle: planTitleRef.current,
                 })
-                pushEvent('add_to_cart', {
+                const eventPayload = {
                   event_id: atcId,
+                  checkout_id: getOrCreateCheckoutId(),
                   ecommerce: { currency: currencyRef.current, value: rate, items: [atcItem] },
-                })
+                }
                 sendMetaCapiEvent('add_to_cart', atcId, {
                   ecommerce: {
                     currency: currencyRef.current,
@@ -650,6 +659,9 @@ export const CycleSelectorClient: React.FC<Props> = ({
                     ],
                   },
                 })
+                pushEventAndNavigate('add_to_cart', eventPayload, () =>
+                  window.location.assign(activeHref),
+                )
               }
             }}
           >

@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 import RichText from '@/components/RichText'
+import { trackLeadSuccess } from '@/lib/dataLayer'
 
 type BgPreset = 'white' | 'creamGradient' | 'custom'
 
@@ -94,12 +95,13 @@ export const ReserveCtaComponent: React.FC<ReserveCtaBlockType> = (props) => {
 
       const email = detail?.metaData?.$email
 
-      const now = Date.now()
-      if (!window.__lastLeadTime || now - window.__lastLeadTime > 1000) {
-        window.__lastLeadTime = now
-        window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({ event: 'Lead' })
-      }
+      trackLeadSuccess({
+        leadType: 'form_submission',
+        leadSource: 'reserve_cta',
+        formId: klaviyoFormId,
+        provider: 'klaviyo',
+        pageLanguage: String(params?.locale ?? document.documentElement.lang ?? ''),
+      })
 
       if (formID) {
         fetch('/cms/api/form-submissions', {
@@ -119,7 +121,7 @@ export const ReserveCtaComponent: React.FC<ReserveCtaBlockType> = (props) => {
 
     window.addEventListener('klaviyoForms', handler)
     return () => window.removeEventListener('klaviyoForms', handler)
-  }, [formID, confirmationType, redirect, router, klaviyoFormId])
+  }, [formID, confirmationType, redirect, router, klaviyoFormId, params?.locale])
 
   const activeVariant = variants?.find((v) => v.variantKey === variantKey) ?? null
 

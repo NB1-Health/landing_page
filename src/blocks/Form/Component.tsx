@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 
 import { fields } from './fields'
+import { trackLeadSuccess } from '@/lib/dataLayer'
 import { getClientSideURL } from '@/utilities/getURL'
 
 export type FormBlockType = {
@@ -90,12 +91,14 @@ export const FormBlock: React.FC<
           setIsLoading(false)
           setHasSubmitted(true)
 
-          const now = Date.now()
-          if (!window.__lastLeadTime || now - window.__lastLeadTime > 1000) {
-            window.__lastLeadTime = now
-            window.dataLayer = window.dataLayer || []
-            window.dataLayer.push({ event: 'Lead' })
-          }
+          trackLeadSuccess({
+            leadType: 'form_submission',
+            leadSource: 'cms_form',
+            formId: String(formID),
+            provider: 'payload_cms',
+            providerSubmissionId: String(res?.doc?.id ?? res?.id ?? ''),
+            pageLanguage: document.documentElement.lang || undefined,
+          })
 
           if (confirmationType === 'redirect' && redirect) {
             const { url } = redirect

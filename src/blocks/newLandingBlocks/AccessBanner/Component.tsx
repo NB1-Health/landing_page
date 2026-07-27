@@ -10,6 +10,7 @@ import RichText from '@/components/RichText'
 import { Button } from '@/components/ui/button'
 import { fields } from '@/blocks/Form/fields'
 import { getDictionary } from '@/i18n/getDictionary'
+import { trackLeadSuccess } from '@/lib/dataLayer'
 
 export type AccessBannerBlockType = {
   blockName?: string
@@ -86,12 +87,14 @@ export const AccessBannerComponent: React.FC<Props> = (props) => {
           setIsLoading(false)
           setHasSubmitted(true)
 
-          const now = Date.now()
-          if (!window.__lastLeadTime || now - window.__lastLeadTime > 1000) {
-            window.__lastLeadTime = now
-            window.dataLayer = window.dataLayer || []
-            window.dataLayer.push({ event: 'Lead' })
-          }
+          trackLeadSuccess({
+            leadType: 'form_submission',
+            leadSource: 'access_banner',
+            formId: String(formID),
+            provider: 'payload_cms',
+            providerSubmissionId: String(res?.doc?.id ?? res?.id ?? ''),
+            pageLanguage: document.documentElement.lang || undefined,
+          })
 
           if (confirmationType === 'redirect' && redirect?.url) {
             router.push(redirect.url)

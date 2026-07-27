@@ -37,6 +37,8 @@ export function getStoredPlanSelection(): PlanSelection {
 
 /** Merge-patch the stored selection; unknown values are ignored. */
 export function storePlanSelection(patch: PlanSelection): void {
+  if (typeof window === 'undefined') return
+
   try {
     const next = { ...getStoredPlanSelection() }
     if (patch.plan && VALID_PLANS.includes(patch.plan)) next.plan = patch.plan
@@ -45,7 +47,11 @@ export function storePlanSelection(patch: PlanSelection): void {
     // Deferred: storePlanSelection may run during a React render (lazy state
     // initializers); dispatching synchronously would setState in listeners
     // mid-render. A macrotask lands safely after the commit.
-    setTimeout(() => window.dispatchEvent(new CustomEvent(PLAN_SELECTION_EVENT, { detail: next })), 0)
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(PLAN_SELECTION_EVENT, { detail: next }))
+      }
+    }, 0)
   } catch {
     /* noop */
   }

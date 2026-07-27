@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import RichText from '@/components/RichText'
 import { getDictionary } from '@/i18n/getDictionary'
-import { pushEvent, mintEventId, buildNb1Item } from '@/lib/dataLayer'
+import { isUnmodifiedPrimaryNavigation } from '@/lib/interactionTracking'
+import { trackPlanSelectionAndNavigate } from '@/lib/planTracking'
 import {
   fetchPlansClient,
   getClientCurrency,
@@ -568,9 +569,12 @@ export const PlansClient: React.FC<Props> = (props) => {
                 </ul>
               )}
               {coreCtaLabel && (
-                <a href={coreHref} className="pl-btn" onClick={() => {
-                  if (coreRateRef.current != null)
-                    { const c = new URL(coreHref, window.location.href).searchParams.get('cycle') ?? '4'; pushEvent('plan_selected', { event_id: mintEventId(), ecommerce: { currency: currencyRef.current, value: coreRateRef.current, items: [buildNb1Item('core', c, coreRateRef.current, { planTitle: planTitlesRef.current.core })] } }) }
+                <a href={coreHref} className="pl-btn" onClick={(event) => {
+                  if (!isUnmodifiedPrimaryNavigation(event)) return
+                  if (coreRateRef.current != null) {
+                    event.preventDefault()
+                    trackPlanSelectionAndNavigate({ href: coreHref, planKey: 'core', rate: coreRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.core })
+                  }
                 }}>{coreCtaLabel}</a>
               )}
             </div>
@@ -597,9 +601,12 @@ export const PlansClient: React.FC<Props> = (props) => {
                 </ul>
               )}
               {advCtaLabel && (
-                <a href={advHref} className="pl-btn" onClick={() => {
-                  if (advRateRef.current != null)
-                    { const c = new URL(advHref, window.location.href).searchParams.get('cycle') ?? '4'; pushEvent('plan_selected', { event_id: mintEventId(), ecommerce: { currency: currencyRef.current, value: advRateRef.current, items: [buildNb1Item('advanced', c, advRateRef.current, { planTitle: planTitlesRef.current.advanced })] } }) }
+                <a href={advHref} className="pl-btn" onClick={(event) => {
+                  if (!isUnmodifiedPrimaryNavigation(event)) return
+                  if (advRateRef.current != null) {
+                    event.preventDefault()
+                    trackPlanSelectionAndNavigate({ href: advHref, planKey: 'advanced', rate: advRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.advanced })
+                  }
                 }}>{advCtaLabel}</a>
               )}
             </div>
@@ -668,15 +675,21 @@ export const PlansClient: React.FC<Props> = (props) => {
                     <div className="crow cta">
                       <div className="ccell" />
                       <div className="ccell center">
-                        <a href={coreHref} className="cbtn out" onClick={() => {
-                          if (coreRateRef.current != null)
-                            { const c = new URL(coreHref, window.location.href).searchParams.get('cycle') ?? '4'; pushEvent('plan_selected', { event_id: mintEventId(), ecommerce: { currency: currencyRef.current, value: coreRateRef.current, items: [buildNb1Item('core', c, coreRateRef.current, { planTitle: planTitlesRef.current.core })] } }) }
+                        <a href={coreHref} className="cbtn out" onClick={(event) => {
+                          if (!isUnmodifiedPrimaryNavigation(event)) return
+                          if (coreRateRef.current != null) {
+                            event.preventDefault()
+                            trackPlanSelectionAndNavigate({ href: coreHref, planKey: 'core', rate: coreRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.core })
+                          }
                         }}>{coreCtaLabel || 'Start with Core'}</a>
                       </div>
                       <div className="ccell center adv">
-                        <a href={advHref} className="cbtn lime" onClick={() => {
-                          if (advRateRef.current != null)
-                            { const c = new URL(advHref, window.location.href).searchParams.get('cycle') ?? '4'; pushEvent('plan_selected', { event_id: mintEventId(), ecommerce: { currency: currencyRef.current, value: advRateRef.current, items: [buildNb1Item('advanced', c, advRateRef.current, { planTitle: planTitlesRef.current.advanced })] } }) }
+                        <a href={advHref} className="cbtn lime" onClick={(event) => {
+                          if (!isUnmodifiedPrimaryNavigation(event)) return
+                          if (advRateRef.current != null) {
+                            event.preventDefault()
+                            trackPlanSelectionAndNavigate({ href: advHref, planKey: 'advanced', rate: advRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.advanced })
+                          }
                         }}>{advCtaLabel || 'Start with Advanced'}</a>
                       </div>
                     </div>

@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
-import { pushEvent, mintEventId, buildNb1Item } from '@/lib/dataLayer'
+import { isUnmodifiedPrimaryNavigation } from '@/lib/interactionTracking'
+import { resolvePlanSelectionRate, trackPlanSelectionAndNavigate } from '@/lib/planTracking'
 import {
   fetchPlansClient,
   getClientCurrency,
@@ -571,16 +572,22 @@ export const PlanSelectorClient: React.FC<Props> = ({
                   className={`nb1-ps-cta ${key}`}
                   onClick={(e) => {
                     e.stopPropagation()
+                    if (!isUnmodifiedPrimaryNavigation(e)) return
                     const href = plan.ctaHref ?? ''
-                    const cycle = new URL(href, window.location.href).searchParams.get('cycle') ?? '4'
-                    const rate = rateMapRef.current[key] ?? 0
-                    pushEvent('plan_selected', {
-                      event_id: mintEventId(),
-                      ecommerce: {
-                        currency: currencyRef.current,
-                        value: rate,
-                        items: [buildNb1Item(key, cycle, rate, { planTitle: planTitlesRef.current[key] })],
-                      },
+                    const { rate } = resolvePlanSelectionRate(
+                      rateMapRef.current,
+                      key,
+                      href,
+                      window.location.href,
+                    )
+                    if (!href || rate <= 0) return
+                    e.preventDefault()
+                    trackPlanSelectionAndNavigate({
+                      href,
+                      planKey: key,
+                      rate,
+                      currency: currencyRef.current,
+                      planTitle: planTitlesRef.current[key],
                     })
                   }}
                 >
