@@ -4,6 +4,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef } from 'react'
 
+import { trackLeadSuccess } from '@/lib/dataLayer'
+
 type Theme = 'light' | 'dark'
 
 type FooterVariant = {
@@ -70,7 +72,7 @@ export function FooterClient({
     div.className = `klaviyo-form-${klaviyoFormId}`
     klaviyoContainerRef.current?.appendChild(div)
     return () => { div.remove() }
-  }, [])
+  }, [klaviyoFormId])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -85,7 +87,7 @@ export function FooterClient({
       })
     }, 3000)
     return () => clearTimeout(timer)
-  }, [])
+  }, [klaviyoFormId])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -94,12 +96,13 @@ export function FooterClient({
 
       const email = detail?.metaData?.$email
 
-      const now = Date.now()
-      if (!window.__lastLeadTime || now - window.__lastLeadTime > 1000) {
-        window.__lastLeadTime = now
-        window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({ event: 'Lead' })
-      }
+      trackLeadSuccess({
+        leadType: 'form_submission',
+        leadSource: 'footer',
+        formId: klaviyoFormId,
+        provider: 'klaviyo',
+        pageLanguage: locale,
+      })
 
       if (formID) {
         fetch('/cms/api/form-submissions', {
@@ -118,7 +121,7 @@ export function FooterClient({
     }
     window.addEventListener('klaviyoForms', handler)
     return () => window.removeEventListener('klaviyoForms', handler)
-  }, [formID, confirmationType, redirectUrl, router])
+  }, [formID, confirmationType, redirectUrl, router, klaviyoFormId, locale])
 
   let theme: Theme = defaultTheme
   let resolvedLogo = logo

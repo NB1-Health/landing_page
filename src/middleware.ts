@@ -110,6 +110,7 @@ async function lookupRedirect(siteURL: string, fromPath: string) {
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl
 
+  if (pathname.startsWith('/api')) return NextResponse.next()
   if (pathname.startsWith('/cms')) return NextResponse.next()
   if (pathname.startsWith('/_next')) return NextResponse.next()
 
@@ -210,9 +211,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Exclude `/cms` (Payload admin + REST API) so Next.js does not buffer/cap
-  // their request bodies at the 10MB middleware default — this would truncate
-  // large uploads (e.g. video) and break them. Localized `/{locale}/cms`
-  // paths still match and are redirected to `/cms` below.
-  matcher: ['/((?!_next|cms).*)'],
+  // Keep application APIs and `/cms` (Payload admin + REST API) outside locale
+  // routing. This also avoids middleware buffering/capping large CMS request
+  // bodies. Localized `/{locale}/cms` paths still match and are redirected to
+  // `/cms` by the explicit compatibility branch above.
+  matcher: ['/((?!_next|cms|api).*)'],
 }
