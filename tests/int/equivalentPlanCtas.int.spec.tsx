@@ -1,4 +1,5 @@
 import { EndCardComponent } from '@/blocks/checkoutBlocks/EndCard/Component'
+import { PlanStickyBarClient } from '@/blocks/checkoutBlocks/PlanStickyBar/Component.client'
 import { ReinforceCtaComponent } from '@/blocks/checkoutBlocks/ReinforceCta/Component'
 import { StickyCtaBarClient } from '@/blocks/checkoutBlocks/StickyCtaBar/Component.client'
 import { clearCheckoutId } from '@/lib/dataLayer'
@@ -142,4 +143,56 @@ describe('equivalent plan CTA tracking', () => {
       })
     }
   })
+
+  it.each([
+    { planKey: 'core', label: 'Continue with Core', href: 'order-core', value: 99 },
+    {
+      planKey: 'advanced',
+      label: 'Continue with Advanced',
+      href: 'order-advanced',
+      value: 149,
+    },
+  ])(
+    'emits plan_selected from the live plan sticky bar for $planKey',
+    async ({ planKey, label, href, value }) => {
+      await act(async () => {
+        root.render(
+          <PlanStickyBarClient
+            defaultPlanKey={planKey}
+            locale="en"
+            plans={[
+              {
+                planKey,
+                ctaText: label,
+                ctaHref: href,
+                ctaVariant: planKey as 'core' | 'advanced',
+              },
+            ]}
+          />,
+        )
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      const link = container.querySelector('a')
+      expect(link?.textContent).toBe(label)
+      await act(async () => {
+        link!.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, cancelable: true }))
+      })
+
+      expect(window.dataLayer.find((entry) => entry.event === 'plan_selected')).toMatchObject({
+        event_key: '120_plan_selected',
+        ecommerce: {
+          currency: 'GBP',
+          value,
+          items: [
+            {
+              item_id: `NB1-${planKey.toUpperCase()}-4`,
+              item_name: `NB1 ${planKey === 'core' ? 'Core' : 'Advanced'} Plan`,
+              price: value,
+            },
+          ],
+        },
+      })
+    },
+  )
 })
