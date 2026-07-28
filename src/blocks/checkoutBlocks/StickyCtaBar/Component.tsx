@@ -31,6 +31,7 @@ export const StickyCtaBarComponent: React.FC<Props> = async ({
       primaryCtaHref={primaryCtaHref}
       secondaryCtaText={resolvedSecondary}
       secondaryCtaHref={secondaryCtaHref}
+      locale={locale}
     />
   )
 }
