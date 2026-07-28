@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { pushEvent, mintEventId } from '@/lib/dataLayer'
+import { getOrCreateCheckoutId, pushEvent, mintEventId } from '@/lib/dataLayer'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
 
 export function PageViewTracker() {
@@ -14,29 +14,29 @@ export function PageViewTracker() {
     prevPath.current = pathname
 
     const pvId = mintEventId()
-    pushEvent('page_view', {
-      event_id: pvId,
+    const segments = pathname.split('/').filter(Boolean)
+    const pageLanguage = segments[0] || document.documentElement.lang || 'en'
+    const pageContext = {
       page_location: window.location.href,
       page_title: document.title,
       page_referrer: document.referrer,
+      page_language: pageLanguage,
+    }
+    pushEvent('page_view', {
+      event_id: pvId,
+      ...pageContext,
     })
     sendMetaCapiEvent('page_view', pvId)
 
-    // Detect funnel pages by slug segment
-    const slug = pathname.split('/').filter(Boolean).at(-1) ?? ''
-
-    if (slug === 'order') {
+    // The server marks pages containing the canonical first order component.
+    // This works for every locale and avoids coupling analytics to URL copy.
+    if (document.querySelector('[data-nb1-order-entry="true"]')) {
       pushEvent('start_order', {
         event_id: mintEventId(),
-        page_location: window.location.href,
-        page_title: document.title,
-        page_referrer: document.referrer,
+        related_event_id: pvId,
+        checkout_id: getOrCreateCheckoutId({ startNewJourney: true }),
+        ...pageContext,
       })
-    }
-
-    if (slug === 'order-details') {
-      // begin_checkout fires in CheckoutForm on mount (it has plan/price context)
-      // Nothing to fire here without item data
     }
   }, [pathname])
 

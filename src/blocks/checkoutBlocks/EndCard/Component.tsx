@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { usePlanCtaTracking } from '@/lib/usePlanCtaTracking'
 import { useReveal } from '../useReveal'
 
 type Cta = {
@@ -13,10 +14,12 @@ type Props = {
   label?: string | null
   title?: string | null
   ctas?: Cta[] | null
+  locale?: string
 }
 
-export const EndCardComponent: React.FC<Props> = ({ label, title, ctas }) => {
+export const EndCardComponent: React.FC<Props> = ({ label, title, ctas, locale = 'en' }) => {
   const { ref, revealed } = useReveal()
+  const trackPlanCta = usePlanCtaTracking(locale)
 
   return (
     <section ref={ref} className={`nb1-ec-sec${revealed ? ' nb1-in' : ''}`}>
@@ -150,6 +153,7 @@ export const EndCardComponent: React.FC<Props> = ({ label, title, ctas }) => {
                 key={i}
                 href={cta.href ?? '#'}
                 className={`nb1-ec-cta ${cta.variant ?? 'advanced'}`}
+                onClick={(event) => trackPlanCta(event, cta.href ?? '#')}
               >
                 {cta.text}
               </a>

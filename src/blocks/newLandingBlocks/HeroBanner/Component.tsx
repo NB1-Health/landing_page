@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 import RichText from '@/components/RichText'
+import { trackLeadSuccess } from '@/lib/dataLayer'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 
 type BgColorPreset = 'light' | 'dark' | 'darkNavy' | 'teal' | 'white' | 'custom'
@@ -161,12 +162,13 @@ export const HeroBannerComponent: React.FC<HeroBannerBlockType> = (props) => {
 
       const email = detail?.metaData?.$email
 
-      const now = Date.now()
-      if (!window.__lastLeadTime || now - window.__lastLeadTime > 1000) {
-        window.__lastLeadTime = now
-        window.dataLayer = window.dataLayer || []
-        window.dataLayer.push({ event: 'Lead' })
-      }
+      trackLeadSuccess({
+        leadType: 'form_submission',
+        leadSource: 'hero_banner',
+        formId: klaviyoFormId,
+        provider: 'klaviyo',
+        pageLanguage: String(params?.locale ?? document.documentElement.lang ?? ''),
+      })
 
       if (formID) {
         fetch('/cms/api/form-submissions', {
@@ -186,7 +188,7 @@ export const HeroBannerComponent: React.FC<HeroBannerBlockType> = (props) => {
 
     window.addEventListener('klaviyoForms', handler)
     return () => window.removeEventListener('klaviyoForms', handler)
-  }, [formID, confirmationType, redirect, router, klaviyoFormId])
+  }, [formID, confirmationType, redirect, router, klaviyoFormId, params?.locale])
 
   const hasOutcomes = outcomesHeading || (outcomes && outcomes.length > 0) || outcomesFooter
 

@@ -17,7 +17,24 @@ import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
 import { createFirebaseAccount } from '@/lib/createAccount'
 import { checkoutPaymentIntent, checkoutConfirm, checkoutConfirmProxy, trackLanguagePublic } from '@/lib/checkoutApi'
-import { pushEvent, pushEventWithUser, mintEventId, buildNb1Item } from '@/lib/dataLayer'
+import {
+  buildNb1Item,
+  consumeRedirectPaymentType,
+  getOrCreateCheckoutId,
+  markCheckoutCompleted,
+  mintEventId,
+  nextPaymentAttempt,
+  primeEnhancedUserData,
+  pushEvent,
+  pushEventWithUser,
+  resolveRedirectPaymentType,
+  setRedirectPaymentType,
+  trackCheckoutSuccessViewed,
+  trackSubscriptionAcquired,
+  type PaymentFlow,
+  type PaymentType,
+} from '@/lib/dataLayer'
+import { isPaymentAttemptReady, resolveWalletPaymentType } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
@@ -117,7 +134,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // the selection persisted in sessionStorage — the URL cleanup removes the
   // params, so without this a page refresh would silently reset the order to
   // core/4 while the form fields (also sessionStorage-backed) survive.
-  const [{ planKey, cycleKey }] = useState(() => {
+  const [{ planKey, cycleKey, hasValidSelection }] = useState(() => {
     const saved = getStoredPlanSelection()
     const fromUrl: PlanSelection = {
       plan: searchParams?.get('plan') ?? undefined,
@@ -125,7 +142,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
     storePlanSelection({ ...saved, ...fromUrl })
     const applied = getStoredPlanSelection()
-    return { planKey: applied.plan ?? 'core', cycleKey: applied.cycle ?? '4' }
+    return {
+      planKey: applied.plan ?? 'core',
+      cycleKey: applied.cycle ?? '4',
+      hasValidSelection: Boolean(applied.plan && applied.cycle),
+    }
   })
 
   // Strip plan/cycle from URL once read — keeps Stripe redirect params intact
@@ -150,8 +171,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // Visitor's selected currency (nb1_cur cookie); stays in sync with the
   // site-wide currency switcher so the summary + charge match what they picked.
   const [currency, setCurrency] = useState<CurrencyCode>('EUR')
+  const [currencyResolved, setCurrencyResolved] = useState(false)
   useEffect(() => {
     setCurrency(getClientCurrency(locale || 'en'))
+    setCurrencyResolved(true)
     const onCur = (e: Event) => setCurrency((e as CustomEvent<CurrencyCode>).detail)
     window.addEventListener('nb1:currencychange', onCur)
     return () => window.removeEventListener('nb1:currencychange', onCur)
@@ -267,6 +290,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const [confirmed, setConfirmed] = useState(false)
   const [paymentFailed, setPaymentFailed] = useState(false)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  const [acquisitionIdentity, setAcquisitionIdentity] = useState<{
+    eventId: string
+    transactionId: string
+  } | null>(null)
   const [referralCode, setReferralCode] = useState<string | null>(null)
   const [referralShareUrl, setReferralShareUrl] = useState<string | null>(null)
 
@@ -299,6 +326,16 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
   }, [confirmed])
 
+  useEffect(() => {
+    if (!confirmed || !acquisitionIdentity) return
+    trackCheckoutSuccessViewed({
+      checkoutId: getOrCreateCheckoutId(),
+      acquisitionEventId: acquisitionIdentity.eventId,
+      transactionId: acquisitionIdentity.transactionId,
+    })
+    markCheckoutCompleted()
+  }, [confirmed, acquisitionIdentity])
+
   /* step 1 */
   const [email, setEmail] = useState('')
   const [emailErr, setEmailErr] = useState('')
@@ -319,6 +356,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   /* step 3 */
   const [shipping, setShipping] = useState<'standard' | 'express'>('standard')
+  // Express fee shown in the selected currency once the live price loads;
+  // falls back to the dictionary string (EUR) if the fetch hasn't returned.
+  const expressPriceLabel = expressShip != null ? fmt(expressShip) : t.shipping.expressPrice
+  const expressShipNum =
+    expressShip ?? (parseFloat(t.shipping.expressPrice.replace(/[^0-9.]/g, '')) || 9)
+  const shippingLabel =
+    shipping === 'express'
+      ? `${t.shipping.expressName} · ${expressPriceLabel}`
+      : `${t.shipping.standardName} · ${t.shipping.standardPrice}`
 
   /* ── sessionStorage: restore on mount ── */
   const FORM_KEY = 'nb1_checkout_form'
@@ -400,6 +446,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 4 */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
   const [cardName, setCardName] = useState('')
+  const [cardComplete, setCardComplete] = useState(false)
   const [iban, setIban] = useState('')
   const [ibanName, setIbanName] = useState('')
   const [billingSame, setBillingSame] = useState(true)
@@ -448,6 +495,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (!stripe) return
     if (!redirectStatus) return
     if (redirectStatus === 'failed' || redirectStatus === 'canceled') {
+      consumeRedirectPaymentType()
       setPaymentFailed(true)
       return
     }
@@ -461,16 +509,27 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     setAccountStatus('sending')
     ;(async () => {
       try {
+        const paypalSetupIntentId = sessionStorage.getItem('nb1_paypal_setup_intent_id')
+        const klarnaSetupIntentId = sessionStorage.getItem('nb1_klarna_setup_intent_id')
+        const returnUrlPaymentType = searchParams?.get('nb1_payment_provider')
+        const redirectPaymentType = resolveRedirectPaymentType({
+          storedPaymentType: consumeRedirectPaymentType(),
+          returnUrlPaymentType,
+          paypalSetupIntentId,
+          klarnaSetupIntentId,
+        })
+        if (!redirectPaymentType) {
+          throw new Error('Unable to restore the returning payment provider.')
+        }
         const setupIntentId =
-          sessionStorage.getItem('nb1_paypal_setup_intent_id') ??
-          sessionStorage.getItem('nb1_klarna_setup_intent_id') ??
+          (redirectPaymentType === 'paypal' ? paypalSetupIntentId : klarnaSetupIntentId) ??
           setupIntentParam
         const idempotencyKey =
           sessionStorage.getItem('nb1_checkout_idempotency_key') ?? setupIntentId
         sessionStorage.removeItem('nb1_paypal_setup_intent_id')
         // Restore form data from sessionStorage
         const saved = JSON.parse(sessionStorage.getItem('nb1_checkout_form') ?? '{}')
-        const klarnaConfirmation = await checkoutConfirm({
+        const redirectConfirmation = await checkoutConfirm({
           setup_intent_id: setupIntentId,
           idempotency_key: idempotencyKey,
           shipping_address: {
@@ -504,22 +563,20 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           },
         })
         sessionStorage.removeItem('nb1_klarna_setup_intent_id')
-        const klarnaItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-        void pushEventWithUser(
-          'purchase',
-          {
-            event_id: klarnaConfirmation.event_id,
-            external_id: klarnaConfirmation.external_id,
-            ecommerce: {
-              transaction_id: klarnaConfirmation.subscription_id,
-              currency,
-              value: rateNum,
-              shipping: (saved.shipping ?? shipping) === 'express' ? expressShipNum : 0,
-              items: [klarnaItem],
-            },
-          },
-          {
-            userId: klarnaConfirmation.external_id,
+        const redirectItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
+        const acquisitionEventId = trackSubscriptionAcquired({
+          checkoutId: getOrCreateCheckoutId(),
+          eventId: redirectConfirmation.event_id,
+          transactionId: redirectConfirmation.subscription_id,
+          externalId: redirectConfirmation.external_id,
+          paymentType: redirectPaymentType,
+          paymentFlow: 'redirect',
+          currency,
+          value: rateNum,
+          shipping: (saved.shipping ?? shipping) === 'express' ? expressShipNum : 0,
+          item: redirectItem,
+          user: {
+            userId: redirectConfirmation.external_id,
             email: saved.email ?? email,
             phone: saved.phone || phone || undefined,
             firstName: saved.fn ?? fn,
@@ -529,17 +586,17 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             city: saved.city ?? city,
             country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
           },
-        )
-        sendMetaCapiEvent('purchase', klarnaConfirmation.event_id, {
+        })
+        sendMetaCapiEvent('purchase', redirectConfirmation.event_id, {
           ecommerce: {
-            transaction_id: klarnaConfirmation.subscription_id,
+            transaction_id: redirectConfirmation.subscription_id,
             currency,
             value: rateNum,
             items: [
               {
-                item_id: klarnaItem.item_id,
-                item_name: klarnaItem.item_name,
-                price: klarnaItem.price,
+                item_id: redirectItem.item_id,
+                item_name: redirectItem.item_name,
+                price: redirectItem.price,
                 quantity: 1,
               },
             ],
@@ -552,10 +609,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             zip: saved.zip ?? zip,
             country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
             phone: saved.phone || phone || undefined,
-            external_id: klarnaConfirmation.external_id,
+            external_id: redirectConfirmation.external_id,
           },
         })
-        setOrderNumber(klarnaConfirmation.order_number ?? null)
+        setOrderNumber(redirectConfirmation.order_number ?? null)
+        setAcquisitionIdentity({
+          eventId: acquisitionEventId,
+          transactionId: redirectConfirmation.subscription_id,
+        })
         setAccountStatus('sent')
         setConfirmed(true)
       } catch (err) {
@@ -579,11 +640,16 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   }, [])
 
   /* ── begin_checkout on mount ── */
+  const beganCheckoutRef = useRef(false)
   useEffect(() => {
+    if (!hasValidSelection || !currencyResolved || beganCheckoutRef.current) return
+    beganCheckoutRef.current = true
     const bcId = mintEventId()
     const bcItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
     pushEvent('begin_checkout', {
       event_id: bcId,
+      checkout_id: getOrCreateCheckoutId(),
+      entry_reason: searchParams?.get('redirect_status') ? 'provider_return' : 'initial_entry',
       ecommerce: {
         currency,
         value: rateNum,
@@ -605,9 +671,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         ],
       },
     })
-    // Fire once on mount only
+    // Fire once after the selected order and client currency are resolved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [currencyResolved, hasValidSelection])
 
   /* promo */
   const [promoInput, setPromoInput] = useState('')
@@ -730,6 +796,39 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           return
         }
         complete('success')
+        const walletPaymentType: PaymentType = resolveWalletPaymentType(event.walletName)
+        const walletCheckoutId = getOrCreateCheckoutId()
+        const walletPaymentEventId = mintEventId()
+        const walletItem = buildNb1Item(planKey, cycleKey, rateNum, {
+          planTitle: planLabel,
+        })
+        void pushEventWithUser(
+          'add_payment_info',
+          {
+            event_id: walletPaymentEventId,
+            checkout_id: walletCheckoutId,
+            attempt_number: nextPaymentAttempt(walletCheckoutId),
+            payment_type: walletPaymentType,
+            payment_flow: 'wallet',
+            ecommerce: {
+              currency,
+              value: rateNum,
+              ...(promoApplied ? { coupon: promoApplied } : {}),
+              payment_type: walletPaymentType,
+              items: [walletItem],
+            },
+          },
+          {
+            email,
+            phone: phone || undefined,
+            firstName: fn,
+            lastName: ln,
+            address: [a1, a2].filter(Boolean).join(' '),
+            postalCode: zip,
+            city,
+            country: COUNTRY_CODES[country] ?? country,
+          },
+        )
         const walletConfirmation = await checkoutConfirm({
           setup_intent_id: intent.setup_intent_id,
           idempotency_key: idempotencyKeyRef.current || intent.setup_intent_id,
@@ -763,7 +862,53 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             country: COUNTRY_CODES[country] ?? country,
           },
         })
+        const acquisitionEventId = trackSubscriptionAcquired({
+          checkoutId: walletCheckoutId,
+          eventId: walletConfirmation.event_id,
+          transactionId: walletConfirmation.subscription_id,
+          externalId: walletConfirmation.external_id,
+          paymentType: walletPaymentType,
+          paymentFlow: 'wallet',
+          currency,
+          value: rateNum,
+          shipping: shipping === 'express' ? expressShipNum : 0,
+          coupon: promoApplied ?? undefined,
+          item: walletItem,
+          user: {
+            userId: walletConfirmation.external_id,
+            email,
+            phone: phone || undefined,
+            firstName: fn,
+            lastName: ln,
+            address: [a1, a2].filter(Boolean).join(' '),
+            postalCode: zip,
+            city,
+            country: COUNTRY_CODES[country] ?? country,
+          },
+        })
+        sendMetaCapiEvent('purchase', walletConfirmation.event_id, {
+          ecommerce: {
+            transaction_id: walletConfirmation.subscription_id,
+            currency,
+            value: rateNum,
+            items: [walletItem],
+          },
+          user: {
+            email,
+            first_name: fn,
+            last_name: ln,
+            city,
+            zip,
+            country: COUNTRY_CODES[country] ?? country,
+            phone,
+            external_id: walletConfirmation.external_id,
+          },
+        })
         setOrderNumber(walletConfirmation.order_number ?? null)
+        setAcquisitionIdentity({
+          eventId: acquisitionEventId,
+          transactionId: walletConfirmation.subscription_id,
+        })
         setAccountStatus('sent')
         setConfirmed(true)
       } catch (err: unknown) {
@@ -795,9 +940,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     city,
     country,
     shipping,
+    currency,
+    expressShipNum,
     planKey,
     cycleKey,
+    planLabel,
     promoApplied,
+    rateNum,
     t.confirm.accountError,
     t.confirm.accountExists,
     // validateBeforePay is re-created each render; listing it re-registers the
@@ -806,16 +955,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   ])
 
   /* ── helpers ── */
-  // Express fee shown in the selected currency once the live price loads;
-  // falls back to the dictionary string (EUR) if the fetch hasn't returned.
-  const expressPriceLabel = expressShip != null ? fmt(expressShip) : t.shipping.expressPrice
-  const expressShipNum =
-    expressShip ?? (parseFloat(t.shipping.expressPrice.replace(/[^0-9.]/g, '')) || 9)
-  const shippingLabel =
-    shipping === 'express'
-      ? `${t.shipping.expressName} · ${expressPriceLabel}`
-      : `${t.shipping.standardName} · ${t.shipping.standardPrice}`
-
   function markDone(n: number) {
     setDoneSteps((s) => new Set([...s, n]))
     setStep(n + 1)
@@ -882,6 +1021,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   function getPayErrors(): Record<string, string> {
     const e: Record<string, string> = {}
+    if (payMethod === 'card' && !cardComplete) {
+      e.cardNumber = t.payment.cardNumberInvalid
+    }
     if (payMethod === 'sepa') {
       if (iban.replace(/\s/g, '').length < 15) e.iban = t.payment.ibanInvalid
       if (!ibanName.trim()) e.ibanName = t.required
@@ -953,10 +1095,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
 
     const esItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
+    void primeEnhancedUserData({ email, phone: phone || undefined }).catch(() => undefined)
     void pushEventWithUser(
       'email_submitted',
       {
         event_id: mintEventId(),
+        checkout_id: getOrCreateCheckoutId(),
         ecommerce: {
           currency,
           value: rateNum,
@@ -986,6 +1130,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       'add_shipping_info',
       {
         event_id: siId,
+        checkout_id: getOrCreateCheckoutId(),
         ecommerce: {
           currency,
           value: rateNum,
@@ -1036,31 +1181,51 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
 
+    const cardElement = payMethod === 'card' ? (elements?.getElement(CardElement) ?? null) : null
+    const paymentReady = isPaymentAttemptReady({
+      paymentType: payMethod,
+      stripeReady: Boolean(stripe),
+      elementsReady: Boolean(elements),
+      cardElementReady: Boolean(cardElement),
+      cardComplete,
+      localPaymentFieldsValid: payMethod === 'sepa' && Object.keys(getPayErrors()).length === 0,
+    })
+    if (!paymentReady) {
+      if (payMethod === 'card' && !cardComplete) {
+        setPayErr((current) => ({
+          ...current,
+          cardNumber: t.payment.cardNumberInvalid,
+        }))
+      } else {
+        setAccountErr(t.confirm.accountError)
+        setAccountStatus('error')
+      }
+      return
+    }
+
     if (submittingRef.current) return
     submittingRef.current = true
     setAccountStatus('sending')
     setAccountErr('')
 
     const apiId = mintEventId()
+    const checkoutId = getOrCreateCheckoutId()
     const apiItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
+    const paymentFlow: PaymentFlow =
+      payMethod === 'paypal' || payMethod === 'klarna' ? 'redirect' : 'inline'
     void pushEventWithUser(
       'add_payment_info',
       {
         event_id: apiId,
+        checkout_id: checkoutId,
+        attempt_number: nextPaymentAttempt(checkoutId),
+        payment_type: payMethod,
+        payment_flow: paymentFlow,
         ecommerce: {
           currency,
           value: rateNum,
           ...(promoApplied ? { coupon: promoApplied } : {}),
-          payment_type:
-            payMethod === 'card'
-              ? 'Card'
-              : payMethod === 'paypal'
-                ? 'PayPal'
-                : payMethod === 'klarna'
-                  ? 'Klarna'
-                  : payMethod === 'sepa'
-                    ? 'SEPA Direct Debit'
-                    : payMethod,
+          payment_type: payMethod,
           items: [apiItem],
         },
       },
@@ -1123,14 +1288,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         // Every early return here MUST release submittingRef — otherwise the
         // first declined/invalid card permanently swallows all later attempts
         // (the guard at the top of this function returns silently).
-        if (!stripe || !elements) {
-          setAccountErr(t.confirm.accountError)
-          setAccountStatus('error')
-          submittingRef.current = false
-          return
-        }
-        const cardElement = elements.getElement(CardElement)
-        if (!cardElement) {
+        if (!stripe || !elements || !cardElement) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
           submittingRef.current = false
@@ -1159,7 +1317,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         }
         // Store setup_intent_id so we can call checkoutConfirm after redirect
         sessionStorage.setItem('nb1_klarna_setup_intent_id', intent.setup_intent_id)
-        const returnUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`
+        setRedirectPaymentType('klarna')
+        const returnUrl = new URL(window.location.href)
+        returnUrl.searchParams.set('nb1_payment_provider', 'klarna')
         // SetupIntent (method saved, no charge) → must use confirmKlarnaSetup, NOT confirmKlarnaPayment.
         const { error: klarnaError } = await (
           stripe as unknown as StripeSetupConfirms
@@ -1178,7 +1338,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               },
             },
           },
-          return_url: returnUrl,
+          return_url: returnUrl.toString(),
           mandate_data: {
             customer_acceptance: { type: 'online', online: { infer_from_client: true } },
           },
@@ -1201,12 +1361,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           return
         }
         sessionStorage.setItem('nb1_paypal_setup_intent_id', intent.setup_intent_id)
-        const returnUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`
+        setRedirectPaymentType('paypal')
+        const returnUrl = new URL(window.location.href)
+        returnUrl.searchParams.set('nb1_payment_provider', 'paypal')
         // SetupIntent (method saved, no charge) → must use confirmPayPalSetup, NOT confirmPayPalPayment.
         const { error: paypalError } = await (
           stripe as unknown as StripeSetupConfirms
         ).confirmPayPalSetup(intent.client_secret, {
-          return_url: returnUrl,
+          return_url: returnUrl.toString(),
           mandate_data: {
             customer_acceptance: { type: 'online', online: { infer_from_client: true } },
           },
@@ -1275,21 +1437,19 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         planTitle: planLabel,
         discount: promoPreview?.promo_discount,
       })
-      void pushEventWithUser(
-        'purchase',
-        {
-          event_id: confirmation.event_id,
-          external_id: confirmation.external_id,
-          ecommerce: {
-            transaction_id: confirmation.subscription_id,
-            currency,
-            value: rateNum,
-            shipping: promoPreview?.shipping_price ?? (shipping === 'express' ? expressShipNum : 0),
-            ...(promoApplied ? { coupon: promoApplied } : {}),
-            items: [purchaseItem],
-          },
-        },
-        {
+      const acquisitionEventId = trackSubscriptionAcquired({
+        checkoutId: getOrCreateCheckoutId(),
+        eventId: confirmation.event_id,
+        transactionId: confirmation.subscription_id,
+        externalId: confirmation.external_id,
+        paymentType: payMethod,
+        paymentFlow: 'inline',
+        currency,
+        value: rateNum,
+        shipping: promoPreview?.shipping_price ?? (shipping === 'express' ? expressShipNum : 0),
+        coupon: promoApplied ?? undefined,
+        item: purchaseItem,
+        user: {
           userId: confirmation.external_id,
           email,
           phone: phone || undefined,
@@ -1300,7 +1460,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           city,
           country: COUNTRY_CODES[country] ?? country,
         },
-      )
+      })
       sendMetaCapiEvent('purchase', confirmation.event_id, {
         ecommerce: {
           transaction_id: confirmation.subscription_id,
@@ -1328,6 +1488,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       })
 
       setOrderNumber(confirmation.order_number ?? null)
+      setAcquisitionIdentity({
+        eventId: acquisitionEventId,
+        transactionId: confirmation.subscription_id,
+      })
       setAccountStatus('sent')
       setReferralCode(confirmation.referral_code ?? null)
       setReferralShareUrl(confirmation.referral_share_url ?? null)
@@ -1463,6 +1627,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         locale={locale ?? 'en'}
         t={t}
         onRetry={() => {
+          sessionStorage.removeItem('nb1_paypal_setup_intent_id')
+          sessionStorage.removeItem('nb1_klarna_setup_intent_id')
           const params = new URLSearchParams(window.location.search)
           for (const key of [
             'redirect_status',
@@ -1471,6 +1637,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             'setup_intent',
             'setup_intent_client_secret',
             'source_redirect_slug',
+            'nb1_payment_provider',
           ]) {
             params.delete(key)
           }
@@ -2717,6 +2884,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                           }}
                         >
                           <CardElement
+                            onChange={(event) => {
+                              setCardComplete(event.complete)
+                              setPayErr((current) => {
+                                if (!current.cardNumber) return current
+                                const next = { ...current }
+                                delete next.cardNumber
+                                return next
+                              })
+                            }}
                             options={{
                               hidePostalCode: true,
                               style: {
@@ -2730,6 +2906,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                             }}
                           />
                         </div>
+                        {payErr.cardNumber && (
+                          <span className="nb1-err">{payErr.cardNumber}</span>
+                        )}
                       </div>
                     </div>
                   </div>

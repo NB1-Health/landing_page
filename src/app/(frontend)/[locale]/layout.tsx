@@ -31,6 +31,8 @@ import Script from 'next/script'
 
 import { JsonLd, type JsonLdValue } from '@/components/JsonLd'
 import { ChatwootWidget } from '@/components/ChatwootWidget'
+import { PageViewTracker } from '@/components/DataLayerEvents/PageViewTracker'
+import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 import StyledJsxRegistry from './registry'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -93,6 +95,22 @@ export default async function RootLayout({
         <meta name="facebook-domain-verification" content="4r4g0m2wo3hl69f7kdwb6eeq1bz2i6" />
         <InitTheme />
 
+        <Script id="gtag-consent-mode" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            // Temporary policy: tracking starts open until Ketch reports a rejection.
+            window.__nb1Consent = { analytics: true, targeted_advertising: true };
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              'ad_storage': 'granted',
+              'ad_user_data': 'granted',
+              'ad_personalization': 'granted',
+              'analytics_storage': 'granted',
+              'wait_for_update': 2000
+            });
+          `}
+        </Script>
+
         {/* Google Tag Manager */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <Script id="gtm-head" strategy="beforeInteractive">{`
@@ -129,19 +147,6 @@ export default async function RootLayout({
           data-ketch-lang={ketchLang}
         />
 
-        <Script id="gtag-consent-mode" strategy="beforeInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('consent', 'default', {
-              'ad_storage': 'denied',
-              'ad_user_data': 'denied',
-              'ad_personalization': 'denied',
-              'analytics_storage': 'denied',
-              'wait_for_update': 2000
-            });
-          `}
-        </Script>
         {/* 
         {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
           <Script id="meta-pixel" strategy="afterInteractive">{`
@@ -211,43 +216,11 @@ export default async function RootLayout({
             />
 
             {children}
+            <PageViewTracker />
 
             <Script id="ketch-consent-bridge" strategy="afterInteractive">
               {`
-                window.__nb1Consent = window.__nb1Consent || {};
-
-                // Ensure Ketch banner language matches the page
-                var pageLang = '${ketchLang}';
-                if (pageLang && typeof window.ketch === 'function') {
-                  window.ketch('setLanguage', pageLang);
-                  window.ketch('on', 'willShowExperience', function(experience, next) {
-                    if (experience && next) {
-                      experience.language = pageLang;
-                      next(experience);
-                    }
-                  });
-                }
-
-                function applyKetchConsent(consent) {
-                  if (typeof gtag !== 'function') return;
-                  var p = (consent && consent.purposes) || {};
-                  console.debug('[ketch-bridge] purposes received:', p);
-                  window.__nb1Consent = p;
-                  gtag('consent', 'update', {
-                    'analytics_storage': p.analytics ? 'granted' : 'denied',
-                    'ad_storage': p.targeted_advertising ? 'granted' : 'denied',
-                    'ad_user_data': p.targeted_advertising ? 'granted' : 'denied',
-                    'ad_personalization': p.targeted_advertising ? 'granted' : 'denied'
-                  });
-                }
-
-                window.ketch('getConsent', function(consent) {
-                  if (consent && consent.purposes) applyKetchConsent(consent);
-                });
-
-                window.ketch('on', 'consent', function(consent) {
-                  applyKetchConsent(consent);
-                });
+                ${ketchConsentBindingScript(ketchLang)}
 
                 // Intercept inline action links added via Ketch dashboard description field:
                 //   #ketch-accept   → delegates to the primary (Accept All) button

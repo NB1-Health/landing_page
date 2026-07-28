@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import { usePlanCtaTracking } from '@/lib/usePlanCtaTracking'
 
 type PlanConfig = {
   planKey?: string | null
@@ -15,12 +16,14 @@ type PlanConfig = {
 type Props = {
   defaultPlanKey?: string | null
   plans?: PlanConfig[] | null
+  locale?: string
 }
 
-export const PlanStickyBarClient: React.FC<Props> = ({ defaultPlanKey = 'advanced', plans }) => {
+export const PlanStickyBarClient: React.FC<Props> = ({ defaultPlanKey = 'advanced', plans, locale = 'en' }) => {
   const [activePlanKey, setActivePlanKey] = useState(defaultPlanKey ?? 'advanced')
   const [visible, setVisible] = useState(false)
   const lastScrollY = useRef(0)
+  const trackPlanCta = usePlanCtaTracking(locale)
 
   useEffect(() => {
     const onPlanSelected = (e: Event) => {
@@ -208,6 +211,7 @@ export const PlanStickyBarClient: React.FC<Props> = ({ defaultPlanKey = 'advance
           <a
             href={plan.ctaHref}
             className={`nb1-psb-cta ${isAdvanced ? 'advanced' : 'core'}`}
+            onClick={(event) => trackPlanCta(event, plan.ctaHref!)}
           >
             {plan.ctaText}
           </a>

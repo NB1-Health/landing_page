@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { usePlanCtaTracking } from '@/lib/usePlanCtaTracking'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 
 type AthleteImage = {
@@ -21,6 +22,7 @@ type Props = {
   ctaText2?: string | null
   ctaHref2?: string | null
   seals?: Seal[] | null
+  locale?: string
 }
 
 export const ReinforceCtaComponent: React.FC<Props> = ({
@@ -31,8 +33,10 @@ export const ReinforceCtaComponent: React.FC<Props> = ({
   ctaText2,
   ctaHref2,
   seals,
+  locale = 'en',
 }) => {
   const twoBtn = !!(ctaText && ctaText2)
+  const trackPlanCta = usePlanCtaTracking(locale)
 
   return (
     <section className="nb1-rc-sec">
@@ -156,10 +160,22 @@ export const ReinforceCtaComponent: React.FC<Props> = ({
         {(ctaText || ctaText2) && (
           <div className={`nb1-rc-grid${twoBtn ? '' : ' single'}`}>
             {ctaText && ctaHref && (
-              <a href={ctaHref} className={`nb1-rc-btn ${twoBtn ? 'secondary' : 'primary'}`}>{ctaText}</a>
+              <a
+                href={ctaHref}
+                className={`nb1-rc-btn ${twoBtn ? 'secondary' : 'primary'}`}
+                onClick={(event) => trackPlanCta(event, ctaHref)}
+              >
+                {ctaText}
+              </a>
             )}
             {ctaText2 && ctaHref2 && (
-              <a href={ctaHref2} className="nb1-rc-btn primary">{ctaText2}</a>
+              <a
+                href={ctaHref2}
+                className="nb1-rc-btn primary"
+                onClick={(event) => trackPlanCta(event, ctaHref2)}
+              >
+                {ctaText2}
+              </a>
             )}
           </div>
         )}

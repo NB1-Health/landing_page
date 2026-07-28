@@ -124,6 +124,12 @@ export default async function Page({ params: paramsPromise }: Args) {
     resolvePriceTokensDeep(rawHero, currency, locale),
     resolvePriceTokensDeep(rawLayout, currency, locale),
   ])
+  // The checkout PlanSelector is distinct from the generic marketing Plans block.
+  // If an editor deliberately places this checkout selector on another page,
+  // that page is treated as the first order-selection experience too.
+  const isOrderEntry =
+    Array.isArray(layout) &&
+    layout.some((block: { blockType?: string } | null) => block?.blockType === 'planSelector')
 
   const absoluteUrl =
     decodedSlug === 'home'
@@ -145,6 +151,7 @@ export default async function Page({ params: paramsPromise }: Args) {
       {!hideHeader && <Header locale={locale} id={headerId} pageSlugs={pageSlugsByLocale} />}
 
       <article
+        data-nb1-order-entry={isOrderEntry ? 'true' : undefined}
         style={{
           backgroundColor: '#ffffff',
           width: '100%',
