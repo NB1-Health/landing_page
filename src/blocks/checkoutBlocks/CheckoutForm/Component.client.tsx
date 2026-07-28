@@ -7,6 +7,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
   PaymentElement,
+  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
@@ -436,6 +437,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
      Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
+  // Whether the Express Checkout Element (Link / Apple / Google Pay) has any
+  // button to render — controls the "or pay with" divider (no empty row).
+  const [expressReady, setExpressReady] = useState(false)
   const [iban, setIban] = useState('')
   const [ibanName, setIbanName] = useState('')
   const [billingSame, setBillingSame] = useState(true)
@@ -930,7 +934,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     markDone(3)
   }
 
-  async function nextPayment() {
+  // viaExpress=true when triggered by the Express Checkout Element (Link / Apple /
+  // Google Pay) — it always uses the card+link confirmSetup path (never paypal/klarna),
+  // reusing the same SetupIntent + checkoutConfirm + tracking below.
+  async function nextPayment(viaExpress = false) {
     // Re-validates EVERY step from state before touching Stripe/backend — a UI
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
@@ -951,8 +958,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     const apiId = mintEventId()
     const checkoutId = getOrCreateCheckoutId()
     const apiItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-    const paymentFlow: PaymentFlow =
-      payMethod === 'paypal' || payMethod === 'klarna' ? 'redirect' : 'inline'
+    const paymentFlow: PaymentFlow = viaExpress
+      ? 'wallet'
+      : payMethod === 'paypal' || payMethod === 'klarna'
+        ? 'redirect'
+        : 'inline'
     void pushEventWithUser(
       'add_payment_info',
       {
@@ -1007,7 +1017,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     try {
       // Card / Link / wallet uses the deferred Payment Element: validate + collect
       // the element BEFORE creating the SetupIntent, per Stripe's deferred flow.
-      if (payMethod === 'card') {
+      if (payMethod === 'card' || viaExpress) {
         const { error: submitError } = await elements.submit()
         if (submitError) {
           setAccountErr(submitError.message ?? t.confirm.accountError)
@@ -1031,15 +1041,20 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         customer_name: `${fn} ${ln}`.trim() || null,
         customer_phone: phone || null,
         idempotency_key: idempotencyKeyRef.current || undefined,
-        payment_method_type:
-          payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
+        payment_method_type: viaExpress
+          ? null
+          : payMethod === 'paypal'
+            ? 'paypal'
+            : payMethod === 'klarna'
+              ? 'klarna'
+              : null,
       })
 
       // 2. Confirm with Stripe.js. Card + Link resolve INLINE (redirect:"if_required");
       // a rare 3DS/redirect returns to ?nb1_payment_provider=card&setup_intent… where
       // the redirect-return effect finishes checkoutConfirm. Every early return MUST
       // release submittingRef, else a declined card swallows all later attempts.
-      if (payMethod === 'card') {
+      if (payMethod === 'card' || viaExpress) {
         setRedirectPaymentType('card')
         const returnUrl = new URL(window.location.href)
         returnUrl.searchParams.set('nb1_payment_provider', 'card')
@@ -1057,7 +1072,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         }
       }
 
-      if (payMethod === 'klarna') {
+      if (!viaExpress && payMethod === 'klarna') {
         if (!stripe) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
@@ -1102,7 +1117,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         return
       }
 
-      if (payMethod === 'paypal') {
+      if (!viaExpress && payMethod === 'paypal') {
         if (!stripe) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
@@ -2556,8 +2571,26 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               <span className="nb1-acc-title">{t.steps.payment}</span>
             </div>
             <div className="nb1-acc-body">
-              {/* Payment method list — Apple/Google Pay + Link + card are all
-                  inside the Payment Element in the card row below. */}
+              {/* Express: Link / Apple Pay / Google Pay on top. Renders nothing
+                  when no wallet is available (no empty row); onReady controls the
+                  divider. PayPal excluded here — it has its own row below.
+                  onConfirm reuses nextPayment via the card+link confirmSetup path. */}
+              <ExpressCheckoutElement
+                onReady={({ availablePaymentMethods }) =>
+                  setExpressReady(!!availablePaymentMethods)
+                }
+                onConfirm={() => nextPayment(true)}
+                options={{
+                  paymentMethods: { paypal: 'never', amazonPay: 'never', klarna: 'never' },
+                }}
+              />
+              {expressReady && (
+                <div className="nb1-pay-divider" style={{ marginTop: 0 }}>
+                  {t.payment.orPayAnotherWay}
+                </div>
+              )}
+
+              {/* Payment method list */}
               <div className="nb1-pmlist">
                 {/* Card */}
                 <div className={`nb1-pm-row${payMethod === 'card' ? ' active' : ''}`}>
@@ -2962,7 +2995,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               <button
                 type="button"
                 className="nb1-confirm-btn"
-                onClick={nextPayment}
+                onClick={() => nextPayment()}
                 disabled={accountStatus === 'sending'}
                 style={
                   accountStatus === 'sending' ? { opacity: 0.65, cursor: 'not-allowed' } : undefined
