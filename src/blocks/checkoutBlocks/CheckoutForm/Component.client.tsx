@@ -6,12 +6,10 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
-  CardElement,
-  PaymentRequestButtonElement,
+  PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
-import type { PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js'
 import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input'
 import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
@@ -32,9 +30,7 @@ import {
   trackCheckoutSuccessViewed,
   trackSubscriptionAcquired,
   type PaymentFlow,
-  type PaymentType,
 } from '@/lib/dataLayer'
-import { isPaymentAttemptReady, resolveWalletPaymentType } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
@@ -437,16 +433,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (cityName) setCity(cityName)
   }
 
-  /* wallet (Apple Pay / Google Pay) */
-  const [paymentRequest, setPaymentRequest] = useState<ReturnType<
-    NonNullable<typeof stripe>['paymentRequest']
-  > | null>(null)
-  const [walletAvailable, setWalletAvailable] = useState(false)
-
-  /* step 4 */
+  /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
+     Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
-  const [cardName, setCardName] = useState('')
-  const [cardComplete, setCardComplete] = useState(false)
   const [iban, setIban] = useState('')
   const [ibanName, setIbanName] = useState('')
   const [billingSame, setBillingSame] = useState(true)
@@ -722,238 +711,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shipping, currency])
 
-  /* ── Wallet: create PaymentRequest once Stripe is ready ── */
-  useEffect(() => {
-    if (!stripe) return
-    const pr = stripe.paymentRequest({
-      country: 'DE',
-      currency: currency.toLowerCase(),
-      total: { label: `NB1 ${planLabel} Plan`, amount: 0, pending: true },
-      requestPayerName: true,
-      requestPayerEmail: true,
-    })
-    void pr.canMakePayment().then((result) => {
-      console.log('[Wallet] canMakePayment result:', result)
-      if (result) {
-        setPaymentRequest(pr)
-        setWalletAvailable(true)
-      }
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stripe])
-
-  /* ── Wallet: paymentmethod handler (re-registers when form state changes) ── */
-  useEffect(() => {
-    if (!paymentRequest || !stripe) return
-    const accountError = t.confirm.accountError
-    const accountExists = t.confirm.accountExists
-    const handler = async (event: PaymentRequestPaymentMethodEvent) => {
-      // A PaymentRequestEvent may only be completed ONCE — a second call throws.
-      // The catch below would otherwise complete('fail') after a successful
-      // complete('success') (checkoutConfirm failure) and die mid-handler,
-      // leaving the spinner and the submitting lock stuck forever.
-      let completed = false
-      const complete = (status: 'success' | 'fail') => {
-        if (completed) return
-        completed = true
-        event.complete(status)
-      }
-      // Backstop: the wallet sheet may have been opened from a tampered UI —
-      // never accept a wallet payment while email/address are missing. (The
-      // wallet path sends the shipping address from our form, not from the wallet.)
-      if (!validateBeforePay(false)) {
-        complete('fail')
-        return
-      }
-      if (submittingRef.current) {
-        complete('fail')
-        return
-      }
-      submittingRef.current = true
-      setAccountStatus('sending')
-      setAccountErr('')
-      try {
-        const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
-        const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
-        const intent = await checkoutPaymentIntent({
-          plan_slug: planSlug,
-          currency,
-          shipping_option: shipping,
-          discount_code: promoApplied ?? null,
-          customer_email: email,
-          customer_name: `${fn} ${ln}`.trim() || null,
-          customer_phone: phone || null,
-          idempotency_key: idempotencyKeyRef.current || undefined,
-        })
-        const { error: stripeError } = await stripe.confirmCardSetup(intent.client_secret, {
-          payment_method: event.paymentMethod.id,
-        })
-        if (stripeError) {
-          complete('fail')
-          setAccountErr(stripeError.message ?? accountError)
-          setAccountStatus('error')
-          submittingRef.current = false
-          return
-        }
-        complete('success')
-        const walletPaymentType: PaymentType = resolveWalletPaymentType(event.walletName)
-        const walletCheckoutId = getOrCreateCheckoutId()
-        const walletPaymentEventId = mintEventId()
-        const walletItem = buildNb1Item(planKey, cycleKey, rateNum, {
-          planTitle: planLabel,
-        })
-        void pushEventWithUser(
-          'add_payment_info',
-          {
-            event_id: walletPaymentEventId,
-            checkout_id: walletCheckoutId,
-            attempt_number: nextPaymentAttempt(walletCheckoutId),
-            payment_type: walletPaymentType,
-            payment_flow: 'wallet',
-            ecommerce: {
-              currency,
-              value: rateNum,
-              ...(promoApplied ? { coupon: promoApplied } : {}),
-              payment_type: walletPaymentType,
-              items: [walletItem],
-            },
-          },
-          {
-            email,
-            phone: phone || undefined,
-            firstName: fn,
-            lastName: ln,
-            address: [a1, a2].filter(Boolean).join(' '),
-            postalCode: zip,
-            city,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        )
-        const walletConfirmation = await checkoutConfirm({
-          setup_intent_id: intent.setup_intent_id,
-          idempotency_key: idempotencyKeyRef.current || intent.setup_intent_id,
-          shipping_address: {
-            first_name: fn,
-            last_name: ln,
-            email,
-            phone: phone || null,
-            address_line1: a1,
-            address_line2: a2 || null,
-            city,
-            state: null,
-            postal_code: zip,
-            country,
-            country_code: COUNTRY_CODES[country] ?? '',
-          },
-          billing_address: {
-            address_type: 'individual',
-            first_name: fn,
-            last_name: ln,
-            company_name: null,
-            tax_id: null,
-            registration_number: null,
-            email,
-            phone: phone || null,
-            address_line1: a1,
-            address_line2: a2 || null,
-            city,
-            state: null,
-            postal_code: zip,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        })
-        const acquisitionEventId = trackSubscriptionAcquired({
-          checkoutId: walletCheckoutId,
-          eventId: walletConfirmation.event_id,
-          transactionId: walletConfirmation.subscription_id,
-          externalId: walletConfirmation.external_id,
-          paymentType: walletPaymentType,
-          paymentFlow: 'wallet',
-          currency,
-          value: rateNum,
-          shipping: shipping === 'express' ? expressShipNum : 0,
-          coupon: promoApplied ?? undefined,
-          item: walletItem,
-          user: {
-            userId: walletConfirmation.external_id,
-            email,
-            phone: phone || undefined,
-            firstName: fn,
-            lastName: ln,
-            address: [a1, a2].filter(Boolean).join(' '),
-            postalCode: zip,
-            city,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        })
-        sendMetaCapiEvent('purchase', walletConfirmation.event_id, {
-          ecommerce: {
-            transaction_id: walletConfirmation.subscription_id,
-            currency,
-            value: rateNum,
-            items: [walletItem],
-          },
-          user: {
-            email,
-            first_name: fn,
-            last_name: ln,
-            city,
-            zip,
-            country: COUNTRY_CODES[country] ?? country,
-            phone,
-            external_id: walletConfirmation.external_id,
-          },
-        })
-        setOrderNumber(walletConfirmation.order_number ?? null)
-        setAcquisitionIdentity({
-          eventId: acquisitionEventId,
-          transactionId: walletConfirmation.subscription_id,
-        })
-        setAccountStatus('sent')
-        setConfirmed(true)
-      } catch (err: unknown) {
-        complete('fail')
-        setAccountStatus('error')
-        const code = (err as { code?: string })?.code
-        setAccountErr(
-          code === 'auth/email-already-in-use'
-            ? accountExists
-            : (err as Error).message || accountError,
-        )
-        submittingRef.current = false
-      }
-    }
-    paymentRequest.on('paymentmethod', handler)
-    return () => {
-      paymentRequest.off('paymentmethod', handler)
-    }
-  }, [
-    paymentRequest,
-    stripe,
-    email,
-    fn,
-    ln,
-    phone,
-    a1,
-    a2,
-    zip,
-    city,
-    country,
-    shipping,
-    currency,
-    expressShipNum,
-    planKey,
-    cycleKey,
-    planLabel,
-    promoApplied,
-    rateNum,
-    t.confirm.accountError,
-    t.confirm.accountExists,
-    // validateBeforePay is re-created each render; listing it re-registers the
-    // handler so it always validates against the latest form state.
-    validateBeforePay,
-  ])
-
   /* ── helpers ── */
   function markDone(n: number) {
     setDoneSteps((s) => new Set([...s, n]))
@@ -1021,9 +778,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   function getPayErrors(): Record<string, string> {
     const e: Record<string, string> = {}
-    if (payMethod === 'card' && !cardComplete) {
-      e.cardNumber = t.payment.cardNumberInvalid
-    }
     if (payMethod === 'sepa') {
       if (iban.replace(/\s/g, '').length < 15) e.iban = t.payment.ibanInvalid
       if (!ibanName.trim()) e.ibanName = t.required
@@ -1181,25 +935,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
 
-    const cardElement = payMethod === 'card' ? (elements?.getElement(CardElement) ?? null) : null
-    const paymentReady = isPaymentAttemptReady({
-      paymentType: payMethod,
-      stripeReady: Boolean(stripe),
-      elementsReady: Boolean(elements),
-      cardElementReady: Boolean(cardElement),
-      cardComplete,
-      localPaymentFieldsValid: payMethod === 'sepa' && Object.keys(getPayErrors()).length === 0,
-    })
-    if (!paymentReady) {
-      if (payMethod === 'card' && !cardComplete) {
-        setPayErr((current) => ({
-          ...current,
-          cardNumber: t.payment.cardNumberInvalid,
-        }))
-      } else {
-        setAccountErr(t.confirm.accountError)
-        setAccountStatus('error')
-      }
+    // The card / Link / wallet flow validates inside elements.submit() below;
+    // here we only need Stripe + Elements ready. PayPal needs only Stripe.
+    if (!stripe || !elements) {
+      setAccountErr(t.confirm.accountError)
+      setAccountStatus('error')
       return
     }
 
@@ -1265,6 +1005,18 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     })
 
     try {
+      // Card / Link / wallet uses the deferred Payment Element: validate + collect
+      // the element BEFORE creating the SetupIntent, per Stripe's deferred flow.
+      if (payMethod === 'card') {
+        const { error: submitError } = await elements.submit()
+        if (submitError) {
+          setAccountErr(submitError.message ?? t.confirm.accountError)
+          setAccountStatus('error')
+          submittingRef.current = false
+          return
+        }
+      }
+
       // 1. Create Stripe PaymentIntent via backend
       // Backend slugs follow the pattern NB1-{PLAN}-{MONTHS} (e.g. NB1-CORE-4)
       const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
@@ -1283,25 +1035,22 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
       })
 
-      // 2. Confirm payment with Stripe.js
+      // 2. Confirm with Stripe.js. Card + Link resolve INLINE (redirect:"if_required");
+      // a rare 3DS/redirect returns to ?nb1_payment_provider=card&setup_intent… where
+      // the redirect-return effect finishes checkoutConfirm. Every early return MUST
+      // release submittingRef, else a declined card swallows all later attempts.
       if (payMethod === 'card') {
-        // Every early return here MUST release submittingRef — otherwise the
-        // first declined/invalid card permanently swallows all later attempts
-        // (the guard at the top of this function returns silently).
-        if (!stripe || !elements || !cardElement) {
-          setAccountErr(t.confirm.accountError)
-          setAccountStatus('error')
-          submittingRef.current = false
-          return
-        }
-        const { error: stripeError } = await stripe.confirmCardSetup(intent.client_secret, {
-          payment_method: {
-            card: cardElement,
-            billing_details: { name: cardName || `${fn} ${ln}`.trim(), email },
-          },
+        setRedirectPaymentType('card')
+        const returnUrl = new URL(window.location.href)
+        returnUrl.searchParams.set('nb1_payment_provider', 'card')
+        const { error: confirmError } = await stripe.confirmSetup({
+          elements,
+          clientSecret: intent.client_secret,
+          confirmParams: { return_url: returnUrl.toString() },
+          redirect: 'if_required',
         })
-        if (stripeError) {
-          setAccountErr(stripeError.message ?? t.confirm.accountError)
+        if (confirmError) {
+          setAccountErr(confirmError.message ?? t.confirm.accountError)
           setAccountStatus('error')
           submittingRef.current = false
           return
@@ -2807,27 +2556,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               <span className="nb1-acc-title">{t.steps.payment}</span>
             </div>
             <div className="nb1-acc-body">
-              {walletAvailable && paymentRequest && (
-                <>
-                  <div style={{ marginBottom: 14 }}>
-                    <PaymentRequestButtonElement
-                      onClick={(event) => {
-                        // Don't open the wallet sheet while earlier steps are invalid
-                        if (!validateBeforePay(false)) event.preventDefault()
-                      }}
-                      options={{
-                        paymentRequest,
-                        style: { paymentRequestButton: { height: '48px' } },
-                      }}
-                    />
-                  </div>
-                  <div className="nb1-pay-divider" style={{ marginTop: 0 }}>
-                    {t.payment.orPayAnotherWay}
-                  </div>
-                </>
-              )}
-
-              {/* Payment method list */}
+              {/* Payment method list — Apple/Google Pay + Link + card are all
+                  inside the Payment Element in the card row below. */}
               <div className="nb1-pmlist">
                 {/* Card */}
                 <div className={`nb1-pm-row${payMethod === 'card' ? ' active' : ''}`}>
@@ -2859,58 +2589,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     </div>
                   </button>
                   <div className="nb1-pm-body">
-                    <div className="nb1-frow full">
-                      <div className="nb1-fg">
-                        <label>{t.payment.nameOnCard}</label>
-                        <input
-                          type="text"
-                          autoComplete="cc-name"
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
-                          className={payErr.cardName ? 'err' : ''}
-                        />
-                        {payErr.cardName && <span className="nb1-err">{payErr.cardName}</span>}
-                      </div>
-                    </div>
-                    <div className="nb1-frow full">
-                      <div className="nb1-fg">
-                        <label>{t.payment.cardNumber}</label>
-                        <div
-                          style={{
-                            padding: '13px 15px',
-                            borderRadius: '11px',
-                            border: `1.5px solid rgba(18,49,77,0.1)`,
-                            background: '#fff',
-                          }}
-                        >
-                          <CardElement
-                            onChange={(event) => {
-                              setCardComplete(event.complete)
-                              setPayErr((current) => {
-                                if (!current.cardNumber) return current
-                                const next = { ...current }
-                                delete next.cardNumber
-                                return next
-                              })
-                            }}
-                            options={{
-                              hidePostalCode: true,
-                              style: {
-                                base: {
-                                  fontSize: '15px',
-                                  color: '#12314d',
-                                  fontFamily: 'Inter, sans-serif',
-                                  '::placeholder': { color: 'rgba(18,49,77,0.35)' },
-                                },
-                              },
-                            }}
-                          />
-                        </div>
-                        {payErr.cardNumber && (
-                          <span className="nb1-err">{payErr.cardNumber}</span>
-                        )}
-                      </div>
-                    </div>
+                    {/* Card + Link + Apple/Google Pay. Email is prefilled so Stripe
+                        Link recognises returning customers and offers autofill. */}
+                    <PaymentElement
+                      options={{
+                        defaultValues: {
+                          billingDetails: { name: `${fn} ${ln}`.trim() || undefined, email },
+                        },
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -3435,10 +3122,34 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 }
 
 /* ── Exported wrapper (Elements + Suspense for useSearchParams) ─────── */
-export const CheckoutFormClient: React.FC<Props> = (props) => (
-  <Elements stripe={stripePromise}>
-    <Suspense fallback={null}>
-      <CheckoutFormInner {...props} />
-    </Suspense>
-  </Elements>
-)
+export const CheckoutFormClient: React.FC<Props> = (props) => {
+  // Currency for the deferred Payment Element, derived from locale + the
+  // nb1_currency cookie (same source CheckoutFormInner uses) — not hardcoded.
+  // It is cosmetic in mode:"setup" (no amount is charged), but must reflect the
+  // visitor's real currency. Stripe wants it lowercased.
+  const elementsCurrency = React.useMemo(
+    () => getClientCurrency(props.locale || 'en').toLowerCase(),
+    [props.locale],
+  )
+  return (
+    <Elements
+      stripe={stripePromise}
+      options={{
+        // Deferred Payment Element: the SetupIntent is created on Confirm, then
+        // confirmSetup(). paymentMethodTypes must match the SetupIntent the
+        // backend creates (card + link).
+        mode: 'setup',
+        currency: elementsCurrency,
+        paymentMethodTypes: ['card', 'link'],
+        appearance: {
+          theme: 'stripe',
+          variables: { colorPrimary: '#12314d', borderRadius: '11px', fontFamily: 'Inter, sans-serif' },
+        },
+      }}
+    >
+      <Suspense fallback={null}>
+        <CheckoutFormInner {...props} />
+      </Suspense>
+    </Elements>
+  )
+}
