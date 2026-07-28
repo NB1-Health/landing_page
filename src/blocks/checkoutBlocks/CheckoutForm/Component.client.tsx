@@ -6,7 +6,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
-  PaymentElement,
+  CardElement,
   ExpressCheckoutElement,
   useStripe,
   useElements,
@@ -32,6 +32,7 @@ import {
   trackSubscriptionAcquired,
   type PaymentFlow,
 } from '@/lib/dataLayer'
+import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
@@ -104,6 +105,68 @@ type StripeSetupConfirms = {
     clientSecret: string,
     options: Record<string, unknown>,
   ) => Promise<{ error?: { message?: string } }>
+}
+
+/* ─── Express Checkout (Link / Apple Pay / Google Pay) ──────────────────
+   Lives in its OWN deferred (mode:"setup") Elements — separate from the legacy
+   CardElement below. Saves the method via a card+link SetupIntent + confirmSetup,
+   then reuses the parent's finalizeCheckout. PayPal excluded (own row). */
+type ExpressLinkRowProps = {
+  onReadyChange: (available: boolean) => void
+  validate: () => boolean
+  beginSubmit: () => boolean
+  createIntent: () => Promise<{ client_secret: string; setup_intent_id: string }>
+  finalize: (setupIntentId: string) => Promise<void>
+  onError: (message?: string) => void
+}
+function ExpressLinkRow({
+  onReadyChange,
+  validate,
+  beginSubmit,
+  createIntent,
+  finalize,
+  onError,
+}: ExpressLinkRowProps) {
+  const stripe = useStripe()
+  const elements = useElements()
+
+  const onConfirm = async () => {
+    if (!stripe || !elements) return
+    if (!validate()) return
+    if (!beginSubmit()) return
+    try {
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        onError(submitError.message)
+        return
+      }
+      const intent = await createIntent()
+      setRedirectPaymentType('card')
+      const returnUrl = new URL(window.location.href)
+      returnUrl.searchParams.set('nb1_payment_provider', 'card')
+      const { error: confirmError } = await stripe.confirmSetup({
+        elements,
+        clientSecret: intent.client_secret,
+        confirmParams: { return_url: returnUrl.toString() },
+        redirect: 'if_required',
+      })
+      if (confirmError) {
+        onError(confirmError.message)
+        return
+      }
+      await finalize(intent.setup_intent_id)
+    } catch (err) {
+      onError((err as Error)?.message)
+    }
+  }
+
+  return (
+    <ExpressCheckoutElement
+      onReady={({ availablePaymentMethods }) => onReadyChange(!!availablePaymentMethods)}
+      onConfirm={onConfirm}
+      options={{ paymentMethods: { paypal: 'never', amazonPay: 'never', klarna: 'never' } }}
+    />
+  )
 }
 
 /* ─── Inner component (needs useSearchParams inside Suspense) ────────── */
@@ -437,6 +500,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
      Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
+  const [cardName, setCardName] = useState('')
+  const [cardComplete, setCardComplete] = useState(false)
   // Whether the Express Checkout Element (Link / Apple / Google Pay) has any
   // button to render — controls the "or pay with" divider (no empty row).
   const [expressReady, setExpressReady] = useState(false)
@@ -782,6 +847,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   function getPayErrors(): Record<string, string> {
     const e: Record<string, string> = {}
+    if (payMethod === 'card' && !cardComplete) {
+      e.cardNumber = t.payment.cardNumberInvalid
+    }
     if (payMethod === 'sepa') {
       if (iban.replace(/\s/g, '').length < 15) e.iban = t.payment.ibanInvalid
       if (!ibanName.trim()) e.ibanName = t.required
@@ -934,19 +1002,27 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     markDone(3)
   }
 
-  // viaExpress=true when triggered by the Express Checkout Element (Link / Apple /
-  // Google Pay) — it always uses the card+link confirmSetup path (never paypal/klarna),
-  // reusing the same SetupIntent + checkoutConfirm + tracking below.
-  async function nextPayment(viaExpress = false) {
+  async function nextPayment() {
     // Re-validates EVERY step from state before touching Stripe/backend — a UI
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
 
-    // The card / Link / wallet flow validates inside elements.submit() below;
-    // here we only need Stripe + Elements ready. PayPal needs only Stripe.
-    if (!stripe || !elements) {
-      setAccountErr(t.confirm.accountError)
-      setAccountStatus('error')
+    const cardElement = payMethod === 'card' ? (elements?.getElement(CardElement) ?? null) : null
+    const paymentReady = isPaymentAttemptReady({
+      paymentType: payMethod,
+      stripeReady: Boolean(stripe),
+      elementsReady: Boolean(elements),
+      cardElementReady: Boolean(cardElement),
+      cardComplete,
+      localPaymentFieldsValid: payMethod === 'sepa' && Object.keys(getPayErrors()).length === 0,
+    })
+    if (!paymentReady) {
+      if (payMethod === 'card' && !cardComplete) {
+        setPayErr((current) => ({ ...current, cardNumber: t.payment.cardNumberInvalid }))
+      } else {
+        setAccountErr(t.confirm.accountError)
+        setAccountStatus('error')
+      }
       return
     }
 
@@ -958,11 +1034,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     const apiId = mintEventId()
     const checkoutId = getOrCreateCheckoutId()
     const apiItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-    const paymentFlow: PaymentFlow = viaExpress
-      ? 'wallet'
-      : payMethod === 'paypal' || payMethod === 'klarna'
-        ? 'redirect'
-        : 'inline'
+    const paymentFlow: PaymentFlow =
+      payMethod === 'paypal' || payMethod === 'klarna' ? 'redirect' : 'inline'
     void pushEventWithUser(
       'add_payment_info',
       {
@@ -1015,18 +1088,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     })
 
     try {
-      // Card / Link / wallet uses the deferred Payment Element: validate + collect
-      // the element BEFORE creating the SetupIntent, per Stripe's deferred flow.
-      if (payMethod === 'card' || viaExpress) {
-        const { error: submitError } = await elements.submit()
-        if (submitError) {
-          setAccountErr(submitError.message ?? t.confirm.accountError)
-          setAccountStatus('error')
-          submittingRef.current = false
-          return
-        }
-      }
-
       // 1. Create Stripe PaymentIntent via backend
       // Backend slugs follow the pattern NB1-{PLAN}-{MONTHS} (e.g. NB1-CORE-4)
       const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
@@ -1041,38 +1102,35 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         customer_name: `${fn} ${ln}`.trim() || null,
         customer_phone: phone || null,
         idempotency_key: idempotencyKeyRef.current || undefined,
-        payment_method_type: viaExpress
-          ? null
-          : payMethod === 'paypal'
-            ? 'paypal'
-            : payMethod === 'klarna'
-              ? 'klarna'
-              : null,
+        payment_method_type:
+          payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
       })
 
-      // 2. Confirm with Stripe.js. Card + Link resolve INLINE (redirect:"if_required");
-      // a rare 3DS/redirect returns to ?nb1_payment_provider=card&setup_intent… where
-      // the redirect-return effect finishes checkoutConfirm. Every early return MUST
-      // release submittingRef, else a declined card swallows all later attempts.
-      if (payMethod === 'card' || viaExpress) {
-        setRedirectPaymentType('card')
-        const returnUrl = new URL(window.location.href)
-        returnUrl.searchParams.set('nb1_payment_provider', 'card')
-        const { error: confirmError } = await stripe.confirmSetup({
-          elements,
-          clientSecret: intent.client_secret,
-          confirmParams: { return_url: returnUrl.toString() },
-          redirect: 'if_required',
+      // 2. Confirm the card with Stripe.js (saved in place, no redirect). Every
+      // early return MUST release submittingRef, else the first declined/invalid
+      // card permanently swallows all later attempts.
+      if (payMethod === 'card') {
+        if (!stripe || !elements || !cardElement) {
+          setAccountErr(t.confirm.accountError)
+          setAccountStatus('error')
+          submittingRef.current = false
+          return
+        }
+        const { error: stripeError } = await stripe.confirmCardSetup(intent.client_secret, {
+          payment_method: {
+            card: cardElement,
+            billing_details: { name: cardName || `${fn} ${ln}`.trim(), email },
+          },
         })
-        if (confirmError) {
-          setAccountErr(confirmError.message ?? t.confirm.accountError)
+        if (stripeError) {
+          setAccountErr(stripeError.message ?? t.confirm.accountError)
           setAccountStatus('error')
           submittingRef.current = false
           return
         }
       }
 
-      if (!viaExpress && payMethod === 'klarna') {
+      if (payMethod === 'klarna') {
         if (!stripe) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
@@ -1117,7 +1175,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         return
       }
 
-      if (!viaExpress && payMethod === 'paypal') {
+      if (payMethod === 'paypal') {
         if (!stripe) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
@@ -1145,10 +1203,29 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         return
       }
 
-      // 3. Confirm checkout — backend creates user + subscription
+      // 3. Confirm checkout — create the user + subscription + tracking (shared
+      // with the Express Checkout / Link flow via finalizeCheckout).
+      await finalizeCheckout(intent.setup_intent_id, 'inline')
+    } catch (err: unknown) {
+      setAccountStatus('error')
+      const code = (err as { code?: string })?.code
+      if (code === 'auth/email-already-in-use') {
+        setAccountErr(t.confirm.accountExists)
+      } else {
+        setAccountErr((err as Error).message || t.confirm.accountError)
+      }
+      submittingRef.current = false
+    }
+  }
+
+  // Shared finalize: backend creates the user + subscription from the saved
+  // SetupIntent, then fires the acquisition tracking. Used by the card flow
+  // (nextPayment) AND the Express Checkout / Link flow. Sets its own error state.
+  async function finalizeCheckout(setupIntentId: string, paymentFlow: PaymentFlow) {
+    try {
       const confirmation = await checkoutConfirm({
-        setup_intent_id: intent.setup_intent_id,
-        idempotency_key: idempotencyKeyRef.current || intent.setup_intent_id,
+        setup_intent_id: setupIntentId,
+        idempotency_key: idempotencyKeyRef.current || setupIntentId,
         shipping_address: {
           first_name: fn,
           last_name: ln,
@@ -1207,7 +1284,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         transactionId: confirmation.subscription_id,
         externalId: confirmation.external_id,
         paymentType: payMethod,
-        paymentFlow: 'inline',
+        paymentFlow,
         currency,
         value: rateNum,
         shipping: promoPreview?.shipping_price ?? (shipping === 'express' ? expressShipNum : 0),
@@ -1259,6 +1336,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       setAccountStatus('sent')
       setReferralCode(confirmation.referral_code ?? null)
       setReferralShareUrl(confirmation.referral_share_url ?? null)
+      setConfirmed(true)
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
@@ -1268,10 +1346,25 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setAccountErr((err as Error).message || t.confirm.accountError)
       }
       submittingRef.current = false
-      return
     }
+  }
 
-    setConfirmed(true)
+  // Create the SetupIntent (card+link) for the Express Checkout / Link flow —
+  // same shape as the card flow, payment_method_type=null (card+link).
+  async function createExpressIntent() {
+    const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
+    const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
+    return checkoutPaymentIntent({
+      plan_slug: planSlug,
+      currency,
+      shipping_option: shipping,
+      discount_code: promoApplied ?? null,
+      customer_email: email,
+      customer_name: `${fn} ${ln}`.trim() || null,
+      customer_phone: phone || null,
+      idempotency_key: idempotencyKeyRef.current || undefined,
+      payment_method_type: null,
+    })
   }
 
   async function applyPromo() {
@@ -2575,15 +2668,37 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   when no wallet is available (no empty row); onReady controls the
                   divider. PayPal excluded here — it has its own row below.
                   onConfirm reuses nextPayment via the card+link confirmSetup path. */}
-              <ExpressCheckoutElement
-                onReady={({ availablePaymentMethods }) =>
-                  setExpressReady(!!availablePaymentMethods)
-                }
-                onConfirm={() => nextPayment(true)}
+              <Elements
+                stripe={stripePromise}
                 options={{
-                  paymentMethods: { paypal: 'never', amazonPay: 'never', klarna: 'never' },
+                  mode: 'setup',
+                  currency: currency.toLowerCase(),
+                  paymentMethodTypes: ['card', 'link'],
+                  appearance: {
+                    theme: 'stripe',
+                    variables: { colorPrimary: '#12314d', borderRadius: '11px', fontFamily: 'Inter, sans-serif' },
+                  },
                 }}
-              />
+              >
+                <ExpressLinkRow
+                  onReadyChange={setExpressReady}
+                  validate={() => validateBeforePay(true)}
+                  beginSubmit={() => {
+                    if (submittingRef.current) return false
+                    submittingRef.current = true
+                    setAccountStatus('sending')
+                    setAccountErr('')
+                    return true
+                  }}
+                  createIntent={createExpressIntent}
+                  finalize={(sid) => finalizeCheckout(sid, 'wallet')}
+                  onError={(msg) => {
+                    setAccountErr(msg ?? t.confirm.accountError)
+                    setAccountStatus('error')
+                    submittingRef.current = false
+                  }}
+                />
+              </Elements>
               {expressReady && (
                 <div className="nb1-pay-divider" style={{ marginTop: 0 }}>
                   {t.payment.orPayAnotherWay}
@@ -2622,15 +2737,58 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     </div>
                   </button>
                   <div className="nb1-pm-body">
-                    {/* Card + Link + Apple/Google Pay. Email is prefilled so Stripe
-                        Link recognises returning customers and offers autofill. */}
-                    <PaymentElement
-                      options={{
-                        defaultValues: {
-                          billingDetails: { name: `${fn} ${ln}`.trim() || undefined, email },
-                        },
-                      }}
-                    />
+                    <div className="nb1-frow full">
+                      <div className="nb1-fg">
+                        <label>{t.payment.nameOnCard}</label>
+                        <input
+                          type="text"
+                          autoComplete="cc-name"
+                          value={cardName}
+                          onChange={(e) => setCardName(e.target.value)}
+                          className={payErr.cardName ? 'err' : ''}
+                        />
+                        {payErr.cardName && <span className="nb1-err">{payErr.cardName}</span>}
+                      </div>
+                    </div>
+                    <div className="nb1-frow full">
+                      <div className="nb1-fg">
+                        <label>{t.payment.cardNumber}</label>
+                        <div
+                          style={{
+                            padding: '13px 15px',
+                            borderRadius: '11px',
+                            border: `1.5px solid rgba(18,49,77,0.1)`,
+                            background: '#fff',
+                          }}
+                        >
+                          <CardElement
+                            onChange={(event) => {
+                              setCardComplete(event.complete)
+                              setPayErr((current) => {
+                                if (!current.cardNumber) return current
+                                const next = { ...current }
+                                delete next.cardNumber
+                                return next
+                              })
+                            }}
+                            options={{
+                              hidePostalCode: true,
+                              style: {
+                                base: {
+                                  fontSize: '15px',
+                                  color: '#12314d',
+                                  fontFamily: 'Inter, sans-serif',
+                                  '::placeholder': { color: 'rgba(18,49,77,0.35)' },
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                        {payErr.cardNumber && (
+                          <span className="nb1-err">{payErr.cardNumber}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -3155,34 +3313,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 }
 
 /* ── Exported wrapper (Elements + Suspense for useSearchParams) ─────── */
-export const CheckoutFormClient: React.FC<Props> = (props) => {
-  // Currency for the deferred Payment Element, derived from locale + the
-  // nb1_currency cookie (same source CheckoutFormInner uses) — not hardcoded.
-  // It is cosmetic in mode:"setup" (no amount is charged), but must reflect the
-  // visitor's real currency. Stripe wants it lowercased.
-  const elementsCurrency = React.useMemo(
-    () => getClientCurrency(props.locale || 'en').toLowerCase(),
-    [props.locale],
-  )
-  return (
-    <Elements
-      stripe={stripePromise}
-      options={{
-        // Deferred Payment Element: the SetupIntent is created on Confirm, then
-        // confirmSetup(). paymentMethodTypes must match the SetupIntent the
-        // backend creates (card + link).
-        mode: 'setup',
-        currency: elementsCurrency,
-        paymentMethodTypes: ['card', 'link'],
-        appearance: {
-          theme: 'stripe',
-          variables: { colorPrimary: '#12314d', borderRadius: '11px', fontFamily: 'Inter, sans-serif' },
-        },
-      }}
-    >
-      <Suspense fallback={null}>
-        <CheckoutFormInner {...props} />
-      </Suspense>
-    </Elements>
-  )
-}
+export const CheckoutFormClient: React.FC<Props> = (props) => (
+  // Legacy Elements — the card uses CardElement + confirmCardSetup. The Link /
+  // wallet express button lives in its OWN deferred Elements inside step 4.
+  <Elements stripe={stripePromise}>
+    <Suspense fallback={null}>
+      <CheckoutFormInner {...props} />
+    </Suspense>
+  </Elements>
+)
