@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import { usePlanCtaTracking } from '@/lib/usePlanCtaTracking'
 
 type Props = {
   primaryCtaText?: string | null
   primaryCtaHref?: string | null
   secondaryCtaText?: string | null
   secondaryCtaHref?: string | null
+  locale?: string
 }
 
 export const StickyCtaBarClient: React.FC<Props> = ({
@@ -14,10 +16,12 @@ export const StickyCtaBarClient: React.FC<Props> = ({
   primaryCtaHref,
   secondaryCtaText,
   secondaryCtaHref,
+  locale = 'en',
 }) => {
   const [visible, setVisible] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const lastScrollY = useRef(0)
+  const trackPlanCta = usePlanCtaTracking(locale)
 
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -62,10 +66,22 @@ export const StickyCtaBarClient: React.FC<Props> = ({
           @media (max-width:560px) { .nb1-sticky { gap:12px; padding:11px 16px; } .nb1-sticky-go { padding:11px 18px; font-size:13px; } .nb1-sticky-alt { padding:11px 14px; font-size:12.5px; } }
         `}</style>
         {primaryCtaHref && primaryCtaText && (
-          <a href={primaryCtaHref} className="nb1-sticky-go">{primaryCtaText}</a>
+          <a
+            href={primaryCtaHref}
+            className="nb1-sticky-go"
+            onClick={(event) => trackPlanCta(event, primaryCtaHref)}
+          >
+            {primaryCtaText}
+          </a>
         )}
         {secondaryCtaHref && secondaryCtaText && (
-          <a href={secondaryCtaHref} className="nb1-sticky-alt">{secondaryCtaText}</a>
+          <a
+            href={secondaryCtaHref}
+            className="nb1-sticky-alt"
+            onClick={(event) => trackPlanCta(event, secondaryCtaHref)}
+          >
+            {secondaryCtaText}
+          </a>
         )}
       </div>
     </>
