@@ -99,7 +99,7 @@ const CHECKOUT_COMPLETED_STORAGE_KEY = 'nb1_checkout_completed'
 const REDIRECT_PAYMENT_TYPE_STORAGE_KEY = 'nb1_redirect_payment_type'
 let checkoutIdMemory: string | null = null
 
-export type RedirectPaymentType = 'paypal' | 'klarna'
+export type RedirectPaymentType = 'paypal' | 'klarna' | 'card'
 
 export function markCheckoutCompleted(): void {
   if (typeof window === 'undefined') return
@@ -176,7 +176,9 @@ export function consumeRedirectPaymentType(): RedirectPaymentType | null {
   try {
     const paymentType = window.sessionStorage.getItem(REDIRECT_PAYMENT_TYPE_STORAGE_KEY)
     window.sessionStorage.removeItem(REDIRECT_PAYMENT_TYPE_STORAGE_KEY)
-    return paymentType === 'paypal' || paymentType === 'klarna' ? paymentType : null
+    return paymentType === 'paypal' || paymentType === 'klarna' || paymentType === 'card'
+      ? paymentType
+      : null
   } catch {
     return null
   }
@@ -189,7 +191,11 @@ export function resolveRedirectPaymentType(input: {
   klarnaSetupIntentId: string | null
 }): RedirectPaymentType | null {
   if (input.storedPaymentType) return input.storedPaymentType
-  if (input.returnUrlPaymentType === 'paypal' || input.returnUrlPaymentType === 'klarna') {
+  if (
+    input.returnUrlPaymentType === 'paypal' ||
+    input.returnUrlPaymentType === 'klarna' ||
+    input.returnUrlPaymentType === 'card'
+  ) {
     return input.returnUrlPaymentType
   }
   if (input.paypalSetupIntentId) return 'paypal'

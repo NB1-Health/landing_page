@@ -31,5 +31,5 @@ export const PlanStickyBarComponent: React.FC<Props> = async ({ defaultPlanKey, 
     }))
   )
 
-  return <PlanStickyBarClient defaultPlanKey={defaultPlanKey} plans={resolvedPlans} />
+  return <PlanStickyBarClient defaultPlanKey={defaultPlanKey} plans={resolvedPlans} locale={locale} />
 }
