@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 
 import { fields } from './fields'
-import { trackLeadSuccess } from '@/lib/dataLayer'
+import { findSubmittedEmail, trackLeadSuccess } from '@/lib/dataLayer'
 import { getClientSideURL } from '@/utilities/getURL'
 
 export type FormBlockType = {
@@ -91,13 +91,14 @@ export const FormBlock: React.FC<
           setIsLoading(false)
           setHasSubmitted(true)
 
-          trackLeadSuccess({
+          await trackLeadSuccess({
             leadType: 'form_submission',
             leadSource: 'cms_form',
             formId: String(formID),
             provider: 'payload_cms',
             providerSubmissionId: String(res?.doc?.id ?? res?.id ?? ''),
             pageLanguage: document.documentElement.lang || undefined,
+            email: findSubmittedEmail(data as unknown as Record<string, unknown>),
           })
 
           if (confirmationType === 'redirect' && redirect) {

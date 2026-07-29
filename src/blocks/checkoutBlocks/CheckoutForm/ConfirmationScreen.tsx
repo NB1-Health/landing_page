@@ -1,13 +1,33 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import {
+  trackPostPurchaseSurveyAnswered,
+  trackPostPurchaseSurveyViewed,
+} from '@/lib/dataLayer'
 
-type SurvOpt = { v: string; sub?: string[] }
+type SurveyDetail = { code: string; label: string }
+type SurvOpt = {
+  code: string
+  label: string
+  detailCode?: string
+  details?: SurveyDetail[]
+}
+const SURVEY_KEY = 'checkout_attribution'
+const SURVEY_VERSION = 1
+const SURVEY_PLACEMENT = 'checkout_confirmation'
+const QUESTION_KEY = 'discovery_source'
+const QUESTION_VERSION = 1
 
 type Props = {
   fn: string
   email: string
   orderNumber: string | null
+  checkoutId: string
+  acquisitionEventId: string | null
+  transactionId: string | null
+  customerId: string | null
+  externalId: string | null
   planLabel: string
   cycleLabel: string
   priceFormatted: string
@@ -22,6 +42,7 @@ type Props = {
 
 export function ConfirmationScreen({
   fn, email, orderNumber, planLabel, cycleLabel, priceFormatted,
+  checkoutId, acquisitionEventId, transactionId, customerId, externalId,
   locale, t, inboxBodyPrefix, inboxBodySuffix,
   chargeNotePrefix, chargeNoteSuffix,
   survOpts,
@@ -34,21 +55,79 @@ export function ConfirmationScreen({
   const [showOther, setShowOther] = useState(false)
   const [otherVal, setOtherVal] = useState('')
 
+  useEffect(() => {
+    if (!acquisitionEventId || !transactionId || !customerId) return
+    trackPostPurchaseSurveyViewed({
+      checkoutId,
+      acquisitionEventId,
+      transactionId,
+      customerId,
+      externalId: externalId ?? undefined,
+      orderNumber,
+      email,
+      pageLanguage: locale,
+      surveyKey: SURVEY_KEY,
+      surveyVersion: SURVEY_VERSION,
+      surveyPlacement: SURVEY_PLACEMENT,
+    })
+  }, [
+    acquisitionEventId,
+    checkoutId,
+    customerId,
+    email,
+    externalId,
+    locale,
+    orderNumber,
+    transactionId,
+  ])
+
+  function recordAnswer(answerCode: string, answerDetailCode?: string, hasFreeText = false) {
+    if (!acquisitionEventId || !transactionId || !customerId) return
+    trackPostPurchaseSurveyAnswered({
+      checkoutId,
+      acquisitionEventId,
+      transactionId,
+      customerId,
+      externalId: externalId ?? undefined,
+      orderNumber,
+      email,
+      pageLanguage: locale,
+      surveyKey: SURVEY_KEY,
+      surveyVersion: SURVEY_VERSION,
+      surveyPlacement: SURVEY_PLACEMENT,
+      questionKey: QUESTION_KEY,
+      questionVersion: QUESTION_VERSION,
+      answerType: 'single_choice',
+      answerCode,
+      answerDetailCode,
+      hasFreeText,
+    })
+  }
+
   function onTopOpt(opt: SurvOpt) {
-    if (opt.sub?.length) {
+    if (opt.details?.length) {
       setActiveSurvOpt(opt)
       setSurvState('sub')
     } else {
+      recordAnswer(opt.code, opt.detailCode)
       setSurvState('thanks')
     }
     setShowOther(false)
   }
 
-  function onSubOpt() { setSurvState('thanks') }
+  function onSubOpt(detailCode?: string) {
+    if (!activeSurvOpt) return
+    recordAnswer(activeSurvOpt.code, detailCode)
+    setSurvState('thanks')
+  }
 
   function onOther() { setShowOther(true); setActiveSurvOpt(null) }
 
-  function onSurvSend() { setSurvState('thanks') }
+  function onSurvSend() {
+    if (!otherVal.trim()) return
+    recordAnswer('other', undefined, true)
+    setSurvState('thanks')
+  }
 
 
   return (
@@ -84,6 +163,7 @@ export function ConfirmationScreen({
         .nb1-surv-other input { flex: 1; font-family: inherit; font-size: 14px; border: 1.5px solid rgba(18,49,77,.10); border-radius: 11px; padding: 12px 14px; outline: none; }
         .nb1-surv-other input:focus { border-color: #0a8fb0; box-shadow: 0 0 0 3px rgba(10,143,176,.08); }
         .nb1-surv-send { background: #12314d; color: #fff; border: none; border-radius: 10px; padding: 0 18px; font-family: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
+        .nb1-surv-send:disabled { opacity: .45; cursor: not-allowed; }
 
         /* Grid */
         .nb1-conf-grid { display: grid; grid-template-columns: 1fr 360px; gap: 44px; align-items: start; margin-top: 8px; }
@@ -206,21 +286,21 @@ export function ConfirmationScreen({
           {survState !== 'thanks' && (
             <div className="nb1-surv-opts">
               {survState === 'top' && survOpts.map((opt) => (
-                <button key={opt.v} type="button" className="nb1-surv-opt" onClick={() => onTopOpt(opt)}>{opt.v}</button>
+                <button key={`${opt.code}:${opt.detailCode ?? ''}`} type="button" className="nb1-surv-opt" onClick={() => onTopOpt(opt)}>{opt.label}</button>
               ))}
               {survState === 'top' && (
                 <button type="button" className="nb1-surv-opt" onClick={onOther}>{td.survey.somethingElse}</button>
               )}
-              {survState === 'sub' && activeSurvOpt?.sub?.map((s) => (
-                <button key={s} type="button" className="nb1-surv-opt" onClick={onSubOpt}>{s}</button>
+              {survState === 'sub' && activeSurvOpt?.details?.map((detail) => (
+                <button key={detail.code} type="button" className="nb1-surv-opt" onClick={() => onSubOpt(detail.code)}>{detail.label}</button>
               ))}
               {survState === 'sub' && (
-                <button type="button" className="nb1-surv-opt skip" onClick={onSubOpt}>{td.survey.skip}</button>
+                <button type="button" className="nb1-surv-opt skip" onClick={() => onSubOpt()}>{td.survey.skip}</button>
               )}
               {showOther && survState === 'top' && (
                 <div className="nb1-surv-other">
-                  <input value={otherVal} onChange={e => setOtherVal(e.target.value)} placeholder={td.survey.placeholder} autoComplete="off" />
-                  <button type="button" className="nb1-surv-send" onClick={onSurvSend}>{td.survey.send}</button>
+                  <input value={otherVal} onChange={e => setOtherVal(e.target.value)} placeholder={td.survey.placeholder} autoComplete="off" maxLength={500} />
+                  <button type="button" className="nb1-surv-send" onClick={onSurvSend} disabled={!otherVal.trim()}>{td.survey.send}</button>
                 </div>
               )}
             </div>

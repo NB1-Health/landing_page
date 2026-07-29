@@ -7,11 +7,10 @@ import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
   CardElement,
-  PaymentRequestButtonElement,
+  ExpressCheckoutElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
-import type { PaymentRequestPaymentMethodEvent } from '@stripe/stripe-js'
 import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input'
 import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
@@ -32,9 +31,8 @@ import {
   trackCheckoutSuccessViewed,
   trackSubscriptionAcquired,
   type PaymentFlow,
-  type PaymentType,
 } from '@/lib/dataLayer'
-import { isPaymentAttemptReady, resolveWalletPaymentType } from '@/lib/interactionTracking'
+import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
@@ -107,6 +105,68 @@ type StripeSetupConfirms = {
     clientSecret: string,
     options: Record<string, unknown>,
   ) => Promise<{ error?: { message?: string } }>
+}
+
+/* ─── Express Checkout (Link / Apple Pay / Google Pay) ──────────────────
+   Lives in its OWN deferred (mode:"setup") Elements — separate from the legacy
+   CardElement below. Saves the method via a card+link SetupIntent + confirmSetup,
+   then reuses the parent's finalizeCheckout. PayPal excluded (own row). */
+type ExpressLinkRowProps = {
+  onReadyChange: (available: boolean) => void
+  validate: () => boolean
+  beginSubmit: () => boolean
+  createIntent: () => Promise<{ client_secret: string; setup_intent_id: string }>
+  finalize: (setupIntentId: string) => Promise<void>
+  onError: (message?: string) => void
+}
+function ExpressLinkRow({
+  onReadyChange,
+  validate,
+  beginSubmit,
+  createIntent,
+  finalize,
+  onError,
+}: ExpressLinkRowProps) {
+  const stripe = useStripe()
+  const elements = useElements()
+
+  const onConfirm = async () => {
+    if (!stripe || !elements) return
+    if (!validate()) return
+    if (!beginSubmit()) return
+    try {
+      const { error: submitError } = await elements.submit()
+      if (submitError) {
+        onError(submitError.message)
+        return
+      }
+      const intent = await createIntent()
+      setRedirectPaymentType('card')
+      const returnUrl = new URL(window.location.href)
+      returnUrl.searchParams.set('nb1_payment_provider', 'card')
+      const { error: confirmError } = await stripe.confirmSetup({
+        elements,
+        clientSecret: intent.client_secret,
+        confirmParams: { return_url: returnUrl.toString() },
+        redirect: 'if_required',
+      })
+      if (confirmError) {
+        onError(confirmError.message)
+        return
+      }
+      await finalize(intent.setup_intent_id)
+    } catch (err) {
+      onError((err as Error)?.message)
+    }
+  }
+
+  return (
+    <ExpressCheckoutElement
+      onReady={({ availablePaymentMethods }) => onReadyChange(!!availablePaymentMethods)}
+      onConfirm={onConfirm}
+      options={{ paymentMethods: { paypal: 'never', amazonPay: 'never', klarna: 'never' } }}
+    />
+  )
 }
 
 /* ─── Inner component (needs useSearchParams inside Suspense) ────────── */
@@ -293,6 +353,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const [acquisitionIdentity, setAcquisitionIdentity] = useState<{
     eventId: string
     transactionId: string
+    customerId: string
+    externalId: string
   } | null>(null)
   const [referralCode, setReferralCode] = useState<string | null>(null)
   const [referralShareUrl, setReferralShareUrl] = useState<string | null>(null)
@@ -437,16 +499,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (cityName) setCity(cityName)
   }
 
-  /* wallet (Apple Pay / Google Pay) */
-  const [paymentRequest, setPaymentRequest] = useState<ReturnType<
-    NonNullable<typeof stripe>['paymentRequest']
-  > | null>(null)
-  const [walletAvailable, setWalletAvailable] = useState(false)
-
-  /* step 4 */
+  /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
+     Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
   const [cardName, setCardName] = useState('')
   const [cardComplete, setCardComplete] = useState(false)
+  // Whether the Express Checkout Element (Link / Apple / Google Pay) has any
+  // button to render — controls the "or pay with" divider (no empty row).
+  const [expressReady, setExpressReady] = useState(false)
   const [iban, setIban] = useState('')
   const [ibanName, setIbanName] = useState('')
   const [billingSame, setBillingSame] = useState(true)
@@ -616,6 +676,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setAcquisitionIdentity({
           eventId: acquisitionEventId,
           transactionId: redirectConfirmation.subscription_id,
+          customerId: redirectConfirmation.user_id,
+          externalId: redirectConfirmation.external_id,
         })
         setAccountStatus('sent')
         setConfirmed(true)
@@ -721,238 +783,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shipping, currency])
-
-  /* ── Wallet: create PaymentRequest once Stripe is ready ── */
-  useEffect(() => {
-    if (!stripe) return
-    const pr = stripe.paymentRequest({
-      country: 'DE',
-      currency: currency.toLowerCase(),
-      total: { label: `NB1 ${planLabel} Plan`, amount: 0, pending: true },
-      requestPayerName: true,
-      requestPayerEmail: true,
-    })
-    void pr.canMakePayment().then((result) => {
-      console.log('[Wallet] canMakePayment result:', result)
-      if (result) {
-        setPaymentRequest(pr)
-        setWalletAvailable(true)
-      }
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stripe])
-
-  /* ── Wallet: paymentmethod handler (re-registers when form state changes) ── */
-  useEffect(() => {
-    if (!paymentRequest || !stripe) return
-    const accountError = t.confirm.accountError
-    const accountExists = t.confirm.accountExists
-    const handler = async (event: PaymentRequestPaymentMethodEvent) => {
-      // A PaymentRequestEvent may only be completed ONCE — a second call throws.
-      // The catch below would otherwise complete('fail') after a successful
-      // complete('success') (checkoutConfirm failure) and die mid-handler,
-      // leaving the spinner and the submitting lock stuck forever.
-      let completed = false
-      const complete = (status: 'success' | 'fail') => {
-        if (completed) return
-        completed = true
-        event.complete(status)
-      }
-      // Backstop: the wallet sheet may have been opened from a tampered UI —
-      // never accept a wallet payment while email/address are missing. (The
-      // wallet path sends the shipping address from our form, not from the wallet.)
-      if (!validateBeforePay(false)) {
-        complete('fail')
-        return
-      }
-      if (submittingRef.current) {
-        complete('fail')
-        return
-      }
-      submittingRef.current = true
-      setAccountStatus('sending')
-      setAccountErr('')
-      try {
-        const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
-        const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
-        const intent = await checkoutPaymentIntent({
-          plan_slug: planSlug,
-          currency,
-          shipping_option: shipping,
-          discount_code: promoApplied ?? null,
-          customer_email: email,
-          customer_name: `${fn} ${ln}`.trim() || null,
-          customer_phone: phone || null,
-          idempotency_key: idempotencyKeyRef.current || undefined,
-        })
-        const { error: stripeError } = await stripe.confirmCardSetup(intent.client_secret, {
-          payment_method: event.paymentMethod.id,
-        })
-        if (stripeError) {
-          complete('fail')
-          setAccountErr(stripeError.message ?? accountError)
-          setAccountStatus('error')
-          submittingRef.current = false
-          return
-        }
-        complete('success')
-        const walletPaymentType: PaymentType = resolveWalletPaymentType(event.walletName)
-        const walletCheckoutId = getOrCreateCheckoutId()
-        const walletPaymentEventId = mintEventId()
-        const walletItem = buildNb1Item(planKey, cycleKey, rateNum, {
-          planTitle: planLabel,
-        })
-        void pushEventWithUser(
-          'add_payment_info',
-          {
-            event_id: walletPaymentEventId,
-            checkout_id: walletCheckoutId,
-            attempt_number: nextPaymentAttempt(walletCheckoutId),
-            payment_type: walletPaymentType,
-            payment_flow: 'wallet',
-            ecommerce: {
-              currency,
-              value: rateNum,
-              ...(promoApplied ? { coupon: promoApplied } : {}),
-              payment_type: walletPaymentType,
-              items: [walletItem],
-            },
-          },
-          {
-            email,
-            phone: phone || undefined,
-            firstName: fn,
-            lastName: ln,
-            address: [a1, a2].filter(Boolean).join(' '),
-            postalCode: zip,
-            city,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        )
-        const walletConfirmation = await checkoutConfirm({
-          setup_intent_id: intent.setup_intent_id,
-          idempotency_key: idempotencyKeyRef.current || intent.setup_intent_id,
-          shipping_address: {
-            first_name: fn,
-            last_name: ln,
-            email,
-            phone: phone || null,
-            address_line1: a1,
-            address_line2: a2 || null,
-            city,
-            state: null,
-            postal_code: zip,
-            country,
-            country_code: COUNTRY_CODES[country] ?? '',
-          },
-          billing_address: {
-            address_type: 'individual',
-            first_name: fn,
-            last_name: ln,
-            company_name: null,
-            tax_id: null,
-            registration_number: null,
-            email,
-            phone: phone || null,
-            address_line1: a1,
-            address_line2: a2 || null,
-            city,
-            state: null,
-            postal_code: zip,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        })
-        const acquisitionEventId = trackSubscriptionAcquired({
-          checkoutId: walletCheckoutId,
-          eventId: walletConfirmation.event_id,
-          transactionId: walletConfirmation.subscription_id,
-          externalId: walletConfirmation.external_id,
-          paymentType: walletPaymentType,
-          paymentFlow: 'wallet',
-          currency,
-          value: rateNum,
-          shipping: shipping === 'express' ? expressShipNum : 0,
-          coupon: promoApplied ?? undefined,
-          item: walletItem,
-          user: {
-            userId: walletConfirmation.external_id,
-            email,
-            phone: phone || undefined,
-            firstName: fn,
-            lastName: ln,
-            address: [a1, a2].filter(Boolean).join(' '),
-            postalCode: zip,
-            city,
-            country: COUNTRY_CODES[country] ?? country,
-          },
-        })
-        sendMetaCapiEvent('purchase', walletConfirmation.event_id, {
-          ecommerce: {
-            transaction_id: walletConfirmation.subscription_id,
-            currency,
-            value: rateNum,
-            items: [walletItem],
-          },
-          user: {
-            email,
-            first_name: fn,
-            last_name: ln,
-            city,
-            zip,
-            country: COUNTRY_CODES[country] ?? country,
-            phone,
-            external_id: walletConfirmation.external_id,
-          },
-        })
-        setOrderNumber(walletConfirmation.order_number ?? null)
-        setAcquisitionIdentity({
-          eventId: acquisitionEventId,
-          transactionId: walletConfirmation.subscription_id,
-        })
-        setAccountStatus('sent')
-        setConfirmed(true)
-      } catch (err: unknown) {
-        complete('fail')
-        setAccountStatus('error')
-        const code = (err as { code?: string })?.code
-        setAccountErr(
-          code === 'auth/email-already-in-use'
-            ? accountExists
-            : (err as Error).message || accountError,
-        )
-        submittingRef.current = false
-      }
-    }
-    paymentRequest.on('paymentmethod', handler)
-    return () => {
-      paymentRequest.off('paymentmethod', handler)
-    }
-  }, [
-    paymentRequest,
-    stripe,
-    email,
-    fn,
-    ln,
-    phone,
-    a1,
-    a2,
-    zip,
-    city,
-    country,
-    shipping,
-    currency,
-    expressShipNum,
-    planKey,
-    cycleKey,
-    planLabel,
-    promoApplied,
-    rateNum,
-    t.confirm.accountError,
-    t.confirm.accountExists,
-    // validateBeforePay is re-created each render; listing it re-registers the
-    // handler so it always validates against the latest form state.
-    validateBeforePay,
-  ])
 
   /* ── helpers ── */
   function markDone(n: number) {
@@ -1192,10 +1022,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     })
     if (!paymentReady) {
       if (payMethod === 'card' && !cardComplete) {
-        setPayErr((current) => ({
-          ...current,
-          cardNumber: t.payment.cardNumberInvalid,
-        }))
+        setPayErr((current) => ({ ...current, cardNumber: t.payment.cardNumberInvalid }))
       } else {
         setAccountErr(t.confirm.accountError)
         setAccountStatus('error')
@@ -1283,11 +1110,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
       })
 
-      // 2. Confirm payment with Stripe.js
+      // 2. Confirm the card with Stripe.js (saved in place, no redirect). Every
+      // early return MUST release submittingRef, else the first declined/invalid
+      // card permanently swallows all later attempts.
       if (payMethod === 'card') {
-        // Every early return here MUST release submittingRef — otherwise the
-        // first declined/invalid card permanently swallows all later attempts
-        // (the guard at the top of this function returns silently).
         if (!stripe || !elements || !cardElement) {
           setAccountErr(t.confirm.accountError)
           setAccountStatus('error')
@@ -1381,10 +1207,29 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         return
       }
 
-      // 3. Confirm checkout — backend creates user + subscription
+      // 3. Confirm checkout — create the user + subscription + tracking (shared
+      // with the Express Checkout / Link flow via finalizeCheckout).
+      await finalizeCheckout(intent.setup_intent_id, 'inline')
+    } catch (err: unknown) {
+      setAccountStatus('error')
+      const code = (err as { code?: string })?.code
+      if (code === 'auth/email-already-in-use') {
+        setAccountErr(t.confirm.accountExists)
+      } else {
+        setAccountErr((err as Error).message || t.confirm.accountError)
+      }
+      submittingRef.current = false
+    }
+  }
+
+  // Shared finalize: backend creates the user + subscription from the saved
+  // SetupIntent, then fires the acquisition tracking. Used by the card flow
+  // (nextPayment) AND the Express Checkout / Link flow. Sets its own error state.
+  async function finalizeCheckout(setupIntentId: string, paymentFlow: PaymentFlow) {
+    try {
       const confirmation = await checkoutConfirm({
-        setup_intent_id: intent.setup_intent_id,
-        idempotency_key: idempotencyKeyRef.current || intent.setup_intent_id,
+        setup_intent_id: setupIntentId,
+        idempotency_key: idempotencyKeyRef.current || setupIntentId,
         shipping_address: {
           first_name: fn,
           last_name: ln,
@@ -1443,7 +1288,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         transactionId: confirmation.subscription_id,
         externalId: confirmation.external_id,
         paymentType: payMethod,
-        paymentFlow: 'inline',
+        paymentFlow,
         currency,
         value: rateNum,
         shipping: promoPreview?.shipping_price ?? (shipping === 'express' ? expressShipNum : 0),
@@ -1491,10 +1336,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       setAcquisitionIdentity({
         eventId: acquisitionEventId,
         transactionId: confirmation.subscription_id,
+        customerId: confirmation.user_id,
+        externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
       setReferralCode(confirmation.referral_code ?? null)
       setReferralShareUrl(confirmation.referral_share_url ?? null)
+      setConfirmed(true)
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
@@ -1504,10 +1352,25 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setAccountErr((err as Error).message || t.confirm.accountError)
       }
       submittingRef.current = false
-      return
     }
+  }
 
-    setConfirmed(true)
+  // Create the SetupIntent (card+link) for the Express Checkout / Link flow —
+  // same shape as the card flow, payment_method_type=null (card+link).
+  async function createExpressIntent() {
+    const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
+    const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
+    return checkoutPaymentIntent({
+      plan_slug: planSlug,
+      currency,
+      shipping_option: shipping,
+      discount_code: promoApplied ?? null,
+      customer_email: email,
+      customer_name: `${fn} ${ln}`.trim() || null,
+      customer_phone: phone || null,
+      idempotency_key: idempotencyKeyRef.current || undefined,
+      payment_method_type: null,
+    })
   }
 
   async function applyPromo() {
@@ -1651,12 +1514,20 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* ── Confirmation screen ── */
   if (confirmed) {
     const SURV_OPTS = [
-      { v: 'Social media', sub: ['Instagram', 'TikTok', 'YouTube'] },
-      { v: 'Google' },
-      { v: 'Influencer / creator' },
-      { v: 'A friend' },
-      { v: 'Podcast' },
-      { v: 'HYROX / event' },
+      {
+        code: 'social_media',
+        label: 'Social media',
+        details: [
+          { code: 'instagram', label: 'Instagram' },
+          { code: 'tiktok', label: 'TikTok' },
+          { code: 'youtube', label: 'YouTube' },
+        ],
+      },
+      { code: 'search_engine', detailCode: 'google', label: 'Google' },
+      { code: 'creator', label: 'Influencer / creator' },
+      { code: 'word_of_mouth', detailCode: 'friend', label: 'A friend' },
+      { code: 'podcast', label: 'Podcast' },
+      { code: 'event', detailCode: 'hyrox', label: 'HYROX / event' },
     ]
     const cycleLabel = cycleKey === 'monthly' ? 'Flexible monthly' : `${cycleKey} months`
     const priceFormatted = rate != null ? String(rate) : ''
@@ -1665,6 +1536,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         fn={fn}
         email={email}
         orderNumber={orderNumber}
+        checkoutId={getOrCreateCheckoutId()}
+        acquisitionEventId={acquisitionIdentity?.eventId ?? null}
+        transactionId={acquisitionIdentity?.transactionId ?? null}
+        customerId={acquisitionIdentity?.customerId ?? null}
+        externalId={acquisitionIdentity?.externalId ?? null}
         planLabel={planLabel}
         cycleLabel={cycleLabel}
         priceFormatted={priceFormatted}
@@ -2807,24 +2683,45 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               <span className="nb1-acc-title">{t.steps.payment}</span>
             </div>
             <div className="nb1-acc-body">
-              {walletAvailable && paymentRequest && (
-                <>
-                  <div style={{ marginBottom: 14 }}>
-                    <PaymentRequestButtonElement
-                      onClick={(event) => {
-                        // Don't open the wallet sheet while earlier steps are invalid
-                        if (!validateBeforePay(false)) event.preventDefault()
-                      }}
-                      options={{
-                        paymentRequest,
-                        style: { paymentRequestButton: { height: '48px' } },
-                      }}
-                    />
-                  </div>
-                  <div className="nb1-pay-divider" style={{ marginTop: 0 }}>
-                    {t.payment.orPayAnotherWay}
-                  </div>
-                </>
+              {/* Express: Link / Apple Pay / Google Pay on top. Renders nothing
+                  when no wallet is available (no empty row); onReady controls the
+                  divider. PayPal excluded here — it has its own row below.
+                  onConfirm reuses nextPayment via the card+link confirmSetup path. */}
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  mode: 'setup',
+                  currency: currency.toLowerCase(),
+                  paymentMethodTypes: ['card', 'link'],
+                  appearance: {
+                    theme: 'stripe',
+                    variables: { colorPrimary: '#12314d', borderRadius: '11px', fontFamily: 'Inter, sans-serif' },
+                  },
+                }}
+              >
+                <ExpressLinkRow
+                  onReadyChange={setExpressReady}
+                  validate={() => validateBeforePay(true)}
+                  beginSubmit={() => {
+                    if (submittingRef.current) return false
+                    submittingRef.current = true
+                    setAccountStatus('sending')
+                    setAccountErr('')
+                    return true
+                  }}
+                  createIntent={createExpressIntent}
+                  finalize={(sid) => finalizeCheckout(sid, 'wallet')}
+                  onError={(msg) => {
+                    setAccountErr(msg ?? t.confirm.accountError)
+                    setAccountStatus('error')
+                    submittingRef.current = false
+                  }}
+                />
+              </Elements>
+              {expressReady && (
+                <div className="nb1-pay-divider" style={{ marginTop: 0 }}>
+                  {t.payment.orPayAnotherWay}
+                </div>
               )}
 
               {/* Payment method list */}
@@ -3275,7 +3172,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               <button
                 type="button"
                 className="nb1-confirm-btn"
-                onClick={nextPayment}
+                onClick={() => nextPayment()}
                 disabled={accountStatus === 'sending'}
                 style={
                   accountStatus === 'sending' ? { opacity: 0.65, cursor: 'not-allowed' } : undefined
@@ -3436,6 +3333,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
 /* ── Exported wrapper (Elements + Suspense for useSearchParams) ─────── */
 export const CheckoutFormClient: React.FC<Props> = (props) => (
+  // Legacy Elements — the card uses CardElement + confirmCardSetup. The Link /
+  // wallet express button lives in its OWN deferred Elements inside step 4.
   <Elements stripe={stripePromise}>
     <Suspense fallback={null}>
       <CheckoutFormInner {...props} />
