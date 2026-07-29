@@ -588,7 +588,9 @@ export const PlansClient: React.FC<Props> = (props) => {
               {advPrice && (
                 <div className="pl-price" dangerouslySetInnerHTML={{ __html: advPrice + '<small> /mo</small>' }} />
               )}
-              <div className="pl-monthly" style={{ visibility: 'hidden' }}>&nbsp;</div>
+              {/* Monthly pill removed with the 1-month-standard model. No hidden
+                  spacer here either — Core's pill is gone too, so dropping it keeps
+                  the "Cancel anytime…" commit line aligned across both cards. */}
               {advCommit && <p className="pl-commit">{advCommit}</p>}
               {advFeaturesLabel && <div className="pl-flbl">{advFeaturesLabel}</div>}
               {advFeatures && advFeatures.length > 0 && (
