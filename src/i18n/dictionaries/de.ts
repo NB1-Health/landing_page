@@ -42,7 +42,7 @@ export const de = {
     viewBio: 'Bio ansehen',
   },
   plans: {
-    months: { 4: '4 Monate', 8: '8 Monate', 12: '12 Monate' } as Record<4 | 8 | 12, string>,
+    months: { 1: '1 Monat', 4: '4 Monate', 12: '12 Monate' } as Record<1 | 4 | 12, string>,
     perMonth: '/Mon.',
     // German phrasing puts the amount first: "120 € pro Zyklus sparen" —
     // so savingsPrefix is empty and savingsSuffix carries the whole tail.

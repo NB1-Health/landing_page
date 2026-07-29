@@ -85,7 +85,7 @@ export function formatPrice(amount: number, currency: CurrencyCode, locale: stri
   }
 }
 
-/** Build a lookup map from "core:4" / "advanced:8" etc. → price number */
+/** Build a lookup map from "core:1" / "advanced:4" etc. → price number */
 export function buildRateMap(
   plans: RawPlanClient[],
   currency: CurrencyCode,
@@ -139,10 +139,10 @@ export function resolveTokensDeep<T>(
 }
 
 const MONTH_LABELS: Record<string, Record<number, string>> = {
-  en: { 4: '4 months', 8: '8 months', 12: '12 months' },
-  de: { 4: '4 Monate', 8: '8 Monate', 12: '12 Monate' },
-  fr: { 4: '4 mois', 8: '8 mois', 12: '12 mois' },
-  nl: { 4: '4 maanden', 8: '8 maanden', 12: '12 maanden' },
+  en: { 1: '1 month', 4: '4 months', 12: '12 months' },
+  de: { 1: '1 Monat', 4: '4 Monate', 12: '12 Monate' },
+  fr: { 1: '1 mois', 4: '4 mois', 12: '12 mois' },
+  nl: { 1: '1 maand', 4: '4 maanden', 12: '12 maanden' },
 }
 
 export function formatMonthLabel(month: number, locale: string): string {

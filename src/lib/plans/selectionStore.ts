@@ -18,7 +18,7 @@ export const PLAN_STORAGE_KEY = 'nb1_checkout_plan'
 export const PLAN_SELECTION_EVENT = 'nb1:planselectionchange'
 
 const VALID_PLANS = ['core', 'advanced']
-const VALID_CYCLES = ['4', '8', '12', 'monthly']
+const VALID_CYCLES = ['monthly', '4', '12']
 
 export type PlanSelection = { plan?: string; cycle?: string }
 

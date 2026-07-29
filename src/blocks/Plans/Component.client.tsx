@@ -103,8 +103,9 @@ export const PlansClient: React.FC<Props> = (props) => {
 
   function applyPlans(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
     const rateMap = buildRateMap(plans, currency)
-    const coreRate = rateMap['core:4']
-    const advRate = rateMap['advanced:4']
+    // Headline = the 1-month standard price (the new baseline), not the 4-month discount.
+    const coreRate = rateMap['core:1']
+    const advRate = rateMap['advanced:1']
     if (coreRate != null) { setCorePrice(formatPrice(coreRate, currency, locale)); coreRateRef.current = coreRate }
     if (advRate != null) { setAdvPrice(formatPrice(advRate, currency, locale)); advRateRef.current = advRate }
     const coreTitle = plans.find(p => p.title.toLowerCase() === 'core')?.title ?? 'Core'
@@ -555,7 +556,7 @@ export const PlansClient: React.FC<Props> = (props) => {
               {corePrice && (
                 <div className="pl-price" dangerouslySetInnerHTML={{ __html: corePrice + '<small> /mo</small>' }} />
               )}
-              {coreMonthly && <span className="pl-monthly">{coreMonthly}</span>}
+              {/* {coreMonthly && <span className="pl-monthly">{coreMonthly}</span>} */}
               {coreCommit && <p className="pl-commit">{coreCommit}</p>}
               {coreFeaturesLabel && <div className="pl-flbl">{coreFeaturesLabel}</div>}
               {coreFeatures && coreFeatures.length > 0 && (

@@ -64,9 +64,12 @@ function computeRows(
   bestValueLabel: string,
 ): PricingRow[] {
   const apiTitle = family === 'advanced' ? 'Advanced' : 'Core'
-  const baselineRate = rateMap[`${family}:4`] ?? 0
+  // Savings anchor to the 1-month standard rate (the new baseline), matching
+  // CycleSelector and BASELINE_MONTH=1 in lib/plans/api.ts — not the old
+  // 4-month rate.
+  const baselineRate = rateMap[`${family}:1`] ?? 0
   return plans
-    .filter((p) => p.title === apiTitle && [4, 8, 12].includes(p.month))
+    .filter((p) => p.title === apiTitle && [1, 4, 12].includes(p.month))
     .sort((a, b) => a.month - b.month)
     .map((p) => {
       const rate = rateMap[`${family}:${p.month}`] ?? 0
@@ -303,6 +306,76 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
           border-radius: 100px;
         }
 
+        /* Combined Term | Core | Advanced table (two-plan mode) */
+        .nb1-cpg-table {
+          margin-top: 8px;
+          border: 1px solid rgba(18, 49, 77, 0.1);
+          border-radius: 18px;
+          background: #fff;
+          overflow: hidden;
+        }
+        .nb1-cpg-thead,
+        .nb1-cpg-trow {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 26px;
+        }
+        .nb1-cpg-thead {
+          border-bottom: 1px solid rgba(18, 49, 77, 0.1);
+        }
+        .nb1-cpg-th {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 700;
+          font-size: 13px;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #12314d;
+          text-align: right;
+        }
+        .nb1-cpg-trow + .nb1-cpg-trow {
+          border-top: 1px solid rgba(18, 49, 77, 0.07);
+        }
+        .nb1-cpg-term {
+          display: inline-flex;
+          align-items: center;
+          flex-wrap: wrap;
+          font-size: 14px;
+          color: rgba(18, 49, 77, 0.7);
+        }
+        .nb1-cpg-trow.best .nb1-cpg-term {
+          color: #12314d;
+          font-weight: 600;
+        }
+        .nb1-cpg-cell {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 21px;
+          letter-spacing: -0.02em;
+          color: #12314d;
+          text-align: right;
+        }
+        .nb1-cpg-cell small {
+          font-size: 12px;
+          color: rgba(18, 49, 77, 0.4);
+          font-weight: 500;
+        }
+        @media (max-width: 600px) {
+          .nb1-cpg-thead,
+          .nb1-cpg-trow {
+            padding: 13px 16px;
+            grid-template-columns: 1.3fr 1fr 1fr;
+            gap: 8px;
+          }
+          .nb1-cpg-th {
+            font-size: 11px;
+          }
+          .nb1-cpg-cell {
+            font-size: 17px;
+          }
+        }
+
         /* Footer note */
         .nb1-cpg-foot {
           margin-top: 18px;
@@ -378,35 +451,51 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
           </div>
         )}
 
-        <div className={`nb1-cpg-grid${twoCol ? ' two-col' : ''}`}>
-          <div className="nb1-cpg-col">
-            {planName && (
-              <div className="nb1-cpg-col-name">
+        {twoCol ? (
+          /* Combined Term | Core | Advanced table. rows/rows2 are both sorted
+             ascending (1/4/12) by computeRows, so index i aligns the same term
+             across both plans. */
+          <div className="nb1-cpg-table">
+            <div className="nb1-cpg-thead">
+              <span />
+              <span className="nb1-cpg-th">
                 {planName}
                 {monthlyNote && <span className="nb1-cpg-monthly-note">{monthlyNote}</span>}
-              </div>
-            )}
+              </span>
+              <span className="nb1-cpg-th">
+                {planName2}
+                {monthlyNote2 && <span className="nb1-cpg-monthly-note">{monthlyNote2}</span>}
+              </span>
+            </div>
             {rows?.map((row, i) => (
-              <div key={i} className={`nb1-cpg-row${row.isBestValue ? ' best' : ''}`}>
-                <span className="nb1-cpg-len">
+              <div key={i} className={`nb1-cpg-trow${row.isBestValue ? ' best' : ''}`}>
+                <span className="nb1-cpg-term">
                   {row.months}
                   {row.isBestValue && row.bestValueLabel && (
                     <span className="nb1-cpg-best-tag">{row.bestValueLabel}</span>
                   )}
                 </span>
-                <span className="nb1-cpg-rate">{row.rate}<small> /mo</small></span>
+                <span className="nb1-cpg-cell">
+                  {row.rate}
+                  <small> /mo</small>
+                </span>
+                <span className="nb1-cpg-cell">
+                  {rows2?.[i]?.rate}
+                  <small> /mo</small>
+                </span>
               </div>
             ))}
           </div>
-          {twoCol && (
+        ) : (
+          <div className="nb1-cpg-grid">
             <div className="nb1-cpg-col">
-              {planName2 && (
+              {planName && (
                 <div className="nb1-cpg-col-name">
-                  {planName2}
-                  {monthlyNote2 && <span className="nb1-cpg-monthly-note">{monthlyNote2}</span>}
+                  {planName}
+                  {monthlyNote && <span className="nb1-cpg-monthly-note">{monthlyNote}</span>}
                 </div>
               )}
-              {rows2?.map((row, i) => (
+              {rows?.map((row, i) => (
                 <div key={i} className={`nb1-cpg-row${row.isBestValue ? ' best' : ''}`}>
                   <span className="nb1-cpg-len">
                     {row.months}
@@ -418,8 +507,8 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {footerNote && (
           <div className="nb1-cpg-foot">

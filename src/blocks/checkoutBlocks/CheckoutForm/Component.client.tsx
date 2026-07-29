@@ -53,8 +53,8 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 // fails. Live prices (in the visitor's selected currency) replace these on load.
 // 'monthly' (flexible, month=1) is included here as a fallback too.
 const STATIC_RATES_EUR: Record<string, Record<string, number>> = {
-  core: { '4': 99, '8': 94, '12': 89, monthly: 109 },
-  advanced: { '4': 149, '8': 141, '12': 134 },
+  core: { '4': 99, '12': 89, monthly: 109 },
+  advanced: { '4': 149, '12': 134 },
 }
 
 const COUNTRIES = [
@@ -189,12 +189,23 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Plan/cycle selection: snapshotted once before the URL is cleaned below.
-  // URL params win (fresh arrival from the cycle page); otherwise fall back to
-  // the selection persisted in sessionStorage — the URL cleanup removes the
-  // params, so without this a page refresh would silently reset the order to
-  // core/4 while the form fields (also sessionStorage-backed) survive.
-  const [{ planKey, cycleKey, hasValidSelection }] = useState(() => {
+  // Plan/cycle selection. Resolved AFTER mount (in the effect below), NOT in the
+  // initial render: the persisted selection lives in sessionStorage, which the
+  // server can't read, so reading it during the SSR/hydration render makes the
+  // server (defaults) and client (stored selection) diverge and throws a
+  // hydration error. The first render uses the same core/4 defaults the server
+  // produces; the effect then applies the real URL / sessionStorage selection.
+  const [{ planKey, cycleKey, hasValidSelection }, setSelection] = useState<{
+    planKey: string
+    cycleKey: string
+    hasValidSelection: boolean
+  }>({ planKey: 'core', cycleKey: '4', hasValidSelection: false })
+
+  // On mount: resolve selection (URL params win over stored — fresh arrival from
+  // the cycle page), persist it, then strip plan/cycle from the URL while keeping
+  // Stripe redirect params intact. sessionStorage is only touched here, never
+  // during render, so there's no server/client divergence.
+  useEffect(() => {
     const saved = getStoredPlanSelection()
     const fromUrl: PlanSelection = {
       plan: searchParams?.get('plan') ?? undefined,
@@ -202,15 +213,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
     storePlanSelection({ ...saved, ...fromUrl })
     const applied = getStoredPlanSelection()
-    return {
+    setSelection({
       planKey: applied.plan ?? 'core',
       cycleKey: applied.cycle ?? '4',
       hasValidSelection: Boolean(applied.plan && applied.cycle),
-    }
-  })
+    })
 
-  // Strip plan/cycle from URL once read — keeps Stripe redirect params intact
-  useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '')
     params.delete('plan')
     params.delete('cycle')
@@ -321,8 +329,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   const monthNum = Number(cycleKey)
   const durationLabel =
-    !Number.isNaN(monthNum) && dict.plans.months[monthNum as 4 | 8 | 12]
-      ? dict.plans.months[monthNum as 4 | 8 | 12]
+    !Number.isNaN(monthNum) && dict.plans.months[monthNum as 1 | 4 | 12]
+      ? dict.plans.months[monthNum as 1 | 4 | 12]
       : cycleKey === 'monthly'
         ? t.summary.cancelAnytime
         : cycleKey
@@ -334,6 +342,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     livePrices?.[currency] ??
     livePrices?.EUR ??
     STATIC_RATES_EUR[planKey]?.[cycleKey] ??
+    // Fall back within the SAME plan family before ever reaching for Core's
+    // numbers — e.g. an Advanced monthly order with no live price and no
+    // STATIC_RATES_EUR.advanced.monthly entry must never silently price
+    // itself off Core's rate.
+    STATIC_RATES_EUR[planKey]?.['4'] ??
     STATIC_RATES_EUR.core['4']
   const rate = fmt(rateNum)
   const zeroPrice = fmt(0)

@@ -42,7 +42,7 @@ export const fr = {
     viewBio: 'Voir la biographie',
   },
   plans: {
-    months: { 4: '4 mois', 8: '8 mois', 12: '12 mois' } as Record<4 | 8 | 12, string>,
+    months: { 1: '1 mois', 4: '4 mois', 12: '12 mois' } as Record<1 | 4 | 12, string>,
     perMonth: '/mois',
     savingsPrefix: 'Économise',
     savingsSuffix: '/ cycle',

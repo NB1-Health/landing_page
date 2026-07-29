@@ -42,7 +42,7 @@ export const nl = {
     viewBio: 'Biografie bekijken',
   },
   plans: {
-    months: { 4: '4 maanden', 8: '8 maanden', 12: '12 maanden' } as Record<4 | 8 | 12, string>,
+    months: { 1: '1 maand', 4: '4 maanden', 12: '12 maanden' } as Record<1 | 4 | 12, string>,
     perMonth: '/mnd',
     savingsPrefix: 'Bespaar',
     savingsSuffix: '/ cyclus',

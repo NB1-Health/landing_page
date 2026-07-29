@@ -136,6 +136,8 @@ import * as migration_20260709_115454_protocol_living_lifeline_block from './202
 import * as migration_20260709_150108_header_discover_nav from './20260709_150108_header_discover_nav';
 import * as migration_20260711_160000_lead_in_richtext from './20260711_160000_lead_in_richtext';
 import * as migration_20260716_100000_lab_localize_label_fields from './20260716_100000_lab_localize_label_fields';
+import * as migration_20260728_120000_add_cycle_selector_tab_labels from './20260728_120000_add_cycle_selector_tab_labels';
+import * as migration_20260728_120500_plan_summary_card_cycle_1_month from './20260728_120500_plan_summary_card_cycle_1_month';
 
 export const migrations = [
   {
@@ -827,5 +829,15 @@ export const migrations = [
     up: migration_20260716_100000_lab_localize_label_fields.up,
     down: migration_20260716_100000_lab_localize_label_fields.down,
     name: '20260716_100000_lab_localize_label_fields',
+  },
+  {
+    up: migration_20260728_120000_add_cycle_selector_tab_labels.up,
+    down: migration_20260728_120000_add_cycle_selector_tab_labels.down,
+    name: '20260728_120000_add_cycle_selector_tab_labels',
+  },
+  {
+    up: migration_20260728_120500_plan_summary_card_cycle_1_month.up,
+    down: migration_20260728_120500_plan_summary_card_cycle_1_month.down,
+    name: '20260728_120500_plan_summary_card_cycle_1_month',
   },
 ];

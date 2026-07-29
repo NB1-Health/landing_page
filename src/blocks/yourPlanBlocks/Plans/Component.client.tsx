@@ -154,13 +154,16 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
   const [comparison, setComparison] = useState<Comparison | null | undefined>(comparisonProp)
 
   useEffect(() => {
-    function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+    function applyPrices(
+      currency: ReturnType<typeof getClientCurrency>,
+      plans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    ) {
       const perMonth = PER_MONTH_DICT[locale] ?? PER_MONTH_DICT.en
       const rateMap = buildRateMap(plans, currency)
       setPlanCards(
         (planCardsProp ?? []).map((card) => {
           const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:4`] : undefined
+          const rate = card.planFamily ? rateMap[`${family}:1`] : undefined
           return {
             ...card,
             price: rate != null ? formatPrice(rate, currency, locale) : card.price,
@@ -174,7 +177,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       if (resolvedComparison) {
         const resolvedCards = resolvedComparison.cards?.map((card: CompareCard) => {
           const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:4`] : undefined
+          const rate = card.planFamily ? rateMap[`${family}:1`] : undefined
           return {
             ...card,
             price: rate != null ? formatPrice(rate, currency, locale) : card.price,
@@ -188,15 +191,19 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
     }
 
     const currency = getClientCurrency(locale)
-    fetchPlansClient().then((plans) => applyPrices(currency, plans)).catch(() => {})
+    fetchPlansClient()
+      .then((plans) => applyPrices(currency, plans))
+      .catch(() => {})
 
     const onCurrencyChange = (e: Event) => {
       const cur = (e as CustomEvent<string>).detail as ReturnType<typeof getClientCurrency>
-      fetchPlansClient().then((plans) => applyPrices(cur, plans)).catch(() => {})
+      fetchPlansClient()
+        .then((plans) => applyPrices(cur, plans))
+        .catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
     return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale])
 
   const isImageMode = backgroundType === 'image'
@@ -310,7 +317,12 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
           /* Base body font is Inter (app global is Geist, which otherwise leaks
              into the lede/card copy). Headings/names/prices set Instrument Sans
              explicitly below. */
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
         }
         .yp-plans.is-dark {
           color: #ffffff;
@@ -378,7 +390,12 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
           display: inline-flex;
           align-items: center;
           gap: 0.7rem;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.18em;
@@ -603,7 +620,12 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
           font-size: 15px;
           font-weight: 600;
           padding: 15px 28px;
@@ -773,7 +795,12 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
           border: 1.5px solid rgba(10, 143, 176, 0.2);
           border-radius: 14px;
           padding: 15px 26px;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
           font-weight: 700;
           font-size: 15px;
           color: #0a8fb0;
@@ -934,7 +961,12 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family:
+            'Inter',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
           font-weight: 700;
           font-size: 15px;
           border-radius: 100px;
@@ -1087,9 +1119,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
         {(eyebrow || heading || lede) && (
           <div className={['section-head center reveal', revealed ? 'in' : ''].join(' ')}>
             {eyebrow && <span className="eyebrow center">{eyebrow}</span>}
-            {heading && (
-              <RichText data={heading as any} enableGutter={false} enableProse={false} />
-            )}
+            {heading && <RichText data={heading as any} enableGutter={false} enableProse={false} />}
             {lede && (
               <div className="head-lede">
                 <RichText data={lede as any} enableGutter={false} enableProse={false} />
@@ -1111,9 +1141,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                     i === 0 ? 'd1' : i === 1 ? 'd2' : 'd3',
                   ].join(' ')}
                 >
-                  {card.badge && (
-                    <span className="rec-flag plan-badge">{card.badge}</span>
-                  )}
+                  {card.badge && <span className="rec-flag plan-badge">{card.badge}</span>}
                   {card.name && <div className="pc-name">{card.name}</div>}
                   {card.tag && <p className="pc-tag">{card.tag}</p>}
                   {card.price && (
@@ -1122,13 +1150,13 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                       {card.pricePeriod && <span> {card.pricePeriod}</span>}
                     </div>
                   )}
-                  {card.monthly ? (
+                  {/* {card.monthly ? (
                     <div className="pc-monthly">{card.monthly}</div>
                   ) : (
                     <div className="pc-monthly pc-ghost" aria-hidden="true">
                       &nbsp;
                     </div>
-                  )}
+                  )} */}
                   {card.commit && <p className="pc-commit">{card.commit}</p>}
                   {card.listLabel && <div className="pc-lbl">{card.listLabel}</div>}
                   {card.listItems && card.listItems.length > 0 && (
@@ -1203,10 +1231,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
 
             <div className="cmp-collapse" ref={collapseRef}>
               <div className="cmp-inner">
-                <div
-                  className="ctable"
-                  style={{ ['--cols' as any]: cmpCards.length || 1 }}
-                >
+                <div className="ctable" style={{ ['--cols' as any]: cmpCards.length || 1 }}>
                   <div className="crow chead">
                     <div className="ccell" />
                     {cmpCards.map((card, ci) => (
@@ -1247,11 +1272,11 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                               // features JSON field localized (Payload can't do that).
                               const localeKey = row.id && locale ? `${row.id}__${locale}` : null
                               const raw =
-                                (localeKey && feats[localeKey] !== undefined
+                                localeKey && feats[localeKey] !== undefined
                                   ? feats[localeKey]
                                   : row.id
                                     ? feats[row.id]
-                                    : undefined)
+                                    : undefined
                               const two =
                                 raw && typeof raw === 'object'
                                   ? (raw as { v?: string | null; sub?: string | null })
@@ -1266,7 +1291,9 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                                   {cell === 'checkbox' ? (
                                     <span className={raw === true ? 'ck on' : 'ck off'} />
                                   ) : cell === 'oneLine' ? (
-                                    <span className="val">{typeof raw === 'string' ? raw : ''}</span>
+                                    <span className="val">
+                                      {typeof raw === 'string' ? raw : ''}
+                                    </span>
                                   ) : (
                                     <>
                                       <span className="val">{two?.v}</span>
@@ -1292,7 +1319,9 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                         {card.ctaLabel && (
                           <a
                             href={card.ctaUrl || '#'}
-                            className={['cbtn', card.ctaStyle === 'lime' ? 'lime' : 'out'].join(' ')}
+                            className={['cbtn', card.ctaStyle === 'lime' ? 'lime' : 'out'].join(
+                              ' ',
+                            )}
                             style={
                               card.ctaStyle === 'lime'
                                 ? { backgroundColor: 'rgb(198, 255, 91)' }
@@ -1316,7 +1345,11 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
             {guarantees.map((g, i) => (
               <div
                 key={i}
-                className={['gs-item reveal', revealed ? 'in' : '', i === 0 ? 'd1' : i === 1 ? 'd2' : 'd3'].join(' ')}
+                className={[
+                  'gs-item reveal',
+                  revealed ? 'in' : '',
+                  i === 0 ? 'd1' : i === 1 ? 'd2' : 'd3',
+                ].join(' ')}
               >
                 {g.icon && g.icon !== 'none' && GUARANTEE_ICONS[g.icon] && (
                   <div className="gs-ico">{GUARANTEE_ICONS[g.icon]}</div>

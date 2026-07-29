@@ -47,8 +47,8 @@ export const PlanSummaryCard: Block = {
       required: true,
       defaultValue: '4',
       options: [
+        { label: '1 month', value: '1' },
         { label: '4 months', value: '4' },
-        { label: '8 months', value: '8' },
         { label: '12 months', value: '12' },
       ],
       admin: {
