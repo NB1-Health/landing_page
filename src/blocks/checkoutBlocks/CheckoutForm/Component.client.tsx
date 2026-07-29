@@ -353,6 +353,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const [acquisitionIdentity, setAcquisitionIdentity] = useState<{
     eventId: string
     transactionId: string
+    customerId: string
+    externalId: string
   } | null>(null)
   const [referralCode, setReferralCode] = useState<string | null>(null)
   const [referralShareUrl, setReferralShareUrl] = useState<string | null>(null)
@@ -674,6 +676,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setAcquisitionIdentity({
           eventId: acquisitionEventId,
           transactionId: redirectConfirmation.subscription_id,
+          customerId: redirectConfirmation.user_id,
+          externalId: redirectConfirmation.external_id,
         })
         setAccountStatus('sent')
         setConfirmed(true)
@@ -1332,6 +1336,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       setAcquisitionIdentity({
         eventId: acquisitionEventId,
         transactionId: confirmation.subscription_id,
+        customerId: confirmation.user_id,
+        externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
       setReferralCode(confirmation.referral_code ?? null)
@@ -1508,12 +1514,20 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* ── Confirmation screen ── */
   if (confirmed) {
     const SURV_OPTS = [
-      { v: 'Social media', sub: ['Instagram', 'TikTok', 'YouTube'] },
-      { v: 'Google' },
-      { v: 'Influencer / creator' },
-      { v: 'A friend' },
-      { v: 'Podcast' },
-      { v: 'HYROX / event' },
+      {
+        code: 'social_media',
+        label: 'Social media',
+        details: [
+          { code: 'instagram', label: 'Instagram' },
+          { code: 'tiktok', label: 'TikTok' },
+          { code: 'youtube', label: 'YouTube' },
+        ],
+      },
+      { code: 'search_engine', detailCode: 'google', label: 'Google' },
+      { code: 'creator', label: 'Influencer / creator' },
+      { code: 'word_of_mouth', detailCode: 'friend', label: 'A friend' },
+      { code: 'podcast', label: 'Podcast' },
+      { code: 'event', detailCode: 'hyrox', label: 'HYROX / event' },
     ]
     const cycleLabel = cycleKey === 'monthly' ? 'Flexible monthly' : `${cycleKey} months`
     const priceFormatted = rate != null ? String(rate) : ''
@@ -1522,6 +1536,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         fn={fn}
         email={email}
         orderNumber={orderNumber}
+        checkoutId={getOrCreateCheckoutId()}
+        acquisitionEventId={acquisitionIdentity?.eventId ?? null}
+        transactionId={acquisitionIdentity?.transactionId ?? null}
+        customerId={acquisitionIdentity?.customerId ?? null}
+        externalId={acquisitionIdentity?.externalId ?? null}
         planLabel={planLabel}
         cycleLabel={cycleLabel}
         priceFormatted={priceFormatted}

@@ -89,18 +89,19 @@ export const ReserveCtaComponent: React.FC<ReserveCtaBlockType> = (props) => {
   }, [klaviyoFormId])
 
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const detail = (e as CustomEvent<{ type: string; formId: string; metaData?: Record<string, string> }>).detail
       if (detail?.type !== 'submit' || detail?.formId !== klaviyoFormId) return
 
       const email = detail?.metaData?.$email
 
-      trackLeadSuccess({
+      await trackLeadSuccess({
         leadType: 'form_submission',
         leadSource: 'reserve_cta',
         formId: klaviyoFormId,
         provider: 'klaviyo',
         pageLanguage: String(params?.locale ?? document.documentElement.lang ?? ''),
+        email,
       })
 
       if (formID) {

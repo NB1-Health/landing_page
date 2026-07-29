@@ -36,6 +36,16 @@ export const EVENT_REGISTRY = {
     group: 'acquisition',
     destinationEvent: 'checkout_success_viewed',
   },
+  post_purchase_survey_viewed: {
+    stage: 330,
+    group: 'acquisition',
+    destinationEvent: 'post_purchase_survey_viewed',
+  },
+  post_purchase_survey_answered: {
+    stage: 340,
+    group: 'acquisition',
+    destinationEvent: 'post_purchase_survey_answered',
+  },
 } as const
 
 export type CanonicalEvent = keyof typeof EVENT_REGISTRY
@@ -225,15 +235,41 @@ export type LeadSuccessContext = {
   providerSubmissionId?: string
   pageLanguage?: string
   eventId?: string
+  email?: string
 }
 
 const leadSuccessTimes = new Map<string, number>()
+const LEAD_IDENTITY_WAIT_MS = 250
 
 export function resetLeadDedupe(): void {
   leadSuccessTimes.clear()
 }
 
-export function trackLeadSuccess(context: LeadSuccessContext): boolean {
+export function findSubmittedEmail(data: Record<string, unknown>): string | undefined {
+  const emailEntry = Object.entries(data).find(
+    ([name, value]) => name.toLowerCase().includes('email') && typeof value === 'string',
+  )
+  const email = emailEntry?.[1]
+  return typeof email === 'string' && email.trim() ? email : undefined
+}
+
+async function primeLeadIdentity(email: string): Promise<void> {
+  if (typeof window === 'undefined' || window.__nb1Consent?.targeted_advertising !== true) return
+
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      primeEnhancedUserData({ email }).then(() => undefined).catch(() => undefined),
+      new Promise<void>((resolve) => {
+        timeoutId = setTimeout(resolve, LEAD_IDENTITY_WAIT_MS)
+      }),
+    ])
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+}
+
+export async function trackLeadSuccess(context: LeadSuccessContext): Promise<boolean> {
   const now = Date.now()
   const dedupeKey = context.providerSubmissionId
     ? `${context.provider ?? 'provider'}:${context.providerSubmissionId}`
@@ -246,17 +282,25 @@ export function trackLeadSuccess(context: LeadSuccessContext): boolean {
   if (previous !== undefined && now - previous <= 1000) return false
   leadSuccessTimes.set(dedupeKey, now)
 
-  pushEvent('lead', {
-    ...(context.eventId ? { event_id: context.eventId } : {}),
-    lead_type: context.leadType,
-    ...(context.leadSource ? { lead_source: context.leadSource } : {}),
-    ...(context.formId ? { form_id: context.formId } : {}),
-    ...(context.provider ? { provider: context.provider } : {}),
-    ...(context.providerSubmissionId
-      ? { provider_submission_id: context.providerSubmissionId }
-      : {}),
-    ...(context.pageLanguage ? { page_language: context.pageLanguage } : {}),
-  })
+  if (context.email) await primeLeadIdentity(context.email)
+
+  void pushEventWithUser(
+    'lead',
+    {
+      ...(context.eventId ? { event_id: context.eventId } : {}),
+      lead_type: context.leadType,
+      ...(context.leadSource ? { lead_source: context.leadSource } : {}),
+      ...(context.formId ? { form_id: context.formId } : {}),
+      ...(context.provider ? { provider: context.provider } : {}),
+      ...(context.providerSubmissionId
+        ? { provider_submission_id: context.providerSubmissionId }
+        : {}),
+      ...(context.pageLanguage ? { page_language: context.pageLanguage } : {}),
+    },
+    {
+      email: context.email,
+    },
+  )
   return true
 }
 
@@ -429,9 +473,11 @@ export async function pushEventWithUser(
   }
 
   const user_data = buildCachedEnhancedUserData(fields)
+  const email_sha256 = cachedHash(fields.email, normBasic)
   pushEvent(event, {
     ...payload,
     ...(fields.userId ? { user_id: fields.userId } : {}),
+    ...(email_sha256 ? { email_sha256 } : {}),
     ...(user_data ? { user_data } : {}),
   })
 
@@ -462,8 +508,12 @@ export type SubscriptionAcquiredInput = {
 
 const acquisitionEventIds = new Map<string, string>()
 const successViews = new Set<string>()
+const postPurchaseSurveyViews = new Set<string>()
+const postPurchaseSurveyAnswers = new Map<string, string>()
 const ACQUISITION_STORAGE_PREFIX = 'nb1_acquisition_event:'
 const PAYMENT_ATTEMPT_STORAGE_PREFIX = 'nb1_payment_attempt:'
+const POST_PURCHASE_SURVEY_VIEW_STORAGE_PREFIX = 'nb1_pps_view_event:'
+const POST_PURCHASE_SURVEY_ANSWER_STORAGE_PREFIX = 'nb1_pps_answer_event:'
 
 function readSessionValue(key: string): string | null {
   if (typeof window === 'undefined') return null
@@ -486,6 +536,8 @@ function writeSessionValue(key: string, value: string): void {
 export function resetCheckoutTracking(): void {
   acquisitionEventIds.clear()
   successViews.clear()
+  postPurchaseSurveyViews.clear()
+  postPurchaseSurveyAnswers.clear()
 }
 
 export function nextPaymentAttempt(checkoutId: string): number {
@@ -543,6 +595,117 @@ export function trackCheckoutSuccessViewed(input: CheckoutSuccessViewedInput): b
     related_event_id: input.acquisitionEventId,
   })
   return true
+}
+
+export type PostPurchaseSurveyContext = {
+  checkoutId: string
+  acquisitionEventId: string
+  transactionId: string
+  customerId: string
+  externalId?: string
+  orderNumber?: string | null
+  email?: string
+  pageLanguage: string
+  surveyKey: string
+  surveyVersion: number
+  surveyPlacement: string
+}
+
+function postPurchaseSurveyInstanceKey(input: PostPurchaseSurveyContext): string {
+  return `${input.transactionId}:${input.surveyKey}:${input.surveyVersion}:${input.surveyPlacement}`
+}
+
+function consentApprovedSurveyIdentity(
+  input: Pick<PostPurchaseSurveyContext, 'customerId' | 'externalId'>,
+): Record<string, string> {
+  const hasIdentityConsent =
+    typeof window !== 'undefined' && window.__nb1Consent?.targeted_advertising === true
+  if (!hasIdentityConsent) return {}
+  return {
+    customer_id: input.customerId,
+    ...(input.externalId ? { external_id: input.externalId } : {}),
+  }
+}
+
+function postPurchaseSurveyPayload(input: PostPurchaseSurveyContext): Record<string, unknown> {
+  return {
+    checkout_id: input.checkoutId,
+    transaction_id: input.transactionId,
+    related_event_id: input.acquisitionEventId,
+    ...(input.orderNumber ? { order_number: input.orderNumber } : {}),
+    survey_key: input.surveyKey,
+    survey_version: input.surveyVersion,
+    survey_placement: input.surveyPlacement,
+    page_language: input.pageLanguage,
+    ...consentApprovedSurveyIdentity(input),
+  }
+}
+
+export function trackPostPurchaseSurveyViewed(input: PostPurchaseSurveyContext): boolean {
+  const instanceKey = postPurchaseSurveyInstanceKey(input)
+  const storageKey = `${POST_PURCHASE_SURVEY_VIEW_STORAGE_PREFIX}${instanceKey}`
+  if (postPurchaseSurveyViews.has(instanceKey) || readSessionValue(storageKey)) return false
+  postPurchaseSurveyViews.add(instanceKey)
+  const eventId = mintEventId()
+  writeSessionValue(storageKey, eventId)
+
+  void pushEventWithUser(
+    'post_purchase_survey_viewed',
+    {
+      event_id: eventId,
+      ...postPurchaseSurveyPayload(input),
+    },
+    {
+      userId: input.externalId,
+      email: input.email,
+    },
+  )
+  return true
+}
+
+export type PostPurchaseSurveyAnsweredInput = PostPurchaseSurveyContext & {
+  eventId?: string
+  questionKey: string
+  questionVersion: number
+  answerType: string
+  answerCode: string
+  answerDetailCode?: string
+  hasFreeText: boolean
+}
+
+function postPurchaseSurveyAnswerKey(input: PostPurchaseSurveyAnsweredInput): string {
+  return `${postPurchaseSurveyInstanceKey(input)}:${input.questionKey}:${input.questionVersion}`
+}
+
+export function trackPostPurchaseSurveyAnswered(input: PostPurchaseSurveyAnsweredInput): string {
+  const answerKey = postPurchaseSurveyAnswerKey(input)
+  const storageKey = `${POST_PURCHASE_SURVEY_ANSWER_STORAGE_PREFIX}${answerKey}`
+  const existing = postPurchaseSurveyAnswers.get(answerKey) ?? readSessionValue(storageKey)
+  if (existing) return existing
+
+  const eventId = input.eventId ?? mintEventId()
+  postPurchaseSurveyAnswers.set(answerKey, eventId)
+  writeSessionValue(storageKey, eventId)
+  void pushEventWithUser(
+    'post_purchase_survey_answered',
+    {
+      event_id: eventId,
+      ...postPurchaseSurveyPayload(input),
+      question_key: input.questionKey,
+      question_version: input.questionVersion,
+      answer_type: input.answerType,
+      answer_code: input.answerCode,
+      ...(input.answerDetailCode ? { answer_detail_code: input.answerDetailCode } : {}),
+      has_free_text: input.hasFreeText,
+      response_source: 'customer_reported',
+      persistence_status: 'client_only',
+    },
+    {
+      userId: input.externalId,
+      email: input.email,
+    },
+  )
+  return eventId
 }
 
 export type Nb1Item = {

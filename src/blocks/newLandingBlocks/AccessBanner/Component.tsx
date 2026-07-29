@@ -10,7 +10,7 @@ import RichText from '@/components/RichText'
 import { Button } from '@/components/ui/button'
 import { fields } from '@/blocks/Form/fields'
 import { getDictionary } from '@/i18n/getDictionary'
-import { trackLeadSuccess } from '@/lib/dataLayer'
+import { findSubmittedEmail, trackLeadSuccess } from '@/lib/dataLayer'
 
 export type AccessBannerBlockType = {
   blockName?: string
@@ -87,13 +87,14 @@ export const AccessBannerComponent: React.FC<Props> = (props) => {
           setIsLoading(false)
           setHasSubmitted(true)
 
-          trackLeadSuccess({
+          await trackLeadSuccess({
             leadType: 'form_submission',
             leadSource: 'access_banner',
             formId: String(formID),
             provider: 'payload_cms',
             providerSubmissionId: String(res?.doc?.id ?? res?.id ?? ''),
             pageLanguage: document.documentElement.lang || undefined,
+            email: findSubmittedEmail(data),
           })
 
           if (confirmationType === 'redirect' && redirect?.url) {
