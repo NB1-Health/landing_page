@@ -164,7 +164,7 @@ function ExpressLinkRow({
     <ExpressCheckoutElement
       onReady={({ availablePaymentMethods }) => onReadyChange(!!availablePaymentMethods)}
       onConfirm={onConfirm}
-      options={{ paymentMethods: { paypal: 'never', amazonPay: 'never', klarna: 'never' } }}
+      options={{ paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' } }}
     />
   )
 }
@@ -2811,7 +2811,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   </div>
                 </div>
 
-                {/* PayPal */}
+                {/* PayPal temporarily disabled: it cannot be charged off-session for recurring billing. */}
+                {false && (
                 <div className={`nb1-pm-row${payMethod === 'paypal' ? ' active' : ''}`}>
                   <button
                     type="button"
@@ -2828,6 +2829,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     <p className="nb1-pm-note">{t.payment.paypalNote}</p>
                   </div>
                 </div>
+                )}
 
                 {/* Klarna temporarily disabled: it cannot be charged off-session for recurring billing. */}
                 {false && (
