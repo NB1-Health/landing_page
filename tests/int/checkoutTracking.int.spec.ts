@@ -8,6 +8,8 @@ import {
   resolveRedirectPaymentType,
   setRedirectPaymentType,
   trackCheckoutSuccessViewed,
+  trackPostPurchaseSurveyAnswered,
+  trackPostPurchaseSurveyViewed,
   trackSubscriptionAcquired,
 } from '@/lib/dataLayer'
 
@@ -166,5 +168,145 @@ describe('checkout event boundaries', () => {
       transaction_id: 'subscription-1',
       related_event_id: 'acquisition-1',
     })
+  })
+
+  it('tracks one client-side PPS view and one normalized answer', () => {
+    const context = {
+      checkoutId: 'checkout-1',
+      acquisitionEventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      customerId: 'customer-1',
+      externalId: 'email-hash-1',
+      orderNumber: 'NB1-ABC234',
+      email: 'buyer@example.com',
+      pageLanguage: 'de',
+      surveyKey: 'checkout_attribution',
+      surveyVersion: 1,
+      surveyPlacement: 'checkout_confirmation',
+    }
+
+    expect(trackPostPurchaseSurveyViewed(context)).toBe(true)
+    expect(trackPostPurchaseSurveyViewed(context)).toBe(false)
+    resetCheckoutTracking()
+    expect(trackPostPurchaseSurveyViewed(context)).toBe(false)
+    expect(
+      trackPostPurchaseSurveyAnswered({
+        ...context,
+        eventId: 'pps-answer-1',
+        questionKey: 'discovery_source',
+        questionVersion: 1,
+        answerType: 'single_choice',
+        answerCode: 'social_media',
+        answerDetailCode: 'instagram',
+        hasFreeText: false,
+      }),
+    ).toBe('pps-answer-1')
+
+    const viewed = window.dataLayer.find(
+      (entry) => entry.canonical_event === 'post_purchase_survey_viewed',
+    )
+    expect(viewed).toMatchObject({
+      event: 'post_purchase_survey_viewed',
+      event_key: '330_post_purchase_survey_viewed',
+      customer_id: 'customer-1',
+      external_id: 'email-hash-1',
+      transaction_id: 'subscription-1',
+      survey_key: 'checkout_attribution',
+      survey_version: 1,
+      survey_placement: 'checkout_confirmation',
+    })
+
+    const answered = window.dataLayer.find(
+      (entry) => entry.canonical_event === 'post_purchase_survey_answered',
+    )
+    expect(answered).toMatchObject({
+      event: 'post_purchase_survey_answered',
+      event_key: '340_post_purchase_survey_answered',
+      event_id: 'pps-answer-1',
+      customer_id: 'customer-1',
+      external_id: 'email-hash-1',
+      transaction_id: 'subscription-1',
+      question_key: 'discovery_source',
+      question_version: 1,
+      answer_type: 'single_choice',
+      answer_code: 'social_media',
+      answer_detail_code: 'instagram',
+      has_free_text: false,
+      response_source: 'customer_reported',
+      persistence_status: 'client_only',
+    })
+  })
+
+  it('deduplicates PPS answers and omits identity without advertising consent', () => {
+    window.__nb1Consent = { analytics: true, targeted_advertising: false }
+    const input = {
+      checkoutId: 'checkout-1',
+      acquisitionEventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      customerId: 'customer-1',
+      externalId: 'email-hash-1',
+      email: 'buyer@example.com',
+      pageLanguage: 'en',
+      surveyKey: 'checkout_attribution',
+      surveyVersion: 1,
+      surveyPlacement: 'checkout_confirmation',
+      eventId: 'pps-answer-1',
+      questionKey: 'discovery_source',
+      questionVersion: 1,
+      answerType: 'single_choice',
+      answerCode: 'other',
+      hasFreeText: true,
+    }
+
+    expect(trackPostPurchaseSurveyAnswered(input)).toBe('pps-answer-1')
+    expect(trackPostPurchaseSurveyAnswered({ ...input, eventId: 'pps-answer-retry' })).toBe(
+      'pps-answer-1',
+    )
+
+    const answers = window.dataLayer.filter(
+      (entry) => entry.canonical_event === 'post_purchase_survey_answered',
+    )
+    expect(answers).toHaveLength(1)
+    expect(answers[0]).not.toHaveProperty('customer_id')
+    expect(answers[0]).not.toHaveProperty('external_id')
+    expect(answers[0]).not.toHaveProperty('user_id')
+    expect(answers[0]).not.toHaveProperty('user_data')
+    expect(answers[0]).not.toHaveProperty('answer_text')
+  })
+
+  it('keeps separate answer identities for future survey questions', () => {
+    const input = {
+      checkoutId: 'checkout-1',
+      acquisitionEventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      customerId: 'customer-1',
+      pageLanguage: 'en',
+      surveyKey: 'checkout_attribution',
+      surveyVersion: 1,
+      surveyPlacement: 'checkout_confirmation',
+      questionVersion: 1,
+      answerType: 'single_choice',
+      answerCode: 'social_media',
+      hasFreeText: false,
+    }
+
+    expect(
+      trackPostPurchaseSurveyAnswered({
+        ...input,
+        eventId: 'pps-discovery-1',
+        questionKey: 'discovery_source',
+      }),
+    ).toBe('pps-discovery-1')
+    expect(
+      trackPostPurchaseSurveyAnswered({
+        ...input,
+        eventId: 'pps-influence-1',
+        questionKey: 'purchase_influence',
+      }),
+    ).toBe('pps-influence-1')
+
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'post_purchase_survey_answered'),
+    ).toHaveLength(2)
   })
 })

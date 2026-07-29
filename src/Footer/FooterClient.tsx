@@ -90,18 +90,19 @@ export function FooterClient({
   }, [klaviyoFormId])
 
   useEffect(() => {
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       const detail = (e as CustomEvent<{ type: string; formId: string; metaData?: Record<string, string> }>).detail
       if (detail?.type !== 'submit' || detail?.formId !== klaviyoFormId) return
 
       const email = detail?.metaData?.$email
 
-      trackLeadSuccess({
+      await trackLeadSuccess({
         leadType: 'form_submission',
         leadSource: 'footer',
         formId: klaviyoFormId,
         provider: 'klaviyo',
         pageLanguage: locale,
+        email,
       })
 
       if (formID) {

@@ -57,6 +57,16 @@ describe('V1 event contract', () => {
         group: 'acquisition',
         destinationEvent: 'checkout_success_viewed',
       },
+      post_purchase_survey_viewed: {
+        stage: 330,
+        group: 'acquisition',
+        destinationEvent: 'post_purchase_survey_viewed',
+      },
+      post_purchase_survey_answered: {
+        stage: 340,
+        group: 'acquisition',
+        destinationEvent: 'post_purchase_survey_answered',
+      },
     })
 
     for (const [canonicalEvent, definition] of Object.entries(EVENT_REGISTRY)) {
@@ -293,10 +303,16 @@ describe('loss-resistant delivery', () => {
 describe('confirmed lead boundary', () => {
   beforeEach(() => {
     window.dataLayer = []
+    window.__nb1Consent = { analytics: true, targeted_advertising: true }
     resetLeadDedupe()
+    resetEnhancedUserDataCache()
+    vi.restoreAllMocks()
   })
 
-  it('emits lowercase canonical lead only once for a duplicated provider success callback', () => {
+  it('emits one lowercase canonical lead with consent-approved hashed identity', async () => {
+    vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
+      new Uint8Array([1, 2, 3]).buffer,
+    )
     const context = {
       leadType: 'newsletter',
       leadSource: 'footer',
@@ -304,10 +320,11 @@ describe('confirmed lead boundary', () => {
       provider: 'klaviyo',
       providerSubmissionId: 'submission-1',
       pageLanguage: 'en',
+      email: 'Person@Example.com',
     }
 
-    expect(trackLeadSuccess(context)).toBe(true)
-    expect(trackLeadSuccess(context)).toBe(false)
+    expect(await trackLeadSuccess(context)).toBe(true)
+    expect(await trackLeadSuccess(context)).toBe(false)
 
     expect(window.dataLayer).toHaveLength(2)
     expect(window.dataLayer[1]).toMatchObject({
@@ -320,6 +337,27 @@ describe('confirmed lead boundary', () => {
       provider: 'klaviyo',
       provider_submission_id: 'submission-1',
       page_language: 'en',
+      email_sha256: '010203',
+      user_data: {
+        sha256_email_address: '010203',
+      },
     })
+    expect(window.dataLayer[1]).not.toHaveProperty('email')
+  })
+
+  it('emits the lead without matching identity when advertising consent is denied', async () => {
+    window.__nb1Consent = { analytics: true, targeted_advertising: false }
+
+    expect(
+      await trackLeadSuccess({
+        leadType: 'newsletter',
+        leadSource: 'footer',
+        email: 'person@example.com',
+      }),
+    ).toBe(true)
+
+    expect(window.dataLayer[1]).not.toHaveProperty('email')
+    expect(window.dataLayer[1]).not.toHaveProperty('email_sha256')
+    expect(window.dataLayer[1]).not.toHaveProperty('user_data')
   })
 })
