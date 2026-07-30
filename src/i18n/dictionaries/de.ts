@@ -84,7 +84,7 @@ export const de = {
       titlePrefix: 'Fast ',
       titleAccent: 'geschafft.',
       subtitle:
-        'Deine E-Mail, deine Adresse, der Versand und die Zahlung – alles hier. Heute wird nichts abgebucht.',
+        'Deine E-Mail, deine Adresse, Versandart und die Zahlungsdaten - darf alles hier hinterlegt werden. Heute wird noch nichts abgebucht.',
     },
     steps: {
       email: 'Deine E-Mail',
@@ -98,8 +98,8 @@ export const de = {
     nameInvalid: 'Bitte einen gültigen Namen eingeben.',
     email: {
       label: 'E-Mail',
-      placeholder: 'du@email.de',
-      hint: 'Wir erstellen dein Konto und senden Sendungsverfolgung + Ergebnisse hierhin. Ein Passwort legst du fest, sobald dein Kit ankommt.',
+      placeholder: 'sie@email.de',
+      hint: 'Wir erstellen dein Konto und senden deine Sendungsverfolgung + Ergebnisse hierhin. Ein Passwort legst du fest, sobald dein Testkit bei dir ist.',
       invalid: 'Bitte gib eine gültige E-Mail-Adresse ein.',
       typoSuggestion: 'Meintest du {domain}?',
       useSuggestion: 'Übernehmen',
@@ -140,10 +140,10 @@ export const de = {
       cvcDigits: '3–4 Ziffern.',
       nameOnCard: 'Name auf der Karte',
       paypalNote:
-        'Du wirst zu PayPal weitergeleitet, um deinen Plan zu bestätigen. Heute wird nichts abgebucht – deine erste Zahlung erfolgt erst, wenn deine Formel hergestellt wird.',
+        'Du wirst zu PayPal weitergeleitet, um dein Abo zu bestätigen. Keine Sorge: Heute wird nichts abgebucht – deine erste Zahlung erfolgt erst, wenn deine persönliche Formel hergestellt wird.',
       klarna: 'Klarna',
       klarnaNote:
-        'Mit Klarna zahlen – auf Rechnung oder per Sofortüberweisung. Du bestätigst in Klarna; die erste Abbuchung erfolgt erst bei der Herstellung.',
+        'Mit Klarna zahlen – auf Rechnung oder per Sofortüberweisung. Sie bestätigen in Klarna; die erste Abbuchung erfolgt erst bei der Herstellung.',
       sepa: 'SEPA-Lastschrift',
       iban: 'IBAN',
       ibanPlaceholder: 'DE00 0000 0000 0000 0000 00',
@@ -180,9 +180,10 @@ export const de = {
       and: 'und der',
       privacyPolicy: 'Datenschutzerklärung',
       legalMid:
-        ' zu und willigst ein, dass NB1 deine biologische Probe verarbeitet. Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, erst wenn deine Formel in die Herstellung geht. Eine einmalige Gebühr von ',
+        ' zu und willigst ein, dass NB1 deine biologische Probe und Gesundheitsdaten verarbeitet, um deine persönliche Supplement-Formel zu erstellen. Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, und erst wenn deine Formel in die Herstellung geht. Eine einmalige Gebühr von ',
       feeBold: '€49',
-      legalEnd: 'fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird.',
+      legalEnd:
+        'fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird. NB1 ist für Erwachsene ab 18.',
       accountExists: 'Für diese E-Mail-Adresse existiert bereits ein Konto. Bitte melde dich an.',
       accountError: 'Dein Konto konnte nicht erstellt werden. Bitte versuche es erneut.',
     },
@@ -192,7 +193,7 @@ export const de = {
         'Dein Kit wird verschickt. Dann: Eine kurze Stuhlprobe. Du versiegelst sie im Beutel und sendest sie in der Box zurück.',
       step2:
         'Wir sequenzieren dein Mikrobiom und unser Wissenschafts- und Forschungsteam gibt deine NB1-Formel frei.',
-      step3: 'Erste Abbuchung, dann wird deine maßgeschneiderte Formel versandt.',
+      step3: 'Mit der ersten Abbuchung wird deine maßgeschneiderte NB1-Formel versandt.',
     },
     summary: {
       title: 'Deine Bestellung',
@@ -205,7 +206,7 @@ export const de = {
       monthly: 'Monatlich',
       editLink: 'Plan oder Laufzeit ändern',
       dueToday: '{zeroPrice} heute fällig',
-      note: 'Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, erst wenn deine Formel in die Herstellung geht.',
+      note: 'Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, erst wenn deine persönliche Supplement Formel in die Herstellung geht. Niemals vorher. Eine einmalige Gebühr von €49 fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird.',
     },
     done: {
       heading: 'Du bist dabei',
@@ -213,7 +214,7 @@ export const de = {
       eyebrow: 'Bestellung',
       inboxTitle: 'Sieh in deinen Posteingang',
       inboxBody:
-        'Wir haben deine Bestätigung an {email} gesendet. Öffne sie, um dein Passwort festzulegen und auf dein Dashboard zuzugreifen – keine Account-Details, die du dir jetzt merken musst.',
+        'Wir haben deine Bestätigung an {email} gesendet. Öffne sie, um dein Passwort festzulegen und auf dein Dashboard zuzugreifen – kein Konto, das du dir jetzt merken musst.',
       dashboard: 'Zu meinem Dashboard →',
       trackOrder: 'Bestellung verfolgen',
       helpLink: 'Brauchst du Hilfe?',
@@ -225,15 +226,15 @@ export const de = {
       },
       supportLine: 'oder',
       supportEmail: 'support@nb1.com',
-      chatUs: '💬 Chatte mit uns',
+      chatUs: '💬 Schreib uns im Chat',
       survey: {
         eyebrow: 'Hilf uns zu wachsen',
         question: 'Wie hast du NB1 gefunden?',
-        sub: 'Ein Klick – das hilft uns, mehr Menschen wie dich zu erreichen.',
+        sub: 'Ein Tipp – das hilft uns, mehr Menschen wie dich zu erreichen.',
         thanks: 'Verstanden, danke.',
-        thanksSub: 'Das hilft uns, mehr Menschen wie dich zu erreichen.',
+        thanksSub: 'Das hilft uns, mehr Menschen zu erreichen.',
         whichOne: 'Welche(r)?',
-        whichSub: 'Optional – klicke für mehr Genauigkeit.',
+        whichSub: 'Optional – tippe für mehr Genauigkeit.',
         somethingElse: 'Etwas anderes',
         placeholder: 'Sag uns, wo …',
         send: 'Senden',
@@ -290,7 +291,7 @@ export const de = {
           body: 'Dein Freund erhält seinen <strong>ersten Monat gratis</strong>. Du bekommst ebenfalls einen <strong>Gratismonat</strong>, gutgeschrieben, sobald seine Bestellung in die Herstellung geht.',
           msgLabel: 'Deine Nachricht',
           defaultMsg:
-            'Ich habe gerade mit NB1 begonnen – Nahrungsergänzung, personalisiert aus meinen eigenen Darmdaten, keine Schätzungen. Nutze meinen Link und dein erster Monat geht auf mich:',
+            'Ich habe gerade mit NB1 begonnen – Nahrungsergänzung, personalisiert aus meinen eigenen Darmdaten, kein Rätselraten. Nutze meinen Link und dein erster Monat geht auf mich:',
           copy: 'Kopieren',
           copied: 'Kopiert!',
           whatsapp: 'WhatsApp',
