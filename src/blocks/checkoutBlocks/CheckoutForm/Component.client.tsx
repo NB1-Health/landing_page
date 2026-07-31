@@ -35,6 +35,7 @@ import {
 import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
+import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
 import { ConfirmationScreen } from './ConfirmationScreen'
@@ -515,6 +516,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
      Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
+  // If Klarna was selected and the customer then switches to a country/currency where Klarna isn't a
+  // market, the row disappears — fall back to card so we never submit an unavailable method.
+  useEffect(() => {
+    if (payMethod === 'klarna' && !isKlarnaAvailable(COUNTRY_CODES[country], currency)) {
+      setPayMethod('card')
+    }
+  }, [payMethod, country, currency])
   const [cardName, setCardName] = useState('')
   const [cardComplete, setCardComplete] = useState(false)
   // Whether the Express Checkout Element (Link / Apple / Google Pay) has any
@@ -2844,8 +2852,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
                 )}
 
-                {/* Klarna: off-session recurring via Stripe Billing (subscriptions[] mandate) — verified end-to-end on STG. */}
-                {true && (
+                {/* Klarna: off-session recurring via Stripe Billing. Shown only where Klarna actually
+                    works (selected country + currency is a Klarna market) — see lib/klarnaMarkets. */}
+                {isKlarnaAvailable(COUNTRY_CODES[country], currency) && (
                 <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
                   <button
                     type="button"
