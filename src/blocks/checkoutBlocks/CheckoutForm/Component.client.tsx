@@ -761,7 +761,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* promo */
   const [promoInput, setPromoInput] = useState('')
   const [promoApplied, setPromoApplied] = useState<string | null>(null)
-  const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [promoMsg, setPromoMsg] = useState<{
+    text: string
+    ok: boolean
+    offerSwitch?: boolean
+  } | null>(null)
   const [promoOpenForm, setPromoOpenForm] = useState(false)
   const [promoOpenSidebar, setPromoOpenSidebar] = useState(false)
   const [promoPreview, setPromoPreview] = useState<{
@@ -771,6 +775,57 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     shipping_price: number
   } | null>(null)
   const [promoLoading, setPromoLoading] = useState(false)
+
+  // Formatted monthly price for a given cycle of the current family (mirrors the
+  // rateNum fallback chain) — used to label the plan-switch buttons.
+  const rateForCycle = (cyc: string) => {
+    const lp = planPrices[planKey]?.[cyc]
+    const n =
+      lp?.[currency] ??
+      lp?.EUR ??
+      STATIC_RATES_EUR[planKey]?.[cyc] ??
+      STATIC_RATES_EUR[planKey]?.['4'] ??
+      STATIC_RATES_EUR.core['4']
+    return fmt(n)
+  }
+
+  // One-click switch from the monthly plan to a 4/12-month term of the SAME
+  // family — offered when a discount code is restricted to longer plans. Updates
+  // the basket selection (price + summary re-derive from cycleKey) and clears the
+  // stale promo state so the visitor can re-apply the now-eligible code.
+  const switchCycle = (target: '4' | '12') => {
+    storePlanSelection({ plan: planKey, cycle: target })
+    setSelection((s) => ({ ...s, cycleKey: target }))
+    setPromoMsg(null)
+    setPromoPreview(null)
+  }
+
+  // Two switch buttons, shown only when the backend flags the code as excluded
+  // from the monthly plan (`offerSwitch`) — i.e. it exists but needs 4/12 months.
+  const renderPlanSwitch = () =>
+    promoMsg && !promoMsg.ok && promoMsg.offerSwitch ? (
+      <div className="nb1-promo-switch">
+        {(['4', '12'] as const).map((target) => (
+          <button
+            key={target}
+            type="button"
+            className="nb1-promo-switch-btn"
+            onClick={() => switchCycle(target)}
+          >
+            <span>
+              {t.promoUi.switchTemplate
+                .replace('{plan}', planLabel)
+                .replace(
+                  '{duration}',
+                  dict.plans.months[Number(target) as 1 | 4 | 12] ?? `${target} months`,
+                )
+                .replace('{price}', rateForCycle(target))}
+            </span>
+            <span aria-hidden="true">→</span>
+          </button>
+        ))}
+      </div>
+    ) : null
 
   /* ── Re-fetch preview when shipping or currency changes while promo applied ── */
   useEffect(() => {
@@ -1445,8 +1500,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           ok: true,
         })
       } else {
-        const errMsg = data.discount_message ?? dict.promo.invalid
-        setPromoMsg({ text: errMsg, ok: false })
+        // `exclude_one_month` marks a code that EXISTS but is restricted to
+        // longer plans. On the monthly plan that's the case where we show the
+        // targeted message + the 4/12 switch buttons; anything else stays a
+        // generic failure (e.g. code not found).
+        const excludedFromMonthly = Boolean(data.exclude_one_month) && cycleKey === 'monthly'
+        const errMsg = excludedFromMonthly
+          ? t.promoUi.excludeOneMonth
+          : (data.discount_message ?? dict.promo.invalid)
+        setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
         const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
         pushEvent('add_voucher_error', {
           event_id: mintEventId(),
@@ -2095,6 +2157,35 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         }
         .nb1-promo-msg.err {
           color: #c0392b;
+        }
+        /* One-click plan switch — shown when a promo is restricted to 4/12-month
+           plans and the basket is on the monthly (1-month) plan. */
+        .nb1-promo-switch {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        .nb1-promo-switch-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          width: 100%;
+          text-align: left;
+          background: rgba(10, 143, 176, 0.08);
+          border: 1px solid rgba(10, 143, 176, 0.18);
+          color: #0a8fb0;
+          font-family: inherit;
+          font-size: 13.5px;
+          font-weight: 600;
+          padding: 12px 16px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .nb1-promo-switch-btn:hover {
+          background: rgba(10, 143, 176, 0.14);
         }
 
         /* confirm button */
@@ -3167,6 +3258,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       {promoMsg.text}
                     </div>
                   )}
+                  {renderPlanSwitch()}
                   {promoApplied && (
                     <button
                       type="button"
@@ -3319,6 +3411,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     {promoMsg.text}
                   </div>
                 )}
+                {renderPlanSwitch()}
               </div>
             )}
 

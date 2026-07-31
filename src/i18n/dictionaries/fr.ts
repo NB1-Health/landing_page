@@ -155,6 +155,8 @@ export const fr = {
     },
     secured: 'Sécurisé par Stripe',
     promoUi: {
+      switchTemplate: 'Passer à {plan} {duration} · {price}/mois',
+      excludeOneMonth: 'Ce code est uniquement valable pour les durées de 4 ou 12 mois.',
       addCode: 'Ajouter un code de réduction',
       changeCode: 'Modifier le code',
       removeCode: 'Supprimer',

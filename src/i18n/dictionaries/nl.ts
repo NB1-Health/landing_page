@@ -155,6 +155,8 @@ export const nl = {
     },
     secured: 'Beveiligd door Stripe',
     promoUi: {
+      switchTemplate: 'Overstappen naar {plan} {duration} · {price}/mnd',
+      excludeOneMonth: 'Deze code is alleen geldig voor looptijden van 4 of 12 maanden.',
       addCode: 'Kortingscode toevoegen',
       changeCode: 'Code wijzigen',
       removeCode: 'Verwijderen',

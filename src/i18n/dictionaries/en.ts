@@ -159,6 +159,8 @@ export const en = {
     },
     secured: 'Secured by Stripe',
     promoUi: {
+      switchTemplate: 'Change to {plan} {duration} · {price}/mo',
+      excludeOneMonth: 'This code can only be used on 4 or 12-month plans.',
       addCode: 'Add discount code',
       changeCode: 'Change code',
       removeCode: 'Remove',
