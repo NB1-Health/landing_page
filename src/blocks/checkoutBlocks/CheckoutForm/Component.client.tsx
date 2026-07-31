@@ -2844,8 +2844,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
                 )}
 
-                {/* Klarna temporarily disabled: it cannot be charged off-session for recurring billing. */}
-                {false && (
+                {/* Klarna: off-session recurring via Stripe Billing (subscriptions[] mandate) — verified end-to-end on STG. */}
+                {true && (
                 <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
                   <button
                     type="button"
