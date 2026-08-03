@@ -83,6 +83,33 @@ export type CheckoutConfirmOut = {
   referral_share_url: string | null
 }
 
+export type PostPurchaseSurveyAnswerIn = {
+  question_key: string
+  question_version: number
+  answer_type: string
+  answer_code: string
+  answer_detail_code?: string
+  answer_text?: string
+  client_event_id?: string
+  answered_at?: string
+  metadata?: Record<string, unknown>
+}
+
+export type PostPurchaseSurveyResponseIn = {
+  user_id: string
+  transaction_id: string
+  survey_key: string
+  survey_version: number
+  survey_placement: string
+  page_language?: string
+  checkout_id?: string
+  related_event_id?: string
+  response_source: 'customer_reported'
+  context?: Record<string, unknown>
+  completed_at?: string
+  answers: PostPurchaseSurveyAnswerIn[]
+}
+
 export async function checkoutPaymentIntent(
   params: CheckoutPaymentIntentIn,
 ): Promise<CheckoutPaymentIntentOut> {
@@ -111,6 +138,27 @@ export async function checkoutConfirm(
     throw Object.assign(new Error(err?.detail ?? 'Checkout confirm failed'), { code: 'confirm_failed' })
   }
   return res.json()
+}
+
+/**
+ * Best-effort persistence for the post-purchase attribution survey. The backend
+ * is idempotent by survey/question and client event ID, so retries are safe.
+ * Never throws: saving a survey answer must not interrupt checkout confirmation.
+ */
+export async function persistPostPurchaseSurveyResponse(
+  params: PostPurchaseSurveyResponseIn,
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND}/post-purchase-surveys/public/responses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(params),
+      keepalive: true,
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 export interface CheckoutConfirmMetaSidecar {

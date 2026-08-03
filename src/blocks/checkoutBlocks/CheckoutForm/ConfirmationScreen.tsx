@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { persistPostPurchaseSurveyResponse } from '@/lib/checkoutApi'
 import {
   trackPostPurchaseSurveyAnswered,
   trackPostPurchaseSurveyViewed,
@@ -81,9 +82,15 @@ export function ConfirmationScreen({
     transactionId,
   ])
 
-  function recordAnswer(answerCode: string, answerDetailCode?: string, hasFreeText = false) {
+  function recordAnswer(
+    answerCode: string,
+    answerDetailCode?: string,
+    hasFreeText = false,
+    answerText?: string,
+  ) {
     if (!acquisitionEventId || !transactionId || !customerId) return
-    trackPostPurchaseSurveyAnswered({
+    const answeredAt = new Date().toISOString()
+    const clientEventId = trackPostPurchaseSurveyAnswered({
       checkoutId,
       acquisitionEventId,
       transactionId,
@@ -101,6 +108,37 @@ export function ConfirmationScreen({
       answerCode,
       answerDetailCode,
       hasFreeText,
+      persistenceStatus: 'backend_requested',
+    })
+
+    void persistPostPurchaseSurveyResponse({
+      user_id: customerId,
+      transaction_id: transactionId,
+      survey_key: SURVEY_KEY,
+      survey_version: SURVEY_VERSION,
+      survey_placement: SURVEY_PLACEMENT,
+      page_language: locale,
+      checkout_id: checkoutId,
+      related_event_id: acquisitionEventId,
+      response_source: 'customer_reported',
+      context: {
+        ...(orderNumber ? { order_number: orderNumber } : {}),
+        form: 'checkout_confirmation',
+      },
+      completed_at: answeredAt,
+      answers: [
+        {
+          question_key: QUESTION_KEY,
+          question_version: QUESTION_VERSION,
+          answer_type: 'single_choice',
+          answer_code: answerCode,
+          ...(answerDetailCode ? { answer_detail_code: answerDetailCode } : {}),
+          ...(answerText ? { answer_text: answerText } : {}),
+          client_event_id: clientEventId,
+          answered_at: answeredAt,
+          metadata: { has_free_text: hasFreeText },
+        },
+      ],
     })
   }
 
@@ -125,7 +163,7 @@ export function ConfirmationScreen({
 
   function onSurvSend() {
     if (!otherVal.trim()) return
-    recordAnswer('other', undefined, true)
+    recordAnswer('other', undefined, true, otherVal.trim())
     setSurvState('thanks')
   }
 
