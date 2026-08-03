@@ -127,7 +127,9 @@ export const PlanSelectorClient: React.FC<Props> = ({
       setPlans(
         plansProp!.map((plan) => {
           const family = plan.planKey === 'advanced' ? 'advanced' : 'core'
-          const rate = rateMap[`${family}:4`]
+          // Headline shows the 1-month standard price (€99 / €149), not the 4-month
+          // discount rate — longer-term discounts live at the cycle step.
+          const rate = rateMap[`${family}:1`]
           const apiBullets = extractBullets(apiPlans, family, locale)
           return {
             ...plan,
@@ -553,13 +555,9 @@ export const PlanSelectorClient: React.FC<Props> = ({
 
                 {plan.minNote && <div className="nb1-ps-min">{plan.minNote}</div>}
 
-                {plan.monthlyLinkText ? (
-                  <span className="nb1-ps-monthly">
-                    {plan.monthlyLinkText}
-                  </span>
-                ) : (
-                  <span className="nb1-ps-monthly nb1-ps-monthly-ghost">&nbsp;</span>
-                )}
+                {/* Monthly option hidden with the 1-month-standard model — 1 month is
+                    now the €99 standard, so the "pay monthly €109" upsell has no job.
+                    The ghost spacer is dropped too (both cards lose the line equally). */}
 
                 {plan.bullets && plan.bullets.length > 0 && (
                   <ul className="nb1-ps-bullets">

@@ -91,7 +91,7 @@ export const YpBuyBoxClient: React.FC<YpBuyBoxBlockType> = ({
       setOptions(
         (optionsProp ?? []).map((opt) => {
           const family = opt.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = opt.planFamily ? rateMap[`${family}:4`] : undefined
+          const rate = opt.planFamily ? rateMap[`${family}:1`] : undefined
           return {
             ...opt,
             price: rate != null ? formatPrice(rate, currency, locale) : undefined,
@@ -419,7 +419,8 @@ export const YpBuyBoxClient: React.FC<YpBuyBoxBlockType> = ({
                       {o.priceSuffix && <small> {o.priceSuffix}</small>}
                     </div>
                   )}
-                  {o.altLabel && <div className="bc-alt">{o.altLabel}</div>}
+                  {/* Retired with the 1-month-standard model (the "€109/mo monthly" pill). */}
+                  {/* {o.altLabel && <div className="bc-alt">{o.altLabel}</div>} */}
                   {o.description && <div className="bd">{o.description}</div>}
                   {o.ctaLabel && (
                     <span className="bc-go">

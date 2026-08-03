@@ -671,6 +671,7 @@ export type PostPurchaseSurveyAnsweredInput = PostPurchaseSurveyContext & {
   answerCode: string
   answerDetailCode?: string
   hasFreeText: boolean
+  persistenceStatus?: 'client_only' | 'backend_requested'
 }
 
 function postPurchaseSurveyAnswerKey(input: PostPurchaseSurveyAnsweredInput): string {
@@ -698,7 +699,7 @@ export function trackPostPurchaseSurveyAnswered(input: PostPurchaseSurveyAnswere
       ...(input.answerDetailCode ? { answer_detail_code: input.answerDetailCode } : {}),
       has_free_text: input.hasFreeText,
       response_source: 'customer_reported',
-      persistence_status: 'client_only',
+      persistence_status: input.persistenceStatus ?? 'client_only',
     },
     {
       userId: input.externalId,

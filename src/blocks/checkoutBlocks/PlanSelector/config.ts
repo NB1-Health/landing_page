@@ -89,13 +89,14 @@ export const PlanSelector: Block = {
           type: 'text',
           label: 'Monthly option link text',
           localized: true,
-          admin: { placeholder: 'or pay monthly, €109/mo, cancel anytime →' },
+          admin: { hidden: true, placeholder: 'or pay monthly, €109/mo, cancel anytime →' },
         },
         {
           name: 'monthlyLinkHref',
           type: 'text',
           label: 'Monthly option link href',
           localized: true,
+          admin: { hidden: true },
         },
         {
           name: 'ctaText',

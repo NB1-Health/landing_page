@@ -12,6 +12,11 @@ type Props = {
   switchLinkLabel?: string | null
   switchLinkHref?: string | null
   planFamily?: 'core' | 'advanced' | null
+  // New 1-month-standard tab labels.
+  flexTabLabel?: string | null
+  commitTabLabel?: string | null
+  flexNoteLabel?: string | null
+  // Retired fields — still spread through for schema compatibility, no longer rendered.
   showMonthlyOption?: boolean | null
   monthlyRate?: string | null
   monthlyCheckoutHref?: string | null

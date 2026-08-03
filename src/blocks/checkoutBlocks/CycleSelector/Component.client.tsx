@@ -24,10 +24,15 @@ import { getStoredPlanSelection, storePlanSelection } from '@/lib/plans/selectio
 
 // Tiers are always rendered in ascending 4/8/12 order (CMS seed and the API
 // path both sort that way), so tier index ↔ cycle key maps 1:1.
-const IDX_TO_CYCLE = ['4', '8', '12'] as const
+// The 1-month tier is keyed as the literal string 'monthly' everywhere
+// downstream (selectionStore's VALID_CYCLES allowlist, CheckoutForm's price/
+// label lookups) — never the numeric '1'. Keep that convention here too.
+const IDX_TO_CYCLE = ['monthly', '4', '12'] as const
 
 type Tier = {
   months?: string | null
+  /** Raw month number (1, 4, 12) — used to build tab-subtitle text like "4 or 12 months". */
+  month?: number
   monthlyRate?: string | null
   saveLabel?: string | null
   isBestValue?: boolean | null
@@ -45,13 +50,14 @@ type Props = {
   switchLinkHref?: string | null
   planFamily?: 'core' | 'advanced' | null
   tiers?: Tier[] | null
-  showMonthlyOption?: boolean | null
-  monthlyRate?: string | null
-  monthlyCheckoutHref?: string | null
   yourPlanLabel?: string | null
   bestValueLabel?: string | null
-  preferFlexibleLabel?: string | null
-  chooseFlexiblePrefix?: string | null
+  /** "Flexible" tab label (1-month, the new standard/default tab). */
+  flexTabLabel?: string | null
+  /** "Commit & save" tab label (4/12-month discount tiers). */
+  commitTabLabel?: string | null
+  /** Note under the flexible-tab price, e.g. "Standard · cancel anytime, no minimum". */
+  flexNoteLabel?: string | null
   continuePrefix?: string | null
   cancelAnytimeLabel?: string | null
   billedMonthlyShortLabel?: string | null
@@ -86,13 +92,11 @@ export const CycleSelectorClient: React.FC<Props> = ({
   switchLinkHref,
   planFamily,
   tiers: tiersProp,
-  showMonthlyOption,
-  monthlyRate,
-  monthlyCheckoutHref,
   yourPlanLabel,
   bestValueLabel,
-  preferFlexibleLabel,
-  chooseFlexiblePrefix,
+  flexTabLabel,
+  commitTabLabel,
+  flexNoteLabel,
   continuePrefix,
   cancelAnytimeLabel,
   billedMonthlyShortLabel,
@@ -105,8 +109,12 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const { ref, revealed } = useReveal()
   const dict = getDictionary(locale)
   const perMonth = dict.plans.perMonth
-  const [selectedIdx, setSelectedIdx] = useState(0)
-  const [monthlySelected, setMonthlySelected] = useState(false)
+  // Tiers are sorted ascending by month (1, 4, 12), so index 0 is always the
+  // 1-month "Flexible" tier (the new standard/default) and indices 1-2 are
+  // the "Commit & save" discount tiers. commitIdx remembers which commit row
+  // was last chosen so switching tabs back and forth doesn't lose it.
+  const [activeTab, setActiveTab] = useState<'flex' | 'commit'>('flex')
+  const [commitIdx, setCommitIdx] = useState(1)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [tiers, setTiers] = useState<Tier[]>(tiersProp ?? [])
   const currencyRef = useRef<string>('EUR')
@@ -121,7 +129,12 @@ export const CycleSelectorClient: React.FC<Props> = ({
     storePlanSelection({ plan: planFamily ?? undefined })
     const storedCycle = getStoredPlanSelection().cycle
     const idx = storedCycle ? IDX_TO_CYCLE.indexOf(storedCycle as (typeof IDX_TO_CYCLE)[number]) : -1
-    if (idx >= 0 && idx < (tiersProp?.length ?? IDX_TO_CYCLE.length)) setSelectedIdx(idx)
+    // idx 0 ('monthly') keeps the default flex tab; only a stored 4/12 pulls
+    // the visitor back into the commit tab on that specific tier.
+    if (idx === 1 || idx === 2) {
+      setActiveTab('commit')
+      setCommitIdx(idx)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -140,19 +153,23 @@ export const CycleSelectorClient: React.FC<Props> = ({
       planTitleRef.current =
         plans.find((p) => p.title.toLowerCase() === planFamily)?.title ?? family
       const familyPlans = plans
-        .filter((p) => p.title === family && [4, 8, 12].includes(p.month))
+        .filter((p) => p.title === family && [1, 4, 12].includes(p.month))
         .sort((a, b) => a.month - b.month)
-      const baselineRate = rateMap[`${planKey}:4`] ?? 0
+      // Savings anchor to the 1-month standard rate (the new baseline), so the
+      // commit tiers read "save €20 / €120 per cycle" vs month-to-month — not
+      // vs the old 4-month rate. Mirrors BASELINE_MONTH=1 in lib/plans/api.ts.
+      const baselineRate = rateMap[`${planKey}:1`] ?? 0
       setTiers(
         familyPlans.map((p) => {
           const rate = rateMap[`${planKey}:${p.month}`] ?? 0
           const savings = computeSavings(rate, baselineRate, p.month)
           return {
             months: formatMonthLabel(p.month, locale),
+            month: p.month,
             monthlyRate: formatPrice(rate, currency, locale),
             saveLabel: formatSavingsLabel(savings, currency, locale),
             isBestValue: p.is_preferred,
-            checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month}`,
+            checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
           }
         }),
       )
@@ -176,18 +193,30 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const activeTiers = tiers.length > 0 ? tiers : (tiersProp ?? [])
   const faqAnswerRefs = React.useRef<(HTMLDivElement | null)[]>([])
 
-  const activeTier = monthlySelected ? null : activeTiers?.[selectedIdx]
-  const activeRate = monthlySelected ? monthlyRate : activeTier?.monthlyRate
-  const activeHref = monthlySelected
-    ? (monthlyCheckoutHref ?? '#')
-    : (activeTier?.checkoutHref ?? '#')
-  const activeLabel = monthlySelected
-    ? (preferFlexibleLabel ?? 'Flexible monthly')
-    : (activeTier?.months ?? '')
+  const flexTier = activeTiers[0]
+  const commitTiers = activeTiers.slice(1)
+  // Localized "4 or 12 months": the trailing unit uses the already-localized
+  // month label ("12 Monate"/"12 mois"/…) and the conjunction is per-locale, so
+  // this isn't stuck in English like the old `${month} or ${month} months`.
+  const orWord = ({ de: 'oder', fr: 'ou', nl: 'of' } as Record<string, string>)[locale] ?? 'or'
+  const commitSubLabel =
+    commitTiers.length === 2
+      ? `${commitTiers[0].month} ${orWord} ${commitTiers[1].months}`
+      : (commitTiers.map((t) => t.months).filter(Boolean).join(', ') || undefined)
 
-  const selectTier = (idx: number) => {
-    setSelectedIdx(idx)
-    setMonthlySelected(false)
+  const selectedIdx = activeTab === 'flex' ? 0 : commitIdx
+  const activeTier = activeTiers[selectedIdx]
+  const activeRate = activeTier?.monthlyRate
+  const activeHref = activeTier?.checkoutHref ?? '#'
+  const activeLabel = activeTier?.months ?? ''
+
+  const selectFlex = () => {
+    setActiveTab('flex')
+    storePlanSelection({ plan: planFamily ?? undefined, cycle: 'monthly' })
+  }
+  const selectCommit = (idx: number = commitIdx) => {
+    setActiveTab('commit')
+    setCommitIdx(idx)
     storePlanSelection({ plan: planFamily ?? undefined, cycle: IDX_TO_CYCLE[idx] })
   }
 
@@ -241,109 +270,158 @@ export const CycleSelectorClient: React.FC<Props> = ({
           border-bottom-color: #0a8fb0;
         }
 
-        /* Tier cards */
-        .nb1-cs-boxes {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 14px;
+        /* Flexible vs Commit & save tabs — 1 month is the default/standard tab;
+           4 & 12 months live as discount rows inside the Commit & save tab. */
+        .nb1-cs-tabs {
+          display: flex;
+          border: 1px solid rgba(18, 49, 77, 0.1);
+          border-radius: 12px;
+          overflow: hidden;
         }
-        .nb1-cs-box {
-          position: relative;
+        .nb1-cs-tab {
+          flex: 1;
+          display: flex;
+          flex-direction: row;
+          align-items: baseline;
+          justify-content: center;
+          flex-wrap: nowrap;
+          gap: 6px;
+          border: none;
+          border-right: 1px solid rgba(18, 49, 77, 0.1);
           background: #fff;
-          border: 1.5px solid rgba(18, 49, 77, 0.1);
-          border-radius: 14px;
-          padding: 24px 20px 20px;
-          text-align: left;
           cursor: pointer;
+          padding: 14px;
+          font-family: inherit;
+          transition: background 0.18s;
+        }
+        .nb1-cs-tab:last-child {
+          border-right: none;
+        }
+        .nb1-cs-tab:not(.on):hover {
+          background: rgba(18, 49, 77, 0.03);
+        }
+        .nb1-cs-tab.on {
+          background: #12314d;
+        }
+        .nb1-cs-tab-m {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 14px;
+          color: #12314d;
+          white-space: nowrap;
+        }
+        .nb1-cs-tab.on .nb1-cs-tab-m {
+          color: #fff;
+        }
+        .nb1-cs-tab-s {
+          font-size: 11px;
+          color: rgba(18, 49, 77, 0.4);
+          white-space: nowrap;
+        }
+        .nb1-cs-tab.on .nb1-cs-tab-s {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Flexible panel — big standard price, no minimum */
+        .nb1-cs-flex {
+          text-align: center;
+          padding: 22px 0 6px;
+        }
+        .nb1-cs-flex-big {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 44px;
+          letter-spacing: -0.03em;
+          color: #12314d;
+          line-height: 1;
+        }
+        .nb1-cs-flex-big i {
+          font-style: normal;
+          font-size: 16px;
+          color: rgba(18, 49, 77, 0.4);
+          font-weight: 500;
+          font-family: 'Inter', sans-serif;
+        }
+        .nb1-cs-flex-note {
+          font-size: 12.5px;
+          color: rgba(18, 49, 77, 0.55);
+          margin-top: 8px;
+        }
+
+        /* Commit & save panel — 4/12-month discount rows */
+        .nb1-cs-commit {
           display: flex;
           flex-direction: column;
-          gap: 5px;
+          gap: 10px;
+          padding-top: 16px;
+        }
+        .nb1-cs-crow {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          width: 100%;
+          background: #fff;
+          border: 1.5px solid rgba(18, 49, 77, 0.1);
+          border-radius: 13px;
+          padding: 14px 18px;
+          text-align: left;
+          cursor: pointer;
+          font-family: inherit;
           transition:
             border-color 0.15s,
             box-shadow 0.15s;
         }
-        .nb1-cs-box:hover {
+        .nb1-cs-crow:hover {
           border-color: rgba(10, 143, 176, 0.22);
         }
-        .nb1-cs-box.on {
+        .nb1-cs-crow.on {
           border-color: #0a8fb0;
           box-shadow: 0 0 0 3px rgba(10, 143, 176, 0.08);
         }
-        .nb1-cs-tag {
+        .nb1-cs-crow-tl {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .nb1-cs-crow-tl b {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 15px;
+          color: #12314d;
+        }
+        .nb1-cs-crow-tl span {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #0a8fb0;
+        }
+        .nb1-cs-crow-p {
+          font-family: 'Instrument Sans', 'Inter', sans-serif;
+          font-weight: 600;
+          font-size: 20px;
+          letter-spacing: -0.02em;
+          color: #12314d;
+        }
+        .nb1-cs-crow-p i {
+          font-style: normal;
+          font-size: 11px;
+          color: rgba(18, 49, 77, 0.4);
+          font-weight: 500;
+          font-family: 'Inter', sans-serif;
+        }
+        .nb1-cs-crow-tag {
           position: absolute;
           top: -9px;
-          left: 18px;
-          white-space: nowrap;
-          font-size: 9.5px;
+          right: 16px;
+          font-size: 9px;
           font-weight: 700;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.06em;
           text-transform: uppercase;
           color: #0e2740;
           background: #c6ff5b;
           border-radius: 100px;
           padding: 3px 9px;
-        }
-        .nb1-cs-dur {
-          font-size: 13px;
-          font-weight: 600;
-          color: rgba(18, 49, 77, 0.55);
-        }
-        .nb1-cs-rate {
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: 32px;
-          letter-spacing: -0.02em;
-          line-height: 1;
-          color: #12314d;
-        }
-        .nb1-cs-rate i {
-          font-style: normal;
-          font-size: 13px;
-          color: rgba(18, 49, 77, 0.4);
-          font-family: 'Inter', sans-serif;
-          font-weight: 500;
-        }
-        .nb1-cs-save {
-          font-size: 12px;
-          font-weight: 600;
-          color: rgba(18, 49, 77, 0.4);
-          min-height: 16px;
-        }
-        .nb1-cs-save.has-save {
-          color: #0a8fb0;
-        }
-
-        /* Monthly option */
-        .nb1-cs-monthly {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          background: none;
-          border: none;
-          padding: 8px 2px;
-          margin-top: 16px;
-          cursor: pointer;
-          font-family: 'Inter', sans-serif;
-          font-size: 13px;
-          color: rgba(18, 49, 77, 0.55);
-          text-align: left;
-          transition: color 0.15s;
-        }
-        .nb1-cs-monthly:hover {
-          color: #0a8fb0;
-        }
-        .nb1-cs-monthly.on {
-          color: #0a8fb0;
-          font-weight: 600;
-        }
-        .nb1-cs-ml {
-          text-decoration: underline;
-          text-underline-offset: 3px;
-          text-decoration-color: rgba(18, 49, 77, 0.1);
-        }
-        .nb1-cs-monthly:hover .nb1-cs-ml,
-        .nb1-cs-monthly.on .nb1-cs-ml {
-          text-decoration-color: #0a8fb0;
         }
 
         /* Guarantee strip */
@@ -517,9 +595,6 @@ export const CycleSelectorClient: React.FC<Props> = ({
         }
 
         @media (max-width: 640px) {
-          .nb1-cs-boxes {
-            grid-template-columns: 1fr;
-          }
           .nb1-cs-foot {
             flex-direction: column;
             align-items: stretch;
@@ -551,49 +626,66 @@ export const CycleSelectorClient: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Tier boxes */}
+        {/* Flexible (1-month, standard) vs Commit & save (4/12-month discounts) */}
         {activeTiers && activeTiers.length > 0 && (
-          <div className="nb1-cs-boxes">
-            {activeTiers.map((tier, i) => (
+          <>
+            <div className="nb1-cs-tabs">
               <button
-                key={i}
                 type="button"
-                className={`nb1-cs-box${!monthlySelected && selectedIdx === i ? ' on' : ''}`}
-                onClick={() => selectTier(i)}
+                className={`nb1-cs-tab${activeTab === 'flex' ? ' on' : ''}`}
+                onClick={selectFlex}
               >
-                {tier.isBestValue && (
-                  <span className="nb1-cs-tag">{bestValueLabel ?? 'Best value'}</span>
-                )}
-                <span className="nb1-cs-dur">{tier.months}</span>
-                <span className="nb1-cs-rate">
-                  {tier.monthlyRate}
-                  <i>{perMonth}</i>
-                </span>
-                <span className={`nb1-cs-save${tier.saveLabel ? ' has-save' : ''}`}>
-                  {tier.saveLabel ?? ' '}
-                </span>
+                <span className="nb1-cs-tab-m">{flexTabLabel}</span>
+                <span className="nb1-cs-tab-s">{flexTier?.months ?? '1 month'}</span>
               </button>
-            ))}
-          </div>
-        )}
+              <button
+                type="button"
+                className={`nb1-cs-tab${activeTab === 'commit' ? ' on' : ''}`}
+                onClick={() => selectCommit()}
+              >
+                <span className="nb1-cs-tab-m">{commitTabLabel}</span>
+                {commitSubLabel && <span className="nb1-cs-tab-s">{commitSubLabel}</span>}
+              </button>
+            </div>
 
-        {/* Monthly flexible option */}
-        {showMonthlyOption && monthlyRate && (
-          <button
-            type="button"
-            className={`nb1-cs-monthly${monthlySelected ? ' on' : ''}`}
-            onClick={() => {
-              setMonthlySelected(true)
-              storePlanSelection({ plan: planFamily ?? undefined, cycle: 'monthly' })
-              if (monthlyCheckoutHref) window.location.href = monthlyCheckoutHref
-            }}
-          >
-            {preferFlexibleLabel ?? 'Prefer to stay flexible?'}{' '}
-            <span className="nb1-cs-ml">
-              {chooseFlexiblePrefix ?? 'Choose Flexible monthly ·'} {monthlyRate}
-              {perMonth}
-            </span>
-          </button>
+            {activeTab === 'flex' && flexTier && (
+              <div className="nb1-cs-flex">
+                <div className="nb1-cs-flex-big">
+                  {flexTier.monthlyRate}
+                  <i>{perMonth}</i>
+                </div>
+                <div className="nb1-cs-flex-note">{flexNoteLabel}</div>
+              </div>
+            )}
+
+            {activeTab === 'commit' && (
+              <div className="nb1-cs-commit">
+                {commitTiers.map((tier, i) => {
+                  const idx = i + 1
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`nb1-cs-crow${commitIdx === idx ? ' on' : ''}`}
+                      onClick={() => selectCommit(idx)}
+                    >
+                      {tier.isBestValue && (
+                        <span className="nb1-cs-crow-tag">{bestValueLabel ?? 'Best value'}</span>
+                      )}
+                      <span className="nb1-cs-crow-tl">
+                        <b>{tier.months}</b>
+                        {tier.saveLabel && <span>{tier.saveLabel}</span>}
+                      </span>
+                      <span className="nb1-cs-crow-p">
+                        {tier.monthlyRate}
+                        <i>{perMonth}</i>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {/* Guarantee strip */}
@@ -621,7 +713,7 @@ export const CycleSelectorClient: React.FC<Props> = ({
               {perMonth}
             </b>{' '}
             ·{' '}
-            {monthlySelected
+            {activeTab === 'flex'
               ? (cancelAnytimeLabel ?? 'cancel anytime')
               : (billedMonthlyShortLabel ?? 'billed monthly')}
           </div>
@@ -633,7 +725,10 @@ export const CycleSelectorClient: React.FC<Props> = ({
               const params = new URL(activeHref, window.location.href).searchParams
               const cycleKey = params.get('cycle') ?? '4'
               const planKey = params.get('plan') ?? planFamily ?? 'core'
-              const rate = rateMapRef.current[`${planKey}:${cycleKey}`]
+              // rateMapRef is keyed by the raw month number (see buildRateMap), while
+              // the 1-month tier's cycle param/storage key is the string 'monthly'.
+              const rateMonthKey = cycleKey === 'monthly' ? '1' : cycleKey
+              const rate = rateMapRef.current[`${planKey}:${rateMonthKey}`]
               if (rate != null) {
                 event.preventDefault()
                 const atcId = mintEventId()

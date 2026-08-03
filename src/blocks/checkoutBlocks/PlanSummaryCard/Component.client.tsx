@@ -16,7 +16,7 @@ type Bullet = { text?: string | null }
 type Props = {
   sectionTitle?: string | null
   planVariant?: 'core' | 'advanced' | null
-  cycleMonth?: '4' | '8' | '12' | null
+  cycleMonth?: 'monthly' | '1' | '4' | '12' | null
   planName?: string | null
   priceNote?: string | null
   switchLinkText?: string | null
@@ -54,7 +54,10 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
 
   useEffect(() => {
     const family = planVariant === 'advanced' ? 'advanced' : 'core'
-    const month = Number(cycleMonth) || 4
+    // 'monthly' is the 1-month standard's cycle key everywhere downstream;
+    // map it (and a null/blank config) to the month=1 rate. Never fall back to
+    // 4 — that would mislabel/mis-price a flexible order as a 4-month commit.
+    const month = cycleMonth === 'monthly' ? 1 : Number(cycleMonth) || 1
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
       const rateMap = buildRateMap(plans, currency)

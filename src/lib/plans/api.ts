@@ -4,20 +4,21 @@
  * Backend: GET {NB1_API_URL}/subscriptions/plans, /subscriptions/plans/slug/{slug}
  * Docs: https://apistg.nb1.com/docs#/Subscriptions
  *
- * Scope note: the cycle GRID (getPlanCycles) models only month=4, 8, 12 — the
- * commitment tiers. The API also returns a month=1 "flexible monthly" row for
- * each family (NB1-CORE-1, NB1-ADVANCED-1). That row is kept out of the grid,
- * but ANY month (incl. 1) can be resolved live for free-text price tokens via
- * getRate() — see src/lib/plans/priceTokens.ts (e.g. "{{price:core:1}}" →
- * "€109"). Prices are no longer hand-typed in Payload copy.
+ * Scope note: under the 1-month-standard commitment model the cycle GRID
+ * (getPlanCycles) models month=1, 4, 12 — month=1 is now the STANDARD tier
+ * (the "Flexible" default), and 4 & 12 are the optional discount tiers. The
+ * 8-month tier has been retired. Each family must expose a month=1 row
+ * (NB1-CORE-1, NB1-ADVANCED-1) in the API for this to resolve; any month can
+ * also be resolved live for free-text price tokens via getRate() — see
+ * src/lib/plans/priceTokens.ts. Prices are no longer hand-typed in Payload copy.
  */
 import type { CurrencyCode } from '@/utilities/currency'
 
 export type PlanFamily = 'Core' | 'Advanced'
-export type PlanMonth = 4 | 8 | 12
+export type PlanMonth = 1 | 4 | 12
 
-const SUPPORTED_MONTHS: PlanMonth[] = [4, 8, 12]
-const BASELINE_MONTH: PlanMonth = 4
+const SUPPORTED_MONTHS: PlanMonth[] = [1, 4, 12]
+const BASELINE_MONTH: PlanMonth = 1
 
 // Reuses the same backend host already configured for the rest of the app
 // (see src/lib/createAccount.ts) rather than introducing a second env var.
@@ -82,15 +83,13 @@ function toOptionsList(options: Record<string, string>): string[] {
 }
 
 /**
- * Computes "savings vs the 4-month rate" ourselves rather than trusting the
- * API's `discount` field. The API anchors `discount` to the cheapest
- * available cycle for that family — which is month=1 for Advanced (since
- * NB1-ADVANCED-1 exists) but month=4 for Core (since there's no
- * NB1-CORE-1). Since month=1 is out of scope (see file header), using the
- * raw `discount` field directly would silently change Advanced's savings
- * copy (e.g. would show "€224 / cycle" for the 8-month tier instead of the
- * "€64 / cycle" the existing site copy uses). Recomputing against the
- * 4-month baseline keeps both families consistent and matches existing copy.
+ * Computes "savings vs the 1-month standard rate" ourselves rather than
+ * trusting the API's `discount` field. Under the commitment model the
+ * standard is month=1, so savings for the 4- and 12-month discount tiers are
+ * anchored to each family's month=1 rate (BASELINE_MONTH). This matches the
+ * brief's copy (Core: 4mo "save €20 / cycle" = (99−94)×4, 12mo "save €120 /
+ * cycle" = (99−89)×12). If a family has no month=1 row the baseline resolves
+ * to 0 and savings will be wrong — every family must expose month=1.
  */
 function computeSavings(
   monthlyRateAtMonth: number,
@@ -102,7 +101,7 @@ function computeSavings(
 
 /**
  * Fetch every (family × month) combination needed to render a full
- * 4/8/12 cycle grid for one plan family, resolved into the given currency.
+ * 1/4/12 cycle grid for one plan family, resolved into the given currency.
  */
 export async function getPlanCycles(
   family: PlanFamily,
@@ -135,7 +134,7 @@ export async function getPlanCycles(
 
 /**
  * Monthly rate for one (family, month) pair, for ANY month the API returns —
- * including month=1 (the "flexible monthly" tier excluded from the cycle grid).
+ * including months outside the cycle grid (e.g. a retired 8-month row).
  * Used by the per-card Monthly Note. Returns null if that row doesn't exist.
  */
 export async function getRate(

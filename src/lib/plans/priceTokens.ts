@@ -19,11 +19,9 @@
  * Available tokens (each resolves to the live rate, visitor currency):
  *   {{price:core:1}}       Core — monthly / flexible (1-month) rate
  *   {{price:core:4}}       Core — 4-month cycle rate
- *   {{price:core:8}}       Core — 8-month cycle rate
  *   {{price:core:12}}      Core — 12-month cycle rate
  *   {{price:advanced:1}}   Advanced — monthly / flexible (1-month) rate
  *   {{price:advanced:4}}   Advanced — 4-month cycle rate
- *   {{price:advanced:8}}   Advanced — 8-month cycle rate
  *   {{price:advanced:12}}  Advanced — 12-month cycle rate
  * (Any other month the API returns for a family also works — the list above is
  *  just what exists today. family is case-insensitive.)

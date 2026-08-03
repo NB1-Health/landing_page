@@ -6,7 +6,7 @@ type Bullet = { text?: string | null }
 type Props = {
   sectionTitle?: string | null
   planVariant?: 'core' | 'advanced' | null
-  cycleMonth?: '4' | '8' | '12' | null
+  cycleMonth?: 'monthly' | '1' | '4' | '12' | null
   planName?: string | null
   priceNote?: string | null
   switchLinkText?: string | null

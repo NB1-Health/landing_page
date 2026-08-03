@@ -113,7 +113,7 @@ export const YpBuyBoxBlock: Block = {
           },
         },
         { name: 'priceSuffix', label: 'Price Suffix', type: 'text', localized: true, defaultValue: '/mo', admin: { description: 'Small text after price (e.g. "/mo").' } },
-        { name: 'altLabel', label: 'Alt Pill Label', type: 'text', localized: true, admin: { description: 'Optional teal pill. Use a token for the price, e.g. "or {{price:core:1}}/mo, monthly · cancel anytime".' } },
+        { name: 'altLabel', label: 'Alt Pill Label', type: 'text', localized: true, admin: { hidden: true, description: 'Retired with the 1-month-standard model (the "€109/mo monthly" pill). Hidden from the admin UI and no longer rendered; kept in the schema so no migration is needed.' } },
         { name: 'description', label: 'Description', type: 'textarea', localized: true },
         { name: 'ctaLabel', label: 'CTA Label', type: 'text', localized: true, admin: { description: 'e.g. "Order Core kit" — the → arrow is added automatically.' } },
         { name: 'ctaHref', label: 'CTA URL', type: 'text', localized: true, defaultValue: '#' },

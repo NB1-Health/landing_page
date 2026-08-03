@@ -39,14 +39,39 @@ export const CycleSelector: Block = {
       ],
       admin: {
         description:
-          'The 4/8/12-month price grid below is fetched live from the subscriptions API for this plan family — it is not editable here. Checkout links are generated as {locale order-details slug}?plan={family}&cycle={month}.',
+          'The 1/4/12-month price grid below is fetched live from the subscriptions API for this plan family — it is not editable here. 1 month is the standard (the "Flexible" tab); 4 & 12 months are the discount tiers. Checkout links are generated as {locale order-details slug}?plan={family}&cycle={month} (the 1-month tier uses cycle=monthly).',
       },
     },
+    {
+      name: 'flexTabLabel',
+      type: 'text',
+      label: '"Flexible" tab label (1-month standard)',
+      localized: true,
+      admin: { placeholder: 'Flexible' },
+    },
+    {
+      name: 'commitTabLabel',
+      type: 'text',
+      label: '"Commit & save" tab label (4/12-month discounts)',
+      localized: true,
+      admin: { placeholder: 'Commit & save' },
+    },
+    {
+      name: 'flexNoteLabel',
+      type: 'text',
+      label: 'Note under the flexible-tab price',
+      localized: true,
+      admin: { placeholder: 'Standard · cancel anytime, no minimum' },
+    },
+    // ── Retired with the 1-month-standard model. Kept in the schema (no
+    //    migration / no data loss) but hidden from the admin UI; the client
+    //    component no longer reads them. Safe to remove in a later cleanup.
     {
       name: 'showMonthlyOption',
       type: 'checkbox',
       label: 'Show flexible monthly option',
       defaultValue: false,
+      admin: { hidden: true },
     },
     {
       name: 'monthlyRate',
@@ -54,6 +79,7 @@ export const CycleSelector: Block = {
       label: 'Flexible monthly rate (e.g. €109)',
       localized: true,
       admin: {
+        hidden: true,
         condition: (_, siblingData) => siblingData?.showMonthlyOption,
         placeholder: '€109',
       },
@@ -64,6 +90,7 @@ export const CycleSelector: Block = {
       label: 'Flexible monthly checkout href',
       localized: true,
       admin: {
+        hidden: true,
         condition: (_, siblingData) => siblingData?.showMonthlyOption,
         placeholder: '/order-details?plan=core&cycle=monthly',
       },
@@ -88,6 +115,7 @@ export const CycleSelector: Block = {
       label: '"Prefer to stay flexible?" label',
       localized: true,
       admin: {
+        hidden: true,
         placeholder: 'Prefer to stay flexible?',
         condition: (_, siblingData) => siblingData?.showMonthlyOption,
       },
@@ -98,6 +126,7 @@ export const CycleSelector: Block = {
       label: '"Choose Flexible monthly" prefix',
       localized: true,
       admin: {
+        hidden: true,
         placeholder: 'Choose Flexible monthly ·',
         condition: (_, siblingData) => siblingData?.showMonthlyOption,
       },

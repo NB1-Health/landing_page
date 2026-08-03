@@ -42,7 +42,7 @@ export const en = {
     viewBio: 'View bio',
   },
   plans: {
-    months: { 4: '4 months', 8: '8 months', 12: '12 months' } as Record<4 | 8 | 12, string>,
+    months: { 1: '1 month', 4: '4 months', 12: '12 months' } as Record<1 | 4 | 12, string>,
     perMonth: '/mo',
     savingsPrefix: 'Save',
     savingsSuffix: '/ cycle',
@@ -159,6 +159,8 @@ export const en = {
     },
     secured: 'Secured by Stripe',
     promoUi: {
+      switchTemplate: 'Change to {plan} {duration} · {price}/mo',
+      excludeOneMonth: 'This code can only be used on 4 or 12-month plans.',
       addCode: 'Add discount code',
       changeCode: 'Change code',
       removeCode: 'Remove',

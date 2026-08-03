@@ -35,6 +35,7 @@ import {
 import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
+import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
 import { ConfirmationScreen } from './ConfirmationScreen'
@@ -53,8 +54,8 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 // fails. Live prices (in the visitor's selected currency) replace these on load.
 // 'monthly' (flexible, month=1) is included here as a fallback too.
 const STATIC_RATES_EUR: Record<string, Record<string, number>> = {
-  core: { '4': 99, '8': 94, '12': 89, monthly: 109 },
-  advanced: { '4': 149, '8': 141, '12': 134 },
+  core: { '4': 99, '12': 89, monthly: 109 },
+  advanced: { '4': 149, '12': 134 },
 }
 
 const COUNTRIES = [
@@ -189,12 +190,23 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Plan/cycle selection: snapshotted once before the URL is cleaned below.
-  // URL params win (fresh arrival from the cycle page); otherwise fall back to
-  // the selection persisted in sessionStorage — the URL cleanup removes the
-  // params, so without this a page refresh would silently reset the order to
-  // core/4 while the form fields (also sessionStorage-backed) survive.
-  const [{ planKey, cycleKey, hasValidSelection }] = useState(() => {
+  // Plan/cycle selection. Resolved AFTER mount (in the effect below), NOT in the
+  // initial render: the persisted selection lives in sessionStorage, which the
+  // server can't read, so reading it during the SSR/hydration render makes the
+  // server (defaults) and client (stored selection) diverge and throws a
+  // hydration error. The first render uses the same core/4 defaults the server
+  // produces; the effect then applies the real URL / sessionStorage selection.
+  const [{ planKey, cycleKey, hasValidSelection }, setSelection] = useState<{
+    planKey: string
+    cycleKey: string
+    hasValidSelection: boolean
+  }>({ planKey: 'core', cycleKey: '4', hasValidSelection: false })
+
+  // On mount: resolve selection (URL params win over stored — fresh arrival from
+  // the cycle page), persist it, then strip plan/cycle from the URL while keeping
+  // Stripe redirect params intact. sessionStorage is only touched here, never
+  // during render, so there's no server/client divergence.
+  useEffect(() => {
     const saved = getStoredPlanSelection()
     const fromUrl: PlanSelection = {
       plan: searchParams?.get('plan') ?? undefined,
@@ -202,15 +214,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
     storePlanSelection({ ...saved, ...fromUrl })
     const applied = getStoredPlanSelection()
-    return {
+    setSelection({
       planKey: applied.plan ?? 'core',
       cycleKey: applied.cycle ?? '4',
       hasValidSelection: Boolean(applied.plan && applied.cycle),
-    }
-  })
+    })
 
-  // Strip plan/cycle from URL once read — keeps Stripe redirect params intact
-  useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '')
     params.delete('plan')
     params.delete('cycle')
@@ -321,8 +330,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   const monthNum = Number(cycleKey)
   const durationLabel =
-    !Number.isNaN(monthNum) && dict.plans.months[monthNum as 4 | 8 | 12]
-      ? dict.plans.months[monthNum as 4 | 8 | 12]
+    !Number.isNaN(monthNum) && dict.plans.months[monthNum as 1 | 4 | 12]
+      ? dict.plans.months[monthNum as 1 | 4 | 12]
       : cycleKey === 'monthly'
         ? t.summary.cancelAnytime
         : cycleKey
@@ -334,6 +343,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     livePrices?.[currency] ??
     livePrices?.EUR ??
     STATIC_RATES_EUR[planKey]?.[cycleKey] ??
+    // Fall back within the SAME plan family before ever reaching for Core's
+    // numbers — e.g. an Advanced monthly order with no live price and no
+    // STATIC_RATES_EUR.advanced.monthly entry must never silently price
+    // itself off Core's rate.
+    STATIC_RATES_EUR[planKey]?.['4'] ??
     STATIC_RATES_EUR.core['4']
   const rate = fmt(rateNum)
   const zeroPrice = fmt(0)
@@ -502,6 +516,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
      Element (deferred mode:"setup"); no separate PaymentRequest wallet button. */
   const [payMethod, setPayMethod] = useState<PayMethod>('card')
+  // If Klarna was selected and the customer then switches to a country/currency where Klarna isn't a
+  // market, the row disappears — fall back to card so we never submit an unavailable method.
+  useEffect(() => {
+    if (payMethod === 'klarna' && !isKlarnaAvailable(COUNTRY_CODES[country], currency)) {
+      setPayMethod('card')
+    }
+  }, [payMethod, country, currency])
   const [cardName, setCardName] = useState('')
   const [cardComplete, setCardComplete] = useState(false)
   // Whether the Express Checkout Element (Link / Apple / Google Pay) has any
@@ -740,7 +761,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* promo */
   const [promoInput, setPromoInput] = useState('')
   const [promoApplied, setPromoApplied] = useState<string | null>(null)
-  const [promoMsg, setPromoMsg] = useState<{ text: string; ok: boolean } | null>(null)
+  const [promoMsg, setPromoMsg] = useState<{
+    text: string
+    ok: boolean
+    offerSwitch?: boolean
+  } | null>(null)
   const [promoOpenForm, setPromoOpenForm] = useState(false)
   const [promoOpenSidebar, setPromoOpenSidebar] = useState(false)
   const [promoPreview, setPromoPreview] = useState<{
@@ -750,6 +775,57 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     shipping_price: number
   } | null>(null)
   const [promoLoading, setPromoLoading] = useState(false)
+
+  // Formatted monthly price for a given cycle of the current family (mirrors the
+  // rateNum fallback chain) — used to label the plan-switch buttons.
+  const rateForCycle = (cyc: string) => {
+    const lp = planPrices[planKey]?.[cyc]
+    const n =
+      lp?.[currency] ??
+      lp?.EUR ??
+      STATIC_RATES_EUR[planKey]?.[cyc] ??
+      STATIC_RATES_EUR[planKey]?.['4'] ??
+      STATIC_RATES_EUR.core['4']
+    return fmt(n)
+  }
+
+  // One-click switch from the monthly plan to a 4/12-month term of the SAME
+  // family — offered when a discount code is restricted to longer plans. Updates
+  // the basket selection (price + summary re-derive from cycleKey) and clears the
+  // stale promo state so the visitor can re-apply the now-eligible code.
+  const switchCycle = (target: '4' | '12') => {
+    storePlanSelection({ plan: planKey, cycle: target })
+    setSelection((s) => ({ ...s, cycleKey: target }))
+    setPromoMsg(null)
+    setPromoPreview(null)
+  }
+
+  // Two switch buttons, shown only when the backend flags the code as excluded
+  // from the monthly plan (`offerSwitch`) — i.e. it exists but needs 4/12 months.
+  const renderPlanSwitch = () =>
+    promoMsg && !promoMsg.ok && promoMsg.offerSwitch ? (
+      <div className="nb1-promo-switch">
+        {(['4', '12'] as const).map((target) => (
+          <button
+            key={target}
+            type="button"
+            className="nb1-promo-switch-btn"
+            onClick={() => switchCycle(target)}
+          >
+            <span>
+              {t.promoUi.switchTemplate
+                .replace('{plan}', planLabel)
+                .replace(
+                  '{duration}',
+                  dict.plans.months[Number(target) as 1 | 4 | 12] ?? `${target} months`,
+                )
+                .replace('{price}', rateForCycle(target))}
+            </span>
+            <span aria-hidden="true">→</span>
+          </button>
+        ))}
+      </div>
+    ) : null
 
   /* ── Re-fetch preview when shipping or currency changes while promo applied ── */
   useEffect(() => {
@@ -1424,8 +1500,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           ok: true,
         })
       } else {
-        const errMsg = data.discount_message ?? dict.promo.invalid
-        setPromoMsg({ text: errMsg, ok: false })
+        // `exclude_one_month` marks a code that EXISTS but is restricted to
+        // longer plans. On the monthly plan that's the case where we show the
+        // targeted message + the 4/12 switch buttons; anything else stays a
+        // generic failure (e.g. code not found).
+        const excludedFromMonthly = Boolean(data.exclude_one_month) && cycleKey === 'monthly'
+        const errMsg = excludedFromMonthly
+          ? t.promoUi.excludeOneMonth
+          : (data.discount_message ?? dict.promo.invalid)
+        setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
         const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
         pushEvent('add_voucher_error', {
           event_id: mintEventId(),
@@ -2074,6 +2157,35 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         }
         .nb1-promo-msg.err {
           color: #c0392b;
+        }
+        /* One-click plan switch — shown when a promo is restricted to 4/12-month
+           plans and the basket is on the monthly (1-month) plan. */
+        .nb1-promo-switch {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        .nb1-promo-switch-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          width: 100%;
+          text-align: left;
+          background: rgba(10, 143, 176, 0.08);
+          border: 1px solid rgba(10, 143, 176, 0.18);
+          color: #0a8fb0;
+          font-family: inherit;
+          font-size: 13.5px;
+          font-weight: 600;
+          padding: 12px 16px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .nb1-promo-switch-btn:hover {
+          background: rgba(10, 143, 176, 0.14);
         }
 
         /* confirm button */
@@ -2831,8 +2943,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
                 )}
 
-                {/* Klarna temporarily disabled: it cannot be charged off-session for recurring billing. */}
-                {false && (
+                {/* Klarna: off-session recurring via Stripe Billing. Shown only where Klarna actually
+                    works (selected country + currency is a Klarna market) — see lib/klarnaMarkets. */}
+                {isKlarnaAvailable(COUNTRY_CODES[country], currency) && (
                 <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
                   <button
                     type="button"
@@ -3145,6 +3258,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       {promoMsg.text}
                     </div>
                   )}
+                  {renderPlanSwitch()}
                   {promoApplied && (
                     <button
                       type="button"
@@ -3297,6 +3411,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     {promoMsg.text}
                   </div>
                 )}
+                {renderPlanSwitch()}
               </div>
             )}
 

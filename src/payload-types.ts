@@ -3846,7 +3846,7 @@ export interface YpBuyBoxBlock {
          */
         priceSuffix?: string | null;
         /**
-         * Optional teal pill. Use a token for the price, e.g. "or {{price:core:1}}/mo, monthly · cancel anytime".
+         * Retired with the 1-month-standard model (the "€109/mo monthly" pill). Hidden from the admin UI and no longer rendered; kept in the schema so no migration is needed.
          */
         altLabel?: string | null;
         description?: string | null;
@@ -4101,7 +4101,7 @@ export interface PlanSummaryCardBlock {
   /**
    * Drives the live price + the CTA price chip below (fetched from the subscriptions API for this plan variant + cycle). Not editable directly.
    */
-  cycleMonth: '4' | '8' | '12';
+  cycleMonth: '1' | '4' | '12';
   priceNote?: string | null;
   switchLinkText?: string | null;
   switchLinkHref?: string | null;
@@ -4345,9 +4345,12 @@ export interface CycleSelectorBlock {
   switchLinkLabel?: string | null;
   switchLinkHref?: string | null;
   /**
-   * The 4/8/12-month price grid below is fetched live from the subscriptions API for this plan family — it is not editable here. Checkout links are generated as {locale order-details slug}?plan={family}&cycle={month}.
+   * The 1/4/12-month price grid below is fetched live from the subscriptions API for this plan family — it is not editable here. 1 month is the standard (the "Flexible" tab); 4 & 12 months are the discount tiers. Checkout links are generated as {locale order-details slug}?plan={family}&cycle={month} (the 1-month tier uses cycle=monthly).
    */
   planFamily: 'core' | 'advanced';
+  flexTabLabel?: string | null;
+  commitTabLabel?: string | null;
+  flexNoteLabel?: string | null;
   showMonthlyOption?: boolean | null;
   monthlyRate?: string | null;
   monthlyCheckoutHref?: string | null;
@@ -9235,6 +9238,9 @@ export interface CycleSelectorBlockSelect<T extends boolean = true> {
   switchLinkLabel?: T;
   switchLinkHref?: T;
   planFamily?: T;
+  flexTabLabel?: T;
+  commitTabLabel?: T;
+  flexNoteLabel?: T;
   showMonthlyOption?: T;
   monthlyRate?: T;
   monthlyCheckoutHref?: T;

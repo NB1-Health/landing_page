@@ -10,11 +10,9 @@ import React from 'react'
 const TOKENS: Array<[string, string]> = [
   ['{{price:core:1}}', 'Core — monthly / flexible (1-month)'],
   ['{{price:core:4}}', 'Core — 4-month cycle'],
-  ['{{price:core:8}}', 'Core — 8-month cycle'],
   ['{{price:core:12}}', 'Core — 12-month cycle'],
   ['{{price:advanced:1}}', 'Advanced — monthly / flexible (1-month)'],
   ['{{price:advanced:4}}', 'Advanced — 4-month cycle'],
-  ['{{price:advanced:8}}', 'Advanced — 8-month cycle'],
   ['{{price:advanced:12}}', 'Advanced — 12-month cycle'],
 ]
 
