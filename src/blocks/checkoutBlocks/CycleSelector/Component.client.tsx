@@ -195,9 +195,13 @@ export const CycleSelectorClient: React.FC<Props> = ({
 
   const flexTier = activeTiers[0]
   const commitTiers = activeTiers.slice(1)
+  // Localized "4 or 12 months": the trailing unit uses the already-localized
+  // month label ("12 Monate"/"12 mois"/…) and the conjunction is per-locale, so
+  // this isn't stuck in English like the old `${month} or ${month} months`.
+  const orWord = ({ de: 'oder', fr: 'ou', nl: 'of' } as Record<string, string>)[locale] ?? 'or'
   const commitSubLabel =
     commitTiers.length === 2
-      ? `${commitTiers[0].month} or ${commitTiers[1].month} months`
+      ? `${commitTiers[0].month} ${orWord} ${commitTiers[1].months}`
       : (commitTiers.map((t) => t.months).filter(Boolean).join(', ') || undefined)
 
   const selectedIdx = activeTab === 'flex' ? 0 : commitIdx
