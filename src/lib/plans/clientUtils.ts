@@ -4,7 +4,7 @@
  * instead of (or in addition to) the server-side API layer.
  */
 
-import { PRICE_TOKEN_RE, hasPriceToken, resolveExpr } from './priceExpr'
+import { AMOUNT_TOKEN_RE, PRICE_TOKEN_RE, evalArithmetic, hasPriceToken, resolveExpr } from './priceExpr'
 
 export type CurrencyCode = 'EUR' | 'GBP' | 'AED' | 'CHF'
 
@@ -60,6 +60,16 @@ const LANG_CURRENCIES: Record<string, CurrencyCode[]> = {
 const LOCALE_DEFAULT_CURRENCY: Record<string, CurrencyCode> = {
   en: 'GBP', de: 'EUR', fr: 'EUR', nl: 'EUR',
   ch: 'CHF', uk: 'GBP', uae: 'AED', be: 'EUR',
+}
+
+/**
+ * SSR-safe default currency for a locale — never reads the cookie, so it is
+ * identical on the server and on the client's first render. Use this to seed
+ * currency state; switch to the cookie-aware `getClientCurrency` inside an
+ * effect once mounted, to avoid a hydration mismatch.
+ */
+export function getDefaultCurrency(locale: string): CurrencyCode {
+  return LOCALE_DEFAULT_CURRENCY[locale] ?? 'EUR'
 }
 
 export function getClientCurrency(locale: string): CurrencyCode {
@@ -123,6 +133,24 @@ export function resolveTokens(
 ): string | null | undefined {
   if (!hasPriceToken(text)) return text
   return replaceTokens(text as string, rateMap, currency, locale)
+}
+
+/**
+ * Resolve plain-number amount tokens — `{{0}}`, `{{49}}`, `{{floor(99/2)}}` —
+ * to prices formatted in the selected currency (€0 / £0 / 0 CHF …). Price-ref
+ * tokens (`{{price:core:4}}`) and any non-numeric brace text are left untouched,
+ * so this is safe to run over free-form copy. Returns '' for null/undefined.
+ */
+export function resolveCurrencyTokens(
+  text: string | null | undefined,
+  currency: CurrencyCode,
+  locale: string,
+): string {
+  if (text == null) return ''
+  return text.replace(AMOUNT_TOKEN_RE, (full, inner: string) => {
+    const val = evalArithmetic(inner)
+    return val == null ? full : formatPrice(val, currency, locale)
+  })
 }
 
 export function resolveTokensDeep<T>(

@@ -26,6 +26,17 @@ export const PRICE_REF_RE = /price\s*:\s*(core|advanced)\s*:\s*(\d+)/gi
 /** A full `{{ … }}` token whose body mentions at least one price ref. */
 export const PRICE_TOKEN_RE = /\{\{\s*([^{}]*?price\s*:[^{}]*?)\s*\}\}/gi
 
+/**
+ * A `{{ … }}` token whose body is a plain numeric amount (no `price:` ref) —
+ * e.g. `{{0}}`, `{{49}}`, `{{floor(99/2)}}`. The body may use numbers, the
+ * operators + - * / , parentheses, and the rounding functions
+ * floor()/ceil()/round(). The numeric result is formatted in the currently
+ * selected currency by the caller — so `{{0}}` renders as €0 / £0 / 0 CHF / …
+ * depending on the visitor's currency. Tokens containing letters/colons (i.e.
+ * price refs) deliberately do NOT match this pattern.
+ */
+export const AMOUNT_TOKEN_RE = /\{\{\s*((?:floor|ceil|round|[\d+\-*/().\s])+?)\s*\}\}/gi
+
 export function hasPriceToken(text: string | null | undefined): boolean {
   return !!text && /\{\{\s*[^{}]*price\s*:/i.test(text)
 }
