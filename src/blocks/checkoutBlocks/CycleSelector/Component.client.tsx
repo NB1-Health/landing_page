@@ -6,11 +6,14 @@ import { useReveal } from '../useReveal'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   formatMonthLabel,
   formatSavingsLabel,
   computeSavings,
+  resolveCurrencyTokens,
+  type CurrencyCode,
 } from '@/lib/plans/clientUtils'
 import {
   buildNb1Item,
@@ -117,6 +120,11 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const [commitIdx, setCommitIdx] = useState(1)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [tiers, setTiers] = useState<Tier[]>(tiersProp ?? [])
+  // Currency is also held in state (not just currencyRef) so free-form copy
+  // with amount tokens — e.g. the guarantee strip's "{{0}}" — re-renders when
+  // the visitor switches currency. Seeded with the SSR-safe default to keep
+  // the server and first client render identical (no hydration mismatch).
+  const [currency, setCurrency] = useState<CurrencyCode>(() => getDefaultCurrency(locale))
   const currencyRef = useRef<string>('EUR')
   const rateMapRef = useRef<Record<string, number>>({})
   const planTitleRef = useRef<string>('Core')
@@ -150,6 +158,7 @@ export const CycleSelectorClient: React.FC<Props> = ({
       const rateMap = buildRateMap(plans, currency)
       rateMapRef.current = rateMap
       currencyRef.current = currency
+      setCurrency(currency)
       planTitleRef.current =
         plans.find((p) => p.title.toLowerCase() === planFamily)?.title ?? family
       const familyPlans = plans
@@ -697,7 +706,7 @@ export const CycleSelectorClient: React.FC<Props> = ({
                 {item.text && (
                   <div className="nb1-cs-gi">
                     <CheckIcon />
-                    <strong>{item.text}</strong>
+                    <strong>{resolveCurrencyTokens(item.text, currency, locale)}</strong>
                   </div>
                 )}
               </React.Fragment>

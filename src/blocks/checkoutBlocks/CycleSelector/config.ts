@@ -156,6 +156,10 @@ export const CycleSelector: Block = {
       name: 'guaranteeItems',
       type: 'array',
       label: 'Guarantee strip items',
+      admin: {
+        description:
+          'Tip: wrap a plain number in {{ }} to show it in the visitor\'s selected currency — e.g. "{{0}} setup fee" renders as "€0 setup fee" / "£0 setup fee" / "0 CHF setup fee" and updates live when the currency switches. Simple math works too, e.g. {{floor(99/2)}}.',
+      },
       fields: [
         {
           name: 'text',
