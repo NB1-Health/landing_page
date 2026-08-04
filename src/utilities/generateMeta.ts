@@ -29,7 +29,8 @@ function buildCanonicalURL(doc: Partial<Page> | Partial<Post> | null, locale?: s
     typeof rawSlug === 'string'
       ? rawSlug
       : typeof rawSlug === 'object' && rawSlug !== null
-        ? ((rawSlug as Record<string, string>)[locale ?? 'en'] ?? (rawSlug as Record<string, string>)['en'])
+        ? ((rawSlug as Record<string, string>)[locale ?? 'en'] ??
+          (rawSlug as Record<string, string>)['en'])
         : null
 
   if (!slug || slug === 'home' || slug === 'home-page') return `${base}${localePath}`
@@ -38,13 +39,14 @@ function buildCanonicalURL(doc: Partial<Page> | Partial<Post> | null, locale?: s
 }
 
 export const generateMeta = async (args: {
+  canonicalURL?: string
   doc: Partial<Page> | Partial<Post> | null
   locale?: string
 }): Promise<Metadata> => {
-  const { doc, locale } = args
+  const { canonicalURL, doc, locale } = args
 
   const ogImage = getImageURL(doc?.meta?.image)
-  const canonical = buildCanonicalURL(doc, locale)
+  const canonical = canonicalURL ?? buildCanonicalURL(doc, locale)
 
   const title = doc?.meta?.title ? doc.meta.title + ' | NB1' : 'NB1'
 

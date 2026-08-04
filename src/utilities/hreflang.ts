@@ -27,8 +27,8 @@ function abs(siteURL: string, path: string) {
  */
 export function buildHreflangAlternates(args: {
   siteURL: string
-  dePath: string
-  enPath: string
+  dePath?: string
+  enPath?: string
   frPath?: string
   nlPath?: string
   chPath?: string
@@ -38,18 +38,13 @@ export function buildHreflangAlternates(args: {
 }) {
   const { siteURL, dePath, enPath, frPath, nlPath, chPath, bePath, ukPath, uaePath } = args
 
-  const deURL = abs(siteURL, dePath)
-  const enURL = abs(siteURL, enPath)
-
   const languages: Partial<Record<MarketCode, string>> = {
-    'de-DE': deURL,
-    'de-AT': deURL,
-    'de-CH': chPath ? abs(siteURL, chPath) : deURL,
-    en: enURL,
-    'x-default': enURL,
+    ...(dePath ? { 'de-DE': abs(siteURL, dePath), 'de-AT': abs(siteURL, dePath) } : {}),
+    ...(chPath ? { 'de-CH': abs(siteURL, chPath) } : {}),
+    ...(enPath ? { en: abs(siteURL, enPath), 'x-default': abs(siteURL, enPath) } : {}),
     ...(frPath ? { 'fr-FR': abs(siteURL, frPath) } : {}),
     ...(nlPath ? { 'nl-NL': abs(siteURL, nlPath) } : {}),
-    ...(bePath ? { 'nl-BE': abs(siteURL, bePath) } : nlPath ? { 'nl-BE': abs(siteURL, nlPath) } : {}),
+    ...(bePath ? { 'nl-BE': abs(siteURL, bePath) } : {}),
     ...(ukPath ? { 'en-GB': abs(siteURL, ukPath) } : {}),
     ...(uaePath ? { 'en-AE': abs(siteURL, uaePath) } : {}),
   }
@@ -60,7 +55,7 @@ export function buildHreflangAlternates(args: {
 /**
  * Build hreflang alternates when each locale has its own translated slug.
  * `slugsByLocale` is a map of locale → slug (e.g. `{ en: 'our-plans', de: 'unsere-plaene' }`).
- * Falls back to the `en` slug for any locale not present in the map.
+ * Missing locales are omitted: an unpublished translation must not be advertised.
  */
 export function buildHreflangForLocalizedSlugs(args: {
   siteURL: string
@@ -71,10 +66,11 @@ export function buildHreflangForLocalizedSlugs(args: {
   const { siteURL, slugsByLocale, basePath = '', trailingSlash = false } = args
   const prefix = basePath ? `/${basePath}` : ''
   const suffix = trailingSlash ? '/' : ''
-  const fallback = slugsByLocale['en'] ?? ''
-
+  const isHome = slugsByLocale.en === 'home' || slugsByLocale.en === 'home-page'
   const path = (locale: string) => {
-    const slug = slugsByLocale[locale] ?? fallback
+    const slug = slugsByLocale[locale]
+    if (!slug) return undefined
+    if (!basePath && isHome) return `/${locale}`
     return `/${locale}${prefix}/${encodeURIComponent(slug)}${suffix}`.replace(/\/+/g, '/')
   }
 
@@ -103,8 +99,7 @@ export function buildHreflangForSharedSlug(args: {
   const { siteURL, basePath = '', slug, trailingSlash = false } = args
   const prefix = basePath ? `/${basePath}` : ''
   const suffix = trailingSlash ? '/' : ''
-  const path = (locale: string) =>
-    `/${locale}${prefix}/${slug}${suffix}`.replace(/\/+/g, '/')
+  const path = (locale: string) => `/${locale}${prefix}/${slug}${suffix}`.replace(/\/+/g, '/')
 
   return buildHreflangAlternates({
     siteURL,

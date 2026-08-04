@@ -173,6 +173,10 @@ export interface Page {
   id: number;
   title: string;
   /**
+   * Legacy keeps every block available. Legal and Contact use approved palettes.
+   */
+  pageType: 'legacy' | 'legal' | 'contact';
+  /**
    * Leave blank to use the site default header.
    */
   header?: (number | null) | Header;
@@ -7530,6 +7534,7 @@ export interface PayloadMigration {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
+  pageType?: T;
   header?: T;
   hideHeader?: T;
   footer?: T;

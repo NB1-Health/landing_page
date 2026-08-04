@@ -38,27 +38,43 @@ export async function GET(
       const SITE_URL = getSiteURL()
       const dateFallback = new Date().toISOString()
 
-      const results = await payload.find({
-        collection: 'pages',
-        overrideAccess: false,
-        draft: false,
-        depth: 0,
-        limit: 1000,
-        pagination: false,
+      const [homeRefs, results] = await Promise.all([
+        payload.find({
+          collection: 'pages',
+          overrideAccess: false,
+          draft: false,
+          depth: 0,
+          limit: 2,
+          pagination: false,
+          locale: 'en',
+          fallbackLocale: false,
+          where: { slug: { in: ['home', 'home-page'] } },
+          select: { slug: true },
+        }),
+        payload.find({
+          collection: 'pages',
+          overrideAccess: false,
+          draft: false,
+          depth: 0,
+          limit: 1000,
+          pagination: false,
 
-        // ✅ Correctly typed for Payload localization
-        locale: locale as PayloadLocale,
+          // ✅ Correctly typed for Payload localization
+          locale: locale as PayloadLocale,
+          fallbackLocale: false,
 
-        where: {
-          _status: {
-            equals: 'published',
+          where: {
+            _status: {
+              equals: 'published',
+            },
           },
-        },
-        select: {
-          slug: true,
-          updatedAt: true,
-        },
-      })
+          select: {
+            slug: true,
+            updatedAt: true,
+          },
+        }),
+      ])
+      const homeIDs = new Set(homeRefs.docs.map((page) => String(page.id)))
 
       const defaultSitemap = [
         { loc: withLocale(SITE_URL, locale, '/search'), lastmod: dateFallback },
@@ -69,7 +85,7 @@ export async function GET(
         results.docs
           ?.filter((page) => Boolean(page?.slug))
           .map((page) => {
-            const isHome = page?.slug === 'home'
+            const isHome = homeIDs.has(String(page.id))
 
             return {
               loc: isHome ? `${SITE_URL}/${locale}` : withLocale(SITE_URL, locale, `/${page.slug}`),

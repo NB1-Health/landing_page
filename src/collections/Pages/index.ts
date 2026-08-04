@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { Block, CollectionConfig } from 'payload'
 
 import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
@@ -9,7 +9,11 @@ import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
-import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
+import {
+  capturePagePublication,
+  revalidateDelete,
+  revalidatePage,
+} from './hooks/revalidatePage'
 
 import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 
@@ -101,6 +105,120 @@ import { CloseBandBlock } from '@/blocks/CloseBand/config'
 import { FaqPageBlock } from '@/blocks/FaqPage/config'
 import { LegalDocBlock } from '@/blocks/LegalDoc/config'
 import { ContactPageBlock } from '@/blocks/ContactPage/config'
+import { filterPageBlocks, pageTypeOptions } from './pageTypes'
+
+const groupedBlocks = (group: string, blocks: Block[]): Block[] =>
+  blocks.map((block) => ({
+    ...block,
+    admin: { ...block.admin, group },
+  }))
+
+export const pageBlocks = [
+  ...groupedBlocks('Shared', [Content]),
+  ...groupedBlocks('Landing', [
+    BoxCardBlock,
+    FormulaCardBlock,
+    ResultsCardBlock,
+    ReviewCardBlock,
+    StepsCardBlock,
+    SymptomsCardBlock,
+    VideoCardBlock,
+    BenefitsBanner,
+    StepsBanner,
+    ProductBanner,
+    AccessBanner,
+    EvolutionBandBlock,
+    HeroBannerBlock,
+    OutcomesSectionBlock,
+    ProcessDiagramBlock,
+    StatBreakBlock,
+    ReserveCtaBlock,
+    AthleteBannerBlock,
+    PriceBreakBlock,
+    ScienceBoardBlock,
+    FloatingCTABlock,
+  ]),
+  ...groupedBlocks('Your Plan', [
+    YpHeroBlock,
+    YpPlansBlock,
+    YpThreeComponentsBlock,
+    YpDashboardBlock,
+    YpTimelineBlock,
+    YpScienceBoardBlock,
+    YpAthletesBlock,
+    YpBreakupBlock,
+    YpFaqBlock,
+    YpReassuranceBlock,
+    YpBuyBoxBlock,
+    YpStickyBuyBlock,
+  ]),
+  ...groupedBlocks('Checkout', [
+    OrderStepNav,
+    LegalStrip,
+    OrderStepHero,
+    OrderTimeline,
+    FormulaKit,
+    CheckoutFaq,
+    EndCard,
+    PlanSummaryCard,
+    GuaranteeBadges,
+    CyclesPricingGrid,
+    ReinforceCta,
+    PlanPivot,
+    StickyCtaBar,
+    PlanSelector,
+    PlanStickyBar,
+    CycleSelector,
+    CheckoutForm,
+  ]),
+  ...groupedBlocks('Company', [
+    HomepageHeroBlock,
+    TheCaseBlock,
+    TwoModelsBlock,
+    GutFirstBlock,
+    HowItWorksBlock,
+  ]),
+  ...groupedBlocks('Biology', [
+    BiologyHeroBlock,
+    BiologyTwoPeopleBlock,
+    BiologyClearestReadBlock,
+    BiologyReadingToFormulaBlock,
+    BiologyIndustryFlipBlock,
+  ]),
+  ...groupedBlocks('Protocol', [
+    ProtocolHeroBlock,
+    ProtocolJourneyBlock,
+    ProtocolKitBlock,
+    ProtocolFormulaUnitsBlock,
+    ProtocolLibraryBlock,
+    ProtocolCredStripBlock,
+    ProtocolWhatArrivesBlock,
+    ProtocolLivingLifelineBlock,
+  ]),
+  ...groupedBlocks('Lab', [
+    LabHeroBlock,
+    LabRoadmapBlock,
+    LabReadsBlock,
+    LabComparisonBlock,
+    LabBandBlock,
+    LabReadingPanelBlock,
+    LabFormulaBlock,
+    LabProtocolBlock,
+    LabJourneyBlock,
+    LabScienceBoardBlock,
+  ]),
+  ...groupedBlocks('Shared', [
+    WhatArrivesBlock,
+    OutcomesBlock,
+    AthletesBlock,
+    ScienceBoardNewBlock,
+    StandardsBlock,
+    PlansBlock,
+    CloseBandBlock,
+    FaqPageBlock,
+  ]),
+  ...groupedBlocks('Legal & Support', [LegalDocBlock, ContactPageBlock]),
+]
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
@@ -151,6 +269,19 @@ export const Pages: CollectionConfig<'pages'> = {
       type: 'text',
       required: true,
       localized: true,
+    },
+
+    {
+      name: 'pageType',
+      label: 'Page Type',
+      type: 'select',
+      required: true,
+      defaultValue: 'legacy',
+      options: pageTypeOptions,
+      admin: {
+        description: 'Legacy keeps every block available. Legal and Contact use approved palettes.',
+        position: 'sidebar',
+      },
     },
 
     {
@@ -209,97 +340,8 @@ export const Pages: CollectionConfig<'pages'> = {
             {
               name: 'layout',
               type: 'blocks',
-              blocks: [
-                Content,
-                BoxCardBlock,
-                FormulaCardBlock,
-                ResultsCardBlock,
-                ReviewCardBlock,
-                StepsCardBlock,
-                SymptomsCardBlock,
-                VideoCardBlock,
-                BenefitsBanner,
-                StepsBanner,
-                ProductBanner,
-                AccessBanner,
-                EvolutionBandBlock,
-                HeroBannerBlock,
-                OutcomesSectionBlock,
-                ProcessDiagramBlock,
-                StatBreakBlock,
-                ReserveCtaBlock,
-                AthleteBannerBlock,
-                PriceBreakBlock,
-                ScienceBoardBlock,
-                FloatingCTABlock,
-                YpHeroBlock,
-                YpPlansBlock,
-                YpThreeComponentsBlock,
-                YpDashboardBlock,
-                YpTimelineBlock,
-                YpScienceBoardBlock,
-                YpAthletesBlock,
-                YpBreakupBlock,
-                YpFaqBlock,
-                YpReassuranceBlock,
-                YpBuyBoxBlock,
-                YpStickyBuyBlock,
-                OrderStepNav,
-                LegalStrip,
-                OrderStepHero,
-                OrderTimeline,
-                FormulaKit,
-                CheckoutFaq,
-                EndCard,
-                PlanSummaryCard,
-                GuaranteeBadges,
-                CyclesPricingGrid,
-                ReinforceCta,
-                PlanPivot,
-                StickyCtaBar,
-                PlanSelector,
-                PlanStickyBar,
-                CycleSelector,
-                CheckoutForm,
-                HomepageHeroBlock,
-                TheCaseBlock,
-                TwoModelsBlock,
-                GutFirstBlock,
-                HowItWorksBlock,
-                BiologyHeroBlock,
-                BiologyTwoPeopleBlock,
-                BiologyClearestReadBlock,
-                BiologyReadingToFormulaBlock,
-                BiologyIndustryFlipBlock,
-                ProtocolHeroBlock,
-                ProtocolJourneyBlock,
-                ProtocolKitBlock,
-                ProtocolFormulaUnitsBlock,
-                ProtocolLibraryBlock,
-                ProtocolCredStripBlock,
-                ProtocolWhatArrivesBlock,
-                ProtocolLivingLifelineBlock,
-                LabHeroBlock,
-                LabRoadmapBlock,
-                LabReadsBlock,
-                LabComparisonBlock,
-                LabBandBlock,
-                LabReadingPanelBlock,
-                LabFormulaBlock,
-                LabProtocolBlock,
-                LabJourneyBlock,
-                LabScienceBoardBlock,
-                WhatArrivesBlock,
-                OutcomesBlock,
-                AthletesBlock,
-                ScienceBoardNewBlock,
-                StandardsBlock,
-                PlansBlock,
-                CloseBandBlock,
-                FaqPageBlock,
-                LegalDocBlock,
-                ContactPageBlock,
-              ],
+              blocks: pageBlocks,
+              filterOptions: filterPageBlocks,
               required: true,
               admin: { initCollapsed: true },
             },
@@ -415,6 +457,7 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
 
   hooks: {
+    beforeOperation: [capturePagePublication],
     beforeValidate: [
       ({ data }) => {
         if (!data) return data

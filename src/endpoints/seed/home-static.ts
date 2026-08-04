@@ -4,6 +4,7 @@ import type { RequiredDataFromCollectionSlug } from 'payload'
 export const homeStatic: RequiredDataFromCollectionSlug<'pages'> = {
   slug: 'home',
   _status: 'published',
+  pageType: 'legacy',
   hero: {
     type: 'lowImpact',
     richText: {

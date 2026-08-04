@@ -108,6 +108,10 @@ export default buildConfig({
     tasks: [],
   },
   localization: {
+    // The primary Publish button publishes only the locale currently being
+    // edited. This setting is global for localized, versioned collections;
+    // Payload keeps every other locale on its last published version.
+    defaultLocalePublishOption: 'active',
     locales: [
       { code: 'en', label: 'English (EU / Rest of World)' },
       { code: 'de', label: 'German (Germany & Austria)' },

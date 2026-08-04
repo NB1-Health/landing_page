@@ -3,14 +3,14 @@
 import type { PayloadAdminBarProps, PayloadMeUser } from '@payloadcms/admin-bar'
 
 import { cn } from '@/utilities/ui'
-import { useSelectedLayoutSegments } from 'next/navigation'
+import { usePathname, useRouter, useSelectedLayoutSegments } from 'next/navigation'
 import { PayloadAdminBar } from '@payloadcms/admin-bar'
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import './index.scss'
 
 import { getClientSideURL } from '@/utilities/getURL'
+import { isAppLocale } from '@/i18n/config'
 
 const baseClass = 'admin-bar'
 
@@ -36,7 +36,10 @@ export const AdminBar: React.FC<{
 }> = (props) => {
   const { adminBarProps } = props || {}
   const segments = useSelectedLayoutSegments()
+  const pathname = usePathname()
   const [show, setShow] = useState(false)
+  const localeFromPath = pathname.split('/')[1]
+  const locale = isAppLocale(localeFromPath) ? localeFromPath : 'en'
   const collection = (
     collectionLabels[segments?.[1] as keyof typeof collectionLabels] ? segments[1] : 'pages'
   ) as keyof typeof collectionLabels
@@ -72,8 +75,8 @@ export const AdminBar: React.FC<{
           logo={<Title />}
           onAuthChange={onAuthChange}
           onPreviewExit={() => {
-            fetch('/next/exit-preview').then(() => {
-              router.push('/')
+            fetch(`/${locale}/next/exit-preview`).then(() => {
+              router.push(`/${locale}`)
               router.refresh()
             })
           }}

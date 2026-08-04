@@ -190,7 +190,7 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | `PAYLOAD_SECRET` | Random secret Payload uses to sign login tokens. Generate with `openssl rand -hex 32`. |
 | `NEXT_PUBLIC_SERVER_URL` | This site's own public URL — used for building links, CORS, and image loading |
 | `CRON_SECRET` | Lets scheduled jobs (e.g. scheduled publish) authenticate without a logged-in user |
-| `PREVIEW_SECRET` | Confirms a "preview this draft page" link is legitimate |
+| `PREVIEW_SECRET` | Signs five-minute draft-preview links. Use at least 32 random characters (`openssl rand -hex 32`); the raw secret is never sent in the URL. |
 | `PG_POOL_MAX` / `PG_POOL_MAX_BUILD` | Advanced: override how many DB connections the app opens. Rarely needed — see the comment in `payload.config.ts` if curious. |
 
 **Email**
@@ -411,6 +411,12 @@ Actions when the right branch is pushed:
 > admin panel, that edit will be lost on the next deploy — it needs to be
 > made in staging instead (or it'll get wiped).
 
+The native independent-publishing path is documented in
+[`docs/payload-publishing.md`](docs/payload-publishing.md). Before enabling
+production editing, the external production deploy script must stop the
+STG→PROD data overwrite described above. That infrastructure change is not
+made by this repository branch.
+
 Neither deploy actually uses the `Dockerfile`/`docker-compose.*.yml` in this
 repo, despite them existing — both servers run the app directly via PM2.
 
@@ -447,12 +453,12 @@ never run this against a shared environment).
   `src/plugins/index.ts`. Redirects are also checked directly in
   `middleware.ts` before the locale-redirect logic runs.
 - **Draft preview & auto-revalidation**: Pages and Posts use Payload's
-  Versions/drafts feature, so a new or edited document is saved as a draft
-  and isn't visible on the live site until published. A custom URL lets
-  editors securely preview a draft before publishing (`PREVIEW_SECRET`
-  validates these requests). Because the front-end isn't fully static, an
-  `afterChange` hook triggers on-demand revalidation whenever a document's
-  status flips to published, so the live pages stay in sync automatically.
+  Versions/drafts feature. Preview requires both an authenticated Payload
+  user and a five-minute signed target; it accepts no caller-supplied path.
+  Page publication defaults to the active locale, public Page reads do not
+  silently fall back to English, and the in-process `afterChange` hook
+  invalidates only explicit routes and sitemap tags for the affected Page. See
+  [`docs/payload-publishing.md`](docs/payload-publishing.md).
 - **`patches/` + `postinstall: patch-package`**: at least one npm dependency
   has a manual patch applied automatically after `npm install`. If a
   dependency is behaving oddly after an upgrade, check `patches/*.patch`.

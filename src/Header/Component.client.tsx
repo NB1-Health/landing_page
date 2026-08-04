@@ -470,8 +470,11 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     // locale's slug, which would 404 or belong to a different page on the target
     // locale (slugs are localized per-page, e.g. en "our-plans" vs de "unsere-plane").
     if (pageSlugs) {
-      const targetSlug = pageSlugs[targetLocale] ?? pageSlugs['en']
-      if (targetSlug && segments[2] !== undefined) segments[2] = targetSlug
+      const targetSlug = pageSlugs[targetLocale]
+      if (segments[2] !== undefined) {
+        if (targetSlug) segments[2] = targetSlug
+        else segments.splice(2)
+      }
     }
     window.location.href = segments.join('/')
     setLocOpen(false)
