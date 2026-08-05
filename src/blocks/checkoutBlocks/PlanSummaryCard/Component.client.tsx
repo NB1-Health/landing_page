@@ -252,7 +252,15 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
         }
         @media (max-width: 720px) {
           .nb1-psc-plan { padding: 26px 22px; }
-          .nb1-psc-switch { white-space: normal; }
+          /* Stack the plan name/price and the switch link on mobile so
+             "Looking at … instead?" drops onto its own line under the plan
+             instead of overflowing off the right edge. */
+          .nb1-psc-top {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+          .nb1-psc-switch { white-space: normal; margin-top: 0; }
           .nb1-psc-lower { grid-template-columns: 1fr; gap: 22px; }
         }
       `}</style>
