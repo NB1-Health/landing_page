@@ -59,7 +59,19 @@ Payload 3.70's stock `RefreshRouteOnSave` invokes `router.refresh()` once as soo
 | `router.refresh()` callbacks | 2 | 0 |
 | Refreshes for each distinct later save | 1 | 1 |
 
-The replacement retains same-origin validation and deduplicates repeat messages for the same save. A focused browser test against the production build and the 48-block fixture put a fresh iframe's time to visible content at 3.09 seconds median (3.09–3.10 seconds across three runs). This change removes the two post-load refresh cycles but does not make that initial 3.09-second render disappear. It is therefore a meaningful reduction in duplicate database/render work and preview settling, but only a modest improvement to the first visible frame; the heavy document query, admin form, and client mount remain the dominant opening cost.
+The replacement retains same-origin validation and deduplicates repeat messages for the same save. A follow-up phase split showed that the previously reported 3.09-second fresh-preview result measured the browser automation's semantic click settling, not iframe rendering: the click consumed about 3.06 seconds and the already-mounted iframe content was visible about 10 ms later. A full Payload document reload through to visible preview content measured 624–763 ms locally; the warm signed preview route and authenticated draft page measured about 12 ms and 120 ms respectively.
+
+### Keep marketing integrations out of draft preview
+
+The localized frontend layout now enables marketing integrations only in a production, non-draft request. Payload preview therefore no longer loads GTM, Ketch, Conversion.io, Klaviyo, Chatwoot, Meta tracking, or the page-view tracker. Ordinary production pages retain the integrations.
+
+| Authenticated draft response | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| HTML bytes | 463,373 | 446,861 | -16,512 / -3.6% |
+| Marketing integration URL groups | 4 | 0 | -100% |
+| Warm TTFB median (five runs) | 126.5 ms | 122.2 ms | -4.3 ms; within local noise |
+
+The browser check fell from 23 external script elements to one. The remaining script was Stripe on a page with no checkout block, which supports checkout-only bundle splitting as a separate measured candidate. The marketing gate is primarily a privacy/correctness and external-dependency isolation improvement; it does not materially change the Payload query or warm server render.
 
 ## Changes considered and rejected
 
@@ -70,6 +82,7 @@ The replacement retains same-origin validation and deduplicates repeat messages 
 ## Validation
 
 - `npx tsc --noEmit`: passed.
+- `npx vitest run --config ./vitest.config.mts tests/int/marketingRuntime.int.spec.ts`: 4 tests passed.
 - `npx vitest run --config ./vitest.config.mts tests/int/livePreviewListener.int.spec.tsx`: 2 tests passed.
 - `npm run test:int`: 21 files and 103 tests passed; the two database lifecycle tests were skipped by their strict local database-name guard. Their existing publishing coverage is unchanged by this client-only listener slice.
 - `npm run build` against the isolated database: passed; existing lint warnings remain.

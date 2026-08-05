@@ -61,7 +61,7 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>
 }) {
   const { isEnabled } = await draftMode()
-  const marketingEnabled = isMarketingRuntimeEnabled()
+  const marketingEnabled = !isEnabled && isMarketingRuntimeEnabled()
 
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
