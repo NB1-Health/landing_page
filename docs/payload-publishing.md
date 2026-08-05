@@ -19,14 +19,16 @@ The application code needs these existing deployment variables:
 
 No revalidation URL or revalidation secret is required. Payload and the Next public app run in the same process, so the publication hook calls Next's cache APIs directly. There is no public revalidation endpoint, arbitrary path input, or global cache purge.
 
-One external deploy-script change is a prerequisite and is intentionally not made in this repository: production deploys must stop copying the entire staging database over production. The current documented deploy process would otherwise erase production CMS edits on the next code deploy. Keep schema migrations in the code deploy, but let production content remain in the production database.
+Production deploys are code-only. The checked-in workflow updates application code and runs pending schema migrations against the existing production database; it never dumps staging or drops/restores production content. `npm run deploy:guard` scans the workflow and deploy script for destructive copy patterns and also runs inside the production workflow before deployment.
+
+Existing CMS users are promoted to `admin` by the role migration so rollout cannot remove current operator access; they should sign out and back in once after migration so their JWT includes the new role. New users default to `editor`. Editors can create and update drafts, publishers can publish/unpublish and restore Page versions, and administrators additionally manage users, shared chrome/configuration, Page deletion, and the destructive development seed. The seed action is hidden and its route returns 404 unless both `NODE_ENV=development` and `ENABLE_DESTRUCTIVE_SEED=true`; even then, it requires an authenticated administrator.
 
 ## Editor flow
 
-1. Open a Page and select the locale to edit.
+1. Sign in with an `editor`, `publisher`, or `admin` account. Open a Page and select the locale to edit.
 2. Edit normally. Autosave and **Save draft** create Payload versions without changing the public page.
 3. Use **Preview** while logged into Payload. The link is valid for five minutes, contains an HMAC signature rather than the secret, and can resolve only the selected locale plus a known Pages/Posts slug. Every draft render rechecks the Payload session, so a retained Next draft cookie is not authorization after logout.
-4. Use the primary **Publish in _locale_** button. The default is deliberately the active locale. **Publish all locales** remains in the button menu for an intentional coordinated release.
+4. A `publisher` or `admin` uses the primary **Publish in _locale_** button. The default is deliberately the active locale. **Publish all locales** remains in the button menu for an intentional coordinated release. An `editor` can save and preview drafts but the server rejects publication.
 5. Repeat review and publication independently for each locale. Publishing English does not wait for or expose an unfinished German, French, or other locale.
 
 Payload's `defaultLocalePublishOption` is a global localization setting, so the same active-locale primary-button behavior also appears on other localized, versioned collections such as Posts. This branch does not otherwise change their schema or publication hooks. Editors can still choose **Publish all locales** from the menu.

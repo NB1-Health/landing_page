@@ -1,4 +1,4 @@
-name: Merge STG into PROD & Deploy
+name: Promote STG code to PROD & Deploy
 
 on:
   push:
@@ -28,6 +28,9 @@ jobs:
           git merge origin/stg --no-edit || true
           git push origin prod
 
+      - name: Verify production deploy preserves CMS content
+        run: node scripts/check-production-deploy-safety.mjs
+
       - name: Deploy to Production via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -39,48 +42,7 @@ jobs:
             cd /var/www/landing_page
             git fetch origin prod
             git reset --hard origin/prod
-
-            echo ">>> Verific pg_dump versiunea 18..."
-            if ! pg_dump --version 2>/dev/null | grep -q "18\|19\|20"; then
-              echo ">>> Instalez postgresql-client-18..."
-              curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
-              echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-              apt-get update -qq && apt-get install -y postgresql-client-18
-            fi
-
-            echo ">>> Sync date STG → PROD"
-            # Prefer DATABASE_URL_DIRECT (bypasses PgBouncer).
-            # pg_dump acquires ACCESS SHARE locks on ALL tables in one transaction;
-            # PgBouncer in transaction-pooling mode interferes with this and causes
-            # "out of shared memory / max_locks_per_transaction".
-            STG_DB=$(grep "^DATABASE_URL_DIRECT=" .env.stg | cut -d'=' -f2- || grep "^DATABASE_URL=" .env.stg | cut -d'=' -f2-)
-            PROD_DB=$(grep "^DATABASE_URL_DIRECT=" .env.prod | cut -d'=' -f2- || grep "^DATABASE_URL=" .env.prod | cut -d'=' -f2-)
-            [[ "$STG_DB"  != *"sslmode"* ]] && STG_DB="${STG_DB}?sslmode=require"
-            [[ "$PROD_DB" != *"sslmode"* ]] && PROD_DB="${PROD_DB}?sslmode=require"
-            DUMP_FILE="/tmp/stg_to_prod_$(date +%Y%m%d_%H%M%S).sql"
-            # Dump STG schema+data WITHOUT --clean. (--clean emits `DROP ... IF EXISTS` with NO
-            # CASCADE, so dropping FK-referenced tables/types/constraints fails → CREATEs then hit
-            # "already exists" → data hits "duplicate key" + FK violations, and PROD↔STG schema
-            # drift (e.g. missing header_id/footer_id) breaks the load.)
-            pg_dump "$STG_DB" --no-owner --no-privileges -f "$DUMP_FILE"
-            # Wipe PROD's public schema for a clean restore (resolves FK-dependency drop errors AND
-            # STG↔PROD schema drift). We DON'T use `DROP SCHEMA public CASCADE`: it drops all 150+
-            # Payload tables in ONE transaction → blows past the managed DB's
-            # max_locks_per_transaction ("out of shared memory"). Instead drop every object
-            # individually WITH CASCADE — each runs in its own autocommit transaction (tiny lock
-            # footprint). Tables first (drops their owned sequences + FKs), then enum types.
-            # No ON_ERROR_STOP here: IF EXISTS + CASCADE means re-drops of already-cascaded objects
-            # are harmless.
-            psql "$PROD_DB" -t -A -c \
-              "SELECT 'DROP TABLE IF EXISTS \"' || tablename || '\" CASCADE;' FROM pg_tables WHERE schemaname = 'public';" \
-              | psql "$PROD_DB"
-            psql "$PROD_DB" -t -A -c \
-              "SELECT 'DROP TYPE IF EXISTS \"' || t.typname || '\" CASCADE;' FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typtype = 'e';" \
-              | psql "$PROD_DB"
-            # Restore into the now-empty schema. ON_ERROR_STOP=1 → fail the deploy loudly on a bad
-            # restore instead of silently continuing onto a broken DB.
-            psql "$PROD_DB" -v ON_ERROR_STOP=1 -f "$DUMP_FILE"
-            rm -f "$DUMP_FILE"
-            echo ">>> Sync gata: $(psql "$PROD_DB" -t -c 'SELECT COUNT(*) FROM pages;' | tr -d ' ') pagini pe PROD"
-
+            # Production content is authoritative. Deploy code and pending
+            # migrations in place; never replace it with another environment.
+            node scripts/check-production-deploy-safety.mjs
             bash deploy-prod.sh

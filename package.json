@@ -12,6 +12,7 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "db:sync-stg": "bash scripts/sync-from-stg.sh",
+    "deploy:guard": "node scripts/check-production-deploy-safety.mjs",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "migrate:down": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:down",
