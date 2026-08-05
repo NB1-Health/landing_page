@@ -2,17 +2,22 @@ import { createLocalReq, getPayload } from 'payload'
 import { seed } from '@/endpoints/seed'
 import config from '@payload-config'
 import { headers } from 'next/headers'
+import { canRunDestructiveSeed, isDestructiveSeedEnabled } from '@/utilities/destructiveSeed'
 
 export const maxDuration = 60 // This function can run for a maximum of 60 seconds
 
 export async function POST(): Promise<Response> {
+  if (!isDestructiveSeedEnabled()) {
+    return new Response('Not found.', { status: 404 })
+  }
+
   const payload = await getPayload({ config })
   const requestHeaders = await headers()
 
   // Authenticate by passing request headers
   const { user } = await payload.auth({ headers: requestHeaders })
 
-  if (!user) {
+  if (!user || !canRunDestructiveSeed(user)) {
     return new Response('Action forbidden.', { status: 403 })
   }
 

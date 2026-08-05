@@ -7192,6 +7192,7 @@ export interface ContactPageBlock {
 export interface User {
   id: number;
   name?: string | null;
+  role: 'editor' | 'publisher' | 'admin';
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -10734,6 +10735,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   enableAPIKey?: T;

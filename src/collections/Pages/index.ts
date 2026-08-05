@@ -1,7 +1,8 @@
 import type { Block, CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOnly, editorOrAbove } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { enforcePageWriteRole } from '../../access/pagePublishing'
 
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
@@ -223,10 +224,10 @@ export const pageBlocks = [
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: editorOrAbove,
+    delete: adminOnly,
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: editorOrAbove,
   },
   defaultPopulate: {
     title: true,
@@ -457,7 +458,7 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
 
   hooks: {
-    beforeOperation: [capturePagePublication],
+    beforeOperation: [enforcePageWriteRole, capturePagePublication],
     beforeValidate: [
       ({ data }) => {
         if (!data) return data

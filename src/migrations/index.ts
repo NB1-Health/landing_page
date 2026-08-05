@@ -139,6 +139,8 @@ import * as migration_20260716_100000_lab_localize_label_fields from './20260716
 import * as migration_20260728_120000_add_cycle_selector_tab_labels from './20260728_120000_add_cycle_selector_tab_labels';
 import * as migration_20260728_120500_plan_summary_card_cycle_1_month from './20260728_120500_plan_summary_card_cycle_1_month';
 import * as migration_20260804_151100_page_type_pilot from './20260804_151100_page_type_pilot';
+import * as migration_20260805_120000_localize_generic_richtext from './20260805_120000_localize_generic_richtext';
+import * as migration_20260805_121000_editor_roles from './20260805_121000_editor_roles';
 
 export const migrations = [
   {
@@ -845,5 +847,15 @@ export const migrations = [
     up: migration_20260804_151100_page_type_pilot.up,
     down: migration_20260804_151100_page_type_pilot.down,
     name: '20260804_151100_page_type_pilot',
+  },
+  {
+    up: migration_20260805_120000_localize_generic_richtext.up,
+    down: migration_20260805_120000_localize_generic_richtext.down,
+    name: '20260805_120000_localize_generic_richtext',
+  },
+  {
+    up: migration_20260805_121000_editor_roles.up,
+    down: migration_20260805_121000_editor_roles.down,
+    name: '20260805_121000_editor_roles',
   },
 ];

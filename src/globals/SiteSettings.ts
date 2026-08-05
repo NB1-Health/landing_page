@@ -1,11 +1,12 @@
 import type { GlobalConfig } from 'payload'
+import { adminOnly } from '@/access/roles'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: 'Site Settings',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: adminOnly,
   },
   fields: [
     {

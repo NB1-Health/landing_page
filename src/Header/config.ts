@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { link } from '@/fields/link'
 import { enforceSingleDefault } from './hooks/enforceSingleDefault'
 import { revalidateHeader } from './hooks/revalidateHeader'
+import { adminOnly } from '@/access/roles'
 
 const themeOptions = [
   { label: 'Light (white/glass background)', value: 'light' },
@@ -12,7 +13,10 @@ const themeOptions = [
 export const Headers: CollectionConfig = {
   slug: 'headers',
   access: {
+    create: adminOnly,
+    delete: adminOnly,
     read: () => true,
+    update: adminOnly,
   },
   admin: {
     useAsTitle: 'name',

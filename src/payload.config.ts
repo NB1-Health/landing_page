@@ -19,6 +19,7 @@ import { SiteSettings } from './globals/SiteSettings'
 import { Products } from './collections/Products'
 import { Authors } from './collections/Authors'
 import { FAQ } from './globals/FAQ'
+import { isDestructiveSeedEnabled } from './utilities/destructiveSeed'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,7 +42,7 @@ export default buildConfig({
   admin: {
     components: {
       beforeLogin: ['@/components/BeforeLogin'],
-      beforeDashboard: ['@/components/BeforeDashboard'],
+      beforeDashboard: isDestructiveSeedEnabled() ? ['@/components/BeforeDashboard'] : [],
     },
     importMap: {
       baseDir: path.resolve(dirname),
