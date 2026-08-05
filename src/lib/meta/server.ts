@@ -1,4 +1,4 @@
-import { META, metaEndpoint } from './config'
+import { isMetaDeliveryEnabled, META, metaEndpoint } from './config'
 import type { ServerEvent, MetaEventPayload } from './types'
 import { mapToMetaEvent } from './map'
 
@@ -7,6 +7,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export async function sendMetaEvents(events: ServerEvent[]) {
   const allowed = events.filter((e) => e.consent)
   if (allowed.length === 0) return { sent: 0 }
+  if (!isMetaDeliveryEnabled()) return { sent: 0, skipped: 'disabled' as const }
 
   const body = {
     data: allowed.map(mapToMetaEvent),

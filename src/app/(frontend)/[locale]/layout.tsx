@@ -33,6 +33,7 @@ import { JsonLd, type JsonLdValue } from '@/components/JsonLd'
 import { ChatwootWidget } from '@/components/ChatwootWidget'
 import { PageViewTracker } from '@/components/DataLayerEvents/PageViewTracker'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
+import { isMarketingRuntimeEnabled } from '@/lib/marketing/runtime'
 import StyledJsxRegistry from './registry'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -60,6 +61,7 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>
 }) {
   const { isEnabled } = await draftMode()
+  const marketingEnabled = isMarketingRuntimeEnabled()
 
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
@@ -95,8 +97,10 @@ export default async function RootLayout({
         <meta name="facebook-domain-verification" content="4r4g0m2wo3hl69f7kdwb6eeq1bz2i6" />
         <InitTheme />
 
-        <Script id="gtag-consent-mode" strategy="beforeInteractive">
-          {`
+        {marketingEnabled && (
+          <>
+            <Script id="gtag-consent-mode" strategy="beforeInteractive">
+              {`
             window.dataLayer = window.dataLayer || [];
             // Temporary policy: tracking starts open until Ketch reports a rejection.
             window.__nb1Consent = { analytics: true, targeted_advertising: true };
@@ -109,21 +113,21 @@ export default async function RootLayout({
               'wait_for_update': 2000
             });
           `}
-        </Script>
+            </Script>
 
-        {/* Google Tag Manager */}
-        {process.env.NEXT_PUBLIC_GTM_ID && (
-          <Script id="gtm-head" strategy="beforeInteractive">{`
+            {/* Google Tag Manager */}
+            {process.env.NEXT_PUBLIC_GTM_ID && (
+              <Script id="gtm-head" strategy="beforeInteractive">{`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=!0;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
           `}</Script>
-        )}
-        {/* End Google Tag Manager */}
+            )}
+            {/* End Google Tag Manager */}
 
-        <Script id="ketch-lang" strategy="beforeInteractive">{`
+            <Script id="ketch-lang" strategy="beforeInteractive">{`
           (function() {
             var lang = '${ketchLang}';
             try {
@@ -141,13 +145,13 @@ export default async function RootLayout({
             });
           })();
         `}</Script>
-        <Script
-          src="https://global.ketchcdn.com/web/v3/config/nb1_health/website_smart_tag/boot.js"
-          strategy="beforeInteractive"
-          data-ketch-lang={ketchLang}
-        />
+            <Script
+              src="https://global.ketchcdn.com/web/v3/config/nb1_health/website_smart_tag/boot.js"
+              strategy="beforeInteractive"
+              data-ketch-lang={ketchLang}
+            />
 
-        {/* 
+            {/*
         {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
           <Script id="meta-pixel" strategy="afterInteractive">{`
             !function(f,b,e,v,n,t,s)
@@ -163,18 +167,20 @@ export default async function RootLayout({
           `}</Script>
         )} */}
 
-        {/* conversion.io A/B testing — beforeInteractive so the install id is set and the
+            {/* conversion.io A/B testing — beforeInteractive so the install id is set and the
             tracker loads before paint (anti-flicker) and is present when the visual editor
             inspects the page. Order matters: iid must be defined before conversion.js runs;
             next/script preserves order among beforeInteractive scripts. */}
-        <Script id="conversion-iid" strategy="beforeInteractive">{`
+            <Script id="conversion-iid" strategy="beforeInteractive">{`
           window.codebase = window.codebase || {};
           window.codebase.iid = 'B330E7E18FB3';
         `}</Script>
-        <Script
-          src="https://scripts.conversion.io/conversion.js"
-          strategy="beforeInteractive"
-        />
+            <Script
+              src="https://scripts.conversion.io/conversion.js"
+              strategy="beforeInteractive"
+            />
+          </>
+        )}
 
         <link href="/favicon-1.ico" rel="icon" sizes="32x32" />
         <link href="/favicon-1.svg" rel="icon" type="image/svg+xml" />
@@ -183,7 +189,7 @@ export default async function RootLayout({
 
       <body suppressHydrationWarning>
         <StyledJsxRegistry>
-          {process.env.NEXT_PUBLIC_META_PIXEL_ID && (
+          {marketingEnabled && process.env.NEXT_PUBLIC_META_PIXEL_ID && (
             <noscript>
               <img
                 height="1"
@@ -196,7 +202,7 @@ export default async function RootLayout({
           )}
 
           {/* Google Tag Manager (noscript) */}
-          {process.env.NEXT_PUBLIC_GTM_ID && (
+          {marketingEnabled && process.env.NEXT_PUBLIC_GTM_ID && (
             <noscript>
               <iframe
                 src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
@@ -216,10 +222,12 @@ export default async function RootLayout({
             />
 
             {children}
-            <PageViewTracker />
+            {marketingEnabled && <PageViewTracker />}
 
-            <Script id="ketch-consent-bridge" strategy="afterInteractive">
-              {`
+            {marketingEnabled && (
+              <>
+                <Script id="ketch-consent-bridge" strategy="afterInteractive">
+                  {`
                 ${ketchConsentBindingScript(ketchLang)}
 
                 // Intercept inline action links added via Ketch dashboard description field:
@@ -310,18 +318,18 @@ export default async function RootLayout({
                 });
                 ketchObserver.observe(document.body, { childList: true, subtree: true });
               `}
-            </Script>
+                </Script>
 
-            <ChatwootWidget locale={locale} />
+                <ChatwootWidget locale={locale} />
 
-            <Script
-              src="https://static.klaviyo.com/onsite/js/WwW2Hy/klaviyo.js?company_id=WwW2Hy"
-              strategy="afterInteractive"
-              async
-            />
+                <Script
+                  src="https://static.klaviyo.com/onsite/js/WwW2Hy/klaviyo.js?company_id=WwW2Hy"
+                  strategy="afterInteractive"
+                  async
+                />
 
-            <Script id="klaviyo-init" strategy="afterInteractive">
-              {`
+                <Script id="klaviyo-init" strategy="afterInteractive">
+                  {`
               !function(){if(!window.klaviyo){
                 window._klOnsite=window._klOnsite||[];
                 try{
@@ -349,7 +357,9 @@ export default async function RootLayout({
                 }
               }}();
             `}
-            </Script>
+                </Script>
+              </>
+            )}
           </Providers>
         </StyledJsxRegistry>
       </body>
