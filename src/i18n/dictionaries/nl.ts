@@ -76,6 +76,9 @@ export const nl = {
     } as Record<string, string>,
     appliedTemplate: '✓ {code} toegepast — {desc}.',
     invalid: 'Deze code is niet geldig.',
+    errors: {
+      notFound: 'Kortingscode niet gevonden.',
+    } as Record<string, string>,
   },
   checkout: {
     hero: {

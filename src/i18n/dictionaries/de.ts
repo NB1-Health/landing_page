@@ -78,6 +78,9 @@ export const de = {
     } as Record<string, string>,
     appliedTemplate: '✓ {code} angewendet – {desc}.',
     invalid: 'Dieser Code ist ungültig.',
+    errors: {
+      notFound: 'Rabattcode nicht gefunden.',
+    } as Record<string, string>,
   },
   checkout: {
     hero: {

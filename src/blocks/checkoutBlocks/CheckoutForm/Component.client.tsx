@@ -48,6 +48,33 @@ import {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
 
+// The checkout API rejects a discount code with free-text English (no machine
+// code — see applyPromo), so it can't be shown as-is on a DE/FR/NL page. Map
+// each known backend message (normalised: lowercased, collapsed whitespace,
+// trailing period stripped) to a key in dict.promo.errors, which is translated
+// per locale. Add new backend messages to BOTH this map (as their normalised
+// form) and every locale's promo.errors block.
+const DISCOUNT_ERROR_BY_MESSAGE: Record<string, string> = {
+  'discount code not found': 'notFound',
+}
+
+function normalizeDiscountError(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+}
+
+/**
+ * Localise a backend discount-code error message. Falls back to the generic
+ * localised "invalid code" text for anything unmapped or non-string — so a raw,
+ * untranslated backend string never leaks into the UI (and a non-string body
+ * can't render as "[object Object]").
+ */
+function translateDiscountError(raw: unknown, dict: ReturnType<typeof getDictionary>): string {
+  const text = typeof raw === 'string' ? raw.trim() : ''
+  const key = text ? DISCOUNT_ERROR_BY_MESSAGE[normalizeDiscountError(text)] : undefined
+  const errors = dict.promo.errors as Record<string, string> | undefined
+  return (key && errors?.[key]) || dict.promo.invalid
+}
+
 /* ─── Data ──────────────────────────────────────────────────────────── */
 
 // Numeric EUR fallback rates, used only if the live /subscriptions/plans fetch
@@ -1507,7 +1534,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const excludedFromMonthly = Boolean(data.exclude_one_month) && cycleKey === 'monthly'
         const errMsg = excludedFromMonthly
           ? t.promoUi.excludeOneMonth
-          : (data.discount_message ?? dict.promo.invalid)
+          : translateDiscountError(data.discount_message, dict)
         setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
         const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
         pushEvent('add_voucher_error', {

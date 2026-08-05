@@ -76,6 +76,9 @@ export const fr = {
     } as Record<string, string>,
     appliedTemplate: '✓ {code} appliqué — {desc}.',
     invalid: "Ce code n'est pas valide.",
+    errors: {
+      notFound: 'Code de réduction introuvable.',
+    } as Record<string, string>,
   },
   checkout: {
     hero: {
