@@ -97,9 +97,12 @@ export const OrderStepHeroComponent: React.FC<Props> = ({
         @media (max-width: 560px) {
           .nb1-ok-hero { padding: 28px 0 20px; }
           .nb1-ok-con { padding: 0 20px; }
-          .nb1-ok-seals { gap: 6px; flex-wrap: nowrap; }
-          .nb1-seal { font-size: 10.5px; padding: 6px 9px; gap: 5px; white-space: nowrap; }
-          .nb1-stars { font-size: 9px; letter-spacing: 0; }
+          /* Keep the desktop pill sizing and font size on mobile: each pill
+             hugs its own text (never stretched to a column) and the row simply
+             wraps — a seal that no longer fits drops one under the other via the
+             base flex-wrap, instead of overflowing off-screen on a single line. */
+          .nb1-ok-seals { gap: 8px; }
+          .nb1-seal { white-space: nowrap; }
           .nb1-seal-full { display: none; }
           .nb1-seal-mini { display: inline; }
         }
