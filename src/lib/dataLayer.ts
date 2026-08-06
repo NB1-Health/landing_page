@@ -1,3 +1,5 @@
+import { resetKlaviyoCheckoutTracking, trackKlaviyoCheckoutCompleted } from '@/lib/klaviyoCheckout'
+
 declare global {
   interface Window {
     dataLayer: Record<string, unknown>[]
@@ -495,6 +497,10 @@ export type SubscriptionAcquiredInput = {
   checkoutId: string
   eventId: string
   transactionId: string
+  orderNumber?: string | null
+  planSlug?: string
+  billingCycle?: string
+  language?: string
   externalId?: string
   paymentType: PaymentType
   paymentFlow: PaymentFlow
@@ -538,6 +544,7 @@ export function resetCheckoutTracking(): void {
   successViews.clear()
   postPurchaseSurveyViews.clear()
   postPurchaseSurveyAnswers.clear()
+  resetKlaviyoCheckoutTracking()
 }
 
 export function nextPaymentAttempt(checkoutId: string): number {
@@ -548,9 +555,30 @@ export function nextPaymentAttempt(checkoutId: string): number {
   return next
 }
 
+function trackConfirmedCheckoutInKlaviyo(input: SubscriptionAcquiredInput): void {
+  if (!input.user.email) return
+  trackKlaviyoCheckoutCompleted({
+    email: input.user.email,
+    checkoutId: input.checkoutId,
+    transactionId: input.transactionId,
+    orderNumber: input.orderNumber,
+    planSlug: input.planSlug,
+    billingCycle: input.billingCycle,
+    language:
+      input.language ??
+      (typeof document !== 'undefined' ? document.documentElement.lang : undefined) ??
+      'en',
+    currency: input.currency,
+    cartValue: input.value,
+    coupon: input.coupon,
+    item: input.item,
+  })
+}
+
 export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): string {
   const storageKey = `${ACQUISITION_STORAGE_PREFIX}${input.transactionId}`
   const existing = acquisitionEventIds.get(input.transactionId) ?? readSessionValue(storageKey)
+  trackConfirmedCheckoutInKlaviyo(input)
   if (existing) return existing
 
   acquisitionEventIds.set(input.transactionId, input.eventId)

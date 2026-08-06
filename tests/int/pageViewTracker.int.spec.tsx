@@ -19,10 +19,22 @@ vi.mock('@/lib/meta/browser', () => ({
 describe('public route event boundaries', () => {
   let container: HTMLDivElement
   let root: Root
+  const localValues = new Map<string, string>()
 
   beforeEach(() => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: {
+        clear: () => localValues.clear(),
+        getItem: (key: string) => localValues.get(key) ?? null,
+        removeItem: (key: string) => void localValues.delete(key),
+        setItem: (key: string, value: string) => void localValues.set(key, String(value)),
+      },
+    })
     pathname = '/de/bestellen'
     window.dataLayer = []
+    window.localStorage.clear()
+    document.cookie = 'nb1_attr=; Path=/; Max-Age=0'
     sessionStorage.clear()
     clearCheckoutId()
     sendMetaCapiEvent.mockReset()
@@ -33,8 +45,8 @@ describe('public route event boundaries', () => {
   })
 
   afterEach(() => {
-    act(() => root.unmount())
-    container.remove()
+    if (root) act(() => root.unmount())
+    container?.remove()
   })
 
   it('emits page_view and metadata-driven start_order once for a canonical order page', async () => {
@@ -66,6 +78,11 @@ describe('public route event boundaries', () => {
       checkout_id: expect.any(String),
     })
     expect(sendMetaCapiEvent).toHaveBeenCalledWith('page_view', pageView?.event_id)
+    expect(JSON.parse(window.localStorage.getItem('nb1_attr') ?? '{}')).toMatchObject({
+      v: 1,
+      landing_url: expect.stringContaining('/'),
+      params: {},
+    })
 
     await act(async () => {
       root.render(

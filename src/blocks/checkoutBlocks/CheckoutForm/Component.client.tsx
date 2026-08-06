@@ -32,7 +32,13 @@ import {
   trackSubscriptionAcquired,
   type PaymentFlow,
 } from '@/lib/dataLayer'
+import {
+  consumeCheckoutRedirectContext,
+  persistCheckoutRedirectContext,
+  readCheckoutRedirectContext,
+} from '@/lib/checkoutRedirectContext'
 import { isPaymentAttemptReady } from '@/lib/interactionTracking'
+import { trackKlaviyoStartedCheckout } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
@@ -403,8 +409,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     customerId: string
     externalId: string
   } | null>(null)
-  const [referralCode, setReferralCode] = useState<string | null>(null)
-  const [referralShareUrl, setReferralShareUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const osn = document.querySelector<HTMLElement>('.osn-nav')
@@ -610,6 +614,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (!redirectStatus) return
     if (redirectStatus === 'failed' || redirectStatus === 'canceled') {
       consumeRedirectPaymentType()
+      consumeCheckoutRedirectContext()
       setPaymentFailed(true)
       return
     }
@@ -641,6 +646,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const idempotencyKey =
           sessionStorage.getItem('nb1_checkout_idempotency_key') ?? setupIntentId
         sessionStorage.removeItem('nb1_paypal_setup_intent_id')
+        const redirectContext = readCheckoutRedirectContext()
         // Restore form data from sessionStorage
         const saved = JSON.parse(sessionStorage.getItem('nb1_checkout_form') ?? '{}')
         const redirectConfirmation = await checkoutConfirm({
@@ -677,21 +683,36 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           },
         })
         sessionStorage.removeItem('nb1_klarna_setup_intent_id')
-        const redirectItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
+        const redirectItem =
+          redirectContext?.item ??
+          buildNb1Item(planKey, cycleKey, rateNum, {
+            planTitle: planLabel,
+            discount: promoPreview?.promo_discount,
+          })
+        const redirectCurrency = redirectContext?.currency ?? currency
+        const redirectValue = redirectContext?.value ?? rateNum
+        const redirectCoupon = redirectContext?.coupon ?? promoApplied ?? undefined
         const acquisitionEventId = trackSubscriptionAcquired({
-          checkoutId: getOrCreateCheckoutId(),
+          checkoutId: redirectContext?.checkoutId ?? getOrCreateCheckoutId(),
           eventId: redirectConfirmation.event_id,
           transactionId: redirectConfirmation.subscription_id,
+          orderNumber: redirectConfirmation.order_number,
+          planSlug: redirectContext?.planSlug ?? redirectConfirmation.plan_slug,
+          billingCycle: redirectContext?.billingCycle ?? cycleKey,
+          language: redirectContext?.language ?? uiLanguage,
           externalId: redirectConfirmation.external_id,
           paymentType: redirectPaymentType,
           paymentFlow: 'redirect',
-          currency,
-          value: rateNum,
-          shipping: (saved.shipping ?? shipping) === 'express' ? expressShipNum : 0,
+          currency: redirectCurrency,
+          value: redirectValue,
+          shipping:
+            redirectContext?.shipping ??
+            ((saved.shipping ?? shipping) === 'express' ? expressShipNum : 0),
+          coupon: redirectCoupon,
           item: redirectItem,
           user: {
             userId: redirectConfirmation.external_id,
-            email: saved.email ?? email,
+            email: redirectConfirmation.user_email || saved.email || email,
             phone: saved.phone || phone || undefined,
             firstName: saved.fn ?? fn,
             lastName: saved.ln ?? ln,
@@ -704,8 +725,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         sendMetaCapiEvent('purchase', redirectConfirmation.event_id, {
           ecommerce: {
             transaction_id: redirectConfirmation.subscription_id,
-            currency,
-            value: rateNum,
+            currency: redirectCurrency,
+            value: redirectValue,
+            ...(redirectCoupon ? { coupon: redirectCoupon } : {}),
             items: [
               {
                 item_id: redirectItem.item_id,
@@ -726,6 +748,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             external_id: redirectConfirmation.external_id,
           },
         })
+        consumeCheckoutRedirectContext()
         setOrderNumber(redirectConfirmation.order_number ?? null)
         setAcquisitionIdentity({
           eventId: acquisitionEventId,
@@ -808,6 +831,26 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     shipping_price: number
   } | null>(null)
   const [promoLoading, setPromoLoading] = useState(false)
+
+  function persistCurrentCheckoutRedirectContext() {
+    const redirectMonthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
+    persistCheckoutRedirectContext({
+      checkoutId: getOrCreateCheckoutId(),
+      planKey,
+      planSlug: `NB1-${planKey.toUpperCase()}-${redirectMonthNum}`,
+      planTitle: planLabel,
+      billingCycle: cycleKey,
+      language: uiLanguage,
+      currency,
+      value: rateNum,
+      shipping: promoPreview?.shipping_price ?? (shipping === 'express' ? expressShipNum : 0),
+      coupon: promoApplied ?? undefined,
+      item: buildNb1Item(planKey, cycleKey, rateNum, {
+        planTitle: planLabel,
+        discount: promoPreview?.promo_discount,
+      }),
+    })
+  }
 
   // Formatted monthly price for a given cycle of the current family (mirrors the
   // rateNum fallback chain) — used to label the plan-switch buttons.
@@ -1033,13 +1076,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       return
     }
 
+    const checkoutId = getOrCreateCheckoutId()
     const esItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
     void primeEnhancedUserData({ email, phone: phone || undefined }).catch(() => undefined)
     void pushEventWithUser(
       'email_submitted',
       {
         event_id: mintEventId(),
-        checkout_id: getOrCreateCheckoutId(),
+        checkout_id: checkoutId,
         ecommerce: {
           currency,
           value: rateNum,
@@ -1049,6 +1093,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       },
       { email, phone: phone || undefined },
     )
+    trackKlaviyoStartedCheckout({
+      email,
+      checkoutId,
+      language: uiLanguage,
+      currency,
+      cartValue: rateNum,
+      coupon: promoApplied ?? undefined,
+      item: esItem,
+    })
     // Record the visitor's UI language on their Klaviyo profile (keyed by this email),
     // so `language` shows up alongside order_number / plan_title. Best-effort.
     void trackLanguagePublic(email, uiLanguage)
@@ -1218,6 +1271,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         payment_method_type:
           payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
       })
+
+      if (paymentFlow === 'redirect') persistCurrentCheckoutRedirectContext()
 
       // 2. Confirm the card with Stripe.js (saved in place, no redirect). Every
       // early return MUST release submittingRef, else the first declined/invalid
@@ -1395,6 +1450,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         checkoutId: getOrCreateCheckoutId(),
         eventId: confirmation.event_id,
         transactionId: confirmation.subscription_id,
+        orderNumber: confirmation.order_number,
+        planSlug: confirmation.plan_slug,
+        billingCycle: cycleKey,
+        language: uiLanguage,
         externalId: confirmation.external_id,
         paymentType: payMethod,
         paymentFlow,
@@ -1405,7 +1464,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         item: purchaseItem,
         user: {
           userId: confirmation.external_id,
-          email,
+          email: confirmation.user_email || email,
           phone: phone || undefined,
           firstName: fn,
           lastName: ln,
@@ -1440,6 +1499,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           external_id: confirmation.external_id,
         },
       })
+      consumeCheckoutRedirectContext()
 
       setOrderNumber(confirmation.order_number ?? null)
       setAcquisitionIdentity({
@@ -1449,8 +1509,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
-      setReferralCode(confirmation.referral_code ?? null)
-      setReferralShareUrl(confirmation.referral_share_url ?? null)
       setConfirmed(true)
     } catch (err: unknown) {
       setAccountStatus('error')
@@ -1469,7 +1527,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   async function createExpressIntent() {
     const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
     const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
-    return checkoutPaymentIntent({
+    const intent = await checkoutPaymentIntent({
       plan_slug: planSlug,
       currency,
       shipping_option: shipping,
@@ -1480,6 +1538,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       idempotency_key: idempotencyKeyRef.current || undefined,
       payment_method_type: null,
     })
+    persistCurrentCheckoutRedirectContext()
+    return intent
   }
 
   async function applyPromo() {
