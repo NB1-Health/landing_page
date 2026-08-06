@@ -76,13 +76,15 @@ export const en = {
     } as Record<string, string>,
     appliedTemplate: '✓ {code} applied — {desc}.',
     invalid: "That code isn't valid.",
-    // Localised versions of the free-text errors the checkout API returns for a
-    // rejected discount code. The backend sends no machine code, so applyPromo
-    // maps its English message text to these keys. Add an entry here — in EVERY
-    // locale — for each backend message you want translated; anything unmapped
-    // falls back to `invalid` above.
-    errors: {
+    // Localised versions of the free-text messages the checkout API returns for
+    // a discount code (both rejections and the success confirmation). The
+    // backend sends no machine code, so applyPromo maps its English message text
+    // to these keys. Add an entry here — in EVERY locale — for each backend
+    // message you want translated; anything unmapped falls back to the generic
+    // localised text for that branch.
+    messages: {
       notFound: 'Discount code not found.',
+      valid: 'Discount code is valid.',
     } as Record<string, string>,
   },
   checkout: {

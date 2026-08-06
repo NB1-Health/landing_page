@@ -48,31 +48,37 @@ import {
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
 
-// The checkout API rejects a discount code with free-text English (no machine
-// code — see applyPromo), so it can't be shown as-is on a DE/FR/NL page. Map
-// each known backend message (normalised: lowercased, collapsed whitespace,
-// trailing period stripped) to a key in dict.promo.errors, which is translated
-// per locale. Add new backend messages to BOTH this map (as their normalised
-// form) and every locale's promo.errors block.
-const DISCOUNT_ERROR_BY_MESSAGE: Record<string, string> = {
+// The checkout API returns discount-code messages as free-text English (no
+// machine code — see applyPromo), both for rejections and the success
+// confirmation, so they can't be shown as-is on a DE/FR/NL page. Map each known
+// backend message (normalised: lowercased, collapsed whitespace, trailing
+// period stripped) to a key in dict.promo.messages, which is translated per
+// locale. Add new backend messages to BOTH this map (as their normalised form)
+// and every locale's promo.messages block.
+const DISCOUNT_MESSAGE_BY_TEXT: Record<string, string> = {
   'discount code not found': 'notFound',
+  'discount code is valid': 'valid',
 }
 
-function normalizeDiscountError(text: string): string {
+function normalizeDiscountMessage(text: string): string {
   return text.toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
 }
 
 /**
- * Localise a backend discount-code error message. Falls back to the generic
- * localised "invalid code" text for anything unmapped or non-string — so a raw,
+ * Localise a backend discount-code message (success or error). Falls back to the
+ * caller-supplied localised text for anything unmapped or non-string — so a raw,
  * untranslated backend string never leaks into the UI (and a non-string body
  * can't render as "[object Object]").
  */
-function translateDiscountError(raw: unknown, dict: ReturnType<typeof getDictionary>): string {
+function translateDiscountMessage(
+  raw: unknown,
+  dict: ReturnType<typeof getDictionary>,
+  fallback: string,
+): string {
   const text = typeof raw === 'string' ? raw.trim() : ''
-  const key = text ? DISCOUNT_ERROR_BY_MESSAGE[normalizeDiscountError(text)] : undefined
-  const errors = dict.promo.errors as Record<string, string> | undefined
-  return (key && errors?.[key]) || dict.promo.invalid
+  const key = text ? DISCOUNT_MESSAGE_BY_TEXT[normalizeDiscountMessage(text)] : undefined
+  const messages = dict.promo.messages as Record<string, string> | undefined
+  return (key && messages?.[key]) || fallback
 }
 
 /* ─── Data ──────────────────────────────────────────────────────────── */
@@ -1521,9 +1527,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           shipping_price: data.shipping_price,
         })
         setPromoMsg({
-          text:
-            data.discount_message ??
+          text: translateDiscountMessage(
+            data.discount_message,
+            dict,
             dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
+          ),
           ok: true,
         })
       } else {
@@ -1534,7 +1542,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const excludedFromMonthly = Boolean(data.exclude_one_month) && cycleKey === 'monthly'
         const errMsg = excludedFromMonthly
           ? t.promoUi.excludeOneMonth
-          : translateDiscountError(data.discount_message, dict)
+          : translateDiscountMessage(data.discount_message, dict, dict.promo.invalid)
         setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
         const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
         pushEvent('add_voucher_error', {
