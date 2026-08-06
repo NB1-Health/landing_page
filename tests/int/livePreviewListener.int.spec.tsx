@@ -76,6 +76,22 @@ describe('Payload live preview refreshes', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
+  it('refreshes once when the first message is already a saved update', () => {
+    const update = {
+      entitySlug: 'pages',
+      id: 42,
+      operation: 'update' as const,
+      updatedAt: '2026-08-05T12:00:00.000Z',
+    }
+
+    act(() => {
+      sendLivePreviewUpdate(update)
+      sendLivePreviewUpdate(update)
+    })
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
   it('refreshes once per saved document update and rejects duplicates or other origins', () => {
     const firstUpdate = {
       entitySlug: 'pages',

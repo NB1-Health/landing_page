@@ -47,6 +47,9 @@ export const LivePreviewListener: React.FC = () => {
       if (!hasBaseline.current) {
         hasBaseline.current = true
         lastUpdateKey.current = updateKey
+        // A keyed first message can be a save that completed while the iframe
+        // was loading. Refresh once so that update is not mistaken for startup.
+        if (updateKey) router.refresh()
         return
       }
 
