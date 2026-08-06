@@ -424,6 +424,16 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
         @media (max-width: 600px) {
           .nb1-cpg-grid.two-col { grid-template-columns: 1fr; }
           .nb1-cpg-ctas { grid-template-columns: 1fr; }
+          /* Stack the header on mobile so the title/subtitle and the athlete
+             seal fall one under the other instead of sharing a cramped row. */
+          .nb1-cpg-head {
+            flex-direction: column;
+            gap: 14px;
+          }
+          .nb1-cpg-head-ath {
+            padding-top: 0;
+            white-space: normal;
+          }
         }
       `}</style>
 

@@ -110,6 +110,33 @@ export type PostPurchaseSurveyResponseIn = {
   answers: PostPurchaseSurveyAnswerIn[]
 }
 
+/**
+ * Turn a backend error body's `detail` into a human-readable string.
+ *
+ * Business errors send `detail` as a plain string ("Coupon expired"), but
+ * FastAPI request-validation errors (HTTP 422) send it as an array of
+ * `{ loc, msg, type }` objects. Passing that array straight into `new Error()`
+ * coerces it to "[object Object],[object Object],…", which then surfaces in the
+ * checkout UI. Flatten the array to its `msg` fields instead, and fall back to
+ * a generic message when `detail` is missing or an unexpected shape.
+ */
+function detailToMessage(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string' && detail.trim()) return detail
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((d) =>
+        typeof d === 'string'
+          ? d
+          : d && typeof d === 'object' && 'msg' in d
+            ? String((d as { msg: unknown }).msg)
+            : '',
+      )
+      .filter(Boolean)
+    if (msgs.length) return msgs.join(', ')
+  }
+  return fallback
+}
+
 export async function checkoutPaymentIntent(
   params: CheckoutPaymentIntentIn,
 ): Promise<CheckoutPaymentIntentOut> {
@@ -120,7 +147,7 @@ export async function checkoutPaymentIntent(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(err?.detail ?? 'Payment intent failed'), { code: 'payment_intent_failed' })
+    throw Object.assign(new Error(detailToMessage(err?.detail, 'Payment intent failed')), { code: 'payment_intent_failed' })
   }
   return res.json()
 }
@@ -135,7 +162,7 @@ export async function checkoutConfirm(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(err?.detail ?? 'Checkout confirm failed'), { code: 'confirm_failed' })
+    throw Object.assign(new Error(detailToMessage(err?.detail, 'Checkout confirm failed')), { code: 'confirm_failed' })
   }
   return res.json()
 }
@@ -187,7 +214,7 @@ export async function checkoutConfirmProxy(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(err?.detail ?? 'Checkout confirm failed'), { code: 'confirm_failed' })
+    throw Object.assign(new Error(detailToMessage(err?.detail, 'Checkout confirm failed')), { code: 'confirm_failed' })
   }
   return res.json()
 }

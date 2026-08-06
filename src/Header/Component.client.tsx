@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
+import { isAppLocale } from '@/i18n/config'
 
 type Theme = 'light' | 'dark'
 
@@ -361,8 +362,16 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     : localeToLang(locale || 'en')
   const dict = getDictionary(activeLang)
   const [curLang, setCurLang] = useState(activeLang)
+  // The actual URL locale segment (e.g. 'uk', 'be'), as opposed to curLang which
+  // collapses regional locales to their base language (uk→en, be→nl). Links that
+  // must keep the visitor in their current locale — the CTA button — use this,
+  // not curLang, otherwise a /uk visitor gets sent to /en. Mirrors navItems,
+  // which are already locale-prefixed server-side with the raw locale.
+  const activeLocale = isAppLocale(langFromPath) ? langFromPath : (locale || 'en')
+  const [curLocale, setCurLocale] = useState(activeLocale)
   useEffect(() => {
     setCurLang(activeLang)
+    setCurLocale(activeLocale)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
   // Seeded from the server-resolved cookie value (not localStorage) so this
@@ -868,7 +877,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
 
             {ctaLabel && ctaUrl && (
               <a
-                href={`/${curLang}${ctaUrl.startsWith('/') ? ctaUrl : `/${ctaUrl}`}`}
+                href={`/${curLocale}${ctaUrl.startsWith('/') ? ctaUrl : `/${ctaUrl}`}`}
                 className="nb1-nav-cta"
               >
                 {ctaLabel}
@@ -947,7 +956,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
         )}
         {ctaLabel && ctaUrl && (
           <a
-            href={`/${curLang}${ctaUrl.startsWith('/') ? ctaUrl : `/${ctaUrl}`}`}
+            href={`/${curLocale}${ctaUrl.startsWith('/') ? ctaUrl : `/${ctaUrl}`}`}
             className="nb1-sheet-cta"
             onClick={() => setSheetOpen(false)}
           >

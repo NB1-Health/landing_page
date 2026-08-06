@@ -604,6 +604,14 @@ export const CycleSelectorClient: React.FC<Props> = ({
         }
 
         @media (max-width: 640px) {
+          /* Stack each tab's label above its subtitle on mobile so
+             "Flexible / 1 month" and "Commit & save / 4 or 12 months" sit one
+             under the other instead of overflowing on a single line. */
+          .nb1-cs-tab {
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+          }
           .nb1-cs-foot {
             flex-direction: column;
             align-items: stretch;
