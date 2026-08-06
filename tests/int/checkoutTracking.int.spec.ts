@@ -30,10 +30,16 @@ describe('checkout event boundaries', () => {
   ] as const)(
     'emits the same confirmed acquisition contract for %s',
     (paymentType, paymentFlow) => {
+      const identify = vi.fn((_properties: Record<string, unknown>, callback: () => void) =>
+        callback(),
+      )
+      const track = vi.fn()
+      window.klaviyo = { push: vi.fn(), identify, track } as Window['klaviyo']
       const eventId = trackSubscriptionAcquired({
         checkoutId: 'checkout-1',
         eventId: `acquisition-${paymentType}`,
         transactionId: `subscription-${paymentType}`,
+        language: 'en',
         externalId: 'customer-1',
         paymentType,
         paymentFlow,
@@ -58,6 +64,15 @@ describe('checkout event boundaries', () => {
         confirmation_source: 'checkout_confirm',
         signal_quality: 'confirmed',
       })
+      expect(identify).toHaveBeenCalledTimes(1)
+      expect(track).toHaveBeenCalledWith(
+        'Checkout Completed',
+        expect.objectContaining({
+          $event_id: `checkout_completed:subscription-${paymentType}`,
+          transaction_id: `subscription-${paymentType}`,
+        }),
+        expect.any(Function),
+      )
     },
   )
 
@@ -77,6 +92,38 @@ describe('checkout event boundaries', () => {
     expect(trackSubscriptionAcquired(input)).toBe('acquisition-1')
     expect(trackSubscriptionAcquired({ ...input, eventId: 'unexpected-retry-id' })).toBe(
       'acquisition-1',
+    )
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'subscription_acquired'),
+    ).toHaveLength(1)
+  })
+
+  it('retries Klaviyo delivery after a reconfirm without duplicating the acquisition', () => {
+    delete (window as unknown as { klaviyo?: Window['klaviyo'] }).klaviyo
+    const input = {
+      checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      paymentType: 'card' as const,
+      paymentFlow: 'inline' as const,
+      currency: 'EUR',
+      value: 99,
+      item: { item_id: 'core-4', item_name: 'Core 4 months', price: 99, quantity: 1 },
+      user: { email: 'buyer@example.com' },
+    }
+
+    expect(trackSubscriptionAcquired(input)).toBe('acquisition-1')
+    const identify = vi.fn((_properties: Record<string, unknown>, callback: () => void) =>
+      callback(),
+    )
+    const track = vi.fn()
+    window.klaviyo = { push: vi.fn(), identify, track } as Window['klaviyo']
+
+    expect(trackSubscriptionAcquired({ ...input, eventId: 'retry-id' })).toBe('acquisition-1')
+    expect(track).toHaveBeenCalledWith(
+      'Checkout Completed',
+      expect.objectContaining({ transaction_id: 'subscription-1' }),
+      expect.any(Function),
     )
     expect(
       window.dataLayer.filter((entry) => entry.canonical_event === 'subscription_acquired'),
