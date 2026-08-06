@@ -76,11 +76,12 @@ export const de = {
       FREEMONTH: 'Erster Monat gratis',
       FIRSTMONTHFREE: 'Erster Monat gratis',
     } as Record<string, string>,
-    appliedTemplate: '✓ {code} angewendet – {desc}.',
+    appliedTemplate: '✓ {code} angewendet.',
     invalid: 'Dieser Code ist ungültig.',
     messages: {
       notFound: 'Rabattcode nicht gefunden.',
       valid: 'Rabattcode ist gültig.',
+      referralFirstMonthFree: '✓ Erster Monat gratis mit deinem Empfehlungscode.',
     } as Record<string, string>,
   },
   checkout: {

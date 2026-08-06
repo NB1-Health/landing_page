@@ -74,11 +74,12 @@ export const nl = {
       FREEMONTH: 'Eerste maand gratis',
       FIRSTMONTHFREE: 'Eerste maand gratis',
     } as Record<string, string>,
-    appliedTemplate: '✓ {code} toegepast — {desc}.',
+    appliedTemplate: '✓ {code} toegepast.',
     invalid: 'Deze code is niet geldig.',
     messages: {
       notFound: 'Kortingscode niet gevonden.',
       valid: 'Kortingscode is geldig.',
+      referralFirstMonthFree: '✓ Eerste maand gratis met je referral-code.',
     } as Record<string, string>,
   },
   checkout: {

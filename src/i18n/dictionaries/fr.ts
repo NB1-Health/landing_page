@@ -74,11 +74,12 @@ export const fr = {
       FREEMONTH: 'Premier mois offert',
       FIRSTMONTHFREE: 'Premier mois offert',
     } as Record<string, string>,
-    appliedTemplate: '✓ {code} appliqué — {desc}.',
+    appliedTemplate: '✓ {code} appliqué.',
     invalid: "Ce code n'est pas valide.",
     messages: {
       notFound: 'Code de réduction introuvable.',
       valid: 'Code de réduction valide.',
+      referralFirstMonthFree: '✓ Premier mois offert avec votre code de parrainage.',
     } as Record<string, string>,
   },
   checkout: {

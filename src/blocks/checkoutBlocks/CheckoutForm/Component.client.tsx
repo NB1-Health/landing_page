@@ -65,6 +65,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 const DISCOUNT_MESSAGE_BY_TEXT: Record<string, string> = {
   'discount code not found': 'notFound',
   'discount code is valid': 'valid',
+  'referral code applied: your first month is free': 'referralFirstMonthFree',
 }
 
 function normalizeDiscountMessage(text: string): string {
