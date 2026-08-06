@@ -1,12 +1,14 @@
-import { getCachedFooter } from '@/utilities/getHeaderFooter'
+import { getFooter } from '@/utilities/getHeaderFooter'
 import React, { Suspense } from 'react'
 
 import type { Media } from '@/payload-types'
+import type { AuthenticatedDraft } from '@/utilities/authenticatedDraft'
 import { FooterClient } from './FooterClient'
 
 type Props = {
   locale: string
   id?: string | null
+  read?: AuthenticatedDraft
 }
 
 type FooterData = {
@@ -29,8 +31,8 @@ type FooterData = {
   }> | null
 }
 
-export async function Footer({ locale, id }: Props) {
-  const footerData = (await getCachedFooter(id, locale)()) as FooterData | null
+export async function Footer({ locale, id, read }: Props) {
+  const footerData = (await getFooter(id, locale, read)) as FooterData | null
 
   if (!footerData) return null
 

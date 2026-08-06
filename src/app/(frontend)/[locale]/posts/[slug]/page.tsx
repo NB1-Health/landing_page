@@ -82,7 +82,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
 
   return (
     <>
-      <Header locale={locale} />
+      <Header locale={locale} read={read} />
       <article className="pt-16 mr-auto ml-auto bg-white" style={{ maxWidth: '1440px' }}>
         <PageClient />
 
@@ -117,7 +117,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
           </div>
         </div>
       </article>
-      <Footer locale={locale} />
+      <Footer locale={locale} read={read} />
     </>
   )
 }

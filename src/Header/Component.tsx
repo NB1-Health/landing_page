@@ -1,8 +1,9 @@
-import { getCachedHeader } from '@/utilities/getHeaderFooter'
+import { getHeader } from '@/utilities/getHeaderFooter'
 import React, { Suspense } from 'react'
 
 import type { Media } from '@/payload-types'
 import { getServerCurrency } from '@/utilities/currency'
+import type { AuthenticatedDraft } from '@/utilities/authenticatedDraft'
 import { HeaderClient } from './Component.client'
 
 type RawLink = {
@@ -83,10 +84,11 @@ type Props = {
    * navigation (e.g. clicking a nav link) and silently points the switcher at
    * whatever page was last hard-loaded instead of the current one. */
   pageSlugs?: Partial<Record<string, string>> | null
+  read?: AuthenticatedDraft
 }
 
-export async function Header({ locale, id, pageSlugs }: Props) {
-  const data = (await getCachedHeader(id, locale)()) as HeaderData | null
+export async function Header({ locale, id, pageSlugs, read }: Props) {
+  const data = (await getHeader(id, locale, read)) as HeaderData | null
   // Resolved server-side from the cookie so the initial currency label
   // matches what HeaderClient hydrates with — previously HeaderClient read
   // localStorage in its useState initializer, which is unavailable during

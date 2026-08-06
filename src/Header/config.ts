@@ -1,9 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
 import { link } from '@/fields/link'
-import { enforceSingleDefault } from './hooks/enforceSingleDefault'
-import { revalidateHeader } from './hooks/revalidateHeader'
+import {
+  enforceSingleDefault,
+  protectDefaultDelete,
+  protectExistingDefaultDraft,
+} from './hooks/enforceSingleDefault'
+import { revalidateDeletedHeader, revalidateHeader } from './hooks/revalidateHeader'
 import { adminOnly } from '@/access/roles'
+import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'
+import { captureChromeDraftSave } from '@/utilities/chromeDrafts'
 
 const themeOptions = [
   { label: 'Light (white/glass background)', value: 'light' },
@@ -15,7 +21,7 @@ export const Headers: CollectionConfig = {
   access: {
     create: adminOnly,
     delete: adminOnly,
-    read: () => true,
+    read: authenticatedOrPublished,
     update: adminOnly,
   },
   admin: {
@@ -23,7 +29,17 @@ export const Headers: CollectionConfig = {
     defaultColumns: ['name', 'theme', 'isDefault'],
   },
   hooks: {
+    beforeOperation: [captureChromeDraftSave],
+    beforeChange: [protectExistingDefaultDraft],
+    beforeDelete: [protectDefaultDelete],
     afterChange: [enforceSingleDefault, revalidateHeader],
+    afterDelete: [revalidateDeletedHeader],
+  },
+  versions: {
+    drafts: {
+      autosave: { interval: 5000 },
+    },
+    maxPerDoc: 10,
   },
   fields: [
     {

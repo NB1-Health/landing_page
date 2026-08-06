@@ -1,8 +1,15 @@
 import type { CollectionConfig } from 'payload'
 
 import { link } from '@/fields/link'
-import { revalidateFooter } from './hooks/revalidateFooter'
+import {
+  enforceSingleDefault,
+  protectDefaultDelete,
+  protectExistingDefaultDraft,
+} from './hooks/enforceSingleDefault'
+import { revalidateDeletedFooter, revalidateFooter } from './hooks/revalidateFooter'
 import { adminOnly } from '@/access/roles'
+import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'
+import { captureChromeDraftSave } from '@/utilities/chromeDrafts'
 
 const themeOptions = [
   { label: 'Light (white background)', value: 'light' },
@@ -14,15 +21,25 @@ export const Footers: CollectionConfig = {
   access: {
     create: adminOnly,
     delete: adminOnly,
-    read: () => true,
+    read: authenticatedOrPublished,
     update: adminOnly,
   },
   hooks: {
-    afterChange: [revalidateFooter],
+    beforeOperation: [captureChromeDraftSave],
+    beforeChange: [protectExistingDefaultDraft],
+    beforeDelete: [protectDefaultDelete],
+    afterChange: [enforceSingleDefault, revalidateFooter],
+    afterDelete: [revalidateDeletedFooter],
   },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'theme', 'isDefault'],
+  },
+  versions: {
+    drafts: {
+      autosave: { interval: 5000 },
+    },
+    maxPerDoc: 10,
   },
   fields: [
     {

@@ -135,6 +135,36 @@ describeWithLocalDatabase('Payload page publishing lifecycle', () => {
       user: publisher,
     })
 
+  const publicHeader = async (id: number) => {
+    const result = await payload.find({
+      collection: 'headers',
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user: null,
+      where: { id: { equals: id } },
+    })
+    return result.docs[0] ?? null
+  }
+
+  const publicFooter = async (id: number) => {
+    const result = await payload.find({
+      collection: 'footers',
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      limit: 1,
+      overrideAccess: false,
+      pagination: false,
+      user: null,
+      where: { id: { equals: id } },
+    })
+    return result.docs[0] ?? null
+  }
+
   it('keeps drafts private, publishes locales independently, unpublishes, and rolls back', async () => {
     const created = await payload.create({
       collection: 'pages',
@@ -339,6 +369,266 @@ describeWithLocalDatabase('Payload page publishing lifecycle', () => {
     })
     expect((await publicPage('en', enSlug))?.title).toBe('Original English')
     expect((await publicPage('de', deSlug))?.title).toBe('Deutsch Entwurf')
+  }, 120_000)
+
+  it('keeps Header and Footer drafts private and preserves pending work during a default switch', async () => {
+    const oldHeader = await payload.create({
+      collection: 'headers',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'published',
+        ctaLabel: 'Order now',
+        ctaUrl: '/live-order',
+        isDefault: true,
+        name: `Live header ${suffix}`,
+      },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    const newHeader = await payload.create({
+      collection: 'headers',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        ctaLabel: 'Join now',
+        ctaUrl: '/new-order',
+        isDefault: true,
+        name: `New header ${suffix}`,
+      },
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+
+    expect(await publicHeader(newHeader.id)).toBeNull()
+
+    await payload.update({
+      collection: 'headers',
+      id: oldHeader.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'draft', ctaUrl: '/pending-order' },
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect((await publicHeader(oldHeader.id))?.ctaUrl).toBe('/live-order')
+
+    await expect(
+      payload.update({
+        collection: 'headers',
+        id: newHeader.id,
+        context: { disableRevalidate: true },
+        data: { _status: 'published', isDefault: true },
+        draft: false,
+        fallbackLocale: false,
+        locale: 'en',
+        overrideAccess: false,
+        user: admin,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+
+    const pendingHeader = await payload.findByID({
+      collection: 'headers',
+      id: oldHeader.id,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect(pendingHeader._status).toBe('draft')
+    expect(pendingHeader.ctaUrl).toBe('/pending-order')
+    expect((await publicHeader(oldHeader.id))?.isDefault).toBe(true)
+    expect(await publicHeader(newHeader.id)).toBeNull()
+
+    await payload.update({
+      collection: 'headers',
+      id: oldHeader.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'published' },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    await payload.update({
+      collection: 'headers',
+      id: newHeader.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'published', isDefault: true },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect((await publicHeader(oldHeader.id))?.isDefault).toBe(false)
+    expect((await publicHeader(oldHeader.id))?.ctaUrl).toBe('/pending-order')
+    expect((await publicHeader(newHeader.id))?.isDefault).toBe(true)
+
+    await expect(
+      payload.update({
+        collection: 'headers',
+        id: newHeader.id,
+        context: { disableRevalidate: true },
+        data: { _status: 'draft' },
+        draft: false,
+        overrideAccess: false,
+        user: admin,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+    await expect(
+      payload.delete({
+        collection: 'headers',
+        id: newHeader.id,
+        context: { disableRevalidate: true },
+        overrideAccess: false,
+        user: admin,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+
+    const defaultFooter = await payload.create({
+      collection: 'footers',
+      context: { disableRevalidate: true },
+      data: { _status: 'published', isDefault: true, name: `Live footer ${suffix}` },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    const defaultFooters = await payload.find({
+      collection: 'footers',
+      draft: false,
+      depth: 0,
+      limit: 10,
+      overrideAccess: true,
+      where: { isDefault: { equals: true } },
+    })
+    expect(defaultFooters.docs.map(({ id }) => id)).toEqual([defaultFooter.id])
+    await payload.update({
+      collection: 'footers',
+      id: defaultFooter.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'draft', isDefault: false },
+      draft: true,
+      overrideAccess: false,
+      user: admin,
+    })
+    await expect(
+      payload.update({
+        collection: 'footers',
+        id: defaultFooter.id,
+        context: { disableRevalidate: true },
+        data: { _status: 'published' },
+        draft: false,
+        overrideAccess: false,
+        user: admin,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+    await expect(
+      payload.delete({
+        collection: 'footers',
+        id: defaultFooter.id,
+        context: { disableRevalidate: true },
+        overrideAccess: false,
+        user: admin,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+    await payload.update({
+      collection: 'footers',
+      id: defaultFooter.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'published', isDefault: true },
+      draft: false,
+      overrideAccess: false,
+      user: admin,
+    })
+
+    const footer = await payload.create({
+      collection: 'footers',
+      context: { disableRevalidate: true },
+      data: { _status: 'published', name: `Versioned footer ${suffix}` },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    await payload.update({
+      collection: 'footers',
+      id: footer.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'draft', name: `Draft footer ${suffix}` },
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect((await publicFooter(footer.id))?.name).toBe(`Versioned footer ${suffix}`)
+
+    await payload.update({
+      collection: 'footers',
+      id: footer.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'published' },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect((await publicFooter(footer.id))?.name).toBe(`Draft footer ${suffix}`)
+
+    const publishedFooterVersions = await payload.findVersions({
+      collection: 'footers',
+      depth: 0,
+      limit: 10,
+      overrideAccess: true,
+      sort: '-createdAt',
+      where: {
+        and: [
+          { parent: { equals: footer.id } },
+          { 'version._status': { equals: 'published' } },
+        ],
+      },
+    })
+    const publishedFooterVersionID = publishedFooterVersions.docs[0]?.id
+    expect(publishedFooterVersionID).toBeDefined()
+
+    await payload.update({
+      collection: 'footers',
+      id: footer.id,
+      context: { disableRevalidate: true },
+      data: { _status: 'draft' },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect(await publicFooter(footer.id)).toBeNull()
+
+    await payload.restoreVersion({
+      collection: 'footers',
+      id: String(publishedFooterVersionID),
+      context: { disableRevalidate: true },
+      draft: false,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      user: admin,
+    })
+    expect((await publicFooter(footer.id))?.name).toBe(`Draft footer ${suffix}`)
   }, 120_000)
 
   it('enforces editor, publisher, and administrator capabilities through the Local API', async () => {

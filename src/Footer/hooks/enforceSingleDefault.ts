@@ -1,4 +1,4 @@
 import { createDefaultChromeHooks } from '@/utilities/defaultChrome'
 
 export const { enforceSingleDefault, protectDefaultDelete, protectExistingDefaultDraft } =
-  createDefaultChromeHooks('headers', 'Header')
+  createDefaultChromeHooks('footers', 'Footer')

@@ -1,4 +1,4 @@
-# Payload page publishing
+# Payload publishing
 
 ## Outcome
 
@@ -33,6 +33,16 @@ Existing CMS users are promoted to `admin` by the role migration so rollout cann
 
 Payload's `defaultLocalePublishOption` is a global localization setting, so the same active-locale primary-button behavior also appears on other localized, versioned collections such as Posts. This branch does not otherwise change their schema or publication hooks. Editors can still choose **Publish all locales** from the menu.
 
+### Header and Footer flow
+
+Header and Footer changes are administrator-only because they affect shared site chrome. They now use the same native five-second autosave, drafts, Preview, publish/unpublish, rollback, and ten-version history as Pages. Preview them through a Page or Post while logged into Payload; authenticated Preview reads the draft Header/Footer without putting it in the shared public cache. Marketing SDKs remain disabled in Preview, and Klaviyo areas render non-submitting stand-ins so layout can still be reviewed without recording test traffic.
+
+The rollout migration creates one published baseline version for every existing Header and Footer. That makes the pre-rollout chrome available in Payload's normal version history before an administrator makes the first draft edit.
+
+Publishing a new **site default** automatically replaces the previous default. If the previous default has pending draft work, Payload asks the administrator to publish or discard that work first so the automatic handover cannot hide it. The sole published default cannot be unchecked, unpublished, or deleted until another default is published. If a published Page references a Header/Footer that is not publicly available, the renderer falls back to the published default rather than dropping navigation or legal chrome.
+
+Pages use exact-locale publication readiness. Header/Footer text intentionally retains the configured locale inheritance (`ch` from `de`, `be` from `nl`, and `uk`/`uae` from `en`), so shared chrome can inherit until a localized override is supplied.
+
 A locale becomes addressable when its own localized slug has reached the published Page. Public Page reads, static params, metadata, hreflang, cross-locale redirects, and the page sitemap use no fallback locale. A never-published locale is omitted. A locale with a newer draft continues serving its last published values until that locale is published again.
 
 The Page whose published English slug is `home` or `home-page` is the stable homepage identity. It is always canonical at `/{locale}` even if another locale translates its stored slug (for example `startseite`): preview, redirects, static params, hreflang, sitemap output, and cache targets all normalize that document to the locale root.
@@ -44,6 +54,7 @@ Payload's native **Unpublish** action is document-wide, not per-locale: it remov
 - Draft/autosave operations do not invalidate public routes.
 - Any Page publication invalidates the previous and current explicit paths plus page-sitemap tags for every published locale of that Page. Payload also writes shared Page fields and `updatedAt` during a locale publication, so page-scoped all-locale invalidation prevents stale shared layout while remaining much narrower than a site-wide purge.
 - **Publish all**, document-wide unpublish, delete, and whole-version restore use the same page-scoped explicit path set.
+- Header/Footer autosaves leave public caches untouched. Publish, unpublish, rollback, default handover, and delete invalidate that document/default tag and each configured locale layout because shared chrome can appear across the site.
 - Route targets are derived only from the configured locale allow-list and normalized Payload slug format. Caller-supplied paths are never accepted.
 - Cache failures are logged without failing a successful database publication. The existing 10-minute ISR interval is the recovery backstop.
 
@@ -66,4 +77,6 @@ npx vitest run --config ./vitest.config.mts \
   tests/int/payloadPublishingLifecycle.int.spec.ts
 ```
 
-It covers new-draft invisibility, authenticated exact-draft reads, unauthenticated draft rejection, publish updates, rollback, global unpublish/restore, and independent English/German publication. Separate route tests also verify that a retained Next draft cookie cannot authorize reads after the Payload session is gone.
+It covers new-draft invisibility, authenticated exact-draft reads, unauthenticated draft rejection, publish updates, rollback, global unpublish/restore, independent English/German publication, Header/Footer draft isolation, default handover protection, sole-default protection, and Header/Footer rollback. Separate route tests also verify that a retained Next draft cookie cannot authorize reads after the Payload session is gone.
+
+The generated Header/Footer down migration restores the old required-column constraints and removes draft status. Delete draft-only documents—or intentionally publish them—before a local rollback; merely completing an unpublished draft is not enough because it would become ordinary live content when draft status is removed. Production rollout uses the forward migration; `migrate:down` remains local-only.

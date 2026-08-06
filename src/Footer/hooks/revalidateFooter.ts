@@ -1,10 +1,13 @@
-import type { CollectionAfterChangeHook } from 'payload'
+import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, PayloadRequest } from 'payload'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
 
 import { appLocales } from '@/i18n/config'
+import { isChromeDraftSave } from '@/utilities/chromeDrafts'
 
-export const revalidateFooter: CollectionAfterChangeHook = ({ doc, req: { payload, context } }) => {
+const invalidateFooter = (doc: { id: number | string }, req: PayloadRequest) => {
+  const { payload, context } = req
+
   if (!context.disableRevalidate) {
     payload.logger.info(`Revalidating footer`)
 
@@ -20,3 +23,9 @@ export const revalidateFooter: CollectionAfterChangeHook = ({ doc, req: { payloa
 
   return doc
 }
+
+export const revalidateFooter: CollectionAfterChangeHook = ({ doc, req }) =>
+  isChromeDraftSave(req) ? doc : invalidateFooter(doc, req)
+
+export const revalidateDeletedFooter: CollectionAfterDeleteHook = ({ doc, req }) =>
+  invalidateFooter(doc, req)

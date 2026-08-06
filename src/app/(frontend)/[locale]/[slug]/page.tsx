@@ -178,7 +178,9 @@ export default async function Page({ params: paramsPromise }: Args) {
     <>
       <JsonLd data={pageJsonLd} />
 
-      {!hideHeader && <Header locale={locale} id={headerId} pageSlugs={pageSlugsByLocale} />}
+      {!hideHeader && (
+        <Header locale={locale} id={headerId} pageSlugs={pageSlugsByLocale} read={read} />
+      )}
 
       <article
         data-nb1-order-entry={isOrderEntry ? 'true' : undefined}
@@ -197,7 +199,7 @@ export default async function Page({ params: paramsPromise }: Args) {
         <RenderBlocks blocks={layout || []} locale={locale} />
       </article>
 
-      {!hideFooter && <Footer locale={locale} id={footerId} />}
+      {!hideFooter && <Footer locale={locale} id={footerId} read={read} />}
     </>
   )
 }
