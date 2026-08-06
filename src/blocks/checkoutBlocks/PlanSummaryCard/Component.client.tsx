@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useReveal } from '../useReveal'
+import { getDictionary } from '@/i18n/getDictionary'
 import {
   fetchPlansClient,
   getClientCurrency,
@@ -47,6 +48,7 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
   locale = 'en',
 }) => {
   const { ref, revealed } = useReveal()
+  const perMonth = getDictionary(locale).plans.perMonth
   const [price, setPrice] = useState<string | null>(null)
   const [primaryCtaPrice, setPrimaryCtaPrice] = useState<string | null>(null)
   const [secondaryCtaText, setSecondaryCtaText] = useState<string | null | undefined>(rawSecondaryCtaText)
@@ -65,7 +67,7 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
       if (rate != null) {
         const formatted = formatPrice(rate, currency, locale)
         setPrice(formatted)
-        setPrimaryCtaPrice(`${formatted}/mo`)
+        setPrimaryCtaPrice(`${formatted}${perMonth}`)
       }
       setSecondaryCtaText(resolveTokens(rawSecondaryCtaText, rateMap, currency, locale))
       const apiBullets = extractBullets(plans, family, locale)
@@ -274,7 +276,7 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
               {price && (
                 <div className="nb1-psc-price-row">
                   <span className="nb1-psc-price">{price}</span>
-                  <span className="nb1-psc-per">/mo</span>
+                  <span className="nb1-psc-per">{perMonth}</span>
                 </div>
               )}
               {priceNote && <div className="nb1-psc-note">{priceNote}</div>}

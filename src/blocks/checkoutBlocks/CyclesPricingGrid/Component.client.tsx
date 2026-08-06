@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useReveal } from '../useReveal'
+import { getDictionary } from '@/i18n/getDictionary'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 import RichText from '@/components/RichText'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
@@ -104,6 +105,7 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
   locale = 'en',
 }) => {
   const { ref, revealed } = useReveal()
+  const perMonth = getDictionary(locale).plans.perMonth
   const twoCol = Boolean(showSecondPlan && planName2)
   const [rows, setRows] = useState<PricingRow[]>(rowsProp ?? [])
   const [rows2, setRows2] = useState<PricingRow[]>(rows2Prop ?? [])
@@ -487,11 +489,11 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
                 </span>
                 <span className="nb1-cpg-cell">
                   {row.rate}
-                  <small> /mo</small>
+                  <small> {perMonth}</small>
                 </span>
                 <span className="nb1-cpg-cell">
                   {rows2?.[i]?.rate}
-                  <small> /mo</small>
+                  <small> {perMonth}</small>
                 </span>
               </div>
             ))}
@@ -513,7 +515,7 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
                       <span className="nb1-cpg-best-tag">{row.bestValueLabel}</span>
                     )}
                   </span>
-                  <span className="nb1-cpg-rate">{row.rate}<small> /mo</small></span>
+                  <span className="nb1-cpg-rate">{row.rate}<small> {perMonth}</small></span>
                 </div>
               ))}
             </div>

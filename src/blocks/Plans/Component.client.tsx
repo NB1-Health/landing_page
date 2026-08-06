@@ -554,7 +554,7 @@ export const PlansClient: React.FC<Props> = (props) => {
               <div className="pl-key">{coreLabel || 'Core'}</div>
               {coreDesc && <p className="pl-desc">{coreDesc}</p>}
               {corePrice && (
-                <div className="pl-price" dangerouslySetInnerHTML={{ __html: corePrice + '<small> /mo</small>' }} />
+                <div className="pl-price" dangerouslySetInnerHTML={{ __html: corePrice + '<small> ' + dict.plans.perMonth + '</small>' }} />
               )}
               {/* {coreMonthly && <span className="pl-monthly">{coreMonthly}</span>} */}
               {coreCommit && <p className="pl-commit">{coreCommit}</p>}
@@ -586,7 +586,7 @@ export const PlansClient: React.FC<Props> = (props) => {
               <div className="pl-key">{advLabel || 'Advanced'}</div>
               {advDesc && <p className="pl-desc">{advDesc}</p>}
               {advPrice && (
-                <div className="pl-price" dangerouslySetInnerHTML={{ __html: advPrice + '<small> /mo</small>' }} />
+                <div className="pl-price" dangerouslySetInnerHTML={{ __html: advPrice + '<small> ' + dict.plans.perMonth + '</small>' }} />
               )}
               {/* Monthly pill removed with the 1-month-standard model. No hidden
                   spacer here either — Core's pill is gone too, so dropping it keeps
@@ -645,11 +645,11 @@ export const PlansClient: React.FC<Props> = (props) => {
                       <div className="ccell" />
                       <div className="ccell center">
                         <span className="cn">Core</span>
-                        <span className="cp">{corePrice || '€99'}<span className="sm"> /mo</span></span>
+                        <span className="cp">{corePrice || '€99'}<span className="sm"> {dict.plans.perMonth}</span></span>
                       </div>
                       <div className="ccell center adv">
                         <span className="cn">Advanced</span>
-                        <span className="cp">{advPrice || '€149'}<span className="sm"> /mo</span></span>
+                        <span className="cp">{advPrice || '€149'}<span className="sm"> {dict.plans.perMonth}</span></span>
                       </div>
                     </div>
 
