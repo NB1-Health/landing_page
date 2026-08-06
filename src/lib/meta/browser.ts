@@ -1,6 +1,7 @@
 'use client'
 
 import type { Ga4EventName, Ecommerce, UserData, MetaEventPayload } from './types'
+import { sanitizeAttributionUrl } from '@/lib/commercialIdentity'
 
 function getCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined
@@ -22,15 +23,6 @@ function resolveFbc(): string | undefined {
   return undefined
 }
 
-/** Returns consent + cookie values for the _meta sidecar in checkoutConfirmProxy */
-export function getMetaSidecar() {
-  return {
-    consent: hasMktConsent(),
-    fbp: getCookie('_fbp'),
-    fbc: resolveFbc(),
-  }
-}
-
 export async function sendMetaCapiEvent(
   event: Ga4EventName,
   event_id: string,
@@ -49,7 +41,7 @@ export async function sendMetaCapiEvent(
     user: opts.user,
     fbp: getCookie('_fbp'),
     fbc: resolveFbc(),
-    sourceUrl: window.location.href,
+    sourceUrl: sanitizeAttributionUrl(window.location.href),
     consent: true,
   }
 

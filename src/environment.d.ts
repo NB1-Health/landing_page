@@ -3,6 +3,8 @@ declare global {
     dataLayer: Record<string, unknown>[]
     fbq: (...args: unknown[]) => void
     __nb1Consent: Record<string, boolean>
+    __nb1ConsentResolved: boolean
+    __nb1KlarSeptemberId?: string
     __lastLeadTime?: number
     klaviyo: { push: (...args: unknown[]) => void } & Record<string, (...args: unknown[]) => unknown>
     _klOnsite: unknown[]
@@ -13,6 +15,7 @@ declare global {
       PAYLOAD_SECRET: string
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
+      NEXT_PUBLIC_META_PURCHASE_OWNER?: 'landing' | 'backend'
       VERCEL_PROJECT_PRODUCTION_URL: string
     }
   }

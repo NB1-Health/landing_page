@@ -15,7 +15,12 @@ import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number
 import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
 import { createFirebaseAccount } from '@/lib/createAccount'
-import { checkoutPaymentIntent, checkoutConfirm, checkoutConfirmProxy, trackLanguagePublic } from '@/lib/checkoutApi'
+import {
+  checkoutPaymentIntent,
+  checkoutConfirm,
+  getPermittedCheckoutAttribution,
+  trackLanguagePublic,
+} from '@/lib/checkoutApi'
 import {
   buildNb1Item,
   consumeRedirectPaymentType,
@@ -40,6 +45,10 @@ import {
 import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { trackKlaviyoStartedCheckout } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
+import {
+  getCommercialIdentity,
+  waitForCommercialConsentResolution,
+} from '@/lib/commercialIdentity'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
@@ -54,6 +63,7 @@ import {
 } from '@/lib/plans/selectionStore'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
+const BACKEND_OWNS_META_PURCHASE = process.env.NEXT_PUBLIC_META_PURCHASE_OWNER === 'backend'
 
 // The checkout API returns discount-code messages as free-text English (no
 // machine code — see applyPromo), both for rejections and the success
@@ -651,9 +661,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const redirectContext = readCheckoutRedirectContext()
         // Restore form data from sessionStorage
         const saved = JSON.parse(sessionStorage.getItem('nb1_checkout_form') ?? '{}')
+        await waitForCommercialConsentResolution()
         const redirectConfirmation = await checkoutConfirm({
           setup_intent_id: setupIntentId,
           idempotency_key: idempotencyKey,
+          checkout_id: getOrCreateCheckoutId(),
+          attribution: getPermittedCheckoutAttribution(),
+          tracking_context: getCommercialIdentity(),
           shipping_address: {
             first_name: saved.fn ?? fn,
             last_name: saved.ln ?? ln,
@@ -702,6 +716,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           planSlug: redirectContext?.planSlug ?? redirectConfirmation.plan_slug,
           billingCycle: redirectContext?.billingCycle ?? cycleKey,
           language: redirectContext?.language ?? uiLanguage,
+          purchaseUuid: redirectConfirmation.purchase_uuid,
+          customerUuid: redirectConfirmation.customer_uuid,
+          evValue: redirectConfirmation.ev_value,
+          maxValue: redirectConfirmation.max_value,
+          valueCurrency: redirectConfirmation.value_currency,
+          planTerm: redirectConfirmation.plan_term,
           externalId: redirectConfirmation.external_id,
           paymentType: redirectPaymentType,
           paymentFlow: 'redirect',
@@ -724,32 +744,34 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
           },
         })
-        sendMetaCapiEvent('purchase', redirectConfirmation.event_id, {
-          ecommerce: {
-            transaction_id: redirectConfirmation.subscription_id,
-            currency: redirectCurrency,
-            value: redirectValue,
-            ...(redirectCoupon ? { coupon: redirectCoupon } : {}),
-            items: [
-              {
-                item_id: redirectItem.item_id,
-                item_name: redirectItem.item_name,
-                price: redirectItem.price,
-                quantity: 1,
-              },
-            ],
-          },
-          user: {
-            email: saved.email ?? email,
-            first_name: saved.fn ?? fn,
-            last_name: saved.ln ?? ln,
-            city: saved.city ?? city,
-            zip: saved.zip ?? zip,
-            country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
-            phone: saved.phone || phone || undefined,
-            external_id: redirectConfirmation.external_id,
-          },
-        })
+        if (!BACKEND_OWNS_META_PURCHASE) {
+          sendMetaCapiEvent('purchase', redirectConfirmation.event_id, {
+            ecommerce: {
+              transaction_id: redirectConfirmation.subscription_id,
+              currency: redirectCurrency,
+              value: redirectValue,
+              ...(redirectCoupon ? { coupon: redirectCoupon } : {}),
+              items: [
+                {
+                  item_id: redirectItem.item_id,
+                  item_name: redirectItem.item_name,
+                  price: redirectItem.price,
+                  quantity: 1,
+                },
+              ],
+            },
+            user: {
+              email: saved.email ?? email,
+              first_name: saved.fn ?? fn,
+              last_name: saved.ln ?? ln,
+              city: saved.city ?? city,
+              zip: saved.zip ?? zip,
+              country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
+              phone: saved.phone || phone || undefined,
+              external_id: redirectConfirmation.external_id,
+            },
+          })
+        }
         consumeCheckoutRedirectContext()
         setOrderNumber(redirectConfirmation.order_number ?? null)
         setAcquisitionIdentity({
@@ -1393,9 +1415,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // (nextPayment) AND the Express Checkout / Link flow. Sets its own error state.
   async function finalizeCheckout(setupIntentId: string, paymentFlow: PaymentFlow) {
     try {
+      await waitForCommercialConsentResolution()
       const confirmation = await checkoutConfirm({
         setup_intent_id: setupIntentId,
         idempotency_key: idempotencyKeyRef.current || setupIntentId,
+        checkout_id: getOrCreateCheckoutId(),
+        attribution: getPermittedCheckoutAttribution(),
+        tracking_context: getCommercialIdentity(),
         shipping_address: {
           first_name: fn,
           last_name: ln,
@@ -1456,6 +1482,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         planSlug: confirmation.plan_slug,
         billingCycle: cycleKey,
         language: uiLanguage,
+        purchaseUuid: confirmation.purchase_uuid,
+        customerUuid: confirmation.customer_uuid,
+        evValue: confirmation.ev_value,
+        maxValue: confirmation.max_value,
+        valueCurrency: confirmation.value_currency,
+        planTerm: confirmation.plan_term,
         externalId: confirmation.external_id,
         paymentType: payMethod,
         paymentFlow,
@@ -1476,33 +1508,34 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           country: COUNTRY_CODES[country] ?? country,
         },
       })
-      sendMetaCapiEvent('purchase', confirmation.event_id, {
-        ecommerce: {
-          transaction_id: confirmation.subscription_id,
-          currency,
-          value: rateNum,
-          items: [
-            {
-              item_id: purchaseItem.item_id,
-              item_name: purchaseItem.item_name,
-              price: purchaseItem.price,
-              quantity: 1,
-            },
-          ],
-        },
-        user: {
-          email,
-          first_name: fn,
-          last_name: ln,
-          city,
-          zip,
-          country: COUNTRY_CODES[country] ?? country,
-          phone,
-          external_id: confirmation.external_id,
-        },
-      })
+      if (!BACKEND_OWNS_META_PURCHASE) {
+        sendMetaCapiEvent('purchase', confirmation.event_id, {
+          ecommerce: {
+            transaction_id: confirmation.subscription_id,
+            currency,
+            value: rateNum,
+            items: [
+              {
+                item_id: purchaseItem.item_id,
+                item_name: purchaseItem.item_name,
+                price: purchaseItem.price,
+                quantity: 1,
+              },
+            ],
+          },
+          user: {
+            email,
+            first_name: fn,
+            last_name: ln,
+            city,
+            zip,
+            country: COUNTRY_CODES[country] ?? country,
+            phone,
+            external_id: confirmation.external_id,
+          },
+        })
+      }
       consumeCheckoutRedirectContext()
-
       setOrderNumber(confirmation.order_number ?? null)
       setAcquisitionIdentity({
         eventId: acquisitionEventId,

@@ -98,14 +98,15 @@ export default async function RootLayout({
         <Script id="gtag-consent-mode" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
-            // Temporary policy: tracking starts open until Ketch reports a rejection.
-            window.__nb1Consent = { analytics: true, targeted_advertising: true };
+            // Start closed. Provider tags may run only after Ketch resolves consent.
+            window.__nb1Consent = { analytics: false, targeted_advertising: false };
+            window.__nb1ConsentResolved = false;
             function gtag(){dataLayer.push(arguments);}
             gtag('consent', 'default', {
-              'ad_storage': 'granted',
-              'ad_user_data': 'granted',
-              'ad_personalization': 'granted',
-              'analytics_storage': 'granted',
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
               'wait_for_update': 2000
             });
           `}

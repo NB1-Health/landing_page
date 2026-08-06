@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { getOrCreateCheckoutId, pushEvent, mintEventId } from '@/lib/dataLayer'
 import { captureFirstTouchAttribution } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
+import { captureCheckoutAttribution } from '@/lib/checkoutApi'
 
 export function PageViewTracker() {
   const pathname = usePathname()
@@ -12,7 +13,14 @@ export function PageViewTracker() {
 
   useEffect(() => {
     captureFirstTouchAttribution()
-    if (prevPath.current === pathname) return
+    captureCheckoutAttribution()
+    window.addEventListener('nb1:consent-resolved', captureCheckoutAttribution)
+
+    if (prevPath.current === pathname) {
+      return () => {
+        window.removeEventListener('nb1:consent-resolved', captureCheckoutAttribution)
+      }
+    }
     prevPath.current = pathname
 
     const pvId = mintEventId()
@@ -39,6 +47,9 @@ export function PageViewTracker() {
         checkout_id: getOrCreateCheckoutId({ startNewJourney: true }),
         ...pageContext,
       })
+    }
+    return () => {
+      window.removeEventListener('nb1:consent-resolved', captureCheckoutAttribution)
     }
   }, [pathname])
 

@@ -4,17 +4,54 @@ export function ketchConsentBindingScript(pageLanguage: string): string {
   return `(function(){
     var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false};
     window.__nb1Consent=window.__nb1Consent||{};
+    window.__nb1ConsentResolved=window.__nb1ConsentResolved===true;
+
+    function scrubAdvertisingAttribution(){
+      var storageKey='nb1_checkout_attribution';
+      try{
+        var raw=window.sessionStorage&&window.sessionStorage.getItem(storageKey);
+        if(!raw)return;
+        var stored=JSON.parse(raw);
+        if(!stored||typeof stored!=='object'||Array.isArray(stored)){
+          window.sessionStorage.removeItem(storageKey);
+          return;
+        }
+        delete stored.gclid;
+        delete stored.gbraid;
+        delete stored.wbraid;
+        delete stored.fbclid;
+        if(Object.keys(stored).length){
+          window.sessionStorage.setItem(storageKey,JSON.stringify(stored));
+        }else{
+          window.sessionStorage.removeItem(storageKey);
+        }
+      }catch(error){
+        try{window.sessionStorage&&window.sessionStorage.removeItem(storageKey);}catch(ignore){}
+      }
+    }
 
     function applyKetchConsent(consent){
-      if(typeof window.gtag!=='function')return;
       var purposes=consent&&consent.purposes||{};
       window.__nb1Consent=purposes;
-      window.gtag('consent','update',{
-        analytics_storage:purposes.analytics?'granted':'denied',
-        ad_storage:purposes.targeted_advertising?'granted':'denied',
-        ad_user_data:purposes.targeted_advertising?'granted':'denied',
-        ad_personalization:purposes.targeted_advertising?'granted':'denied'
+      window.__nb1ConsentResolved=true;
+      if(purposes.targeted_advertising!==true)scrubAdvertisingAttribution();
+      if(typeof window.gtag==='function'){
+        window.gtag('consent','update',{
+          analytics_storage:purposes.analytics?'granted':'denied',
+          ad_storage:purposes.targeted_advertising?'granted':'denied',
+          ad_user_data:purposes.targeted_advertising?'granted':'denied',
+          ad_personalization:purposes.targeted_advertising?'granted':'denied'
+        });
+      }
+      window.dataLayer=window.dataLayer||[];
+      window.dataLayer.push({
+        event:'nb1_consent_resolved',
+        analytics_consent:purposes.analytics===true,
+        marketing_consent:purposes.targeted_advertising===true
       });
+      if(typeof window.dispatchEvent==='function'){
+        window.dispatchEvent(new Event('nb1:consent-resolved'));
+      }
     }
 
     function bind(){

@@ -501,6 +501,12 @@ export type SubscriptionAcquiredInput = {
   planSlug?: string
   billingCycle?: string
   language?: string
+  purchaseUuid?: string
+  customerUuid?: string
+  evValue?: number | null
+  maxValue?: number | null
+  valueCurrency?: string | null
+  planTerm?: number
   externalId?: string
   paymentType: PaymentType
   paymentFlow: PaymentFlow
@@ -589,6 +595,12 @@ export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): str
       event_id: input.eventId,
       checkout_id: input.checkoutId,
       transaction_id: input.transactionId,
+      purchase_uuid: input.purchaseUuid ?? input.transactionId,
+      ...(input.customerUuid ? { customer_uuid: input.customerUuid } : {}),
+      ...(input.evValue !== undefined && input.evValue !== null ? { ev_value: input.evValue } : {}),
+      ...(input.maxValue !== undefined && input.maxValue !== null ? { max_value: input.maxValue } : {}),
+      ...(input.valueCurrency ? { value_currency: input.valueCurrency } : {}),
+      ...(input.planTerm !== undefined ? { plan_term: input.planTerm } : {}),
       ...(input.externalId ? { external_id: input.externalId } : {}),
       payment_type: input.paymentType,
       payment_flow: input.paymentFlow,

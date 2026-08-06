@@ -1,3 +1,5 @@
+import type { CommercialIdentity } from './commercialIdentity'
+
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL
 
 export type CheckoutPaymentIntentIn = {
@@ -61,6 +63,105 @@ export type CheckoutConfirmIn = {
   shipping_address: PublicShippingAddressIn
   billing_address: BillingAddressIn
   idempotency_key?: string | null
+  checkout_id?: string | null
+  attribution?: Partial<Record<
+    | 'utm_source'
+    | 'utm_medium'
+    | 'utm_campaign'
+    | 'utm_content'
+    | 'utm_term'
+    | 'gclid'
+    | 'gbraid'
+    | 'wbraid'
+    | 'fbclid',
+    string
+  >>
+  tracking_context?: CommercialIdentity
+}
+
+const UTM_ATTRIBUTION_KEYS = [
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+] as const
+const ADVERTISING_ATTRIBUTION_KEYS = ['gclid', 'gbraid', 'wbraid', 'fbclid'] as const
+const ATTRIBUTION_STORAGE_KEY = 'nb1_checkout_attribution'
+
+function permittedAttribution(
+  valueFor: (key: string) => unknown,
+  keys: readonly string[],
+): Record<string, string> {
+  return Object.fromEntries(
+    keys.flatMap((key) => {
+      const value = valueFor(key)
+      return typeof value === 'string' && value ? [[key, value.slice(0, 256)]] : []
+    }),
+  )
+}
+
+function readStoredAttribution(): Record<string, unknown> {
+  let stored: Record<string, unknown> = {}
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) ?? '{}')
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) stored = parsed
+  } catch {
+    try {
+      window.sessionStorage.removeItem(ATTRIBUTION_STORAGE_KEY)
+    } catch {
+      // Storage can be unavailable in privacy-restricted browser contexts.
+    }
+  }
+  return stored
+}
+
+function storeAttribution(attribution: Record<string, string>): void {
+  try {
+    if (Object.keys(attribution).length) {
+      window.sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(attribution))
+    } else {
+      window.sessionStorage.removeItem(ATTRIBUTION_STORAGE_KEY)
+    }
+  } catch {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+}
+
+/** Capture campaign context when it is present, before navigation removes it. */
+export function captureCheckoutAttribution(): void {
+  if (typeof window === 'undefined') return
+  const params = new URLSearchParams(window.location.search)
+  const stored = readStoredAttribution()
+  const consentResolved = window.__nb1ConsentResolved === true
+  const advertisingConsent =
+    consentResolved && window.__nb1Consent?.targeted_advertising === true
+  const storedAdvertising = permittedAttribution(
+    (key) => stored[key],
+    ADVERTISING_ATTRIBUTION_KEYS,
+  )
+  storeAttribution({
+    ...permittedAttribution((key) => stored[key], UTM_ATTRIBUTION_KEYS),
+    ...permittedAttribution((key) => params.get(key), UTM_ATTRIBUTION_KEYS),
+    // Previously consented IDs stay inert during Ketch's brief unresolved state. They are exposed
+    // only after consent resolves true, and removed as soon as it resolves false.
+    ...(!consentResolved ? storedAdvertising : {}),
+    ...(advertisingConsent ? storedAdvertising : {}),
+    ...(advertisingConsent
+      ? permittedAttribution((key) => params.get(key), ADVERTISING_ATTRIBUTION_KEYS)
+      : {}),
+  })
+}
+
+export function getPermittedCheckoutAttribution(): CheckoutConfirmIn['attribution'] {
+  if (typeof window === 'undefined') return {}
+  captureCheckoutAttribution()
+  const stored = readStoredAttribution()
+  const advertisingConsent =
+    window.__nb1ConsentResolved === true &&
+    window.__nb1Consent?.targeted_advertising === true
+  return {
+    ...permittedAttribution((key) => stored[key], UTM_ATTRIBUTION_KEYS),
+    ...(advertisingConsent
+      ? permittedAttribution((key) => stored[key], ADVERTISING_ATTRIBUTION_KEYS)
+      : {}),
+  }
 }
 
 export type CheckoutConfirmOut = {
@@ -79,6 +180,15 @@ export type CheckoutConfirmOut = {
   order_number: string | null
   event_id: string
   external_id: string
+  purchase_uuid: string
+  customer_uuid: string
+  ev_value: number | null
+  max_value: number | null
+  value_currency: string | null
+  plan_term: number
+  commercial_value_policy_version: string
+  referral_code: string | null
+  referral_share_url: string | null
 }
 
 export type PostPurchaseSurveyAnswerIn = {
@@ -184,37 +294,6 @@ export async function persistPostPurchaseSurveyResponse(
   } catch {
     return false
   }
-}
-
-export interface CheckoutConfirmMetaSidecar {
-  consent: boolean
-  fbp?: string
-  fbc?: string
-  currency?: string
-  value?: number
-  item_id?: string
-  item_name?: string
-}
-
-/**
- * Same as checkoutConfirm but routes through our Next.js proxy so the
- * purchase Meta CAPI event fires server-to-server before the response
- * returns to the browser.
- */
-export async function checkoutConfirmProxy(
-  params: CheckoutConfirmIn,
-  meta: CheckoutConfirmMetaSidecar,
-): Promise<CheckoutConfirmOut> {
-  const res = await fetch('/api/checkout/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ ...params, _meta: meta }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(detailToMessage(err?.detail, 'Checkout confirm failed')), { code: 'confirm_failed' })
-  }
-  return res.json()
 }
 
 /**

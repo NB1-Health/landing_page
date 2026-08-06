@@ -130,6 +130,37 @@ describe('checkout event boundaries', () => {
     ).toHaveLength(1)
   })
 
+  it('exposes only server-authored purchase/value fields to GTM', () => {
+    trackSubscriptionAcquired({
+      checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      purchaseUuid: 'subscription-1',
+      customerUuid: 'customer-1',
+      evValue: 49,
+      maxValue: 396,
+      valueCurrency: 'EUR',
+      planTerm: 4,
+      paymentType: 'card',
+      paymentFlow: 'inline',
+      currency: 'EUR',
+      value: 99,
+      item: { item_id: 'core-4', item_name: 'Core 4 months', price: 99, quantity: 1 },
+      user: { email: 'buyer@example.com' },
+    })
+
+    expect(
+      window.dataLayer.find((entry) => entry.canonical_event === 'subscription_acquired'),
+    ).toMatchObject({
+      purchase_uuid: 'subscription-1',
+      customer_uuid: 'customer-1',
+      ev_value: 49,
+      max_value: 396,
+      value_currency: 'EUR',
+      plan_term: 4,
+    })
+  })
+
   it('emits a confirmed acquisition without waiting for optional identity hashing', () => {
     vi.spyOn(window.crypto.subtle, 'digest').mockReturnValue(new Promise<ArrayBuffer>(() => {}))
 
