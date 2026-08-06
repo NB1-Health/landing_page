@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 import RichText from '@/components/RichText'
+import { KlaviyoPreviewStandIn } from '@/components/KlaviyoPreviewStandIn'
 import { trackLeadSuccess } from '@/lib/dataLayer'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 
@@ -919,7 +920,8 @@ export const HeroBannerComponent: React.FC<HeroBannerBlockType> = (props) => {
               )}
 
               <div className="form-wrap">
-                <div className={`klaviyo-form-${klaviyoFormId}`} />
+                <div className={`nb1-klaviyo-live-form klaviyo-form-${klaviyoFormId}`} />
+                <KlaviyoPreviewStandIn />
 
                 {(launchDate || formFootNote) && (
                   <p className="form-foot">

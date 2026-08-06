@@ -90,6 +90,7 @@ export default async function RootLayout({
   return (
     <html
       className={cn(GeistSans.variable, GeistMono.variable)}
+      data-nb1-preview={isEnabled ? 'true' : undefined}
       lang={locale}
       suppressHydrationWarning
     >

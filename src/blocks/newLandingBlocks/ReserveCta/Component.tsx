@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 import RichText from '@/components/RichText'
+import { KlaviyoPreviewStandIn } from '@/components/KlaviyoPreviewStandIn'
 import { trackLeadSuccess } from '@/lib/dataLayer'
 
 type BgPreset = 'white' | 'creamGradient' | 'custom'
@@ -489,7 +490,8 @@ export const ReserveCtaComponent: React.FC<ReserveCtaBlockType> = (props) => {
             .filter(Boolean)
             .join(' ')}
         >
-          <div className={`klaviyo-form-${klaviyoFormId}`} />
+          <div className={`nb1-klaviyo-live-form klaviyo-form-${klaviyoFormId}`} />
+          <KlaviyoPreviewStandIn />
 
           {(footNoteText || footNoteHighlight) && (
             <p className="rc-form-foot">
