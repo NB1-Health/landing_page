@@ -334,6 +334,74 @@ describe('Klaviyo checkout events', () => {
     expect(track.mock.calls[0][1]).not.toHaveProperty('$value')
   })
 
+  it('carries try.nb1.com attribution into the confirmed checkout event', () => {
+    const attribution = {
+      v: 1,
+      ts: 1_799_999_000_000,
+      landing_url: 'https://try.nb1.com/early-access/',
+      referrer: 'https://facebook.com/ad/',
+      params: {
+        utm_source: 'meta',
+        utm_medium: 'paid-social',
+        utm_campaign: 'try-launch',
+      },
+    }
+    const browser = browserHarness({
+      url: 'https://nb1.com/en/order?utm_source=google&utm_campaign=later',
+      cookie: `nb1_attr=${encodeURIComponent(JSON.stringify(attribution))}`,
+      local: {
+        nb1_attr: JSON.stringify({
+          v: 1,
+          ts: 1_799_998_000_000,
+          landing_url: 'https://nb1.com/organic/',
+          params: {},
+        }),
+      },
+    })
+    const identify = vi.fn((_properties: Record<string, unknown>, callback: () => void) =>
+      callback(),
+    )
+    const track = vi.fn()
+    browser.window.klaviyo = {
+      push: vi.fn(),
+      identify,
+      track,
+    } as Window['klaviyo']
+
+    expect(
+      trackKlaviyoCheckoutCompleted({
+        email: 'buyer@example.com',
+        checkoutId: 'checkout-from-try',
+        transactionId: 'subscription-from-try',
+        language: 'en',
+        currency: 'EUR',
+        cartValue: 99,
+        item: { item_id: 'NB1-CORE-4' },
+      }),
+    ).toBe(true)
+    expect(identify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nb1_utm_source: 'meta',
+        nb1_utm_medium: 'paid-social',
+        nb1_utm_campaign: 'try-launch',
+        nb1_first_landing_url: 'https://try.nb1.com/early-access/',
+        nb1_first_referrer: 'https://facebook.com/ad/',
+      }),
+      expect.any(Function),
+    )
+    expect(track).toHaveBeenCalledWith(
+      'Checkout Completed',
+      expect.objectContaining({
+        nb1_utm_source: 'meta',
+        nb1_utm_medium: 'paid-social',
+        nb1_utm_campaign: 'try-launch',
+        nb1_first_landing_url: 'https://try.nb1.com/early-access/',
+        nb1_first_referrer: 'https://facebook.com/ad/',
+      }),
+      expect.any(Function),
+    )
+  })
+
   it('fails open when Klaviyo is unavailable and accepts a later retry', () => {
     const browser = browserHarness()
     const input = {
