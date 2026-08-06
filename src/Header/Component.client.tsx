@@ -186,6 +186,18 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   const searchParams = useSearchParams()
   const variantParam = searchParams.get('v')
 
+  // Resolve the login link against the site ROOT (current origin), not the
+  // current page path: a value like "login?lang=en" becomes "/login?lang=en",
+  // which the browser resolves to {current origin}/login?lang=en — so it points
+  // at stg.nb1.com on staging, nb1.com on prod, localhost in dev, with no
+  // hardcoded domain. Absolute (http…) and already-root-relative (/…) values
+  // are passed through untouched.
+  const loginHref = loginUrl
+    ? loginUrl.startsWith('http') || loginUrl.startsWith('/')
+      ? loginUrl
+      : `/${loginUrl}`
+    : null
+
   let theme: Theme = defaultTheme
   let loginTextColor: string | null | undefined = defaultLoginTextColor
   if (variantParam) {
@@ -869,8 +881,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
               </div>
             </div>
 
-            {loginText && loginUrl && (
-              <a href={loginUrl} className="nb1-nav-login">
+            {loginText && loginHref && (
+              <a href={loginHref} className="nb1-nav-login">
                 {loginText}
               </a>
             )}
@@ -949,8 +961,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
               </a>
             )
           })}
-        {loginText && loginUrl && (
-          <a href={loginUrl} onClick={() => setSheetOpen(false)}>
+        {loginText && loginHref && (
+          <a href={loginHref} onClick={() => setSheetOpen(false)}>
             {loginText}
           </a>
         )}
