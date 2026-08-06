@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 import { getOrCreateCheckoutId, pushEvent, mintEventId } from '@/lib/dataLayer'
+import { captureFirstTouchAttribution } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
 
 export function PageViewTracker() {
@@ -10,6 +11,7 @@ export function PageViewTracker() {
   const prevPath = useRef<string | null>(null)
 
   useEffect(() => {
+    captureFirstTouchAttribution()
     if (prevPath.current === pathname) return
     prevPath.current = pathname
 
