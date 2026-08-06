@@ -286,26 +286,6 @@ export const de = {
         chargeNote: 'Erste Abbuchung {when}.',
         chargeWhen: 'wenn deine Formel in die Herstellung geht',
       },
-      refer: {
-        heading: 'Kennst du jemanden, der das lieben würde?',
-        headingAccent: 'Schenk einen Monat, erhalte einen Monat.',
-        body: 'Dein Freund bekommt seinen ersten Monat gratis. Du bekommst ebenfalls einen Gratismonat, sobald seine Bestellung in die Herstellung geht.',
-        cta: 'Link teilen →',
-        modal: {
-          eyebrow: 'Freund empfehlen',
-          heading: 'Schenk einen Monat, erhalte einen Monat.',
-          body: 'Dein Freund erhält seinen <strong>ersten Monat gratis</strong>. Du bekommst ebenfalls einen <strong>Gratismonat</strong>, gutgeschrieben, sobald seine Bestellung in die Herstellung geht.',
-          msgLabel: 'Deine Nachricht',
-          defaultMsg:
-            'Ich habe gerade mit NB1 begonnen – Nahrungsergänzung, personalisiert aus meinen eigenen Darmdaten, kein Rätselraten. Nutze meinen Link und dein erster Monat geht auf mich:',
-          copy: 'Kopieren',
-          copied: 'Kopiert!',
-          whatsapp: 'WhatsApp',
-          email: 'E-Mail',
-          share: 'Teilen',
-          skip: 'Vielleicht später',
-        },
-      },
     },
     legal: {
       privacy: 'Datenschutz',

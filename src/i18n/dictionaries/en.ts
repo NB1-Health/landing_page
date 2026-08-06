@@ -288,26 +288,6 @@ export const en = {
         chargeNote: 'First charge {when}.',
         chargeWhen: 'when your formula goes into manufacture',
       },
-      refer: {
-        heading: "Know someone who'd love this?",
-        headingAccent: 'Give a month, get a month.',
-        body: 'They get their first month free. You get a free month too, once their order goes into manufacture.',
-        cta: 'Share your link →',
-        modal: {
-          eyebrow: 'Refer a friend',
-          heading: 'Give a month, get a month.',
-          body: 'Your friend gets their <strong>first month free</strong>. You get a <strong>free month</strong> too, credited once their order goes into manufacture.',
-          msgLabel: 'Your message',
-          defaultMsg:
-            'I just started NB1, supplements personalised from my own gut data, not guesswork. Use my link and your first month is on me:',
-          copy: 'Copy',
-          copied: 'Copied!',
-          whatsapp: 'WhatsApp',
-          email: 'Email',
-          share: 'Share',
-          skip: 'Maybe later',
-        },
-      },
     },
     legal: {
       privacy: 'Privacy',

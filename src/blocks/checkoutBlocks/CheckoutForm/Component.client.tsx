@@ -409,8 +409,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     customerId: string
     externalId: string
   } | null>(null)
-  const [referralCode, setReferralCode] = useState<string | null>(null)
-  const [referralShareUrl, setReferralShareUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const osn = document.querySelector<HTMLElement>('.osn-nav')
@@ -1511,8 +1509,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
-      setReferralCode(confirmation.referral_code ?? null)
-      setReferralShareUrl(confirmation.referral_share_url ?? null)
       setConfirmed(true)
     } catch (err: unknown) {
       setAccountStatus('error')

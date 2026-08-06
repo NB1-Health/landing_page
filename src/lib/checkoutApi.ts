@@ -79,8 +79,6 @@ export type CheckoutConfirmOut = {
   order_number: string | null
   event_id: string
   external_id: string
-  referral_code: string | null
-  referral_share_url: string | null
 }
 
 export type PostPurchaseSurveyAnswerIn = {
