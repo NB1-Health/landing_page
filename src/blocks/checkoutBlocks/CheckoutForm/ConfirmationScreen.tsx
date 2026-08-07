@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { persistPostPurchaseSurveyResponse } from '@/lib/checkoutApi'
+import MentionMeTag from '@/components/MentionMe/MentionMeTag'
 import {
   trackPostPurchaseSurveyAnswered,
   trackPostPurchaseSurveyViewed,
@@ -32,6 +33,10 @@ type Props = {
   planLabel: string
   cycleLabel: string
   priceFormatted: string
+  ln?: string
+  orderSubtotal?: number | null
+  currency?: string
+  coupon?: string | null
   locale: string
   t: any
   inboxBodyPrefix: string
@@ -43,6 +48,7 @@ type Props = {
 
 export function ConfirmationScreen({
   fn, email, orderNumber, planLabel, cycleLabel, priceFormatted,
+  ln, orderSubtotal, currency, coupon,
   checkoutId, acquisitionEventId, transactionId, customerId, externalId,
   locale, t, inboxBodyPrefix, inboxBodySuffix,
   chargeNotePrefix, chargeNoteSuffix,
@@ -406,6 +412,25 @@ export function ConfirmationScreen({
             </div>
           </aside>
         </div>
+      </div>
+
+      {/* Mention Me — refer a friend (referrer journey). Locale pinned to the demo campaign (en_GB);
+          map to real site locales once live campaigns exist per language. */}
+      <div style={{ margin: '10px 0 4px' }}>
+        <MentionMeTag
+          variant="referrer"
+          situation="postpurchase"
+          locale="en_GB"
+          params={{
+            email,
+            firstname: fn,
+            surname: ln,
+            order_number: orderNumber,
+            order_subtotal: orderSubtotal,
+            order_currency: currency,
+            coupon_code: coupon,
+          }}
+        />
       </div>
 
       {/* Legal footer */}

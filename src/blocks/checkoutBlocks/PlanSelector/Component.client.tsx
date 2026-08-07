@@ -550,7 +550,7 @@ export const PlanSelectorClient: React.FC<Props> = ({
                 <div className="nb1-ps-price-row">
                   <span className="nb1-ps-price">{plan.price}</span>
                   {plan.strikePrice && <span className="nb1-ps-strike">{plan.strikePrice}</span>}
-                  <span className="nb1-ps-per">/mo</span>
+                  <span className="nb1-ps-per">{dict.plans.perMonth}</span>
                 </div>
 
                 {plan.minNote && <div className="nb1-ps-min">{plan.minNote}</div>}

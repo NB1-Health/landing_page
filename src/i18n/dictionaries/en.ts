@@ -74,7 +74,7 @@ export const en = {
       FREEMONTH: 'First month free',
       FIRSTMONTHFREE: 'First month free',
     } as Record<string, string>,
-    appliedTemplate: '✓ {code} applied — {desc}.',
+    appliedTemplate: '✓ {code} applied.',
     invalid: "That code isn't valid.",
     // Localised versions of the free-text messages the checkout API returns for
     // a discount code (both rejections and the success confirmation). The
@@ -85,6 +85,7 @@ export const en = {
     messages: {
       notFound: 'Discount code not found.',
       valid: 'Discount code is valid.',
+      referralFirstMonthFree: '✓ First month free with your referral code.',
     } as Record<string, string>,
   },
   checkout: {

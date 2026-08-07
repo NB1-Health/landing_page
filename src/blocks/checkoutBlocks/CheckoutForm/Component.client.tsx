@@ -45,6 +45,7 @@ import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
 import { ConfirmationScreen } from './ConfirmationScreen'
+import MentionMeTag from '@/components/MentionMe/MentionMeTag'
 import { PaymentFailedScreen } from './PaymentFailedScreen'
 import {
   getStoredPlanSelection,
@@ -64,6 +65,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 const DISCOUNT_MESSAGE_BY_TEXT: Record<string, string> = {
   'discount code not found': 'notFound',
   'discount code is valid': 'valid',
+  'referral code applied: your first month is free': 'referralFirstMonthFree',
 }
 
 function normalizeDiscountMessage(text: string): string {
@@ -1722,6 +1724,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         planLabel={planLabel}
         cycleLabel={cycleLabel}
         priceFormatted={priceFormatted}
+        ln={ln}
+        orderSubtotal={rateNum}
+        currency={currency}
+        coupon={promoApplied}
         locale={locale ?? 'en'}
         t={t}
         inboxBodyPrefix={inboxBodyPrefix}
@@ -3509,6 +3515,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 {renderPlanSwitch()}
               </div>
             )}
+
+            {/* Mention Me — a referred friend finds/claims their reward code (referee journey). No
+                volatile props (email/name change on keystroke and would reload the tag); situation +
+                locale are enough, MM's own widget captures the friend. */}
+            <MentionMeTag variant="referee" situation="checkout" locale="en_GB" />
 
             <div className="nb1-sum-zero">{t.summary.dueToday.replace('{zeroPrice}', zero)}</div>
             <p className="nb1-sum-note">{t.summary.note}</p>

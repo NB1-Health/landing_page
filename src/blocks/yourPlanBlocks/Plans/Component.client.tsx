@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react'
 
 import RichText from '@/components/RichText'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
+import { getDictionary } from '@/i18n/getDictionary'
 import {
   fetchPlansClient,
   getClientCurrency,
@@ -12,7 +13,6 @@ import {
   buildRateMap,
   resolveTokens,
   resolveTokensDeep,
-  PER_MONTH_DICT,
 } from '@/lib/plans/clientUtils'
 
 type BgColorPreset = 'cream' | 'paper' | 'off' | 'navy' | 'navyDeep' | 'teal' | 'custom'
@@ -158,7 +158,10 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       currency: ReturnType<typeof getClientCurrency>,
       plans: Awaited<ReturnType<typeof fetchPlansClient>>,
     ) {
-      const perMonth = PER_MONTH_DICT[locale] ?? PER_MONTH_DICT.en
+      // Use getDictionary (its toDictLocale maps regional locales — ch→de,
+      // be→nl, uk/uae→en) rather than PER_MONTH_DICT[locale], which only had
+      // en/de/fr/nl keys and so wrongly fell back to "/mo" on ch/be.
+      const perMonth = getDictionary(locale).plans.perMonth
       const rateMap = buildRateMap(plans, currency)
       setPlanCards(
         (planCardsProp ?? []).map((card) => {
