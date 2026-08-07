@@ -264,6 +264,14 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
           }
           .nb1-psc-switch { white-space: normal; margin-top: 0; }
           .nb1-psc-lower { grid-template-columns: 1fr; gap: 22px; }
+          /* On mobile stack the CTA label above its price, both centered,
+             instead of pushing them to opposite ends of the button. */
+          .nb1-psc-cta-row {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+          }
         }
       `}</style>
 
