@@ -43,9 +43,7 @@ export const FAQBlockComponent: React.FC<Props> = ({ items, locale }) => {
               </button>
 
               {isOpen && (
-                <div
-                  className="art-faq__answer [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul:first-child]:mt-0 [&_ul:last-child]:mb-0 [&_ol:first-child]:mt-0 [&_ol:last-child]:mb-0"
-                >
+                <div className="art-faq__answer [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul:first-child]:mt-0 [&_ul:last-child]:mb-0 [&_ol:first-child]:mt-0 [&_ol:last-child]:mb-0">
                   <RichText data={item.answer} enableGutter={false} enableProse={false} />
                 </div>
               )}
