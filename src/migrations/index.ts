@@ -138,6 +138,7 @@ import * as migration_20260711_160000_lead_in_richtext from './20260711_160000_l
 import * as migration_20260716_100000_lab_localize_label_fields from './20260716_100000_lab_localize_label_fields';
 import * as migration_20260728_120000_add_cycle_selector_tab_labels from './20260728_120000_add_cycle_selector_tab_labels';
 import * as migration_20260728_120500_plan_summary_card_cycle_1_month from './20260728_120500_plan_summary_card_cycle_1_month';
+import * as migration_20260810_120000_refer_a_friend_blocks from './20260810_120000_refer_a_friend_blocks';
 
 export const migrations = [
   {
@@ -839,5 +840,10 @@ export const migrations = [
     up: migration_20260728_120500_plan_summary_card_cycle_1_month.up,
     down: migration_20260728_120500_plan_summary_card_cycle_1_month.down,
     name: '20260728_120500_plan_summary_card_cycle_1_month',
+  },
+  {
+    up: migration_20260810_120000_refer_a_friend_blocks.up,
+    down: migration_20260810_120000_refer_a_friend_blocks.down,
+    name: '20260810_120000_refer_a_friend_blocks',
   },
 ];

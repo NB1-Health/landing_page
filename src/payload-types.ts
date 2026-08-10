@@ -325,6 +325,9 @@ export interface Page {
     | FaqPageBlock
     | LegalDocBlock
     | ContactPageBlock
+    | ReferralWidgetBlock
+    | ReferInfoBlock
+    | ReferFaqBlock
   )[];
   meta?: {
     /**
@@ -7186,6 +7189,145 @@ export interface ContactPageBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferralWidgetBlock".
+ */
+export interface ReferralWidgetBlock {
+  /**
+   * Mention Me situation for the referrer journey on this page (e.g. 'landingpage').
+   */
+  situation?: string | null;
+  /**
+   * Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (en→en_GB, de→de_DE, fr→fr_FR).
+   */
+  localeOverride?: string | null;
+  /**
+   * Show the styled placeholder slot when the Mention Me partner code is not configured (e.g. locally).
+   */
+  showPlaceholder?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'referralWidget';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferInfoBlock".
+ */
+export interface ReferInfoBlock {
+  /**
+   * Use italic for the teal-accented words (e.g. "about a minute.").
+   */
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Image shown beside the steps (e.g. kit being handed over).
+   */
+  media?: (number | null) | Media;
+  /**
+   * Numbered steps (auto-numbered in order).
+   */
+  steps?:
+    | {
+        title: string;
+        /**
+         * Use bold for emphasised phrases.
+         */
+        body?: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        id?: string | null;
+      }[]
+    | null;
+  eligibilityHeading?: string | null;
+  /**
+   * Eligibility bullet list with tick / cross markers.
+   */
+  eligibility?:
+    | {
+        type?: ('include' | 'exclude') | null;
+        /**
+         * Use bold for the emphasised lead phrase.
+         */
+        text?: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'referInfo';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferFaqBlock".
+ */
+export interface ReferFaqBlock {
+  title?: string | null;
+  items: {
+    question: string;
+    /**
+     * Answer text. Links are supported (e.g. "get in touch").
+     */
+    answer: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'referFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
@@ -7652,6 +7794,9 @@ export interface PagesSelect<T extends boolean = true> {
         faqPage?: T | FaqPageBlockSelect<T>;
         legalDoc?: T | LegalDocBlockSelect<T>;
         contactPage?: T | ContactPageBlockSelect<T>;
+        referralWidget?: T | ReferralWidgetBlockSelect<T>;
+        referInfo?: T | ReferInfoBlockSelect<T>;
+        referFaq?: T | ReferFaqBlockSelect<T>;
       };
   meta?:
     | T
@@ -10559,6 +10704,58 @@ export interface ContactPageBlockSelect<T extends boolean = true> {
   calloutBody?: T;
   calloutCtaLabel?: T;
   calloutCtaHref?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferralWidgetBlock_select".
+ */
+export interface ReferralWidgetBlockSelect<T extends boolean = true> {
+  situation?: T;
+  localeOverride?: T;
+  showPlaceholder?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferInfoBlock_select".
+ */
+export interface ReferInfoBlockSelect<T extends boolean = true> {
+  heading?: T;
+  media?: T;
+  steps?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  eligibilityHeading?: T;
+  eligibility?:
+    | T
+    | {
+        type?: T;
+        text?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ReferFaqBlock_select".
+ */
+export interface ReferFaqBlockSelect<T extends boolean = true> {
+  title?: T;
+  items?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
   id?: T;
   blockName?: T;
 }

@@ -2465,6 +2465,21 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           text-decoration-color: rgba(10, 143, 176, 0.3);
         }
 
+        /* Mention Me referee link ("Been referred by a friend?") — brand teal.
+           MM injects .mmLink at runtime, so it needs :global scoped under .nb1-sum. */
+        .nb1-sum :global(.mmLink) {
+          display: inline-block;
+          padding-top: 12px;
+          color: #0a8fb0;
+          font-weight: 600;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          text-decoration-color: rgba(10, 143, 176, 0.3);
+        }
+        .nb1-sum :global(.mmLink:hover) {
+          color: #087491;
+        }
+
         /* ── Legal footer ── */
         .nb1-det-legal {
           text-align: center;

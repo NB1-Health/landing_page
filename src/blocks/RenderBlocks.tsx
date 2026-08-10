@@ -105,6 +105,9 @@ import { CloseBandComponent } from './CloseBand/Component'
 import { FaqPageComponent } from './FaqPage/Component'
 import { LegalDocComponent } from './LegalDoc/Component'
 import { ContactPageComponent } from './ContactPage/Component'
+import { ReferralWidgetComponent } from './ReferralWidget/Component'
+import { ReferInfoComponent } from './ReferInfo/Component'
+import { ReferFaqComponent } from './ReferFaq/Component'
 
 const blockComponents: Record<string, React.FC<any>> = {
   content: ContentBlock,
@@ -209,6 +212,9 @@ const blockComponents: Record<string, React.FC<any>> = {
   faqPage: FaqPageComponent,
   legalDoc: LegalDocComponent,
   contactPage: ContactPageComponent,
+  referralWidget: ReferralWidgetComponent,
+  referInfo: ReferInfoComponent,
+  referFaq: ReferFaqComponent,
 }
 
 export const RenderBlocks: React.FC<{

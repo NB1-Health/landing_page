@@ -101,6 +101,9 @@ import { CloseBandBlock } from '@/blocks/CloseBand/config'
 import { FaqPageBlock } from '@/blocks/FaqPage/config'
 import { LegalDocBlock } from '@/blocks/LegalDoc/config'
 import { ContactPageBlock } from '@/blocks/ContactPage/config'
+import { ReferralWidgetBlock } from '@/blocks/ReferralWidget/config'
+import { ReferInfoBlock } from '@/blocks/ReferInfo/config'
+import { ReferFaqBlock } from '@/blocks/ReferFaq/config'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
@@ -299,6 +302,9 @@ export const Pages: CollectionConfig<'pages'> = {
                 FaqPageBlock,
                 LegalDocBlock,
                 ContactPageBlock,
+                ReferralWidgetBlock,
+                ReferInfoBlock,
+                ReferFaqBlock,
               ],
               required: true,
               admin: { initCollapsed: true },
