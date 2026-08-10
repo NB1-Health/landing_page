@@ -9,7 +9,7 @@ import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
-import { revalidateDelete, revalidatePage } from './hooks/revalidatePage'
+import { capturePagePublication, revalidateDelete, revalidatePage } from './hooks/revalidatePage'
 
 import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 
@@ -104,6 +104,9 @@ import { ContactPageBlock } from '@/blocks/ContactPage/config'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
+  // Payload 3.70 bulk publish is not locale-specific and can publish pending
+  // translations unintentionally. Editors publish one locale at a time.
+  disableBulkEdit: true,
   access: {
     create: authenticated,
     delete: authenticated,
@@ -415,6 +418,7 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
 
   hooks: {
+    beforeOperation: [capturePagePublication],
     beforeValidate: [
       ({ data }) => {
         if (!data) return data
