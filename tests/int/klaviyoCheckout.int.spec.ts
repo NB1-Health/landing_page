@@ -308,6 +308,7 @@ describe('Klaviyo checkout events', () => {
     const input = {
       email: 'buyer@example.com',
       checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
       transactionId: 'subscription-1',
       orderNumber: 'NB1-123',
       planSlug: 'core-4',
@@ -324,7 +325,7 @@ describe('Klaviyo checkout events', () => {
     expect(track).toHaveBeenCalledWith(
       'Checkout Completed',
       expect.objectContaining({
-        $event_id: 'checkout_completed:subscription-1',
+        $event_id: 'acquisition-1',
         transaction_id: 'subscription-1',
         order_number: 'NB1-123',
         plan_slug: 'core-4',
@@ -372,6 +373,7 @@ describe('Klaviyo checkout events', () => {
       trackKlaviyoCheckoutCompleted({
         email: 'buyer@example.com',
         checkoutId: 'checkout-from-try',
+        eventId: 'acquisition-from-try',
         transactionId: 'subscription-from-try',
         language: 'en',
         currency: 'EUR',

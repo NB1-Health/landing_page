@@ -187,8 +187,6 @@ export type CheckoutConfirmOut = {
   value_currency: string | null
   plan_term: number
   commercial_value_policy_version: string
-  referral_code: string | null
-  referral_share_url: string | null
 }
 
 export type PostPurchaseSurveyAnswerIn = {

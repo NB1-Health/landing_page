@@ -2,7 +2,12 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { getOrCreateCheckoutId, pushEvent, mintEventId } from '@/lib/dataLayer'
+import {
+  getOrCreateCheckoutId,
+  getOrCreateOccurrenceId,
+  pushEvent,
+  mintEventId,
+} from '@/lib/dataLayer'
 import { captureFirstTouchAttribution } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
 import { captureCheckoutAttribution } from '@/lib/checkoutApi'
@@ -41,10 +46,11 @@ export function PageViewTracker() {
     // The server marks pages containing the canonical first order component.
     // This works for every locale and avoids coupling analytics to URL copy.
     if (document.querySelector('[data-nb1-order-entry="true"]')) {
+      const checkoutId = getOrCreateCheckoutId({ startNewJourney: true })
       pushEvent('start_order', {
-        event_id: mintEventId(),
+        event_id: getOrCreateOccurrenceId(`${checkoutId}:start_order`),
         related_event_id: pvId,
-        checkout_id: getOrCreateCheckoutId({ startNewJourney: true }),
+        checkout_id: checkoutId,
         ...pageContext,
       })
     }

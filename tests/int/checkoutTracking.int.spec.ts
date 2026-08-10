@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   consumeRedirectPaymentType,
+  getOrCreateOccurrenceId,
   nextPaymentAttempt,
+  pushEvent,
   resetEnhancedUserDataCache,
   resetCheckoutTracking,
   resolveRedirectPaymentType,
@@ -68,7 +70,7 @@ describe('checkout event boundaries', () => {
       expect(track).toHaveBeenCalledWith(
         'Checkout Completed',
         expect.objectContaining({
-          $event_id: `checkout_completed:subscription-${paymentType}`,
+          $event_id: `acquisition-${paymentType}`,
           transaction_id: `subscription-${paymentType}`,
         }),
         expect.any(Function),
@@ -122,7 +124,10 @@ describe('checkout event boundaries', () => {
     expect(trackSubscriptionAcquired({ ...input, eventId: 'retry-id' })).toBe('acquisition-1')
     expect(track).toHaveBeenCalledWith(
       'Checkout Completed',
-      expect.objectContaining({ transaction_id: 'subscription-1' }),
+      expect.objectContaining({
+        $event_id: 'acquisition-1',
+        transaction_id: 'subscription-1',
+      }),
       expect.any(Function),
     )
     expect(
@@ -186,6 +191,18 @@ describe('checkout event boundaries', () => {
     expect(nextPaymentAttempt('checkout-1')).toBe(1)
     expect(nextPaymentAttempt('checkout-1')).toBe(2)
     expect(nextPaymentAttempt('checkout-2')).toBe(1)
+  })
+
+  it('reuses a logical occurrence ID while still emitting every browser copy', () => {
+    const first = getOrCreateOccurrenceId('checkout-1:begin_checkout')
+    const second = getOrCreateOccurrenceId('checkout-1:begin_checkout')
+
+    pushEvent('begin_checkout', { event_id: first, checkout_id: 'checkout-1' })
+    pushEvent('begin_checkout', { event_id: second, checkout_id: 'checkout-1' })
+
+    const events = window.dataLayer.filter((entry) => entry.canonical_event === 'begin_checkout')
+    expect(events).toHaveLength(2)
+    expect(events.map((entry) => entry.event_id)).toEqual([first, first])
   })
 
   it('persists the redirect payment type through provider navigation and consumes it once', () => {

@@ -25,6 +25,7 @@ import {
   buildNb1Item,
   consumeRedirectPaymentType,
   getOrCreateCheckoutId,
+  getOrCreateOccurrenceId,
   markCheckoutCompleted,
   mintEventId,
   nextPaymentAttempt,
@@ -44,7 +45,7 @@ import {
 } from '@/lib/checkoutRedirectContext'
 import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { trackKlaviyoStartedCheckout } from '@/lib/klaviyoCheckout'
-import { sendMetaCapiEvent, getMetaSidecar } from '@/lib/meta/browser'
+import { sendMetaCapiEvent } from '@/lib/meta/browser'
 import {
   getCommercialIdentity,
   waitForCommercialConsentResolution,
@@ -807,11 +808,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   useEffect(() => {
     if (!hasValidSelection || !currencyResolved || beganCheckoutRef.current) return
     beganCheckoutRef.current = true
-    const bcId = mintEventId()
+    const checkoutId = getOrCreateCheckoutId()
+    const bcId = getOrCreateOccurrenceId(`${checkoutId}:begin_checkout`)
     const bcItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
     pushEvent('begin_checkout', {
       event_id: bcId,
-      checkout_id: getOrCreateCheckoutId(),
+      checkout_id: checkoutId,
       entry_reason: searchParams?.get('redirect_status') ? 'provider_return' : 'initial_entry',
       ecommerce: {
         currency,
@@ -1140,18 +1142,22 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   }
 
   function nextShipping() {
-    const siId = mintEventId()
+    const checkoutId = getOrCreateCheckoutId()
+    const shippingTier = shipping === 'express' ? 'Express' : 'Standard'
+    const siId = getOrCreateOccurrenceId(
+      `${checkoutId}:add_shipping_info:${planKey}:${cycleKey}:${shippingTier}`,
+    )
     const siItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
     void pushEventWithUser(
       'add_shipping_info',
       {
         event_id: siId,
-        checkout_id: getOrCreateCheckoutId(),
+        checkout_id: checkoutId,
         ecommerce: {
           currency,
           value: rateNum,
           ...(promoApplied ? { coupon: promoApplied } : {}),
-          shipping_tier: shipping === 'express' ? 'Express' : 'Standard',
+          shipping_tier: shippingTier,
           items: [siItem],
         },
       },
