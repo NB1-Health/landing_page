@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef } from 'react'
 
+import { KlaviyoPreviewStandIn } from '@/components/KlaviyoPreviewStandIn'
 import { trackLeadSuccess } from '@/lib/dataLayer'
 
 type Theme = 'light' | 'dark'
@@ -69,9 +70,11 @@ export function FooterClient({
 
   useEffect(() => {
     const div = document.createElement('div')
-    div.className = `klaviyo-form-${klaviyoFormId}`
+    div.className = `nb1-klaviyo-live-form klaviyo-form-${klaviyoFormId}`
     klaviyoContainerRef.current?.appendChild(div)
-    return () => { div.remove() }
+    return () => {
+      div.remove()
+    }
   }, [klaviyoFormId])
 
   useEffect(() => {
@@ -177,6 +180,7 @@ export function FooterClient({
               )}
               {tagline && <p className="nbf-tag">{tagline}</p>}
               <div ref={klaviyoContainerRef} />
+              <KlaviyoPreviewStandIn />
               {subnote && <p className="nbf-subnote">{subnote}</p>}
             </div>
 
