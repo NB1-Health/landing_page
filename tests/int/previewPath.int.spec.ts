@@ -8,7 +8,7 @@ describe('generated preview URL', () => {
 
   beforeEach(() => {
     vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'http://localhost:3100')
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_SECRET', secret)
+    vi.stubEnv('PREVIEW_SECRET', secret)
   })
 
   afterEach(() => {
@@ -55,11 +55,11 @@ describe('generated preview URL', () => {
   })
 
   it('fails closed with a weak secret or unsafe slug', () => {
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_SECRET', 'too-short')
+    vi.stubEnv('PREVIEW_SECRET', 'too-short')
     expect(
       generatePreviewPath({ collection: 'pages', req: { locale: 'de' } as never, slug: 'page' }),
     ).toBeNull()
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_SECRET', secret)
+    vi.stubEnv('PREVIEW_SECRET', secret)
     expect(
       generatePreviewPath({
         collection: 'pages',

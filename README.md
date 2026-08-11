@@ -190,7 +190,7 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | `PAYLOAD_SECRET` | Random secret Payload uses to sign login tokens. Generate with `openssl rand -hex 32`. |
 | `NEXT_PUBLIC_SERVER_URL` | This site's own public URL — used for building links, CORS, and image loading |
 | `CRON_SECRET` | Lets scheduled jobs (e.g. scheduled publish) authenticate without a logged-in user |
-| `NEXT_PUBLIC_PREVIEW_SECRET` | Signs target-bound draft-preview links. Use a random value of at least 32 characters. |
+| `PREVIEW_SECRET` | Signs target-bound draft-preview links. Use a random value of at least 32 characters. |
 | `PG_POOL_MAX` / `PG_POOL_MAX_BUILD` | Advanced: override how many DB connections the app opens. Rarely needed — see the comment in `payload.config.ts` if curious. |
 
 **Email**
@@ -452,7 +452,7 @@ never run this against a shared environment).
 - **Draft preview & auto-revalidation**: Pages and Posts use Payload's
   Versions/drafts feature, so a new or edited document is saved as a draft
   and isn't visible on the live site until published. A custom URL lets
-  editors securely preview a draft before publishing (`NEXT_PUBLIC_PREVIEW_SECRET`
+  editors securely preview a draft before publishing (`PREVIEW_SECRET`
   validates these requests). Because the front-end isn't fully static, an
   `afterChange` hook triggers on-demand revalidation whenever a document's
   status flips to published, so the live pages stay in sync automatically.

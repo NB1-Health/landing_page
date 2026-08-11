@@ -43,7 +43,7 @@ describe('preview route access', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('NEXT_PUBLIC_PREVIEW_SECRET', secret)
+    vi.stubEnv('PREVIEW_SECRET', secret)
     find.mockResolvedValue({ docs: [] })
     findByID.mockResolvedValue(null)
   })

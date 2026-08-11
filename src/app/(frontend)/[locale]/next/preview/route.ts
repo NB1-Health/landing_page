@@ -63,7 +63,7 @@ export async function GET(
   const validToken =
     target &&
     verifyPreviewToken({
-      secret: process.env.NEXT_PUBLIC_PREVIEW_SECRET,
+      secret: process.env.PREVIEW_SECRET,
       target,
       token: searchParams.get('token'),
     })
