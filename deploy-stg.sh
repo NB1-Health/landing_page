@@ -38,7 +38,8 @@ sleep 5
 echo ">>> Run DB migrations (using direct connection to bypass PgBouncer)"
 DATABASE_URL="${DATABASE_URL_DIRECT:-$DATABASE_URL}" npm run migrate
 
-echo ">>> Build Next.js"
+echo ">>> Build Next.js from a clean output directory"
+rm -rf -- "$APP_DIR/.next"
 npm run build
 
 echo ">>> Start/Restart PM2"
