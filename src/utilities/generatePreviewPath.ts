@@ -41,7 +41,7 @@ export const generatePreviewPath = ({ collection, slug, req }: Props) => {
   const locale = getLocale(req)
   const resolvedSlug = typeof slug === 'string' ? slug : (slug[locale] ?? '')
   const target = getPreviewTarget({ collection, locale, slug: resolvedSlug })
-  const secret = process.env.PREVIEW_SECRET
+  const secret = process.env.NEXT_PUBLIC_PREVIEW_SECRET
   if (!target || !isUsablePreviewSecret(secret)) return null
 
   const token = signPreviewTarget({ secret, target })
