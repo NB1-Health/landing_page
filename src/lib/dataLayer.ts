@@ -321,6 +321,11 @@ export function pushEventAndNavigate(
     return
   }
 
+  if (document.documentElement.dataset.nb1Preview === 'true') {
+    navigate()
+    return
+  }
+
   const timeoutMs = options.timeoutMs ?? 750
   let completed = false
   const complete = () => {
