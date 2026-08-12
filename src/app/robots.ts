@@ -10,6 +10,15 @@ function normalizeSiteURL(raw?: string) {
 }
 
 export default function robots(): MetadataRoute.Robots {
+  if (process.env.DEPLOY_ENV === 'staging' || process.env.DEPLOY_ENV === 'production') {
+    return {
+      rules: {
+        userAgent: '*',
+        disallow: '/',
+      },
+    }
+  }
+
   const site = normalizeSiteURL(
     process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL,
   )
