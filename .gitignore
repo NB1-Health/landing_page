@@ -4,6 +4,8 @@ node_modules
 .DS_Store
 .env*
 !.env.local.example
+.htpasswd-staging
+.htpasswd-staging.*
 .next
 .vercel
 .vscode
