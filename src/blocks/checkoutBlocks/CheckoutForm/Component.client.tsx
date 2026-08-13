@@ -1008,6 +1008,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (payMethod === 'card' && !cardComplete) {
       e.cardNumber = t.payment.cardNumberInvalid
     }
+    if (payMethod === 'card') {
+      // Stripe treats billing_details.name as optional metadata, so an empty
+      // cardholder name would otherwise pass and silently fall back to the
+      // shipping name at confirmCardSetup time.
+      if (!cardName.trim()) e.cardName = t.required
+      else if (!hasLetter(cardName)) e.cardName = t.nameInvalid
+    }
     if (payMethod === 'sepa') {
       if (iban.replace(/\s/g, '').length < 15) e.iban = t.payment.ibanInvalid
       if (!ibanName.trim()) e.ibanName = t.required
@@ -2991,7 +2998,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                           type="text"
                           autoComplete="cc-name"
                           value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
+                          onChange={(e) => {
+                            setCardName(e.target.value)
+                            setPayErr((current) => {
+                              if (!current.cardName) return current
+                              const next = { ...current }
+                              delete next.cardName
+                              return next
+                            })
+                          }}
                           className={payErr.cardName ? 'err' : ''}
                         />
                         {payErr.cardName && <span className="nb1-err">{payErr.cardName}</span>}
