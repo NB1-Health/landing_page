@@ -6,6 +6,8 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import RichText from '@/components/RichText'
 import { useReveal } from '@/hooks/useReveal'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
+import type { AppLocale } from '@/i18n/config'
+import { getScienceBoardStrings } from './i18n'
 
 type MediaLike = { url?: string | null; alt?: string | null } | string | null | undefined
 type Tag = { label?: string | null }
@@ -76,7 +78,8 @@ const Photo: React.FC<{ image?: MediaLike; initials?: string | null; name?: stri
   )
 }
 
-export const LabScienceBoardComponent: React.FC<LabScienceBoardBlockType> = ({
+export const LabScienceBoardComponent: React.FC<LabScienceBoardBlockType & { locale?: AppLocale }> = ({
+  locale,
   heading,
   lede,
   stats,
@@ -89,6 +92,7 @@ export const LabScienceBoardComponent: React.FC<LabScienceBoardBlockType> = ({
   checkStatementSub,
   validators,
 }) => {
+  const T = getScienceBoardStrings(locale)
   const statRows = stats ?? []
   const teamRows = teamMembers ?? []
   const validatorRows = validators ?? []
@@ -620,7 +624,7 @@ export const LabScienceBoardComponent: React.FC<LabScienceBoardBlockType> = ({
                 <div className="vald" key={i}>
                   <Photo image={v.photo} initials={v.initials} name={v.name} />
                   <div className="stack">
-                    <span className="role ghost">Independent Validator</span>
+                    <span className="role ghost">{T.independentValidator}</span>
                     <div>
                       <div className="name">{v.name}</div>
                       {v.affiliation && <div className="aff">{v.affiliation}</div>}

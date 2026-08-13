@@ -5,6 +5,8 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 
 import RichText from '@/components/RichText'
 import { useReveal } from '@/hooks/useReveal'
+import type { AppLocale } from '@/i18n/config'
+import { getProtocolStrings } from './i18n'
 
 type Chip = { label?: string | null }
 type Layer = {
@@ -34,7 +36,8 @@ export type LabProtocolBlockType = {
   closingText?: DefaultTypedEditorState | null
 }
 
-export const LabProtocolComponent: React.FC<LabProtocolBlockType> = ({
+export const LabProtocolComponent: React.FC<LabProtocolBlockType & { locale?: AppLocale }> = ({
+  locale,
   eyebrow,
   heading,
   lede,
@@ -47,6 +50,7 @@ export const LabProtocolComponent: React.FC<LabProtocolBlockType> = ({
   layers,
   closingText,
 }) => {
+  const T = getProtocolStrings(locale)
   const rows = layers ?? []
   const gutPct = driverGutPercent ?? 65
   const sectionRef = useRef<HTMLElement | null>(null)
@@ -414,7 +418,7 @@ export const LabProtocolComponent: React.FC<LabProtocolBlockType> = ({
                         {c.label}
                       </span>
                     ))}
-                    {layer.hasMoreChip && <span className="chip more">+ more</span>}
+                    {layer.hasMoreChip && <span className="chip more">{T.moreChip}</span>}
                   </div>
                 )}
               </div>
