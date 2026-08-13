@@ -48,12 +48,19 @@ function resolveNavLink(link: RawLink, locale: string) {
   let url: string | null = null
   if (linkType === 'custom') {
     const customUrl = (link as any).url as string | null | undefined
-    url = customUrl ? (customUrl.startsWith('/') || customUrl.startsWith('http') ? customUrl : `/${customUrl}`) : null
+    url = customUrl
+      ? customUrl.startsWith('/') || customUrl.startsWith('http')
+        ? customUrl
+        : `/${customUrl}`
+      : null
   } else {
     const ref = (link as any).reference
     const refDoc = ref?.value ?? ref
     const rawSlug = typeof refDoc === 'object' && refDoc !== null ? refDoc.slug : undefined
-    const slug = typeof rawSlug === 'string' ? rawSlug : (rawSlug as any)?.[locale] ?? (rawSlug as any)?.['en']
+    const slug =
+      typeof rawSlug === 'string'
+        ? rawSlug
+        : ((rawSlug as any)?.[locale] ?? (rawSlug as any)?.['en'])
     url = slug ? (slug === 'home-page' ? `/${locale}` : `/${locale}/${slug}`) : null
   }
   return {
@@ -83,9 +90,10 @@ type Props = {
    * navigation (e.g. clicking a nav link) and silently points the switcher at
    * whatever page was last hard-loaded instead of the current one. */
   pageSlugs?: Partial<Record<string, string>> | null
+  pageSlugSegment?: number
 }
 
-export async function Header({ locale, id, pageSlugs }: Props) {
+export async function Header({ locale, id, pageSlugs, pageSlugSegment }: Props) {
   const data = (await getCachedHeader(id, locale)()) as HeaderData | null
   // Resolved server-side from the cookie so the initial currency label
   // matches what HeaderClient hydrates with — previously HeaderClient read
@@ -102,6 +110,7 @@ export async function Header({ locale, id, pageSlugs }: Props) {
       <HeaderClient
         locale={locale}
         pageSlugs={pageSlugs ?? null}
+        pageSlugSegment={pageSlugSegment}
         initialCurrency={initialCurrency}
         logo={pickMedia(data?.logo)}
         logoDark={pickMedia(data?.logoDark)}
@@ -112,10 +121,14 @@ export async function Header({ locale, id, pageSlugs }: Props) {
         loginTextColor={data?.loginTextColor ?? null}
         ctaLabel={data?.ctaLabel ?? null}
         ctaUrl={data?.ctaUrl ?? null}
-        navItems={(data?.navItems ?? []).map((item) => ({ link: resolveNavLink(item.link ?? null, locale) }))}
+        navItems={(data?.navItems ?? []).map((item) => ({
+          link: resolveNavLink(item.link ?? null, locale),
+        }))}
         discoverNavEnabled={data?.discoverNavEnabled ?? false}
         discoverNavLabel={data?.discoverNavLabel ?? null}
-        discoverNavItems={(data?.discoverNavItems ?? []).map((item) => ({ link: resolveNavLink(item.link ?? null, locale) }))}
+        discoverNavItems={(data?.discoverNavItems ?? []).map((item) => ({
+          link: resolveNavLink(item.link ?? null, locale),
+        }))}
         variants={data?.variants ?? []}
         sectionNavEnabled={data?.sectionNavEnabled ?? false}
         sectionNavItems={(data?.sectionNavItems ?? []).map((item) => ({

@@ -22,7 +22,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     CREATE TABLE IF NOT EXISTS "_bio_groups_v" (
       "_order"     integer NOT NULL,
       "_parent_id" integer NOT NULL,
-      "id"         serial PRIMARY KEY
+      "id"         serial PRIMARY KEY,
+      "_uuid"      varchar
     );
     -- FK to _pages_v_blocks_evolution_band is added by migration 20260430_074534
     CREATE INDEX IF NOT EXISTS "_bio_groups_v_order_idx"
@@ -48,6 +49,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "_parent_id" integer NOT NULL
         REFERENCES "_bio_groups_v" ("id") ON DELETE CASCADE,
       "id"         serial PRIMARY KEY,
+      "_uuid"      varchar,
       "delta"      varchar,
       "direction"  "enum__bio_groups_v_rows_direction"
     );

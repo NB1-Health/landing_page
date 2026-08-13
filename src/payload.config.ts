@@ -19,6 +19,7 @@ import { SiteSettings } from './globals/SiteSettings'
 import { Products } from './collections/Products'
 import { Authors } from './collections/Authors'
 import { FAQ } from './globals/FAQ'
+import { defaultLocale, payloadLocales } from './i18n/config'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,7 +33,6 @@ const pgPoolDefault = isNextBuild ? 2 : 10
 const pgPoolEnv = isNextBuild ? process.env.PG_POOL_MAX_BUILD : process.env.PG_POOL_MAX
 const pgPoolParsed = Number(pgPoolEnv ?? pgPoolDefault)
 const pgPoolMax = Number.isFinite(pgPoolParsed) && pgPoolParsed > 0 ? pgPoolParsed : pgPoolDefault
-
 export default buildConfig({
   // Canonical absolute URL for this deployment. Without it Payload falls back to
   // an empty serverURL and logs "Failed to create URL object from URL: , falling
@@ -57,6 +57,9 @@ export default buildConfig({
     },
   },
   editor: defaultLexical,
+  experimental: {
+    localizeStatus: true,
+  },
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
@@ -108,17 +111,9 @@ export default buildConfig({
     tasks: [],
   },
   localization: {
-    locales: [
-      { code: 'en', label: 'English (EU / Rest of World)' },
-      { code: 'de', label: 'German (Germany & Austria)' },
-      { code: 'fr', label: 'French (France)' },
-      { code: 'nl', label: 'Dutch (Netherlands)' },
-      { code: 'ch', label: 'German (Switzerland)', fallbackLocale: 'de' },
-      { code: 'be', label: 'Dutch (Belgium)', fallbackLocale: 'nl' },
-      { code: 'uk', label: 'English (United Kingdom)', fallbackLocale: 'en' },
-      { code: 'uae', label: 'English (UAE)', fallbackLocale: 'en' },
-    ],
-    defaultLocale: 'en',
+    locales: payloadLocales,
+    defaultLocale,
+    defaultLocalePublishOption: 'active',
     fallback: true,
   },
   routes: {

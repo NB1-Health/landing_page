@@ -4,9 +4,9 @@ import { resolve } from 'node:path'
 const payloadUIRoot = resolve('node_modules/@payloadcms/ui')
 const packageJSON = JSON.parse(readFileSync(resolve(payloadUIRoot, 'package.json'), 'utf8'))
 
-if (packageJSON.version !== '3.70.0') {
+if (packageJSON.version !== '3.82.1') {
   throw new Error(
-    `Payload UI patch expects @payloadcms/ui 3.70.0, found ${packageJSON.version}. Review or remove the patch before upgrading.`,
+    `Payload UI patch expects @payloadcms/ui 3.82.1, found ${packageJSON.version}. Review or remove the patch before upgrading.`,
   )
 }
 
@@ -16,13 +16,13 @@ let bundle = readFileSync(bundlePath, 'utf8')
 const replacements = [
   {
     label: 'expanded block field rendering',
-    before: 'bn(No,{className:`${ei}__fields`,fields:c,margins:"small"',
-    after: 'bn(No,{className:`${ei}__fields`,fields:c,forceRender:!x.collapsed,margins:"small"',
+    before: 'pn(No,{className:`${ei}__fields`,fields:c,margins:"small"',
+    after: 'pn(No,{className:`${ei}__fields`,fields:c,forceRender:!w.collapsed,margins:"small"',
   },
   {
     label: 'block schema path separator',
-    before: 'schemaPath:S+qe.slug,setCollapse:Q',
-    after: 'schemaPath:`${S}.${qe.slug}`,setCollapse:Q',
+    before: 'schemaPath:I+je.slug,setCollapse:ae',
+    after: 'schemaPath:`${I}.${je.slug}`,setCollapse:ae',
   },
 ]
 

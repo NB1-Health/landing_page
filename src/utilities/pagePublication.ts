@@ -42,18 +42,8 @@ export function getPageRevalidationTargets({
   const currentIsHome = isHomePageSlugs(currentSlugs)
 
   for (const locale of locales) {
-    // The current renderer falls back to English content when a localized
-    // slug is absent, so invalidate those fallback routes as well.
-    const previousPath = getPublicPagePath(
-      locale,
-      previousSlugs[locale] ?? previousSlugs.en,
-      previousIsHome,
-    )
-    const currentPath = getPublicPagePath(
-      locale,
-      currentSlugs[locale] ?? currentSlugs.en,
-      currentIsHome,
-    )
+    const previousPath = getPublicPagePath(locale, previousSlugs[locale], previousIsHome)
+    const currentPath = getPublicPagePath(locale, currentSlugs[locale], currentIsHome)
 
     if (previousPath || currentPath) tags.add(`pages-sitemap-${locale}`)
     if (previousPath) paths.add(previousPath)

@@ -23,8 +23,19 @@ describe('Payload nested block rendering patch', () => {
       /RenderFields,[\s\S]*?fields,[\s\S]*?forceRender: forceRender \|\| !row\.collapsed/,
     )
     expect(clientBundle).toContain(
-      'bn(No,{className:`${ei}__fields`,fields:c,forceRender:!x.collapsed,margins:"small"',
+      'pn(No,{className:`${ei}__fields`,fields:c,forceRender:!w.collapsed,margins:"small"',
     )
-    expect(clientBundle).toContain('schemaPath:`${S}.${qe.slug}`,setCollapse:Q')
+    expect(clientBundle).toContain('schemaPath:`${I}.${je.slug}`,setCollapse:ae')
+  })
+
+  it('keeps rich-text dropdowns open while interacting with their contents', () => {
+    const toolbarDropdown = readFileSync(
+      resolve(
+        'node_modules/@payloadcms/richtext-lexical/dist/features/toolbars/shared/ToolbarDropdown/index.js',
+      ),
+      'utf8',
+    )
+
+    expect(toolbarDropdown).toContain('stopCloseOnClickSelf: true')
   })
 })

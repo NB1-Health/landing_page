@@ -40,7 +40,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "_order"     integer NOT NULL,
       "_parent_id" varchar NOT NULL
         REFERENCES "pages_blocks_evolution_band" ("id") ON DELETE CASCADE,
-      "id"         varchar PRIMARY KEY
+      "id"         varchar PRIMARY KEY,
+      "_uuid"      varchar
     );
     CREATE INDEX IF NOT EXISTS "pages_blocks_evolution_band_bio_groups_order_idx"
       ON "pages_blocks_evolution_band_bio_groups" ("_order");
@@ -66,6 +67,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "_parent_id" varchar NOT NULL
         REFERENCES "pages_blocks_evolution_band_bio_groups" ("id") ON DELETE CASCADE,
       "id"         varchar PRIMARY KEY,
+      "_uuid"      varchar,
       "delta"      varchar,
       "direction"  "enum_pages_blocks_evolution_band_bio_groups_rows_direction"
     );
@@ -93,7 +95,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "_order"     integer NOT NULL,
       "_parent_id" integer NOT NULL
         REFERENCES "_pages_v_blocks_evolution_band" ("id") ON DELETE CASCADE,
-      "id"         serial PRIMARY KEY
+      "id"         serial PRIMARY KEY,
+      "_uuid"      varchar
     );
     CREATE INDEX IF NOT EXISTS "_pages_v_blocks_evolution_band_bio_groups_order_idx"
       ON "_pages_v_blocks_evolution_band_bio_groups" ("_order");
@@ -119,6 +122,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "_parent_id" integer NOT NULL
         REFERENCES "_pages_v_blocks_evolution_band_bio_groups" ("id") ON DELETE CASCADE,
       "id"         serial PRIMARY KEY,
+      "_uuid"      varchar,
       "delta"      varchar,
       "direction"  "enum__pages_v_blocks_evolution_band_bio_groups_rows_direction"
     );

@@ -26,8 +26,9 @@ describe('page publication revalidation', () => {
       payload: {
         findByID: vi.fn().mockResolvedValue({
           id: 42,
-          _status: 'published',
+          _status: { de: 'published', en: 'published' },
           slug: { de: 'neue-seite', en: 'new-page' },
+          title: { de: 'Neue Seite', en: 'New page' },
         }),
         logger,
       },
@@ -47,7 +48,7 @@ describe('page publication revalidation', () => {
 
     expect(revalidatePath).toHaveBeenCalledWith('/en/new-page')
     expect(revalidatePath).toHaveBeenCalledWith('/de/neue-seite')
-    expect(revalidatePath).toHaveBeenCalledWith('/fr/new-page')
+    expect(revalidatePath).not.toHaveBeenCalledWith('/fr/new-page')
     expect(req.payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ req }))
   })
 
@@ -56,14 +57,26 @@ describe('page publication revalidation', () => {
       context: {},
       locale: 'en',
       payload: {
-        findByID: vi.fn().mockImplementation(() => {
-          req.locale = 'all'
-          return Promise.resolve({
-            id: 42,
-            _status: 'published',
-            slug: { en: 'new-page' },
+        findByID: vi
+          .fn()
+          .mockImplementationOnce(() => {
+            req.locale = 'all'
+            return Promise.resolve({
+              id: 42,
+              _status: { en: 'draft' },
+              slug: { en: 'new-page' },
+              title: { en: 'New page' },
+            })
           })
-        }),
+          .mockImplementationOnce(() => {
+            req.locale = 'all'
+            return Promise.resolve({
+              id: 42,
+              _status: { en: 'published' },
+              slug: { en: 'new-page' },
+              title: { en: 'New page' },
+            })
+          }),
         logger,
       },
       query: {},
@@ -88,11 +101,20 @@ describe('page publication revalidation', () => {
       context: {},
       locale: 'de',
       payload: {
-        findByID: vi.fn().mockResolvedValue({
-          id: 42,
-          _status: 'published',
-          slug: { de: 'alte-seite', en: 'old-page' },
-        }),
+        findByID: vi
+          .fn()
+          .mockResolvedValueOnce({
+            id: 42,
+            _status: { de: 'published', en: 'published' },
+            slug: { de: 'alte-seite', en: 'old-page' },
+            title: { de: 'Alte Seite', en: 'Old page' },
+          })
+          .mockResolvedValueOnce({
+            id: 42,
+            _status: { de: 'draft', en: 'published' },
+            slug: { de: 'alte-seite', en: 'old-page' },
+            title: { de: 'Alte Seite', en: 'Old page' },
+          }),
         logger,
       },
       query: {},
@@ -110,7 +132,7 @@ describe('page publication revalidation', () => {
     } as never)
 
     expect(revalidatePath).toHaveBeenCalledWith('/de/alte-seite')
-    expect(revalidatePath).toHaveBeenCalledWith('/fr/old-page')
+    expect(revalidatePath).not.toHaveBeenCalledWith('/fr/old-page')
   })
 
   it('uses previousDoc if the pre-operation publication lookup fails', async () => {
@@ -149,8 +171,9 @@ describe('page publication revalidation', () => {
       payload: {
         findByID: vi.fn().mockResolvedValue({
           id: 42,
-          _status: 'published',
+          _status: { en: 'published' },
           slug: { en: 'about-nb1' },
+          title: { en: 'About NB1' },
         }),
         logger,
       },

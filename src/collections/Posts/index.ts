@@ -16,7 +16,7 @@ import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
-import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
+import { capturePostPublication, revalidateDelete, revalidatePost } from './hooks/revalidatePost'
 import { parseApiContent } from './hooks/parseApiContent'
 import { TableOfContents } from '../../blocks/TableOfContents/config'
 import { AuthorBox } from '../../blocks/AuthorBox/config'
@@ -32,6 +32,8 @@ import { BulletListBlock } from '@/blocks/BulletList/config'
 
 import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 import { costomSlugField } from '@/fields/slug'
+import { isPublishedForActiveLocale } from '@/utilities/publishedLocaleAvailability'
+import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
@@ -312,6 +314,7 @@ export const Posts: CollectionConfig<'posts'> = {
                 },
               },
             },
+            seoOverridesField(),
             PreviewField({
               hasGenerateFn: true,
               titlePath: 'meta.title',
@@ -343,8 +346,8 @@ export const Posts: CollectionConfig<'posts'> = {
       },
       hooks: {
         beforeChange: [
-          ({ siblingData, value }) => {
-            if (siblingData._status === 'published' && !value) {
+          ({ req, siblingData, value }) => {
+            if (isPublishedForActiveLocale(siblingData._status, req.locale) && !value) {
               return new Date()
             }
             return value
@@ -402,6 +405,7 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   ],
   hooks: {
+    beforeOperation: [capturePostPublication],
     beforeChange: [parseApiContent],
     afterChange: [revalidatePost],
     afterRead: [populateAuthors],
@@ -412,6 +416,7 @@ export const Posts: CollectionConfig<'posts'> = {
       autosave: {
         interval: 100,
       },
+      localizeStatus: true,
       schedulePublish: true,
     },
     maxPerDoc: 50,

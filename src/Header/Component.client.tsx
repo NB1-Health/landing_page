@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
-import { isAppLocale } from '@/i18n/config'
+import { isAppLocale, localeConfig } from '@/i18n/config'
 
 type Theme = 'light' | 'dark'
 
@@ -19,6 +19,8 @@ export interface HeaderClientProps {
   /** Per-locale slug map for the page currently being viewed (see Header/Component.tsx
    * for why this is a prop rather than a global). */
   pageSlugs?: Partial<Record<string, string>> | null
+  /** Index of the slug segment in the current path. Pages use 2; posts use 3. */
+  pageSlugSegment?: number
   /** Resolved server-side from the currency cookie (see src/utilities/currency.ts).
    * Used as the initial state below instead of reading localStorage, so the
    * SSR markup and the first client render match exactly — reading
@@ -108,14 +110,6 @@ const DEFAULT_LANG_CURRENCIES: Record<string, string[]> = {
   nl: ['EUR'],
 }
 
-// Maps locale path segments that aren't themselves display languages back to their language
-const LOCALE_TO_LANG: Record<string, string> = {
-  ch: 'de',
-  uk: 'en',
-  uae: 'en',
-  be: 'nl',
-}
-
 // Fixed default currency per locale — overrides cookie when the cookie value isn't valid for that locale
 const LOCALE_DEFAULT_CURRENCY: Record<string, string> = {
   ch: 'CHF',
@@ -141,7 +135,7 @@ const LOCALE_ALLOWED_CURRENCIES: Record<string, string[]> = {
 }
 
 function localeToLang(locale: string): string {
-  return LOCALE_TO_LANG[locale] ?? locale
+  return isAppLocale(locale) ? localeConfig[locale].htmlLang : locale
 }
 
 function lsGet(k: string, d: string) {
@@ -162,6 +156,7 @@ function lsSet(k: string, v: string) {
 export const HeaderClient: React.FC<HeaderClientProps> = ({
   locale,
   pageSlugs = null,
+  pageSlugSegment = 2,
   initialCurrency,
   logo,
   logoDark,
@@ -379,7 +374,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   // must keep the visitor in their current locale — the CTA button — use this,
   // not curLang, otherwise a /uk visitor gets sent to /en. Mirrors navItems,
   // which are already locale-prefixed server-side with the raw locale.
-  const activeLocale = isAppLocale(langFromPath) ? langFromPath : (locale || 'en')
+  const activeLocale = isAppLocale(langFromPath) ? langFromPath : locale || 'en'
   const [curLocale, setCurLocale] = useState(activeLocale)
   useEffect(() => {
     setCurLang(activeLang)
@@ -467,6 +462,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
 
   function applyLang(lang: string) {
     const targetLocale = resolveTargetLocale(lang, pendingCur)
+    if (pageSlugs && typeof pageSlugs[targetLocale] !== 'string') return
     // Use pendingCur if it's valid for the target locale, otherwise fall back to locale default.
     // This lets FR+CHF work while still resetting e.g. GBP→EUR when switching to French.
     const allowed = LOCALE_ALLOWED_CURRENCIES[targetLocale]
@@ -491,8 +487,10 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     // locale's slug, which would 404 or belong to a different page on the target
     // locale (slugs are localized per-page, e.g. en "our-plans" vs de "unsere-plane").
     if (pageSlugs) {
-      const targetSlug = pageSlugs[targetLocale] ?? pageSlugs['en']
-      if (targetSlug && segments[2] !== undefined) segments[2] = targetSlug
+      const targetSlug = pageSlugs[targetLocale]
+      if (targetSlug && segments[pageSlugSegment] !== undefined) {
+        segments[pageSlugSegment] = targetSlug
+      }
     }
     window.location.href = segments.join('/')
     setLocOpen(false)
@@ -513,6 +511,9 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     window.dispatchEvent(new CustomEvent('nb1:currencychange', { detail: cur }))
     router.refresh()
   }
+
+  const pendingTargetLocale = resolveTargetLocale(pendingLang, pendingCur)
+  const pendingLocaleAvailable = !pageSlugs || typeof pageSlugs[pendingTargetLocale] === 'string'
 
   const isTransparent = darkHero && !scrolled
   // After scrolling past dark hero, always go light — dark theme only applies to permanently dark (non-hero) nav
@@ -591,6 +592,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     .nb1-cur-sym { display:inline-flex; width:22px; justify-content:center; font-weight:700; }
     .nb1-loc-done { display:block; width:100%; margin-top:14px; padding:11px; font-family:inherit; font-size:13.5px; font-weight:700; color:#fff; background:#0A8FB0; border:none; border-radius:11px; cursor:pointer; transition:background .15s; }
     .nb1-loc-done:hover { background:#0B7E9C; }
+    .nb1-loc-done:disabled { cursor:not-allowed; opacity:.45; }
     .nb1-burger { display:none; flex-direction:column; justify-content:center; gap:5px; width:44px; height:44px; padding:0; background:none; border:none; cursor:pointer; }
     .nb1-burger span { display:block; width:22px; height:2px; border-radius:2px; background:${burgerColor}; margin:0 auto; transition:transform .26s,opacity .18s; }
     .nb1-burger[aria-expanded="true"] span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
@@ -659,7 +661,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
 
       <nav className={`nb1-nav${hidden ? ' nb1-hidden' : ''}`} aria-label="Main navigation">
         <div className="nb1-nav-in">
-          <Link href={`/${locale}/home-page`} className="nb1-logo" aria-label="NB1">
+          <Link href={`/${locale}`} className="nb1-logo" aria-label="NB1">
             {activeLogo?.url ? (
               <img src={activeLogo.url} alt={activeLogo.alt || 'NB1'} />
             ) : (
@@ -871,6 +873,12 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
                 <button
                   type="button"
                   className="nb1-loc-done"
+                  disabled={!pendingLocaleAvailable}
+                  title={
+                    pendingLocaleAvailable
+                      ? undefined
+                      : 'This page is not available in the selected market.'
+                  }
                   onClick={() => {
                     applyLang(pendingLang)
                     setLocOpen(false)
@@ -1072,6 +1080,12 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
           <button
             type="button"
             className="nb1-loc-done"
+            disabled={!pendingLocaleAvailable}
+            title={
+              pendingLocaleAvailable
+                ? undefined
+                : 'This page is not available in the selected market.'
+            }
             onClick={() => {
               applyLang(pendingLang)
               setLocPopOpen(false)

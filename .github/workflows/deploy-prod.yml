@@ -18,12 +18,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout the staging candidate
+        run: |
+          git fetch origin stg
+          git checkout --detach origin/stg
+
+      - name: Verify staging international SEO before promotion
+        env:
+          SEO_DEPLOY_ENV: staging
+          SEO_BASE_URL: https://stg.nb1.com
+          STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
+          STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
+        run: npm run seo:check
+
       - name: Merge stg → prod
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git fetch origin
+          git fetch origin prod stg
           git checkout prod
           git merge origin/stg --no-edit
           git push origin prod
@@ -46,3 +59,9 @@ jobs:
             # migrations in place; never replace it with another environment.
             npm run deploy:guard
             bash deploy-prod.sh
+
+      - name: Verify production international SEO
+        env:
+          SEO_DEPLOY_ENV: production
+          SEO_BASE_URL: https://nb1.com
+        run: npm run seo:check

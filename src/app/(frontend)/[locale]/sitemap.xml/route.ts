@@ -1,24 +1,14 @@
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL ||
-  process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-  'https://example.com'
+import { isAppLocale } from '@/i18n/config'
+import { getServerSideURL } from '@/utilities/getURL'
 
-const LOCALES = ['en', 'de', 'fr', 'nl']
+export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
 
-function normalizeSiteURL(url: string) {
-  if (!url) return 'https://example.com'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url.replace(/\/$/, '')
-  return `https://${url.replace(/\/$/, '')}`
-}
-
-export async function GET(_req: Request, context: any) {
-  const locale = context?.params?.locale as string | undefined
-
-  if (!locale || !LOCALES.includes(locale)) {
+  if (!locale || !isAppLocale(locale)) {
     return new Response('Not found', { status: 404 })
   }
 
-  const site = normalizeSiteURL(SITE_URL)
+  const site = getServerSideURL().replace(/\/$/, '')
   const lastmod = new Date().toISOString()
 
   const entries = [

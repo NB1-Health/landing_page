@@ -19,9 +19,10 @@ NEXT_PUBLIC_SERVER_URL=https://nb1.com
 
 Both deploy scripts reject mismatched environment/hostname pairs before installing
 dependencies, copying the active `.env`, running migrations, or stopping the app.
-Production remains closed to crawlers with `Disallow: /` until the later launch
-slice deliberately opens it; only staging receives the additional global noindex
-response header.
+Production is crawlable and advertises its root sitemap; only staging receives
+`Disallow: /` and the additional global noindex response header. The deployment
+crawl checks the final public `robots.txt` and `X-Robots-Tag` response so an Nginx
+or Cloudflare override cannot silently apply staging containment to production.
 
 Nginx needs one manual, one-time configuration because the active virtual-host file
 is owned by the server rather than this repository. Complete this before merging so

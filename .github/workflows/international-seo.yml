@@ -1,0 +1,64 @@
+name: International SEO regression tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://payload:payload@127.0.0.1:5432/nb1_seo_test
+      DEPLOY_ENV: local
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+      PAYLOAD_SECRET: international-seo-ci-secret
+      TEST_DATABASE_URL: postgresql://payload:payload@127.0.0.1:5432/nb1_seo_test
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: nb1_seo_test
+          POSTGRES_PASSWORD: payload
+          POSTGRES_USER: payload
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payload -d nb1_seo_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify the full migration chain
+        run: npm run migrate:fresh -- --force-accept-warning
+
+      - name: Run international SEO regression tests
+        run: >-
+          npm run test:int -- --run
+          tests/int/hreflang.int.spec.ts
+          tests/int/localizedStatusMigration.int.spec.ts
+          tests/int/publishedLocaleAvailability.int.spec.ts
+          tests/int/localizedPublicationRoundTrip.int.spec.ts
+          tests/int/internationalSeoCrawl.int.spec.ts
+          tests/int/stagingSeoContainment.int.spec.ts
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
