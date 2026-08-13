@@ -13,6 +13,7 @@ import {
 } from './art'
 import { STATUS_LABELS, enumLabel } from '@/blocks/_shared/enumLabels'
 import type { AppLocale } from '@/i18n/config'
+import { getComparisonStrings } from './i18n'
 
 type LegendItem = { label?: string | null; color?: string | null; dashed?: boolean | null }
 type ComparisonNode = {
@@ -86,6 +87,7 @@ export const LabComparisonComponent: React.FC<LabComparisonBlockType & { locale?
 }) => {
   const nodeRows = useMemo(() => nodes ?? [], [nodes])
   const usSvg = useMemo(() => injectNodeData(COMPARISON_US_INNER_SVG, nodeRows), [nodeRows])
+  const T = useMemo(() => getComparisonStrings(locale), [locale])
 
   const figRef = useRef<HTMLDivElement | null>(null)
   const sectionRef = useRef<HTMLElement | null>(null)
@@ -459,14 +461,14 @@ export const LabComparisonComponent: React.FC<LabComparisonBlockType & { locale?
             className={['cmp2-tab', activeTab === '16s' ? 'active' : ''].join(' ')}
             onClick={() => setActiveTab('16s')}
           >
-            Most gut tests
+            {T.tab16s}
           </button>
           <button
             type="button"
             className={['cmp2-tab', activeTab === 'us' ? 'active' : ''].join(' ')}
             onClick={() => setActiveTab('us')}
           >
-            Our gut test
+            {T.tabUs}
           </button>
         </div>
 
@@ -489,7 +491,7 @@ export const LabComparisonComponent: React.FC<LabComparisonBlockType & { locale?
                blocked by unrelated local schema drift; once migrated, the CMS
                value overrides this. */}
             <div className="cmp2-cap">
-              {leftCaption || 'Every microbe is just a dot. All you learn is that it exists.'}
+              {leftCaption || T.caption}
             </div>
           </figure>
 
