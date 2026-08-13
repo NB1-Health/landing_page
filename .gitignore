@@ -4,6 +4,8 @@ node_modules
 .DS_Store
 .env*
 !.env.local.example
+.htpasswd-staging
+.htpasswd-staging.*
 .next
 .vercel
 .vscode
@@ -29,3 +31,7 @@ payloadApiJson/
 
 # Claude Code project index (local only, do not commit)
 PROJECT_INDEX.md
+
+# Staging nginx Basic Auth password file (server-only secret; also covered by PR #127)
+.htpasswd-staging
+.htpasswd-staging.*

@@ -8,6 +8,8 @@ import { useReveal } from '@/hooks/useReveal'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 import { SOURCE_ICONS, SOURCE_LABELS } from './constants'
 import { BLEND_INNER_SVG, BLEND_VIEWBOX, ROD_ICON_INNER, SCENE_INNER_SVG, SCENE_VIEWBOX } from './art'
+import type { AppLocale } from '@/i18n/config'
+import { getFormulaStrings } from './i18n'
 
 type MediaLike = { url?: string | null; alt?: string | null } | string | null | undefined
 
@@ -74,7 +76,8 @@ const RodIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 34 24" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ROD_ICON_INNER }} />
 )
 
-export const LabFormulaComponent: React.FC<LabFormulaBlockType> = ({
+export const LabFormulaComponent: React.FC<LabFormulaBlockType & { locale?: AppLocale }> = ({
+  locale,
   eyebrow,
   heading,
   lede,
@@ -107,6 +110,25 @@ export const LabFormulaComponent: React.FC<LabFormulaBlockType> = ({
   quoteAuthorName,
   quoteAuthorInst,
 }) => {
+  const F = useMemo(() => getFormulaStrings(locale), [locale])
+  // Inject the localized captions/labels into the verbatim art SVGs (same
+  // string-replace approach as the comparison figure). The dose labels are
+  // lower-cased to match the original axis styling.
+  const sceneSvg = useMemo(
+    () =>
+      SCENE_INNER_SVG.replace('On its own, it washes through', F.sceneWashesThrough).replace(
+        'Fed the right fibre, it stays and works',
+        F.sceneStaysWorks,
+      ),
+    [F],
+  )
+  const blendSvg = useMemo(
+    () =>
+      BLEND_INNER_SVG.replace('>too much<', `>${F.doseTooMuch.toLowerCase()}<`)
+        .replace('>right for you<', `>${F.doseRightForYou.toLowerCase()}<`)
+        .replace('>too little<', `>${F.doseTooLittle.toLowerCase()}<`),
+    [F],
+  )
   const jobRows = useMemo(() => jobs ?? [], [jobs])
   const [selectedJob, setSelectedJob] = useState(0)
   const [displayedJob, setDisplayedJob] = useState(0)
@@ -840,7 +862,7 @@ export const LabFormulaComponent: React.FC<LabFormulaBlockType> = ({
                 viewBox={SCENE_VIEWBOX}
                 role="img"
                 aria-label="A live culture washes through on its own; paired with the right prebiotic fibre, it stays and works"
-                dangerouslySetInnerHTML={{ __html: SCENE_INNER_SVG }}
+                dangerouslySetInnerHTML={{ __html: sceneSvg }}
               />
               <div className="eq-mobile">
                 <div className="ing">
@@ -992,12 +1014,12 @@ export const LabFormulaComponent: React.FC<LabFormulaBlockType> = ({
             {stage3Intro && <p className="pintro">{stage3Intro}</p>}
 
             <div className="blend">
-              <svg className="blend-svg" viewBox={BLEND_VIEWBOX} aria-hidden="true" dangerouslySetInnerHTML={{ __html: BLEND_INNER_SVG }} />
+              <svg className="blend-svg" viewBox={BLEND_VIEWBOX} aria-hidden="true" dangerouslySetInnerHTML={{ __html: blendSvg }} />
               <div className="blend-bands">
                 <div className="fscale">
-                  <span>Too little</span>
-                  <span className="mid">Right for you</span>
-                  <span>Too much</span>
+                  <span>{F.doseTooLittle}</span>
+                  <span className="mid">{F.doseRightForYou}</span>
+                  <span>{F.doseTooMuch}</span>
                 </div>
                 {(blendRows ?? []).map((row, i) => (
                   <div className="frow" key={i}>
