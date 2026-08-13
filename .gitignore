@@ -29,3 +29,7 @@ payloadApiJson/
 
 # Claude Code project index (local only, do not commit)
 PROJECT_INDEX.md
+
+# Staging nginx Basic Auth password file (server-only secret; also covered by PR #127)
+.htpasswd-staging
+.htpasswd-staging.*
