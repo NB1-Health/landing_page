@@ -81,15 +81,27 @@ describe('staging SEO containment', () => {
     })
   })
 
-  it('keeps production crawling closed until launch', () => {
+  it('keeps production crawlable now that it is launched', () => {
     vi.stubEnv('DEPLOY_ENV', 'production')
     vi.stubEnv('NEXT_PUBLIC_SERVER_URL', 'https://nb1.com')
 
     expect(robots()).toEqual({
       rules: {
         userAgent: '*',
-        disallow: '/',
+        allow: '/',
+        disallow: ['/cms', '/cms/admin', '/cms/api'],
       },
+      sitemap: [
+        'https://nb1.com/sitemap.xml',
+        'https://nb1.com/en/sitemap.xml',
+        'https://nb1.com/de/sitemap.xml',
+        'https://nb1.com/fr/sitemap.xml',
+        'https://nb1.com/nl/sitemap.xml',
+        'https://nb1.com/ch/sitemap.xml',
+        'https://nb1.com/be/sitemap.xml',
+        'https://nb1.com/uk/sitemap.xml',
+        'https://nb1.com/uae/sitemap.xml',
+      ],
     })
   })
 
