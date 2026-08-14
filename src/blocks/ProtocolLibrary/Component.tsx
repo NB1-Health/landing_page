@@ -7,6 +7,8 @@ import RichText from '@/components/RichText'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 import { useProtocolReveal } from '@/hooks/useProtocolReveal'
 import { ProtocolCountUp } from '@/components/ProtocolCountUp'
+import type { AppLocale } from '@/i18n/config'
+import { getLibraryStrings } from './i18n'
 
 type MediaLike = { url?: string | null; alt?: string | null } | string | null | undefined
 type CategoryKey = 'strains' | 'fibres' | 'vitamins' | 'actives'
@@ -38,7 +40,8 @@ function imgAlt(img?: MediaLike): string {
   return img.alt ?? ''
 }
 
-export const ProtocolLibraryComponent: React.FC<ProtocolLibraryBlockType> = ({
+export const ProtocolLibraryComponent: React.FC<ProtocolLibraryBlockType & { locale?: AppLocale }> = ({
+  locale,
   categories,
   vettedText,
   vettedFaces,
@@ -54,6 +57,7 @@ export const ProtocolLibraryComponent: React.FC<ProtocolLibraryBlockType> = ({
   const sectionRef = useRef<HTMLElement | null>(null)
   useProtocolReveal(sectionRef, '[data-rv]')
 
+  const T = getLibraryStrings(locale)
   const cats = categories ?? []
   const list = items ?? []
   const faces = (vettedFaces ?? []).filter((f) => imgUrl(f?.image))
@@ -434,7 +438,7 @@ export const ProtocolLibraryComponent: React.FC<ProtocolLibraryBlockType> = ({
           <div className="pl-row">
             <div className="pl-count">
               <ProtocolCountUp value={String(list.length)} />
-              <small>components on file</small>
+              <small>{T.componentsOnFile}</small>
             </div>
             <div className="pl-fams">
               {cats.map((cat, i) => (
