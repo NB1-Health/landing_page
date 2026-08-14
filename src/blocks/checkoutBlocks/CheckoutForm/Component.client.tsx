@@ -18,7 +18,6 @@ import { createFirebaseAccount } from '@/lib/createAccount'
 import {
   checkoutPaymentIntent,
   checkoutConfirm,
-  getPermittedCheckoutAttribution,
   trackLanguagePublic,
 } from '@/lib/checkoutApi'
 import {
@@ -47,7 +46,7 @@ import { isPaymentAttemptReady } from '@/lib/interactionTracking'
 import { trackKlaviyoStartedCheckout } from '@/lib/klaviyoCheckout'
 import { sendMetaCapiEvent } from '@/lib/meta/browser'
 import {
-  getCommercialIdentity,
+  getCommercialCheckoutContext,
   waitForCommercialConsentResolution,
 } from '@/lib/commercialIdentity'
 import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
@@ -666,9 +665,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const redirectConfirmation = await checkoutConfirm({
           setup_intent_id: setupIntentId,
           idempotency_key: idempotencyKey,
-          checkout_id: getOrCreateCheckoutId(),
-          attribution: getPermittedCheckoutAttribution(),
-          tracking_context: getCommercialIdentity(),
+          ...getCommercialCheckoutContext(),
           shipping_address: {
             first_name: saved.fn ?? fn,
             last_name: saved.ln ?? ln,
@@ -1432,9 +1429,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       const confirmation = await checkoutConfirm({
         setup_intent_id: setupIntentId,
         idempotency_key: idempotencyKeyRef.current || setupIntentId,
-        checkout_id: getOrCreateCheckoutId(),
-        attribution: getPermittedCheckoutAttribution(),
-        tracking_context: getCommercialIdentity(),
+        ...getCommercialCheckoutContext(),
         shipping_address: {
           first_name: fn,
           last_name: ln,

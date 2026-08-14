@@ -63,7 +63,7 @@ export type CheckoutConfirmIn = {
   shipping_address: PublicShippingAddressIn
   billing_address: BillingAddressIn
   idempotency_key?: string | null
-  checkout_id?: string | null
+  checkout_id: string
   attribution?: Partial<Record<
     | 'utm_source'
     | 'utm_medium'
@@ -76,7 +76,7 @@ export type CheckoutConfirmIn = {
     | 'fbclid',
     string
   >>
-  tracking_context?: CommercialIdentity
+  tracking_context: CommercialIdentity
 }
 
 const UTM_ATTRIBUTION_KEYS = [

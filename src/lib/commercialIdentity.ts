@@ -1,6 +1,7 @@
 'use client'
 
 import { getPermittedCheckoutAttribution } from './checkoutApi'
+import { getOrCreateCheckoutId } from './dataLayer'
 
 const KLAR_SEPTEMBER_COOKIE = 'september_id'
 
@@ -109,5 +110,14 @@ export function getCommercialIdentity(): CommercialIdentity {
     ...(pageUrl ? { page_url: pageUrl } : {}),
     ...(referrer ? { referrer } : {}),
     screen: `${window.screen.width}x${window.screen.height}`,
+  }
+}
+
+/** Keep every checkout-confirm path on the same backend identity contract. */
+export function getCommercialCheckoutContext() {
+  return {
+    checkout_id: getOrCreateCheckoutId(),
+    attribution: getPermittedCheckoutAttribution(),
+    tracking_context: getCommercialIdentity(),
   }
 }

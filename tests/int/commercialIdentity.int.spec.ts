@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  getCommercialCheckoutContext,
   getCommercialIdentity,
   getKlarSeptemberId,
   sanitizeAttributionUrl,
   waitForCommercialConsentResolution,
 } from '@/lib/commercialIdentity'
 import { getPermittedCheckoutAttribution } from '@/lib/checkoutApi'
+import { clearCheckoutId } from '@/lib/dataLayer'
 
 describe('checkout commercial identity bridge', () => {
   beforeEach(() => {
+    clearCheckoutId()
     for (const name of ['september_id', '_ga', '_fbp', '_fbc']) {
       document.cookie = `${name}=; Path=/; Max-Age=0`
     }
@@ -54,6 +57,25 @@ describe('checkout commercial identity bridge', () => {
       page_url: expect.stringMatching(/\/checkout$/),
       screen: expect.stringMatching(/^\d+x\d+$/),
     })
+  })
+
+  it('builds the shared backend checkout identity contract', () => {
+    document.cookie = 'september_id=abcdefghijklmnop; Path=/'
+
+    const first = getCommercialCheckoutContext()
+    const second = getCommercialCheckoutContext()
+
+    expect(first).toMatchObject({
+      checkout_id: expect.any(String),
+      attribution: { utm_source: 'search', fbclid: 'click-1' },
+      tracking_context: {
+        marketing_consent: true,
+        consent_resolved: true,
+        september_id: 'abcdefghijklmnop',
+        page_url: expect.stringMatching(/\/checkout$/),
+      },
+    })
+    expect(second.checkout_id).toBe(first.checkout_id)
   })
 
   it('preserves the existing fbclid fallback when the _fbc cookie is unavailable', () => {
