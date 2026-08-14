@@ -43,3 +43,9 @@ jobs:
             git fetch origin stg
             git reset --hard origin/stg
             bash deploy-stg.sh
+
+      - name: Verify staging containment at the edge
+        env:
+          STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
+          STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
+        run: node scripts/check-staging-containment.mjs

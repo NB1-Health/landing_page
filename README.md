@@ -186,11 +186,11 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | Variable | What it's for |
 |---|---|
 | `DATABASE_URL` / `DATABASE_URI` | Postgres connection string the app uses day-to-day |
-| `DATABASE_URL_DIRECT` | A connection that bypasses PgBouncer (a connection-pooling proxy sitting in front of the production database). Migrations and the STG→PROD data sync need this because they hold locks that a pooled connection can't sustain. Not needed locally. |
+| `DATABASE_URL_DIRECT` | A connection that bypasses PgBouncer (a connection-pooling proxy sitting in front of the production database). Migrations may need this because they can hold locks that a pooled connection cannot sustain. Not needed locally. |
 | `PAYLOAD_SECRET` | Random secret Payload uses to sign login tokens. Generate with `openssl rand -hex 32`. |
 | `NEXT_PUBLIC_SERVER_URL` | This site's own public URL — used for building links, CORS, and image loading |
 | `CRON_SECRET` | Lets scheduled jobs (e.g. scheduled publish) authenticate without a logged-in user |
-| `PREVIEW_SECRET` | Confirms a "preview this draft page" link is legitimate |
+| `PREVIEW_SECRET` | Signs target-bound draft-preview links. Use a random value of at least 32 characters. |
 | `PG_POOL_MAX` / `PG_POOL_MAX_BUILD` | Advanced: override how many DB connections the app opens. Rarely needed — see the comment in `payload.config.ts` if curious. |
 
 **Email**
@@ -396,17 +396,20 @@ Actions when the right branch is pushed:
   dependencies, applies pending database migrations, builds the app, and
   restarts it under PM2 (a process manager that keeps the Node.js app
   running and restarts it if it crashes).
-- **Push to `prod`** → merged into the `prod` branch → GitHub Actions SSHes
-  into the production server, and — **before** deploying the new code — copies
-  the *entire staging database* over the production database, then runs
-  `deploy-prod.sh` (same shape as staging: install, migrate, build, restart).
+- **Push to `prod`** → merged into the `prod` branch → GitHub Actions verifies
+  that the deployment contains no database-copy commands, SSHes into the
+  production server, and runs `deploy-prod.sh` (install, migrate, build,
+  restart).
 
-> ⚠️ **Important thing to know:** every production deploy overwrites all of
-> production's data with a copy of staging's data. Staging is treated as the
-> single source of truth for content; production has no independent content
-> of its own. If someone edits something directly in the production CMS
-> admin panel, that edit will be lost on the next deploy — it needs to be
-> made in staging instead (or it'll get wiped).
+Production is the source of truth for editorial content. Editors can draft,
+preview, and publish routine content in the production CMS without waiting for
+a code deployment. Code and checked-in migrations move through staging and are
+then applied to the existing production database; deployments never replace
+production content with another environment's data.
+
+Run `npm run deploy:guard` when changing production deployment automation. It
+fails if the workflow or deploy script reintroduces staging-database copy or
+destructive schema replacement commands.
 
 Neither deploy actually uses the `Dockerfile`/`docker-compose.*.yml` in this
 repo, despite them existing — both servers run the app directly via PM2.
@@ -424,9 +427,9 @@ npm run migrate                                  # applies it to your local DB
 ```
 
 Commit the generated file(s) in `src/migrations/` along with your code
-change. Staging applies pending migrations automatically as part of its
-deploy; production does too (its own schema needs to match staging's even
-though its *data* gets overwritten by the sync described in [§10](#10-how-deploys-work)).
+change. Staging and production each apply pending migrations to their own
+existing database during deployment. Migrations must preserve existing content
+unless a reviewed data migration explicitly changes it.
 
 Other useful commands: `npm run migrate:status` (see what's pending),
 `npm run migrate:down` (rollback the last migration — **local use only**,

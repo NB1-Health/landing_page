@@ -10,6 +10,17 @@ function normalizeSiteURL(raw?: string) {
 }
 
 export default function robots(): MetadataRoute.Robots {
+  // Only staging is closed to crawlers. Production (nb1.com) is launched and must
+  // stay indexable, so it falls through to the normal allow + sitemaps below.
+  if (process.env.DEPLOY_ENV === 'staging') {
+    return {
+      rules: {
+        userAgent: '*',
+        disallow: '/',
+      },
+    }
+  }
+
   const site = normalizeSiteURL(
     process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL,
   )

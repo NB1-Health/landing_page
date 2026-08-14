@@ -13,16 +13,19 @@ echo ">>> Deploy START ($(date))"
 
 cd "$APP_DIR"
 
-echo ">>> Install deps (clean install to ensure patches apply correctly)"
-rm -rf node_modules
-npm install --legacy-peer-deps
-
 echo ">>> Use .env.prod"
-cp .env.prod .env
 # Source env vars so DATABASE_URL_DIRECT is available for migrations
 set -o allexport
 source .env.prod
 set +o allexport
+
+node scripts/check-deployment-environment.mjs production
+
+cp .env.prod .env
+
+echo ">>> Install deps (clean install to ensure patches apply correctly)"
+rm -rf node_modules
+npm install --legacy-peer-deps
 
 echo ">>> Stop PM2 first — frees the old app's DB connections so migrations get a"
 echo "    clean connection (a saturated old process can make the migration connect"
@@ -35,7 +38,8 @@ sleep 5
 echo ">>> Run DB migrations (using direct connection to bypass PgBouncer)"
 DATABASE_URL="${DATABASE_URL_DIRECT:-$DATABASE_URL}" npm run migrate
 
-echo ">>> Build Next.js"
+echo ">>> Build Next.js from a clean output directory"
+rm -rf -- "$APP_DIR/.next"
 npm run build
 
 echo ">>> Start/Restart PM2"

@@ -1,13 +1,14 @@
-import { PayloadRequest, CollectionSlug } from 'payload'
+import type { PayloadRequest } from 'payload'
 import { appLocales, defaultLocale } from '@/i18n/config'
-
-const collectionPrefixMap: Partial<Record<CollectionSlug, string>> = {
-  posts: '/posts',
-  pages: '',
-}
+import {
+  getPreviewTarget,
+  isUsablePreviewSecret,
+  signPreviewTarget,
+  type PreviewCollection,
+} from '@/utilities/preview'
 
 type Props = {
-  collection: keyof typeof collectionPrefixMap
+  collection: PreviewCollection
   slug: string | Partial<Record<string, string>> | null | undefined
   req: PayloadRequest
 }
@@ -38,26 +39,19 @@ export const generatePreviewPath = ({ collection, slug, req }: Props) => {
   if (slug === undefined || slug === null) return null
 
   const locale = getLocale(req)
-  const resolvedSlug =
-    typeof slug === 'string'
-      ? slug
-      : (slug[locale] ?? slug['en'] ?? '')
+  const resolvedSlug = typeof slug === 'string' ? slug : (slug[locale] ?? '')
+  const target = getPreviewTarget({ collection, locale, slug: resolvedSlug })
+  const secret = process.env.PREVIEW_SECRET
+  if (!target || !isUsablePreviewSecret(secret)) return null
 
-  const cleanSlug = resolvedSlug
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-  const prefix = collectionPrefixMap[collection] ?? ''
-
-  const path = `/${locale}${prefix}/${cleanSlug}`.replace(/\/+/g, '/')
-
+  const token = signPreviewTarget({ secret, target })
   const params = new URLSearchParams({
-    slug: cleanSlug,
     collection,
-    path, // keep unencoded; URLSearchParams encodes safely
-    previewSecret: process.env.PREVIEW_SECRET || '',
+    slug: target.slug,
+    token,
   })
 
   const frontendURL = getFrontendURL()
 
-  return `${frontendURL}/cms/next/preview?${params.toString()}`
+  return `${frontendURL}/${target.locale}/next/preview?${params.toString()}`
 }
