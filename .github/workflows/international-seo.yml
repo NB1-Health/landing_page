@@ -11,11 +11,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: postgresql://payload:payload@127.0.0.1:5432/nb1_seo_test
+      DATABASE_URL: postgresql://payload:payload@localhost:5432/nb1_seo_test
       DEPLOY_ENV: local
       NEXT_PUBLIC_SERVER_URL: http://localhost:3000
       PAYLOAD_SECRET: international-seo-ci-secret
-      TEST_DATABASE_URL: postgresql://payload:payload@127.0.0.1:5432/nb1_seo_test
+      TEST_DATABASE_URL: postgresql://payload:payload@localhost:5432/nb1_seo_test
     services:
       postgres:
         image: postgres:18-alpine
