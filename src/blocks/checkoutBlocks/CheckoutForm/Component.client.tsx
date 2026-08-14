@@ -658,7 +658,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             first_name: saved.fn ?? fn,
             last_name: saved.ln ?? ln,
             email: saved.email ?? email,
-            phone: saved.phone || null,
+            // Backend shipping phone is a required string: send "" like the other
+            // fields, never JSON null (null used to 422 as "Input should be a valid
+            // string" when sessionStorage was lost — ClickUp 86cb3cftj).
+            phone: saved.phone ?? phone ?? '',
             address_line1: saved.a1 ?? a1,
             address_line2: saved.a2 || null,
             city: saved.city ?? city,
@@ -761,7 +764,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setAccountStatus('sent')
         setConfirmed(true)
       } catch (err) {
-        setAccountErr((err as Error).message || t.confirm.accountError)
+        // Backend 422s carry raw English Pydantic text in err.message — show the
+        // localized generic message instead (ClickUp 86cb3cftj).
+        const validation = Boolean((err as { validation?: boolean })?.validation)
+        setAccountErr(
+          validation ? t.confirm.checkDetails : (err as Error).message || t.confirm.accountError,
+        )
         setAccountStatus('error')
       }
     })()
@@ -1388,6 +1396,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       const code = (err as { code?: string })?.code
       if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
+      } else if ((err as { validation?: boolean })?.validation) {
+        // Backend 422: err.message is raw English Pydantic text — never show it.
+        setAccountErr(t.confirm.checkDetails)
       } else {
         setAccountErr((err as Error).message || t.confirm.accountError)
       }
@@ -1407,7 +1418,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           first_name: fn,
           last_name: ln,
           email,
-          phone: phone || null,
+          // Required string on the backend: "" not null (see the redirect path).
+          phone: phone || '',
           address_line1: a1,
           address_line2: a2 || null,
           city,
@@ -1524,6 +1536,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       const code = (err as { code?: string })?.code
       if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
+      } else if ((err as { validation?: boolean })?.validation) {
+        // Backend 422: err.message is raw English Pydantic text — never show it.
+        setAccountErr(t.confirm.checkDetails)
       } else {
         setAccountErr((err as Error).message || t.confirm.accountError)
       }
@@ -2313,6 +2328,16 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         }
         .nb1-confirm-btn:hover {
           background: #aaea42;
+        }
+        .nb1-confirm-err {
+          margin-top: 12px;
+          padding: 10px 14px;
+          border: 1px solid rgba(192, 57, 43, 0.35);
+          border-radius: 10px;
+          background: rgba(192, 57, 43, 0.06);
+          color: #c0392b;
+          font-size: 13px;
+          line-height: 1.45;
         }
         .nb1-confirm-legal {
           font-size: 11.5px;
@@ -3410,9 +3435,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               )}
 
               {/* Confirm */}
-              {accountErr && (
-                <p style={{ color: '#c0392b', fontSize: '13px', marginTop: 12 }}>{accountErr}</p>
-              )}
               {/* Stays clickable while the form is incomplete on purpose: the
                   click runs validateBeforePay, which opens the first invalid
                   section and shows what's missing. Only disabled while sending. */}
@@ -3427,6 +3449,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               >
                 {accountStatus === 'sending' ? t.confirm.processing : confirmLabel}
               </button>
+              {/* Order errors render BELOW the button, boxed and prefixed, so they read
+                  as the outcome of Confirm and never as feedback on the discount-code
+                  section above (ClickUp 86cb3cftj). */}
+              {accountErr && (
+                <div className="nb1-confirm-err" role="alert">
+                  <strong>{t.confirm.orderError}</strong> {accountErr}
+                </div>
+              )}
               <p className="nb1-confirm-legal">
                 {t.confirm.legalPrefix} <a href="#">{t.confirm.terms}</a> {t.confirm.and}{' '}
                 <a href="#">{t.confirm.privacyPolicy}</a>

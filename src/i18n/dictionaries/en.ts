@@ -196,6 +196,8 @@ export const en = {
       legalEnd: "applies only if your sample isn't returned within 4 weeks.",
       accountExists: 'An account with this email already exists. Please sign in instead.',
       accountError: 'Could not create your account. Please try again.',
+      checkDetails: 'Please check your details and try again.',
+      orderError: "We couldn't complete your order:",
     },
     whatsNext: {
       heading: 'What happens next',

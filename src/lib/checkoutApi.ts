@@ -109,30 +109,25 @@ export type PostPurchaseSurveyResponseIn = {
 }
 
 /**
- * Turn a backend error body's `detail` into a human-readable string.
+ * Build the Error thrown for a failed checkout request.
  *
- * Business errors send `detail` as a plain string ("Coupon expired"), but
- * FastAPI request-validation errors (HTTP 422) send it as an array of
- * `{ loc, msg, type }` objects. Passing that array straight into `new Error()`
- * coerces it to "[object Object],[object Object],…", which then surfaces in the
- * checkout UI. Flatten the array to its `msg` fields instead, and fall back to
- * a generic message when `detail` is missing or an unexpected shape.
+ * Business errors send `detail` as a customer-safe plain string ("Coupon expired")
+ * and that string is shown to the shopper as-is. FastAPI request-validation errors
+ * (HTTP 422) send `detail` as an array of `{ loc, msg, type }` objects whose `msg`
+ * values are raw English Pydantic output, with the same message repeated for every
+ * failing field. Joining and displaying them produced the "same error shown four
+ * times below Add discount code" bug (ClickUp 86cb3cftj), so array details are only
+ * logged for debugging; the thrown error carries the generic fallback message and
+ * `validation: true`, which the checkout form uses to show a localized message
+ * instead of `err.message`.
  */
-function detailToMessage(detail: unknown, fallback: string): string {
-  if (typeof detail === 'string' && detail.trim()) return detail
-  if (Array.isArray(detail)) {
-    const msgs = detail
-      .map((d) =>
-        typeof d === 'string'
-          ? d
-          : d && typeof d === 'object' && 'msg' in d
-            ? String((d as { msg: unknown }).msg)
-            : '',
-      )
-      .filter(Boolean)
-    if (msgs.length) return msgs.join(', ')
-  }
-  return fallback
+export type CheckoutApiError = Error & { code: string; validation: boolean }
+
+function toCheckoutError(detail: unknown, fallback: string, code: string): CheckoutApiError {
+  const validation = Array.isArray(detail)
+  if (validation) console.error(`[checkoutApi] backend validation error (${code}):`, detail)
+  const message = typeof detail === 'string' && detail.trim() ? detail : fallback
+  return Object.assign(new Error(message), { code, validation })
 }
 
 export async function checkoutPaymentIntent(
@@ -145,7 +140,7 @@ export async function checkoutPaymentIntent(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(detailToMessage(err?.detail, 'Payment intent failed')), { code: 'payment_intent_failed' })
+    throw toCheckoutError(err?.detail, 'Payment intent failed', 'payment_intent_failed')
   }
   return res.json()
 }
@@ -160,7 +155,7 @@ export async function checkoutConfirm(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(detailToMessage(err?.detail, 'Checkout confirm failed')), { code: 'confirm_failed' })
+    throw toCheckoutError(err?.detail, 'Checkout confirm failed', 'confirm_failed')
   }
   return res.json()
 }
@@ -212,7 +207,7 @@ export async function checkoutConfirmProxy(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw Object.assign(new Error(detailToMessage(err?.detail, 'Checkout confirm failed')), { code: 'confirm_failed' })
+    throw toCheckoutError(err?.detail, 'Checkout confirm failed', 'confirm_failed')
   }
   return res.json()
 }
