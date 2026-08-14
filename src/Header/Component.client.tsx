@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
-import { isAppLocale, localeConfig } from '@/i18n/config'
+import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
+import { buildLocalizedDocumentPath, type LocalizedDocument } from './localizedDocument'
 
 type Theme = 'light' | 'dark'
 
@@ -16,11 +17,8 @@ type HeaderVariant = {
 
 export interface HeaderClientProps {
   locale: string
-  /** Per-locale slug map for the page currently being viewed (see Header/Component.tsx
-   * for why this is a prop rather than a global). */
-  pageSlugs?: Partial<Record<string, string>> | null
-  /** Index of the slug segment in the current path. Pages use 2; posts use 3. */
-  pageSlugSegment?: number
+  /** The current document's semantic route and published localized slugs. */
+  localizedDocument?: LocalizedDocument | null
   /** Resolved server-side from the currency cookie (see src/utilities/currency.ts).
    * Used as the initial state below instead of reading localStorage, so the
    * SSR markup and the first client render match exactly — reading
@@ -155,8 +153,7 @@ function lsSet(k: string, v: string) {
 
 export const HeaderClient: React.FC<HeaderClientProps> = ({
   locale,
-  pageSlugs = null,
-  pageSlugSegment = 2,
+  localizedDocument = null,
   initialCurrency,
   logo,
   logoDark,
@@ -434,7 +431,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     return () => document.removeEventListener('click', handler)
   }, [])
 
-  function resolveTargetLocale(lang: string, cur: string): string {
+  function resolveTargetLocale(lang: string, cur: string): AppLocale {
     if (lang === 'en') {
       if (cur === 'GBP') return 'uk'
       if (cur === 'AED') return 'uae'
@@ -462,7 +459,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
 
   function applyLang(lang: string) {
     const targetLocale = resolveTargetLocale(lang, pendingCur)
-    if (pageSlugs && typeof pageSlugs[targetLocale] !== 'string') return
+    if (localizedDocument && typeof localizedDocument.slugs[targetLocale] !== 'string') return
     // Use pendingCur if it's valid for the target locale, otherwise fall back to locale default.
     // This lets FR+CHF work while still resetting e.g. GBP→EUR when switching to French.
     const allowed = LOCALE_ALLOWED_CURRENCIES[targetLocale]
@@ -480,19 +477,19 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       /* noop */
     }
     document.documentElement.setAttribute('lang', lang)
-    const segments = pathname.split('/')
-    segments[1] = targetLocale
-    // Use the current page's own per-locale slug map (passed as a prop, so it's
-    // always current — see Header/Component.tsx) instead of keeping the current
-    // locale's slug, which would 404 or belong to a different page on the target
-    // locale (slugs are localized per-page, e.g. en "our-plans" vs de "unsere-plane").
-    if (pageSlugs) {
-      const targetSlug = pageSlugs[targetLocale]
-      if (targetSlug && segments[pageSlugSegment] !== undefined) {
-        segments[pageSlugSegment] = targetSlug
-      }
+    let targetPath: string
+    if (localizedDocument) {
+      targetPath = buildLocalizedDocumentPath(
+        targetLocale,
+        localizedDocument.slugs[targetLocale]!,
+        localizedDocument.route,
+      )
+    } else {
+      const segments = pathname.split('/')
+      segments[1] = targetLocale
+      targetPath = segments.join('/')
     }
-    window.location.href = segments.join('/')
+    window.location.href = targetPath
     setLocOpen(false)
   }
   function applyCur(cur: string) {
@@ -513,7 +510,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   }
 
   const pendingTargetLocale = resolveTargetLocale(pendingLang, pendingCur)
-  const pendingLocaleAvailable = !pageSlugs || typeof pageSlugs[pendingTargetLocale] === 'string'
+  const pendingLocaleAvailable =
+    !localizedDocument || typeof localizedDocument.slugs[pendingTargetLocale] === 'string'
 
   const isTransparent = darkHero && !scrolled
   // After scrolling past dark hero, always go light — dark theme only applies to permanently dark (non-hero) nav

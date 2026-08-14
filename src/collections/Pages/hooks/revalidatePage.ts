@@ -11,6 +11,7 @@ import type { Page } from '../../../payload-types'
 import { isAppLocale, type AppLocale } from '../../../i18n/config'
 import {
   getPageRevalidationTargets,
+  isHomePageSlugs,
   readLocalizedPageSlugs,
   type LocalizedPageSlugs,
 } from '../../../utilities/pagePublication'
@@ -23,6 +24,7 @@ const CONTEXT_KEY = 'pagePublication'
 
 type PublicationContext = {
   isDraftSave: boolean
+  previousIsHome?: boolean
   previousSlugs?: LocalizedPageSlugs
 }
 
@@ -58,6 +60,31 @@ function publicationLocales(...slugSets: LocalizedPageSlugs[]) {
     }
   }
   return [...locales]
+}
+
+async function isHomePageDocument(
+  req: PayloadRequest,
+  id: number | string,
+  publishedSlugs: LocalizedPageSlugs,
+) {
+  if (publishedSlugs.en) return isHomePageSlugs(publishedSlugs)
+
+  const doc = await preserveRequestLocale(req, () =>
+    req.payload.findByID({
+      collection: 'pages',
+      id,
+      depth: 0,
+      disableErrors: true,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: true,
+      req,
+      select: { slug: true },
+    }),
+  )
+
+  return isHomePageSlugs(readLocalizedPageSlugs(doc?.slug))
 }
 
 /** Remember the live slugs so both old and new paths can be invalidated. */
@@ -113,8 +140,9 @@ export const capturePagePublication: CollectionBeforeOperationHook<'pages'> = as
       id: pageID,
       req,
     })
+    state.previousIsHome = await isHomePageDocument(req, pageID, state.previousSlugs)
   } catch (error) {
-    req.payload.logger.warn({ err: error }, 'Could not read previous page slugs for revalidation')
+    req.payload.logger.warn({ err: error }, 'Could not read previous page state for revalidation')
   }
 }
 
@@ -160,6 +188,14 @@ export const revalidatePage: CollectionAfterChangeHook<Page> = async ({
     req.payload.logger.warn({ err: error }, 'Could not read current page slugs for revalidation')
   }
 
+  let currentIsHome =
+    isHomePageSlugs(currentSlugs) || (!currentSlugs.en && state?.previousIsHome === true)
+  try {
+    currentIsHome = await isHomePageDocument(req, doc.id, currentSlugs)
+  } catch (error) {
+    req.payload.logger.warn({ err: error }, 'Could not identify home page for revalidation')
+  }
+
   const previousSlugs =
     state?.previousSlugs ??
     publishedSlugFallback(previousDoc?._status, previousDoc?.slug, req.locale)
@@ -169,8 +205,10 @@ export const revalidatePage: CollectionAfterChangeHook<Page> = async ({
   await invalidateTargets(
     req,
     getPageRevalidationTargets({
+      currentIsHome,
       currentSlugs,
       locales,
+      previousIsHome: state?.previousIsHome,
       previousSlugs,
     }),
   )
@@ -191,6 +229,7 @@ export const revalidateDelete: CollectionAfterDeleteHook<Page> = async ({ doc, r
     req,
     getPageRevalidationTargets({
       locales,
+      previousIsHome: state?.previousIsHome,
       previousSlugs,
     }),
   )

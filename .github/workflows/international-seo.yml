@@ -55,6 +55,8 @@ jobs:
           tests/int/publishedLocaleAvailability.int.spec.ts
           tests/int/localizedPublicationRoundTrip.int.spec.ts
           tests/int/internationalSeoCrawl.int.spec.ts
+          tests/int/pageRevalidation.int.spec.ts
+          tests/int/postRevalidation.int.spec.ts
           tests/int/stagingSeoContainment.int.spec.ts
 
       - name: Type-check

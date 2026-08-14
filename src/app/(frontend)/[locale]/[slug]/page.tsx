@@ -132,7 +132,13 @@ export default async function Page({ params: paramsPromise }: Args) {
     <>
       <JsonLd data={pageJsonLd} />
 
-      {!hideHeader && <Header locale={locale} id={headerId} pageSlugs={pageSlugsByLocale} />}
+      {!hideHeader && (
+        <Header
+          locale={locale}
+          id={headerId}
+          localizedDocument={{ route: isHome ? 'home' : 'page', slugs: pageSlugsByLocale }}
+        />
+      )}
 
       <article
         data-nb1-order-entry={isOrderEntry ? 'true' : undefined}

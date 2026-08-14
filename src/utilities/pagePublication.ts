@@ -23,23 +23,21 @@ export function getPublicPagePath(locale: unknown, slug: unknown, homePage = fal
   return homePage || (locale === 'en' && HOME_SLUGS.has(slug)) ? `/${locale}` : `/${locale}/${slug}`
 }
 
-export function getPagePublicationLocales(): readonly AppLocale[] {
-  return appLocales
-}
-
 export function getPageRevalidationTargets({
   currentSlugs = {},
+  currentIsHome = isHomePageSlugs(currentSlugs),
   locales,
   previousSlugs = {},
+  previousIsHome = isHomePageSlugs(previousSlugs),
 }: {
+  currentIsHome?: boolean
   currentSlugs?: LocalizedPageSlugs
   locales: readonly AppLocale[]
+  previousIsHome?: boolean
   previousSlugs?: LocalizedPageSlugs
 }) {
   const paths = new Set<string>()
   const tags = new Set<string>()
-  const previousIsHome = isHomePageSlugs(previousSlugs)
-  const currentIsHome = isHomePageSlugs(currentSlugs)
 
   for (const locale of locales) {
     const previousPath = getPublicPagePath(locale, previousSlugs[locale], previousIsHome)

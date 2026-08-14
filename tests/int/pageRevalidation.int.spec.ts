@@ -135,6 +135,43 @@ describe('page publication revalidation', () => {
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/old-page')
   })
 
+  it('keeps the localized home path when English is already unpublished', async () => {
+    const req = {
+      context: {},
+      locale: 'de',
+      payload: {
+        findByID: vi.fn().mockImplementation(({ locale }) =>
+          Promise.resolve(
+            locale === 'en'
+              ? { id: 42, slug: 'home' }
+              : {
+                  id: 42,
+                  _status: { de: 'published', en: 'draft' },
+                  slug: { de: 'startseite', en: 'home' },
+                  title: { de: 'Startseite', en: 'Home' },
+                },
+          ),
+        ),
+        logger,
+      },
+      query: {},
+    }
+
+    await capturePagePublication({
+      args: { data: { _status: 'published' }, id: 42 },
+      operation: 'update',
+      req,
+    } as never)
+    await revalidatePage({
+      doc: { id: 42, _status: 'published', slug: 'startseite' },
+      previousDoc: { id: 42, _status: 'published', slug: 'startseite' },
+      req,
+    } as never)
+
+    expect(revalidatePath).toHaveBeenCalledWith('/de')
+    expect(revalidatePath).not.toHaveBeenCalledWith('/de/startseite')
+  })
+
   it('uses previousDoc if the pre-operation publication lookup fails', async () => {
     const req = {
       context: {},

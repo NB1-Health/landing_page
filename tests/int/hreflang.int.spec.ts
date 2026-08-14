@@ -7,6 +7,7 @@ import {
   readHreflangOverrides,
 } from '@/utilities/hreflang'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
+import { buildLocalizedDocumentPath } from '@/Header/localizedDocument'
 
 describe('international SEO locale config', () => {
   it('maps the eight URL prefixes to valid languages and market codes', () => {
@@ -209,5 +210,11 @@ describe('international SEO locale config', () => {
       follow: true,
       index: true,
     })
+  })
+
+  it('builds localized home, page, and post paths without path indexes', () => {
+    expect(buildLocalizedDocumentPath('de', 'startseite', 'home')).toBe('/de')
+    expect(buildLocalizedDocumentPath('de', 'unsere-plane', 'page')).toBe('/de/unsere-plane')
+    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/posts/artikel')
   })
 })

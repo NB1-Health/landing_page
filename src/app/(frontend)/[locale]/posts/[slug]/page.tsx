@@ -98,7 +98,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
 
   return (
     <>
-      <Header locale={locale} pageSlugs={publishedSlugs} pageSlugSegment={3} />
+      <Header locale={locale} localizedDocument={{ route: 'post', slugs: publishedSlugs }} />
       <article className="pt-16 mr-auto ml-auto bg-white" style={{ maxWidth: '1440px' }}>
         <PageClient />
 
