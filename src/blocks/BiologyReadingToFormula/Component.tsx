@@ -5,6 +5,8 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 
 import RichText from '@/components/RichText'
 import { useBiologyReveal } from '@/hooks/useBiologyReveal'
+import type { AppLocale } from '@/i18n/config'
+import { formatComponentCount, getReadingToFormulaStrings } from './i18n'
 
 type Output = { name?: string | null; dose?: string | null }
 type Signal = {
@@ -52,7 +54,10 @@ type FormulaRow =
   | { type: 'divider'; name: string }
   | { type: 'more'; name: string; dose: string }
 
-export const BiologyReadingToFormulaComponent: React.FC<BiologyReadingToFormulaBlockType> = ({
+export const BiologyReadingToFormulaComponent: React.FC<
+  BiologyReadingToFormulaBlockType & { locale?: AppLocale }
+> = ({
+  locale,
   heading,
   lede,
   readingTitle,
@@ -75,6 +80,7 @@ export const BiologyReadingToFormulaComponent: React.FC<BiologyReadingToFormulaB
   formulaLinkUrl,
   captionText,
 }) => {
+  const T = getReadingToFormulaStrings(locale)
   const allSignals = useMemo(() => signals ?? [], [signals])
   const gutSignals = useMemo(() => allSignals.filter((s) => s.kind !== 'blood'), [allSignals])
   const bloodSignals = useMemo(() => allSignals.filter((s) => s.kind === 'blood'), [allSignals])
@@ -148,7 +154,7 @@ export const BiologyReadingToFormulaComponent: React.FC<BiologyReadingToFormulaB
     }
     function updateCount() {
       if (formulaCountRef.current) {
-        formulaCountRef.current.textContent = `${placedRef.current}${placedRef.current === 1 ? ' component' : ' components'}`
+        formulaCountRef.current.textContent = formatComponentCount(placedRef.current, T)
       }
     }
     function revealFormula(i: number) {
@@ -280,7 +286,7 @@ export const BiologyReadingToFormulaComponent: React.FC<BiologyReadingToFormulaB
       timers.forEach((t) => clearTimeout(t))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allSignals, support, formulaRows.length])
+  }, [allSignals, support, formulaRows.length, T])
 
   let gutRowCounter = -1
   let bloodRowCounter = -1
@@ -839,7 +845,7 @@ export const BiologyReadingToFormulaComponent: React.FC<BiologyReadingToFormulaB
             </div>
             <div className="brf-fm-foot">
               <span className="brf-fm-count" ref={formulaCountRef}>
-                0 components
+                {formatComponentCount(0, T)}
               </span>
               {formulaLinkLabel && (
                 <a className="brf-fm-link" href={formulaLinkUrl || '#'}>
