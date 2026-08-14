@@ -13,6 +13,25 @@ function hasMktConsent(): boolean {
   return window.__nb1Consent?.targeted_advertising === true
 }
 
+let consentResolution: Promise<void> | undefined
+
+function waitForConsentResolution(): Promise<void> {
+  if (window.__nb1ConsentResolved === true || hasMktConsent()) return Promise.resolve()
+  if (!consentResolution) {
+    consentResolution = new Promise((resolve) => {
+      window.addEventListener(
+        'nb1:consent-resolved',
+        () => {
+          consentResolution = undefined
+          resolve()
+        },
+        { once: true },
+      )
+    })
+  }
+  return consentResolution
+}
+
 /** Build fbc from fbclid query param if _fbc cookie is absent */
 function resolveFbc(): string | undefined {
   const fbc = getCookie('_fbc')
@@ -32,6 +51,7 @@ export async function sendMetaCapiEvent(
   } = {},
 ) {
   if (typeof window === 'undefined') return
+  await waitForConsentResolution()
   if (!hasMktConsent()) return
 
   const payload: MetaEventPayload = {
