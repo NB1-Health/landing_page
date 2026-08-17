@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
+import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
+
 // Languages shown in the switcher (never exposes ch/be/uk/uae directly)
 const LANGUAGES = ['en', 'de', 'fr', 'nl'] as const
 type Language = (typeof LANGUAGES)[number]
@@ -43,12 +45,15 @@ function resolveLocale(lang: Language, currency: string, geoCountry: string): st
   return 'en'
 }
 
-// Derive the language from a locale path segment
+function isLanguage(value: string): value is Language {
+  return (LANGUAGES as readonly string[]).includes(value)
+}
+
+// Derive display language from the shared SEO locale definition.
 function localeToLanguage(locale: string): Language {
-  if (locale === 'de' || locale === 'ch') return 'de'
-  if (locale === 'fr') return 'fr'
-  if (locale === 'nl' || locale === 'be') return 'nl'
-  return 'en' // en, uk, uae, unknown
+  if (!isAppLocale(locale)) return 'en'
+  const language = localeConfig[locale].htmlLang
+  return isLanguage(language) ? language : 'en'
 }
 
 function getCookie(name: string): string {
@@ -79,10 +84,16 @@ function stripLeadingLocale(pathname: string, currentLocale: string) {
 type Props = {
   locale?: string
   isDark?: boolean
+  pageSlugs?: Partial<Record<AppLocale, string>> | null
   textColor?: string
 }
 
-export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textColor: textColorProp }) => {
+export const LocaleSwitcher: React.FC<Props> = ({
+  locale,
+  isDark = false,
+  pageSlugs = null,
+  textColor: textColorProp,
+}) => {
   const pathname = usePathname() || '/'
   const ref = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -96,7 +107,9 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
   const currentLanguage = useMemo(() => localeToLanguage(currentLocale), [currentLocale])
 
   const [selectedLang, setSelectedLang] = useState<Language>(currentLanguage)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(() => getCookie('nb1_currency') || 'EUR')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(
+    () => getCookie('nb1_currency') || 'EUR',
+  )
 
   // Keep selectedLang in sync if locale prop changes
   useEffect(() => {
@@ -114,10 +127,14 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
 
   const handleApply = () => {
     const geoCountry = getCookie('nb1_country')
-    const targetLocale = resolveLocale(selectedLang, selectedCurrency, geoCountry)
+    const targetLocale = resolveLocale(selectedLang, selectedCurrency, geoCountry) as AppLocale
+    if (pageSlugs && typeof pageSlugs[targetLocale] !== 'string') return
+
     const rest = stripLeadingLocale(pathname, currentLocale)
-    const targetPath = `/${targetLocale}${rest}` || `/${targetLocale}`
-    alert(`apply: lang=${selectedLang} cur=${selectedCurrency} → ${targetLocale} → ${targetPath}`)
+    const targetPath =
+      pageSlugs && rest
+        ? `/${targetLocale}/${encodeURIComponent(pageSlugs[targetLocale]!)}`
+        : `/${targetLocale}${rest}` || `/${targetLocale}`
 
     // Persist locale + currency cookies so middleware respects the manual choice
     setCookie('nb1_locale', targetLocale)
@@ -141,6 +158,12 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
   const hoverBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(18,49,77,0.05)'
 
   const availableCurrencies = LANGUAGE_CURRENCIES[selectedLang]
+  const pendingTargetLocale = resolveLocale(
+    selectedLang,
+    selectedCurrency,
+    getCookie('nb1_country'),
+  ) as AppLocale
+  const pendingLocaleAvailable = !pageSlugs || typeof pageSlugs[pendingTargetLocale] === 'string'
 
   return (
     <div className="nb1-lang" ref={ref}>
@@ -163,7 +186,9 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
           cursor: pointer;
           padding: 0.4rem 0.55rem;
           border-radius: 6px;
-          transition: background 0.2s, color 0.2s;
+          transition:
+            background 0.2s,
+            color 0.2s;
           font-family: inherit;
         }
         .nb1-lang-trigger:hover {
@@ -185,23 +210,31 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
           right: 0;
           width: 220px;
           background: #ffffff;
-          border: 1px solid rgba(18,49,77,0.1);
+          border: 1px solid rgba(18, 49, 77, 0.1);
           border-radius: 10px;
           padding: 0.75rem;
-          box-shadow: 0 14px 36px rgba(18,49,77,0.12), 0 0 0 1px rgba(18,49,77,0.06);
+          box-shadow:
+            0 14px 36px rgba(18, 49, 77, 0.12),
+            0 0 0 1px rgba(18, 49, 77, 0.06);
           z-index: 50;
           animation: nb1-fadedown 0.15s ease;
         }
         @keyframes nb1-fadedown {
-          from { opacity: 0; transform: translateY(-4px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-4px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         .nb1-section-label {
           font-size: 0.65rem;
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: rgba(18,49,77,0.4);
+          color: rgba(18, 49, 77, 0.4);
           padding: 0 0.4rem 0.35rem;
         }
         .nb1-options {
@@ -228,15 +261,15 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
           transition: background 0.15s;
         }
         .nb1-option:hover {
-          background: rgba(10,143,176,0.07);
+          background: rgba(10, 143, 176, 0.07);
         }
         .nb1-option.active {
           color: #008498;
-          background: rgba(10,143,176,0.07);
+          background: rgba(10, 143, 176, 0.07);
         }
         .nb1-divider {
           height: 1px;
-          background: rgba(18,49,77,0.08);
+          background: rgba(18, 49, 77, 0.08);
           margin: 0.5rem 0;
         }
         .nb1-apply {
@@ -257,6 +290,10 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
         .nb1-apply:hover {
           background: #0e2740;
         }
+        .nb1-apply:disabled {
+          cursor: not-allowed;
+          opacity: 0.45;
+        }
       `}</style>
 
       <button
@@ -267,10 +304,18 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
         aria-expanded={open}
         aria-label={`Language and currency: ${currentLanguage.toUpperCase()} / ${getCookie('nb1_currency') || 'EUR'}`}
       >
-        <span>{currentLanguage.toUpperCase()} / {getCookie('nb1_currency') || 'EUR'}</span>
+        <span>
+          {currentLanguage.toUpperCase()} / {getCookie('nb1_currency') || 'EUR'}
+        </span>
         <span className={`nb1-lang-chevron${open ? ' open' : ''}`}>
           <svg width="9" height="6" viewBox="0 0 9 6" fill="none" aria-hidden="true">
-            <path d="M1 1l3.5 3.5L8 1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M1 1l3.5 3.5L8 1"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
       </button>
@@ -289,7 +334,13 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
                 <span>{LANGUAGE_LABELS[lang]}</span>
                 {selectedLang === lang && (
                   <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                    <path d="M2 6.5L5 9.5L11 3" stroke="#008498" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M2 6.5L5 9.5L11 3"
+                      stroke="#008498"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 )}
               </button>
@@ -310,8 +361,20 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
                   >
                     <span>{cur}</span>
                     {selectedCurrency === cur && (
-                      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                        <path d="M2 6.5L5 9.5L11 3" stroke="#008498" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 13 13"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 6.5L5 9.5L11 3"
+                          stroke="#008498"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </button>
@@ -321,7 +384,17 @@ export const LocaleSwitcher: React.FC<Props> = ({ locale, isDark = false, textCo
           )}
 
           <div className="nb1-divider" />
-          <button type="button" className="nb1-apply" onClick={handleApply}>
+          <button
+            type="button"
+            className="nb1-apply"
+            disabled={!pendingLocaleAvailable}
+            onClick={handleApply}
+            title={
+              pendingLocaleAvailable
+                ? undefined
+                : 'This page is not available in the selected market.'
+            }
+          >
             Apply
           </button>
         </div>

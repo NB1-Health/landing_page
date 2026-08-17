@@ -1,120 +1,87 @@
-type MarketCode =
-  | 'de-DE'
-  | 'de-AT'
-  | 'de-CH'
-  | 'en'
-  | 'en-GB'
-  | 'en-AE'
-  | 'fr-FR'
-  | 'nl-NL'
-  | 'nl-BE'
-  | 'x-default'
+import { appLocales, defaultLocale, isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
-function abs(siteURL: string, path: string) {
-  return new URL(path, siteURL).toString()
+export type LocalizedPaths = Partial<Record<AppLocale, string>>
+
+export type HreflangOverrides = {
+  enabled?: boolean | null
+  excludedLocales?: AppLocale[] | null
+  xDefaultLocale?: AppLocale | null
 }
 
 /**
- * Build hreflang alternates for all 8 market paths:
- *   /de  Germany & Austria
- *   /ch  Switzerland
- *   /fr  France
- *   /nl  Netherlands
- *   /be  Belgium
- *   /uk  United Kingdom
- *   /uae UAE
- *   /en  Rest of World (x-default)
+ * Report only the explicit reason a cluster must be suppressed. Keeping this
+ * check separate from the builder lets the deployed crawl distinguish a valid
+ * missing-x-default case from an unexpected metadata regression.
  */
-export function buildHreflangAlternates(args: {
+export function isHreflangXDefaultMissing(
+  pathsByLocale: LocalizedPaths,
+  overrides?: HreflangOverrides | null,
+): boolean {
+  const defaultTarget =
+    overrides?.enabled && overrides.xDefaultLocale ? overrides.xDefaultLocale : defaultLocale
+  const excluded = overrides?.enabled
+    ? (overrides.excludedLocales ?? []).includes(defaultTarget)
+    : false
+
+  return excluded || typeof pathsByLocale[defaultTarget] !== 'string'
+}
+
+/**
+ * Build a reciprocal hreflang cluster from the locale paths that actually exist.
+ * Paths are relative to their locale prefix; an empty path represents a homepage.
+ */
+export function buildHreflangAlternates({
+  pathsByLocale,
+  siteURL,
+  overrides,
+}: {
+  pathsByLocale: LocalizedPaths
   siteURL: string
-  dePath: string
-  enPath: string
-  frPath?: string
-  nlPath?: string
-  chPath?: string
-  bePath?: string
-  ukPath?: string
-  uaePath?: string
-}) {
-  const { siteURL, dePath, enPath, frPath, nlPath, chPath, bePath, ukPath, uaePath } = args
+  overrides?: HreflangOverrides | null
+}): { languages: Record<string, string> } | undefined {
+  const excluded = new Set(overrides?.enabled ? (overrides.excludedLocales ?? []) : [])
+  const defaultTarget =
+    overrides?.enabled && overrides.xDefaultLocale ? overrides.xDefaultLocale : defaultLocale
 
-  const deURL = abs(siteURL, dePath)
-  const enURL = abs(siteURL, enPath)
-
-  const languages: Partial<Record<MarketCode, string>> = {
-    'de-DE': deURL,
-    'de-AT': deURL,
-    'de-CH': chPath ? abs(siteURL, chPath) : deURL,
-    en: enURL,
-    'x-default': enURL,
-    ...(frPath ? { 'fr-FR': abs(siteURL, frPath) } : {}),
-    ...(nlPath ? { 'nl-NL': abs(siteURL, nlPath) } : {}),
-    ...(bePath ? { 'nl-BE': abs(siteURL, bePath) } : nlPath ? { 'nl-BE': abs(siteURL, nlPath) } : {}),
-    ...(ukPath ? { 'en-GB': abs(siteURL, ukPath) } : {}),
-    ...(uaePath ? { 'en-AE': abs(siteURL, uaePath) } : {}),
+  if (typeof pathsByLocale[defaultTarget] !== 'string' || excluded.has(defaultTarget)) {
+    return undefined
   }
 
-  return { languages } as const
-}
+  const languages: Record<string, string> = {}
 
-/**
- * Build hreflang alternates when each locale has its own translated slug.
- * `slugsByLocale` is a map of locale → slug (e.g. `{ en: 'our-plans', de: 'unsere-plaene' }`).
- * Falls back to the `en` slug for any locale not present in the map.
- */
-export function buildHreflangForLocalizedSlugs(args: {
-  siteURL: string
-  slugsByLocale: Partial<Record<string, string>>
-  basePath?: string
-  trailingSlash?: boolean
-}) {
-  const { siteURL, slugsByLocale, basePath = '', trailingSlash = false } = args
-  const prefix = basePath ? `/${basePath}` : ''
-  const suffix = trailingSlash ? '/' : ''
-  const fallback = slugsByLocale['en'] ?? ''
+  for (const locale of appLocales) {
+    if (excluded.has(locale)) continue
+    const relativePath = pathsByLocale[locale]
+    if (typeof relativePath !== 'string') continue
 
-  const path = (locale: string) => {
-    const slug = slugsByLocale[locale] ?? fallback
-    return `/${locale}${prefix}/${encodeURIComponent(slug)}${suffix}`.replace(/\/+/g, '/')
+    const { hreflangCodes, urlPrefix } = localeConfig[locale]
+    const suffix = relativePath.replace(/^\/+|\/+$/g, '')
+    const url = new URL(suffix ? `${urlPrefix}/${suffix}` : urlPrefix, siteURL).toString()
+
+    for (const code of hreflangCodes) languages[code] = url
   }
 
-  return buildHreflangAlternates({
-    siteURL,
-    dePath: path('de'),
-    enPath: path('en'),
-    frPath: path('fr'),
-    nlPath: path('nl'),
-    chPath: path('ch'),
-    bePath: path('be'),
-    ukPath: path('uk'),
-    uaePath: path('uae'),
-  })
+  const defaultCode = localeConfig[defaultTarget].hreflangCodes[0]
+  languages['x-default'] = languages[defaultCode]
+
+  return { languages }
 }
 
-/**
- * Convenience helper when all locales share the same slug.
- */
-export function buildHreflangForSharedSlug(args: {
-  siteURL: string
-  basePath?: string
-  slug: string
-  trailingSlash?: boolean
-}) {
-  const { siteURL, basePath = '', slug, trailingSlash = false } = args
-  const prefix = basePath ? `/${basePath}` : ''
-  const suffix = trailingSlash ? '/' : ''
-  const path = (locale: string) =>
-    `/${locale}${prefix}/${slug}${suffix}`.replace(/\/+/g, '/')
+export function readHreflangOverrides(value: unknown): HreflangOverrides | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const input = value as Record<string, unknown>
+  const excludedLocales = Array.isArray(input.excludedLocales)
+    ? input.excludedLocales.filter(
+        (locale): locale is AppLocale => typeof locale === 'string' && isAppLocale(locale),
+      )
+    : undefined
 
-  return buildHreflangAlternates({
-    siteURL,
-    dePath: path('de'),
-    enPath: path('en'),
-    frPath: path('fr'),
-    nlPath: path('nl'),
-    chPath: path('ch'),
-    bePath: path('be'),
-    ukPath: path('uk'),
-    uaePath: path('uae'),
-  })
+  return {
+    enabled: input.enabled === true,
+    excludedLocales,
+    xDefaultLocale:
+      typeof input.xDefaultLocale === 'string' && isAppLocale(input.xDefaultLocale)
+        ? input.xDefaultLocale
+        : undefined,
+  }
 }

@@ -65,26 +65,26 @@ export default async function Page({ params, searchParams: searchParamsPromise }
 
   return (
     <>
-    <Header locale={locale} />
-    <div className="pt-24 pb-24">
-      <PageClient />
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none text-center">
-          <h1 className="mb-8 lg:mb-16">Search</h1>
+      <Header locale={locale} />
+      <div className="pt-24 pb-24">
+        <PageClient />
+        <div className="container mb-16">
+          <div className="prose dark:prose-invert max-w-none text-center">
+            <h1 className="mb-8 lg:mb-16">Search</h1>
 
-          <div className="max-w-[50rem] mx-auto">
-            <Search />
+            <div className="max-w-[50rem] mx-auto">
+              <Search />
+            </div>
           </div>
         </div>
-      </div>
 
-      {posts.totalDocs > 0 ? (
-        <CollectionArchive posts={posts.docs as CardPostData[]} />
-      ) : (
-        <div className="container">No results found.</div>
-      )}
-    </div>
-    <Footer locale={locale} />
+        {posts.totalDocs > 0 ? (
+          <CollectionArchive posts={posts.docs as CardPostData[]} />
+        ) : (
+          <div className="container">No results found.</div>
+        )}
+      </div>
+      <Footer locale={locale} />
     </>
   )
 }
@@ -92,5 +92,6 @@ export default async function Page({ params, searchParams: searchParamsPromise }
 export function generateMetadata(): Metadata {
   return {
     title: `NB1 Search`,
+    robots: { follow: true, index: false },
   }
 }

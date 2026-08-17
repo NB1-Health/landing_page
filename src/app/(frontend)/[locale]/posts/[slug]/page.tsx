@@ -20,32 +20,39 @@ import { JsonLd } from '@/components/JsonLd'
 import { buildPostSchema } from '@/utilities/buildSchema'
 import { getServerSideURL } from '@/utilities/getURL'
 import { extractHeadingsFromLexical } from '@/utilities/extractHeadingsFromLexical'
-import { buildHreflangForSharedSlug } from '@/utilities/hreflang'
+import {
+  buildHreflangAlternates,
+  isHreflangXDefaultMissing,
+  readHreflangOverrides,
+} from '@/utilities/hreflang'
 import { getAuthenticatedDraft, type AuthenticatedDraft } from '@/utilities/authenticatedDraft'
+import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
 
-import { appLocales, isAppLocale, type AppLocale } from '@/i18n/config'
-const LOCALES = appLocales
+import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
 
-  const posts = await payload.find({
-    collection: 'posts',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+  return (
+    await Promise.all(
+      appLocales.map(async (locale) => {
+        const posts = await payload.find({
+          collection: 'posts',
+          draft: false,
+          fallbackLocale: false,
+          limit: 0,
+          locale,
+          overrideAccess: false,
+          pagination: false,
+          select: { slug: true },
+        })
 
-  return posts.docs.flatMap(({ slug }) =>
-    LOCALES.map((locale) => ({
-      locale,
-      slug,
-    })),
-  )
+        return posts.docs
+          .filter((post) => typeof post.slug === 'string' && post.slug)
+          .map((post) => ({ locale, slug: post.slug }))
+      }),
+    )
+  ).flat()
 }
 
 type Args = {
@@ -68,6 +75,15 @@ export default async function PostPage({ params: paramsPromise }: Args) {
 
   if (!post) return <PayloadRedirects url={url} />
 
+  const publishedSlugs = await resolvePublishedLocaleSlugs({
+    collection: 'posts',
+    id: post.id,
+    payload,
+  })
+  if (!read.draft && typeof publishedSlugs[locale] !== 'string') {
+    return <PayloadRedirects url={url} />
+  }
+
   const siteURL = getServerSideURL()
   const jsonLd = buildPostSchema({ post, siteURL, locale })
   const headings = extractHeadingsFromLexical(post.content, 'h3')
@@ -82,7 +98,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
 
   return (
     <>
-      <Header locale={locale} />
+      <Header locale={locale} localizedDocument={{ route: 'post', slugs: publishedSlugs }} />
       <article className="pt-16 mr-auto ml-auto bg-white" style={{ maxWidth: '1440px' }}>
         <PageClient />
 
@@ -141,20 +157,47 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   if (!post) return {}
 
   const siteURL = getServerSideURL()
-
-  const alternates = buildHreflangForSharedSlug({
-    siteURL,
-    basePath: 'posts',
-    slug: encodeURIComponent(decodedSlug),
-    trailingSlash: false,
+  const publishedSlugs = await resolvePublishedLocaleSlugs({
+    collection: 'posts',
+    id: post.id,
+    payload,
   })
+  const pathsByLocale = Object.fromEntries(
+    Object.entries(publishedSlugs).map(([availableLocale, availableSlug]) => [
+      availableLocale,
+      `posts/${availableSlug}`,
+    ]),
+  )
+  const hreflangOverrides = readHreflangOverrides(post.meta?.seoOverrides)
+  const currentLocaleExcluded =
+    hreflangOverrides?.enabled && hreflangOverrides.excludedLocales?.includes(locale)
+  const alternates =
+    read.draft || currentLocaleExcluded
+      ? undefined
+      : buildHreflangAlternates({ pathsByLocale, siteURL, overrides: hreflangOverrides })
+  const hreflangSuppressedForMissingXDefault =
+    !read.draft &&
+    !currentLocaleExcluded &&
+    isHreflangXDefaultMissing(pathsByLocale, hreflangOverrides)
+  const canonical = new URL(`/${locale}/posts/${encodeURIComponent(post.slug)}`, siteURL).toString()
+  const baseMetadata = await generateMeta({ doc: post, locale })
 
   return {
-    ...generateMeta({ doc: post, locale }),
+    ...baseMetadata,
+    ...(read.draft ? { robots: { follow: false, index: false } } : {}),
     alternates: {
-      canonical: new URL(`/${locale}/posts/${encodeURIComponent(decodedSlug)}`, siteURL).toString(),
-      ...alternates,
+      canonical,
+      ...(alternates ?? {}),
     },
+    other: hreflangSuppressedForMissingXDefault
+      ? { 'nb1-hreflang': 'suppressed-missing-x-default' }
+      : undefined,
+    openGraph: baseMetadata.openGraph
+      ? {
+          ...baseMetadata.openGraph,
+          url: canonical,
+        }
+      : undefined,
   }
 }
 
@@ -163,7 +206,7 @@ async function queryPostBySlug(
   read: AuthenticatedDraft,
   { slug, locale }: { slug: string; locale: AppLocale },
 ) {
-  const result = await payload.find({
+  const reference = await payload.find({
     collection: 'posts',
     draft: read.draft,
     limit: 1,
@@ -176,9 +219,23 @@ async function queryPostBySlug(
       },
     },
     locale,
-    fallbackLocale: 'en',
-    depth: 2,
+    fallbackLocale: false,
+    depth: 0,
+    select: { slug: true },
   })
 
-  return (result.docs?.[0] as Post) || null
+  const id = reference.docs?.[0]?.id
+  if (!id) return null
+
+  return (await payload.findByID({
+    collection: 'posts',
+    id,
+    draft: read.draft,
+    disableErrors: true,
+    overrideAccess: false,
+    user: read.user,
+    locale,
+    fallbackLocale: getFallbackLocale(locale),
+    depth: 2,
+  })) as Post | null
 }

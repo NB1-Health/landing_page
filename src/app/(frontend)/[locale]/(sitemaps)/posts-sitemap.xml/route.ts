@@ -4,50 +4,35 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 
 import { isAppLocale, type AppLocale } from '@/i18n/config'
-
-type PayloadLocale = AppLocale | 'all'
-
-function getSiteURL() {
-  const raw =
-    process.env.NEXT_PUBLIC_SERVER_URL ||
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-    'https://example.com'
-
-  // Vercel sometimes provides host without protocol
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw
-  return `https://${raw}`
-}
+import { getServerSideURL } from '@/utilities/getURL'
+import { readHreflangOverrides } from '@/utilities/hreflang'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
   const clean = path.startsWith('/') ? path : `/${path}`
   return `${siteURL}/${locale}${clean}`
 }
 
-export async function GET(
-  _req: Request,
-  // ✅ In your Next version, route handler params are a Promise
-  { params }: { params: Promise<{ locale: string }> },
-) {
-  const resolved = await params
+export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params
 
-  // ✅ Narrow URL locale to allowed union
-  const locale: AppLocale = isAppLocale(resolved?.locale) ? resolved.locale : 'en'
+  if (!isAppLocale(localeParam)) return new Response('Not found', { status: 404 })
+  const locale = localeParam
 
   const getPostsSitemap = unstable_cache(
     async () => {
       const payload = await getPayload({ config })
-      const SITE_URL = getSiteURL()
+      const SITE_URL = getServerSideURL().replace(/\/$/, '')
 
       const results = await payload.find({
         collection: 'posts',
         overrideAccess: false,
         draft: false,
         depth: 0,
-        limit: 1000,
+        limit: 0,
         pagination: false,
 
-        // ✅ localized fetch (fallback handled by Payload if enabled)
-        locale: locale as PayloadLocale,
+        locale,
+        fallbackLocale: false,
 
         where: {
           _status: {
@@ -56,7 +41,11 @@ export async function GET(
         },
         select: {
           slug: true,
+          title: true,
           updatedAt: true,
+          meta: {
+            seoOverrides: true,
+          },
         },
       })
 
@@ -64,16 +53,18 @@ export async function GET(
 
       const sitemap =
         results.docs
-          ?.filter((post) => Boolean(post?.slug))
+          ?.filter((post) => {
+            if (!post?.slug || typeof post.title !== 'string' || !post.title.trim()) return false
+            const overrides = readHreflangOverrides(post.meta?.seoOverrides)
+            return !(overrides?.enabled && overrides.excludedLocales?.includes(locale))
+          })
           .map((post) => ({
-            // ✅ prefix with locale
             loc: withLocale(SITE_URL, locale, `/posts/${post.slug}`),
             lastmod: post.updatedAt || dateFallback,
           })) || []
 
       return sitemap
     },
-    // ✅ cache per locale
     ['posts-sitemap', locale],
     { tags: ['posts-sitemap', `posts-sitemap-${locale}`] },
   )

@@ -220,7 +220,8 @@ const blockComponents: Record<string, React.FC<any>> = {
 export const RenderBlocks: React.FC<{
   blocks: Page['layout'][0][]
   locale: AppLocale
-}> = ({ blocks, locale }) => {
+  pageSlugs?: Partial<Record<AppLocale, string>> | null
+}> = ({ blocks, locale, pageSlugs }) => {
   const hasBlocks = blocks && Array.isArray(blocks) && blocks.length > 0
   if (!hasBlocks) return null
 
@@ -235,7 +236,7 @@ export const RenderBlocks: React.FC<{
           if (Block) {
             return (
               <div className="p-0" key={index}>
-                <Block {...block} locale={locale} disableInnerContainer />
+                <Block {...block} locale={locale} pageSlugs={pageSlugs} disableInnerContainer />
               </div>
             )
           }

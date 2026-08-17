@@ -20,7 +20,7 @@ export const fr = {
     heading: 'Points clés',
   },
   disclaimer: {
-    text: "Les informations fournies par le test du microbiome NB1 sont uniquement à titre informatif et ne remplacent pas les conseils médicaux professionnels. Consulte toujours un professionnel de santé qualifié avant de modifier ton alimentation ou ta routine de suppléments.",
+    text: 'Les informations fournies par le test du microbiome NB1 sont uniquement à titre informatif et ne remplacent pas les conseils médicaux professionnels. Consulte toujours un professionnel de santé qualifié avant de modifier ton alimentation ou ta routine de suppléments.',
   },
   faq: {
     heading: 'Questions fréquentes',
@@ -86,11 +86,12 @@ export const fr = {
     hero: {
       titlePrefix: 'Presque ',
       titleAccent: 'terminé.',
-      subtitle: "Ton e-mail, ton adresse, la livraison et le paiement, tout est ici. Rien n'est prélevé aujourd'hui.",
+      subtitle:
+        'Votre e-mail, votre adresse, la livraison et le paiement, tout est ici. Rien n’est prélevé aujourd’hui.',
     },
     steps: {
-      email: 'Ton e-mail',
-      address: 'Où devons-nous envoyer ton kit ?',
+      email: 'Votre e-mail',
+      address: 'Où devons-nous envoyer votre kit ?',
       shipping: "Options d'expédition",
       payment: 'Paiement',
     },
@@ -100,8 +101,8 @@ export const fr = {
     nameInvalid: 'Veuillez saisir un nom valide.',
     email: {
       label: 'E-mail',
-      placeholder: 'toi@email.com',
-      hint: "Nous créons ton compte et envoyons ici le suivi du kit et les résultats. Tu définiras un mot de passe à l'arrivée de ton kit.",
+      placeholder: 'vous@email.com',
+      hint: 'Nous créons votre compte et envoyons ici le suivi du kit et les résultats. Vous définirez un mot de passe à l’arrivée de votre kit.',
       invalid: 'Saisissez une adresse e-mail valide.',
       typoSuggestion: 'Vouliez-vous dire {domain} ?',
       useSuggestion: 'Utiliser',
@@ -141,15 +142,18 @@ export const fr = {
       cvc: 'CVC',
       cvcDigits: '3 à 4 chiffres.',
       nameOnCard: 'Nom sur la carte',
-      paypalNote: "Tu seras redirigé vers PayPal pour approuver ta formule. Rien n'est prélevé aujourd'hui : ton premier paiement n'a lieu qu'à la fabrication de ta formule.",
+      paypalNote:
+        "Tu seras redirigé vers PayPal pour approuver ta formule. Rien n'est prélevé aujourd'hui : ton premier paiement n'a lieu qu'à la fabrication de ta formule.",
       klarna: 'Klarna',
-      klarnaNote: "Paie avec Klarna, sur facture ou par virement bancaire instantané. Tu valides le paiement dans Klarna ; le premier prélèvement n'a lieu qu'à la fabrication.",
+      klarnaNote:
+        "Paie avec Klarna, sur facture ou par virement bancaire instantané. Tu valides le paiement dans Klarna ; le premier prélèvement n'a lieu qu'à la fabrication.",
       sepa: 'Prélèvement SEPA',
       iban: 'IBAN',
       ibanPlaceholder: 'FR00 0000 0000 0000 0000 000',
       ibanInvalid: 'Saisis un IBAN valide.',
       accountHolder: 'Titulaire du compte',
-      sepaConsent: "En fournissant ton IBAN, tu autorises NB1 et Stripe à demander à ta banque de débiter ton compte par prélèvement SEPA, à compter uniquement de la fabrication de ta formule.",
+      sepaConsent:
+        'En fournissant ton IBAN, tu autorises NB1 et Stripe à demander à ta banque de débiter ton compte par prélèvement SEPA, à compter uniquement de la fabrication de ta formule.',
       billingSame: 'Adresse de facturation identique à la livraison',
       streetNumber: 'Rue et numéro',
       billingIndividual: 'Particulier',
@@ -180,20 +184,25 @@ export const fr = {
       terms: 'Conditions',
       and: 'et notre',
       privacyPolicy: 'Politique de confidentialité',
-      legalMid: ", et tu consens à ce que NB1 traite ton échantillon biologique et tes données de santé pour créer ta formule. Ton premier prélèvement intervient environ deux semaines après le renvoi de ton échantillon, uniquement à l'entrée en fabrication. Des frais uniques de ",
+      legalMid:
+        ", et tu consens à ce que NB1 traite ton échantillon biologique et tes données de santé pour créer ta formule. Ton premier prélèvement intervient environ deux semaines après le renvoi de ton échantillon, uniquement à l'entrée en fabrication. Des frais uniques de ",
       feeBold: '49 €',
-      legalEnd: " s'appliquent seulement si ton échantillon n'est pas renvoyé sous 4 semaines. NB1 est réservé aux adultes de 18 ans et plus.",
+      legalEnd:
+        " s'appliquent seulement si ton échantillon n'est pas renvoyé sous 4 semaines. NB1 est réservé aux adultes de 18 ans et plus.",
       accountExists: 'Un compte avec cet email existe déjà. Veuillez vous connecter.',
       accountError: 'Impossible de créer votre compte. Veuillez réessayer.',
+      checkDetails: 'Veuillez vérifier vos informations et réessayer.',
+      orderError: "Votre commande n'a pas pu être finalisée :",
     },
     whatsNext: {
       heading: 'Ce qui se passe ensuite',
-      step1: "Ton kit est expédié, un test intestinal de deux minutes, scellé dans son sachet et à renvoyer dans sa boîte d'origine.",
+      step1:
+        "Ton kit est expédié, un test intestinal de deux minutes, scellé dans son sachet et à renvoyer dans sa boîte d'origine.",
       step2: "Nous l'analysons et notre équipe scientifique valide ta formule.",
       step3: 'Premier prélèvement, puis ta formule sur mesure est expédiée.',
     },
     summary: {
-      title: 'Ta commande',
+      title: 'Votre commande',
       plan: 'Formule',
       duration: 'Durée',
       billing: 'Facturation',
@@ -210,8 +219,9 @@ export const fr = {
       heading: "C'est parti !",
       body: "Ton kit est en route. Nous ne prélevons rien pour l'instant : ton premier paiement n'aura lieu qu'une fois ta formule en fabrication.",
       eyebrow: 'Commande',
-      inboxTitle: 'Consulte ta boîte mail',
-      inboxBody: "Nous avons envoyé ta confirmation à {email}. Ouvre-la pour définir ton mot de passe et accéder à ton tableau de bord, aucun mot de passe à retenir pour l'instant.",
+      inboxTitle: 'Consultez votre boîte mail',
+      inboxBody:
+        "Nous avons envoyé ta confirmation à {email}. Ouvre-la pour définir ton mot de passe et accéder à ton tableau de bord, aucun mot de passe à retenir pour l'instant.",
       dashboard: 'Aller à mon tableau de bord →',
       trackOrder: 'Suivre ma commande',
       helpLink: "Besoin d'aide ?",
@@ -226,10 +236,10 @@ export const fr = {
       chatUs: '💬 Discuter avec nous',
       survey: {
         eyebrow: 'Aide-nous à grandir',
-        question: 'Comment as-tu découvert NB1 ?',
-        sub: 'Un seul geste, cela nous aide à toucher plus de personnes comme toi.',
+        question: 'Comment avez-vous découvert NB1 ?',
+        sub: 'Un seul geste, cela nous aide à toucher plus de personnes comme vous.',
         thanks: "C'est noté, merci.",
-        thanksSub: 'Cela nous aide à toucher plus de personnes comme toi.',
+        thanksSub: 'Cela nous aide à nous faire connaître à plus de personnes comme vous.',
         whichOne: 'Lequel ?',
         whichSub: 'Facultatif — clique pour préciser.',
         somethingElse: 'Autre chose',
@@ -239,11 +249,32 @@ export const fr = {
       },
       timeline: {
         heading: 'Ce qui se passe ensuite',
-        step1: { label: "Aujourd'hui", title: 'Commande confirmée', body: "Consulte ta boîte mail : nous t'avons envoyé ton reçu et un lien pour définir ton mot de passe et suivre ton kit." },
-        step2: { label: '~3 jours', title: 'Ton kit arrive', body: "Un test intestinal de deux minutes, scellé dans son sachet et renvoyé dans sa boîte d'origine, plus un court questionnaire de santé en ligne." },
-        step3: { label: 'Semaines 1–2', title: 'Nous analysons ton échantillon', body: "Analysé au niveau de l'espèce, puis notre équipe scientifique conçoit ta formule personnalisée à partir de tes données." },
-        step4: { label: 'Semaine 3', title: 'Formule validée · premier prélèvement', badge: 'Premier prélèvement', body: "Ta formule est validée et ton premier paiement n'est prélevé que maintenant, à son entrée en fabrication. Jamais avant." },
-        step5: { label: 'Semaine 4', title: 'Ta formule est expédiée', body: 'Activate, Restore et Nourish, sous blister pour 30 jours, prêts à voyager. Ton premier cycle commence.' },
+        step1: {
+          label: "Aujourd'hui",
+          title: 'Commande confirmée',
+          body: "Consultez votre boîte mail : nous t'avons envoyé ton reçu et un lien pour définir ton mot de passe et suivre ton kit.",
+        },
+        step2: {
+          label: '~3 jours',
+          title: 'Ton kit arrive',
+          body: "Un test intestinal de deux minutes, scellé dans son sachet et renvoyé dans sa boîte d'origine, plus un court questionnaire de santé en ligne.",
+        },
+        step3: {
+          label: 'Semaines 1–2',
+          title: 'Nous analysons votre échantillon',
+          body: "Analysé au niveau de l'échantillon, puis notre équipe scientifique conçoit votre formule personnalisée à partir de vos données.",
+        },
+        step4: {
+          label: 'Semaine 3',
+          title: 'Formule validée · premier prélèvement',
+          badge: 'Premier prélèvement',
+          body: "Votre formule est validée et votre premier paiement n'est prélevé que maintenant, à son entrée en fabrication. Jamais avant.",
+        },
+        step5: {
+          label: 'Semaine 4',
+          title: 'Votre formule est expédiée',
+          body: 'Activate, Restore et Nourish, sous blister pour 30 jours, prêts à voyager. Ton premier cycle commence.',
+        },
       },
       summary: {
         heading: 'Récapitulatif de commande',

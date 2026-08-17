@@ -15,6 +15,7 @@ import { fields } from '@/blocks/Form/fields'
 import { CarouselBanner } from '@/blocks/WelcomeBanner/CarouselBanner'
 import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { getDictionary } from '@/i18n/getDictionary'
+import type { AppLocale } from '@/i18n/config'
 
 export type ProductBannerBlockType = {
   blockName?: string
@@ -43,6 +44,8 @@ export type ProductBannerBlockType = {
 
 type Props = {
   id?: string
+  locale: AppLocale
+  pageSlugs?: Partial<Record<AppLocale, string>> | null
 } & ProductBannerBlockType
 
 function isMedia(value: unknown): value is Media {
@@ -64,6 +67,8 @@ export const ProductBannerComponent: React.FC<Props> = (props) => {
     logo,
     loginButton,
     form: formFromProps,
+    locale,
+    pageSlugs,
   } = props
 
   const { id: formID, confirmationType, redirect, submitButtonLabel } = (formFromProps ?? {}) as any
@@ -214,7 +219,7 @@ export const ProductBannerComponent: React.FC<Props> = (props) => {
             </div>
           ) : null}
           <div className="flex items-center" style={{ gap: '24px' }}>
-            <LocaleSwitcher textColor="#393939" />
+            <LocaleSwitcher locale={locale} pageSlugs={pageSlugs} textColor="#393939" />
             {loginButton?.show && loginButton?.label && loginButton?.url ? (
               <Link href={loginButton.url}>
                 <Button

@@ -4,6 +4,7 @@ import React, { Suspense } from 'react'
 import type { Media } from '@/payload-types'
 import { getServerCurrency } from '@/utilities/currency'
 import { HeaderClient } from './Component.client'
+import type { LocalizedDocument } from './localizedDocument'
 
 type RawLink = {
   label?: string | null
@@ -48,12 +49,19 @@ function resolveNavLink(link: RawLink, locale: string) {
   let url: string | null = null
   if (linkType === 'custom') {
     const customUrl = (link as any).url as string | null | undefined
-    url = customUrl ? (customUrl.startsWith('/') || customUrl.startsWith('http') ? customUrl : `/${customUrl}`) : null
+    url = customUrl
+      ? customUrl.startsWith('/') || customUrl.startsWith('http')
+        ? customUrl
+        : `/${customUrl}`
+      : null
   } else {
     const ref = (link as any).reference
     const refDoc = ref?.value ?? ref
     const rawSlug = typeof refDoc === 'object' && refDoc !== null ? refDoc.slug : undefined
-    const slug = typeof rawSlug === 'string' ? rawSlug : (rawSlug as any)?.[locale] ?? (rawSlug as any)?.['en']
+    const slug =
+      typeof rawSlug === 'string'
+        ? rawSlug
+        : ((rawSlug as any)?.[locale] ?? (rawSlug as any)?.['en'])
     url = slug ? (slug === 'home-page' ? `/${locale}` : `/${locale}/${slug}`) : null
   }
   return {
@@ -75,17 +83,13 @@ function pickMedia(val: number | Media | null | undefined) {
 type Props = {
   locale: string
   id?: string | null
-  /** Per-locale slug map for the page currently being viewed, so the language/
-   * currency switcher can navigate to the correct localized slug. Passed down
-   * from the page template (which already fetches this for hreflang) rather
-   * than read off a global — a global set via a server-rendered <script> tag
-   * only executes on a hard page load, so it goes stale after any client-side
-   * navigation (e.g. clicking a nav link) and silently points the switcher at
-   * whatever page was last hard-loaded instead of the current one. */
-  pageSlugs?: Partial<Record<string, string>> | null
+  /** The current document's route shape and published localized slugs. Passed
+   * from the page template rather than stored globally, so client navigation
+   * cannot leave the switcher pointing at the previously hard-loaded page. */
+  localizedDocument?: LocalizedDocument | null
 }
 
-export async function Header({ locale, id, pageSlugs }: Props) {
+export async function Header({ locale, id, localizedDocument }: Props) {
   const data = (await getCachedHeader(id, locale)()) as HeaderData | null
   // Resolved server-side from the cookie so the initial currency label
   // matches what HeaderClient hydrates with — previously HeaderClient read
@@ -101,7 +105,7 @@ export async function Header({ locale, id, pageSlugs }: Props) {
     <Suspense>
       <HeaderClient
         locale={locale}
-        pageSlugs={pageSlugs ?? null}
+        localizedDocument={localizedDocument ?? null}
         initialCurrency={initialCurrency}
         logo={pickMedia(data?.logo)}
         logoDark={pickMedia(data?.logoDark)}
@@ -112,10 +116,14 @@ export async function Header({ locale, id, pageSlugs }: Props) {
         loginTextColor={data?.loginTextColor ?? null}
         ctaLabel={data?.ctaLabel ?? null}
         ctaUrl={data?.ctaUrl ?? null}
-        navItems={(data?.navItems ?? []).map((item) => ({ link: resolveNavLink(item.link ?? null, locale) }))}
+        navItems={(data?.navItems ?? []).map((item) => ({
+          link: resolveNavLink(item.link ?? null, locale),
+        }))}
         discoverNavEnabled={data?.discoverNavEnabled ?? false}
         discoverNavLabel={data?.discoverNavLabel ?? null}
-        discoverNavItems={(data?.discoverNavItems ?? []).map((item) => ({ link: resolveNavLink(item.link ?? null, locale) }))}
+        discoverNavItems={(data?.discoverNavItems ?? []).map((item) => ({
+          link: resolveNavLink(item.link ?? null, locale),
+        }))}
         variants={data?.variants ?? []}
         sectionNavEnabled={data?.sectionNavEnabled ?? false}
         sectionNavItems={(data?.sectionNavItems ?? []).map((item) => ({
