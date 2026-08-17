@@ -326,6 +326,7 @@ describe('Klaviyo checkout events', () => {
       'Checkout Completed',
       expect.objectContaining({
         $event_id: 'acquisition-1',
+        event_name: 'subscription_acquired',
         transaction_id: 'subscription-1',
         order_number: 'NB1-123',
         plan_slug: 'core-4',

@@ -52,6 +52,7 @@ describe('staging SEO containment', () => {
       assertDeploymentEnvironment(deployEnv, {
         DEPLOY_ENV: deployEnv,
         NEXT_PUBLIC_SERVER_URL: siteURL,
+        ...(deployEnv === 'production' ? { NEXT_PUBLIC_KLAVIYO_COMPANY_ID: 'WwW2Hy' } : {}),
       }),
     ).not.toThrow()
 
@@ -59,6 +60,7 @@ describe('staging SEO containment', () => {
       assertDeploymentEnvironment(deployEnv, {
         DEPLOY_ENV: deployEnv === 'staging' ? 'production' : 'staging',
         NEXT_PUBLIC_SERVER_URL: siteURL,
+        ...(deployEnv === 'production' ? { NEXT_PUBLIC_KLAVIYO_COMPANY_ID: 'WwW2Hy' } : {}),
       }),
     ).toThrow(`DEPLOY_ENV must be ${deployEnv}`)
 
@@ -66,8 +68,26 @@ describe('staging SEO containment', () => {
       assertDeploymentEnvironment(deployEnv, {
         DEPLOY_ENV: deployEnv,
         NEXT_PUBLIC_SERVER_URL: deployEnv === 'staging' ? 'https://nb1.com' : 'https://stg.nb1.com',
+        ...(deployEnv === 'production' ? { NEXT_PUBLIC_KLAVIYO_COMPANY_ID: 'WwW2Hy' } : {}),
       }),
     ).toThrow(`NEXT_PUBLIC_SERVER_URL must be ${siteURL}`)
+  })
+
+  it('requires the production Klaviyo account only in production', () => {
+    expect(() =>
+      assertDeploymentEnvironment('production', {
+        DEPLOY_ENV: 'production',
+        NEXT_PUBLIC_SERVER_URL: 'https://nb1.com',
+      }),
+    ).toThrow('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be WwW2Hy in production')
+
+    expect(() =>
+      assertDeploymentEnvironment('staging', {
+        DEPLOY_ENV: 'staging',
+        NEXT_PUBLIC_SERVER_URL: 'https://stg.nb1.com',
+        NEXT_PUBLIC_KLAVIYO_COMPANY_ID: 'WwW2Hy',
+      }),
+    ).toThrow('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be unset in staging')
   })
 
   it('blocks crawling and omits sitemap discovery on staging', () => {
@@ -151,5 +171,17 @@ describe('staging SEO containment', () => {
         source.indexOf(`cp .env.${deployEnv === 'staging' ? 'stg' : 'prod'} .env`),
       )
     }
+  })
+
+  it('loads Klaviyo onsite only when an explicit company ID is configured', () => {
+    const layout = readFileSync('src/app/(frontend)/[locale]/layout.tsx', 'utf8')
+
+    expect(layout).toContain(
+      'const klaviyoCompanyId = process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID?.trim()',
+    )
+    expect(layout).toContain('{klaviyoCompanyId && (')
+    expect(layout).toContain(
+      'onsite/js/${klaviyoCompanyId}/klaviyo.js?company_id=${klaviyoCompanyId}',
+    )
   })
 })

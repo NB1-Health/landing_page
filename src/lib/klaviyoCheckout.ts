@@ -469,6 +469,7 @@ export function trackKlaviyoCheckoutCompleted(input: KlaviyoCheckoutCompletedInp
 
   const eventProperties = compactProperties({
     $event_id: input.eventId,
+    event_name: 'subscription_acquired',
     checkout_id: input.checkoutId,
     transaction_id: input.transactionId,
     order_number: input.orderNumber,

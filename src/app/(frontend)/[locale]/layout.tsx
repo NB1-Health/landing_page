@@ -61,6 +61,7 @@ export default async function RootLayout({
 }) {
   const { isEnabled } = await draftMode()
   const marketingEnabled = !isEnabled
+  const klaviyoCompanyId = process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID?.trim()
 
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
@@ -323,14 +324,16 @@ export default async function RootLayout({
 
                 <ChatwootWidget locale={locale} />
 
-                <Script
-                  src="https://static.klaviyo.com/onsite/js/WwW2Hy/klaviyo.js?company_id=WwW2Hy"
-                  strategy="afterInteractive"
-                  async
-                />
+                {klaviyoCompanyId && (
+                  <>
+                    <Script
+                      src={`https://static.klaviyo.com/onsite/js/${klaviyoCompanyId}/klaviyo.js?company_id=${klaviyoCompanyId}`}
+                      strategy="afterInteractive"
+                      async
+                    />
 
-                <Script id="klaviyo-init" strategy="afterInteractive">
-                  {`
+                    <Script id="klaviyo-init" strategy="afterInteractive">
+                      {`
               !function(){if(!window.klaviyo){
                 window._klOnsite=window._klOnsite||[];
                 try{
@@ -358,7 +361,9 @@ export default async function RootLayout({
                 }
               }}();
             `}
-                </Script>
+                    </Script>
+                  </>
+                )}
               </>
             )}
           </Providers>

@@ -16,6 +16,7 @@ declare global {
       PAYLOAD_SECRET: string
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
+      NEXT_PUBLIC_KLAVIYO_COMPANY_ID?: string
       NEXT_PUBLIC_META_PURCHASE_OWNER?: 'landing' | 'backend'
       VERCEL_PROJECT_PRODUCTION_URL: string
     }

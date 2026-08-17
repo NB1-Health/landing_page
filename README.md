@@ -223,6 +223,7 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | Variable | What it's for |
 |---|---|
 | `NEXT_PUBLIC_GTM_ID` | Google Tag Manager / GA4 container ID |
+| `NEXT_PUBLIC_KLAVIYO_COMPANY_ID` | Klaviyo onsite company ID. Set to `WwW2Hy` only in production; leave blank or unset on staging/local so they cannot send browser events into production Klaviyo |
 | `NEXT_PUBLIC_META_PIXEL_ID` | Meta (Facebook) Pixel ID — used in the browser |
 | `NEXT_PUBLIC_META_PURCHASE_OWNER` | Controls only the Meta Purchase CAPI owner: keep `landing` until the durable backend route is verified, then switch to `backend`; the browser Pixel always remains enabled |
 | `META_PIXEL_ID` | Same Pixel ID, used server-side |
@@ -230,9 +231,8 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | `META_GRAPH_API_VERSION` | Which version of Meta's Graph API to call |
 | `META_TEST_EVENT_CODE` | Marks server-side events as test events in Meta's dashboard — **should only ever be set outside production** |
 
-Note: the **Klaviyo** company ID (email lead-capture, [§8](#8-tracking--analytics))
-is currently hardcoded in `src/app/(frontend)/[locale]/layout.tsx` rather than
-coming from an environment variable.
+The Klaviyo onsite loader is fail-closed: it is rendered only when
+`NEXT_PUBLIC_KLAVIYO_COMPANY_ID` is set.
 
 Payload's own configuration (which collections exist, which plugins are
 enabled, which locales, where the admin panel is mounted) lives in
