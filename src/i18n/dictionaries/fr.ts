@@ -191,6 +191,8 @@ export const fr = {
         " s'appliquent seulement si ton échantillon n'est pas renvoyé sous 4 semaines. NB1 est réservé aux adultes de 18 ans et plus.",
       accountExists: 'Un compte avec cet email existe déjà. Veuillez vous connecter.',
       accountError: 'Impossible de créer votre compte. Veuillez réessayer.',
+      checkDetails: 'Veuillez vérifier vos informations et réessayer.',
+      orderError: "Votre commande n'a pas pu être finalisée :",
     },
     whatsNext: {
       heading: 'Ce qui se passe ensuite',
