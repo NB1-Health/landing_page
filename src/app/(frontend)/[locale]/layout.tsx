@@ -30,7 +30,7 @@ import '@fontsource/jetbrains-mono/700.css'
 import Script from 'next/script'
 
 import { JsonLd, type JsonLdValue } from '@/components/JsonLd'
-import { ChatwootWidget } from '@/components/ChatwootWidget'
+import { ArminWidget } from '@/components/ArminWidget'
 import { PageViewTracker } from '@/components/DataLayerEvents/PageViewTracker'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 import StyledJsxRegistry from './registry'
@@ -310,7 +310,7 @@ export default async function RootLayout({
               `}
                 </Script>
 
-                <ChatwootWidget locale={locale} />
+                <ArminWidget locale={locale} />
 
                 <Script
                   src="https://static.klaviyo.com/onsite/js/WwW2Hy/klaviyo.js?company_id=WwW2Hy"
