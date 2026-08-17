@@ -224,7 +224,7 @@ copy from. Below is what each variable is for, grouped by what it configures.
 |---|---|
 | `NEXT_PUBLIC_GTM_ID` | Google Tag Manager / GA4 container ID |
 | `NEXT_PUBLIC_META_PIXEL_ID` | Meta (Facebook) Pixel ID — used in the browser |
-| `NEXT_PUBLIC_META_PURCHASE_OWNER` | `landing` by default; switch to `backend` only after the durable backend Purchase route is verified |
+| `NEXT_PUBLIC_META_PURCHASE_OWNER` | Controls only the Meta Purchase CAPI owner: keep `landing` until the durable backend route is verified, then switch to `backend`; the browser Pixel always remains enabled |
 | `META_PIXEL_ID` | Same Pixel ID, used server-side |
 | `META_CAPI_ACCESS_TOKEN` | Access token for Meta's server-side Conversions API |
 | `META_GRAPH_API_VERSION` | Which version of Meta's Graph API to call |
@@ -287,9 +287,10 @@ return handler restores in-flight form data from `sessionStorage`.
 
 The final confirmation goes directly to the backend. It includes a tightly
 allowlisted, consent-gated attribution snapshot. By default this app retains
-the existing server-side Meta Purchase sender. After the durable backend route
-is verified, set `NEXT_PUBLIC_META_PURCHASE_OWNER=backend` to cut over; the
-matching browser/GTM Purchase continues to use the backend-authored `event_id`.
+the existing landing Meta Purchase CAPI sender. After the durable backend route
+is verified, set `NEXT_PUBLIC_META_PURCHASE_OWNER=backend` to cut over the CAPI
+owner; the browser/GTM Pixel Purchase remains enabled and continues to use the
+backend-authored `event_id`.
 
 Plan/pricing content that editors manage lives in the `Products` collection
 (`src/collections/Products`) and `src/lib/plans`.
@@ -344,6 +345,8 @@ into a single event.
 - **Purchase** is emitted to the browser data layer with the backend-authored
   `event_id`. The landing sender remains the default server owner until
   `NEXT_PUBLIC_META_PURCHASE_OWNER=backend` makes the backend outbox authoritative.
+  Its value is the gross monthly plan price in the checkout currency; discounts
+  and shipping remain separate, and the commitment term does not multiply it.
 
 ### Klaviyo (email lead capture)
 
