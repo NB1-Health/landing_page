@@ -193,6 +193,8 @@ export const de = {
         'fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird. NB1 ist für Erwachsene ab 18.',
       accountExists: 'Für diese E-Mail-Adresse existiert bereits ein Konto. Bitte melde dich an.',
       accountError: 'Dein Konto konnte nicht erstellt werden. Bitte versuche es erneut.',
+      checkDetails: 'Bitte überprüfe deine Angaben und versuche es erneut.',
+      orderError: 'Deine Bestellung konnte nicht abgeschlossen werden:',
     },
     whatsNext: {
       heading: 'Was als Nächstes passiert',

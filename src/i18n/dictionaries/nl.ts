@@ -185,6 +185,8 @@ export const nl = {
       legalEnd: ' wanneer je het monster niet binnen 4 weken terugstuurt. NB1 is voor volwassenen vanaf 18 jaar.',
       accountExists: 'Er bestaat al een account met dit e-mailadres. Meld je aan.',
       accountError: 'Je account kon niet worden aangemaakt. Probeer het opnieuw.',
+      checkDetails: 'Controleer je gegevens en probeer het opnieuw.',
+      orderError: 'Je bestelling kon niet worden afgerond:',
     },
     whatsNext: {
       heading: 'De volgende stappen',

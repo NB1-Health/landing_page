@@ -135,7 +135,7 @@ describe('checkout event boundaries', () => {
     ).toHaveLength(1)
   })
 
-  it('exposes only server-authored purchase/value fields to GTM', () => {
+  it('keeps the gross monthly purchase value separate from shipping and discounts', () => {
     trackSubscriptionAcquired({
       checkoutId: 'checkout-1',
       eventId: 'acquisition-1',
@@ -150,7 +150,15 @@ describe('checkout event boundaries', () => {
       paymentFlow: 'inline',
       currency: 'EUR',
       value: 99,
-      item: { item_id: 'core-4', item_name: 'Core 4 months', price: 99, quantity: 1 },
+      shipping: 12,
+      coupon: 'WELCOME20',
+      item: {
+        item_id: 'core-4',
+        item_name: 'Core 4 months',
+        price: 99,
+        quantity: 1,
+        discount: 20,
+      },
       user: { email: 'buyer@example.com' },
     })
 
@@ -163,6 +171,13 @@ describe('checkout event boundaries', () => {
       max_value: 396,
       value_currency: 'EUR',
       plan_term: 4,
+      ecommerce: {
+        currency: 'EUR',
+        value: 99,
+        shipping: 12,
+        coupon: 'WELCOME20',
+        items: [expect.objectContaining({ price: 99, discount: 20 })],
+      },
     })
   })
 
