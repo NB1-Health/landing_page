@@ -383,21 +383,26 @@ export async function checkInternationalSEO({
   const robotsResponse = await request(new URL('/robots.txt', site), /text\/plain/i)
   const robotsText = await robotsResponse.text()
   const robotsPolicy = parseRobotsTxt(robotsText)
+  // Compare disallow paths without a trailing slash. The edge (nginx) serves `Disallow: /cms/`,
+  // while app/robots.ts and this guard speak in terms of `/cms` — they mean the same directory, so
+  // the check must not fail on the slash. A bare `/` is mapped through unchanged (so a real
+  // Disallow: / is still detected), and any non-slash difference stays strict.
+  const disallowPaths = robotsPolicy.universalDisallow.map((path) => path.replace(/\/+$/, '') || '/')
   const rootSitemap = normalizeURL(new URL('/sitemap.xml', site))
 
   if (deploymentEnvironment === 'staging') {
     assert(
-      robotsPolicy.universalDisallow.includes('/'),
+      disallowPaths.includes('/'),
       'Staging robots.txt is missing Disallow: /',
     )
     assert.equal(robotsPolicy.sitemaps.length, 0, 'Staging robots.txt must not advertise sitemaps')
   } else {
     assert(
-      !robotsPolicy.universalDisallow.includes('/'),
+      !disallowPaths.includes('/'),
       'Production robots.txt must not contain Disallow: /',
     )
     assert(
-      robotsPolicy.universalDisallow.includes('/cms'),
+      disallowPaths.includes('/cms'),
       'Production robots.txt must contain Disallow: /cms',
     )
     assert(
