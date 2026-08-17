@@ -59,6 +59,13 @@ jobs:
           tests/int/postRevalidation.int.spec.ts
           tests/int/stagingSeoContainment.int.spec.ts
 
+      - name: Verify legacy publication survives localized-status migration
+        env:
+          RUN_LOCALIZED_STATUS_TRANSITION: 'true'
+        run: >-
+          npm run test:int -- --run
+          tests/int/localizedStatusTransition.int.spec.ts
+
       - name: Type-check
         run: npx tsc --noEmit
 
