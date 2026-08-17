@@ -1,0 +1,54 @@
+{
+  "en": {
+    "hreflangCodes": ["en"],
+    "htmlLang": "en",
+    "label": "English (EU / Rest of World)",
+    "urlPrefix": "/en"
+  },
+  "de": {
+    "hreflangCodes": ["de-DE", "de-AT"],
+    "htmlLang": "de",
+    "label": "German (Germany & Austria)",
+    "urlPrefix": "/de"
+  },
+  "fr": {
+    "hreflangCodes": ["fr-FR"],
+    "htmlLang": "fr",
+    "label": "French (France)",
+    "urlPrefix": "/fr"
+  },
+  "nl": {
+    "hreflangCodes": ["nl-NL"],
+    "htmlLang": "nl",
+    "label": "Dutch (Netherlands)",
+    "urlPrefix": "/nl"
+  },
+  "ch": {
+    "fallbackLocale": "de",
+    "hreflangCodes": ["de-CH"],
+    "htmlLang": "de",
+    "label": "German (Switzerland)",
+    "urlPrefix": "/ch"
+  },
+  "be": {
+    "fallbackLocale": "nl",
+    "hreflangCodes": ["nl-BE"],
+    "htmlLang": "nl",
+    "label": "Dutch (Belgium)",
+    "urlPrefix": "/be"
+  },
+  "uk": {
+    "fallbackLocale": "en",
+    "hreflangCodes": ["en-GB"],
+    "htmlLang": "en",
+    "label": "English (United Kingdom)",
+    "urlPrefix": "/uk"
+  },
+  "uae": {
+    "fallbackLocale": "en",
+    "hreflangCodes": ["en-AE"],
+    "htmlLang": "en",
+    "label": "English (UAE)",
+    "urlPrefix": "/uae"
+  }
+}

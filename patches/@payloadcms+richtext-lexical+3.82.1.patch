@@ -1,8 +1,8 @@
 diff --git a/node_modules/@payloadcms/richtext-lexical/dist/features/toolbars/shared/ToolbarDropdown/index.js b/node_modules/@payloadcms/richtext-lexical/dist/features/toolbars/shared/ToolbarDropdown/index.js
-index 5d3d346..c02c50e 100644
+index d961986..c377689 100644
 --- a/node_modules/@payloadcms/richtext-lexical/dist/features/toolbars/shared/ToolbarDropdown/index.js
 +++ b/node_modules/@payloadcms/richtext-lexical/dist/features/toolbars/shared/ToolbarDropdown/index.js
-@@ -190,6 +190,7 @@ export const ToolbarDropdown = ({
+@@ -121,6 +121,7 @@ export const ToolbarDropdown = ({
      Icon: Icon,
      itemsContainerClassNames: [`${baseClass}-items`, ...(itemsContainerClassNames || [])],
      label: label,

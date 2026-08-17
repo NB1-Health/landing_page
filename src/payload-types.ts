@@ -133,9 +133,10 @@ export interface Config {
     faq: FaqSelect<false> | FaqSelect<true>;
   };
   locale: 'en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae';
-  user: User & {
-    collection: 'users';
+  widgets: {
+    collections: CollectionsWidget;
   };
+  user: User;
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -347,9 +348,23 @@ export interface Page {
      */
     robots?: ('index,follow' | 'noindex,follow' | 'index,nofollow' | 'noindex,nofollow') | null;
     /**
-     * Optional override. Leave empty to use computed canonical.
+     * Legacy value retained for content compatibility. Public localized pages use a computed self-canonical.
      */
     canonicalURL?: string | null;
+    /**
+     * Rare exceptions only. Hreflang is normally generated from published locales.
+     */
+    seoOverrides?: {
+      enabled?: boolean | null;
+      /**
+       * Removes a published locale from this document's hreflang cluster and sitemap.
+       */
+      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
+      /**
+       * Optional. Must remain a published, non-excluded locale. Defaults to English.
+       */
+      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae') | null;
+    };
     /**
      * Optional. Defaults to Title Tag if empty.
      */
@@ -699,6 +714,20 @@ export interface Post {
      * SEO meta description. Max 155 characters.
      */
     description: string;
+    /**
+     * Rare exceptions only. Hreflang is normally generated from published locales.
+     */
+    seoOverrides?: {
+      enabled?: boolean | null;
+      /**
+       * Removes a published locale from this document's hreflang cluster and sitemap.
+       */
+      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
+      /**
+       * Optional. Must remain a published, non-excluded locale. Defaults to English.
+       */
+      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae') | null;
+    };
   };
   /**
    * Primary SEO keyword for this article. For editor reference only; not rendered on the frontend.
@@ -7353,6 +7382,7 @@ export interface User {
       }[]
     | null;
   password?: string | null;
+  collection: 'users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7806,6 +7836,13 @@ export interface PagesSelect<T extends boolean = true> {
         image?: T;
         robots?: T;
         canonicalURL?: T;
+        seoOverrides?:
+          | T
+          | {
+              enabled?: T;
+              excludedLocales?: T;
+              xDefaultLocale?: T;
+            };
         ogTitle?: T;
         ogDescription?: T;
         ogImage?: T;
@@ -10790,6 +10827,13 @@ export interface PostsSelect<T extends boolean = true> {
         title?: T;
         image?: T;
         description?: T;
+        seoOverrides?:
+          | T
+          | {
+              enabled?: T;
+              excludedLocales?: T;
+              xDefaultLocale?: T;
+            };
       };
   focusKeyword?: T;
   publishedAt?: T;
@@ -11505,6 +11549,16 @@ export interface FaqSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collections_widget".
+ */
+export interface CollectionsWidget {
+  data?: {
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

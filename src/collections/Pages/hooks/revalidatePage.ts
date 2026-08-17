@@ -8,20 +8,24 @@ import type {
 import { revalidatePath, revalidateTag } from 'next/cache'
 
 import type { Page } from '../../../payload-types'
-import { isAppLocale } from '../../../i18n/config'
+import { isAppLocale, type AppLocale } from '../../../i18n/config'
 import {
-  getPagePublicationLocales,
   getPageRevalidationTargets,
+  isHomePageSlugs,
   readLocalizedPageSlugs,
   type LocalizedPageSlugs,
 } from '../../../utilities/pagePublication'
+import {
+  isPublishedForActiveLocale,
+  resolvePublishedLocaleSlugs,
+} from '../../../utilities/publishedLocaleAvailability'
 
 const CONTEXT_KEY = 'pagePublication'
 
 type PublicationContext = {
   isDraftSave: boolean
+  previousIsHome?: boolean
   previousSlugs?: LocalizedPageSlugs
-  previouslyPublished?: boolean
 }
 
 function readPublicationContext(req: PayloadRequest): PublicationContext | undefined {
@@ -44,26 +48,43 @@ async function preserveRequestLocale<T>(req: PayloadRequest, operation: () => Pr
   }
 }
 
-async function findPublishedState(req: PayloadRequest, id: number | string) {
+function publishedSlugFallback(status: unknown, slug: unknown, locale: unknown) {
+  return isPublishedForActiveLocale(status, locale) ? slugFallback(slug, locale) : {}
+}
+
+function publicationLocales(...slugSets: LocalizedPageSlugs[]) {
+  const locales = new Set<AppLocale>()
+  for (const slugs of slugSets) {
+    for (const locale of Object.keys(slugs)) {
+      if (isAppLocale(locale)) locales.add(locale)
+    }
+  }
+  return [...locales]
+}
+
+async function isHomePageDocument(
+  req: PayloadRequest,
+  id: number | string,
+  publishedSlugs: LocalizedPageSlugs,
+) {
+  if (publishedSlugs.en) return isHomePageSlugs(publishedSlugs)
+
   const doc = await preserveRequestLocale(req, () =>
     req.payload.findByID({
       collection: 'pages',
       id,
       depth: 0,
       disableErrors: true,
-      draft: false,
+      draft: true,
       fallbackLocale: false,
-      locale: 'all',
+      locale: 'en',
       overrideAccess: true,
       req,
-      select: { _status: true, slug: true },
+      select: { slug: true },
     }),
   )
 
-  return {
-    published: doc?._status === 'published',
-    slugs: readLocalizedPageSlugs(doc?.slug),
-  }
+  return isHomePageSlugs(readLocalizedPageSlugs(doc?.slug))
 }
 
 /** Remember the live slugs so both old and new paths can be invalidated. */
@@ -85,7 +106,7 @@ export const capturePagePublication: CollectionBeforeOperationHook<'pages'> = as
   const isDraftSave =
     operationArgs.id != null &&
     operationArgs.draft === true &&
-    operationArgs.data?._status !== 'published'
+    !isPublishedForActiveLocale(operationArgs.data?._status, req.locale)
   const state: PublicationContext = {
     isDraftSave,
   }
@@ -114,11 +135,14 @@ export const capturePagePublication: CollectionBeforeOperationHook<'pages'> = as
           : (parent as number | string)
     }
 
-    const previous = await findPublishedState(req, pageID)
-    state.previouslyPublished = previous.published
-    state.previousSlugs = previous.slugs
+    state.previousSlugs = await resolvePublishedLocaleSlugs({
+      collection: 'pages',
+      id: pageID,
+      req,
+    })
+    state.previousIsHome = await isHomePageDocument(req, pageID, state.previousSlugs)
   } catch (error) {
-    req.payload.logger.warn({ err: error }, 'Could not read previous page slugs for revalidation')
+    req.payload.logger.warn({ err: error }, 'Could not read previous page state for revalidation')
   }
 }
 
@@ -153,28 +177,39 @@ export const revalidatePage: CollectionAfterChangeHook<Page> = async ({
 
   const state = readPublicationContext(req)
   const queryDraft = req.query?.draft === true || req.query?.draft === 'true'
-  const isDraftSave = state?.isDraftSave ?? (queryDraft && doc._status !== 'published')
+  const isDraftSave =
+    state?.isDraftSave ?? (queryDraft && !isPublishedForActiveLocale(doc._status, req.locale))
   if (isDraftSave) return doc
 
-  const currentlyPublished = doc._status === 'published'
-  const previouslyPublished = state?.previouslyPublished ?? previousDoc?._status === 'published'
-  if (!currentlyPublished && !previouslyPublished) return doc
-
-  let currentSlugs = slugFallback(doc.slug, req.locale)
-  if (currentlyPublished) {
-    try {
-      currentSlugs = (await findPublishedState(req, doc.id)).slugs
-    } catch (error) {
-      req.payload.logger.warn({ err: error }, 'Could not read current page slugs for revalidation')
-    }
+  let currentSlugs = publishedSlugFallback(doc._status, doc.slug, req.locale)
+  try {
+    currentSlugs = await resolvePublishedLocaleSlugs({ collection: 'pages', id: doc.id, req })
+  } catch (error) {
+    req.payload.logger.warn({ err: error }, 'Could not read current page slugs for revalidation')
   }
+
+  let currentIsHome =
+    isHomePageSlugs(currentSlugs) || (!currentSlugs.en && state?.previousIsHome === true)
+  try {
+    currentIsHome = await isHomePageDocument(req, doc.id, currentSlugs)
+  } catch (error) {
+    req.payload.logger.warn({ err: error }, 'Could not identify home page for revalidation')
+  }
+
+  const previousSlugs =
+    state?.previousSlugs ??
+    publishedSlugFallback(previousDoc?._status, previousDoc?.slug, req.locale)
+  const locales = publicationLocales(previousSlugs, currentSlugs)
+  if (locales.length === 0) return doc
 
   await invalidateTargets(
     req,
     getPageRevalidationTargets({
-      currentSlugs: currentlyPublished ? currentSlugs : {},
-      locales: getPagePublicationLocales(),
-      previousSlugs: state?.previousSlugs ?? slugFallback(previousDoc?.slug, req.locale),
+      currentIsHome,
+      currentSlugs,
+      locales,
+      previousIsHome: state?.previousIsHome,
+      previousSlugs,
     }),
   )
 
@@ -185,14 +220,17 @@ export const revalidateDelete: CollectionAfterDeleteHook<Page> = async ({ doc, r
   if (req.context.disableRevalidate) return doc
 
   const state = readPublicationContext(req)
-  const previouslyPublished = state?.previouslyPublished ?? doc?._status === 'published'
-  if (!previouslyPublished) return doc
+  const previousSlugs =
+    state?.previousSlugs ?? publishedSlugFallback(doc?._status, doc?.slug, req.locale)
+  const locales = publicationLocales(previousSlugs)
+  if (locales.length === 0) return doc
 
   await invalidateTargets(
     req,
     getPageRevalidationTargets({
-      locales: getPagePublicationLocales(),
-      previousSlugs: state?.previousSlugs ?? slugFallback(doc?.slug, req.locale),
+      locales,
+      previousIsHome: state?.previousIsHome,
+      previousSlugs,
     }),
   )
 

@@ -104,11 +104,11 @@ import { ContactPageBlock } from '@/blocks/ContactPage/config'
 import { ReferralWidgetBlock } from '@/blocks/ReferralWidget/config'
 import { ReferInfoBlock } from '@/blocks/ReferInfo/config'
 import { ReferFaqBlock } from '@/blocks/ReferFaq/config'
+import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
-  // Payload 3.70 bulk publish is not locale-specific and can publish pending
-  // translations unintentionally. Editors publish one locale at a time.
+  // Publication status is locale-specific, so editors publish one locale at a time.
   disableBulkEdit: true,
   access: {
     create: authenticated,
@@ -369,7 +369,8 @@ export const Pages: CollectionConfig<'pages'> = {
               type: 'text',
               admin: {
                 placeholder: 'https://example.com/page',
-                description: 'Optional override. Leave empty to use computed canonical.',
+                description:
+                  'Legacy value retained for content compatibility. Public localized pages use a computed self-canonical.',
               },
               validate: (val: unknown) => {
                 if (!val) return true
@@ -381,6 +382,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 }
               },
             },
+            seoOverridesField(),
             {
               name: 'ogTitle',
               label: 'OG Title',
@@ -447,6 +449,7 @@ export const Pages: CollectionConfig<'pages'> = {
   versions: {
     drafts: {
       autosave: { interval: 5000 },
+      localizeStatus: true,
       schedulePublish: true,
     },
     maxPerDoc: 10,

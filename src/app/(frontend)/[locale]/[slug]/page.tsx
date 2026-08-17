@@ -6,7 +6,6 @@ import { JsonLd } from '@/components/JsonLd/index'
 import configPromise from '@payload-config'
 import { getPayload, type Payload, type RequiredDataFromCollectionSlug } from 'payload'
 import React from 'react'
-import { homeStatic } from '@/endpoints/seed/home-static'
 
 import { Header } from '@/Header/Component'
 import { Footer } from '@/Footer/Component'
@@ -18,13 +17,18 @@ import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 import { getServerSideURL } from '@/utilities/getURL'
-import { buildHreflangForLocalizedSlugs, buildHreflangForSharedSlug } from '@/utilities/hreflang'
+import {
+  buildHreflangAlternates,
+  isHreflangXDefaultMissing,
+  readHreflangOverrides,
+} from '@/utilities/hreflang'
 import { getServerCurrency } from '@/utilities/currency'
 import { resolvePriceTokensDeep } from '@/lib/plans/priceTokens'
 import { getAuthenticatedDraft, type AuthenticatedDraft } from '@/utilities/authenticatedDraft'
+import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
+import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
 
-import { appLocales, isAppLocale, type AppLocale } from '@/i18n/config'
-const LOCALES = appLocales
+import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 const PAGE_RENDER_POPULATE = {
   headers: { name: true },
   footers: { name: true },
@@ -55,18 +59,11 @@ export default async function Page({ params: paramsPromise }: Args) {
     `/${locale}/${decodedSlug === 'home-page' ? '' : decodedSlug}`.replace(/\/+$/, '') ||
     `/${locale}`
 
-  let page: RequiredDataFromCollectionSlug<'pages'> | null
-
   // Home route (/{locale}): always look up the home page by its canonical en slug so
   // it's found even when a locale-specific slug has been set for it in the CMS.
-  page = !rawSlug
+  const page: RequiredDataFromCollectionSlug<'pages'> | null = !rawSlug
     ? await queryHomePage(payload, read, locale)
     : await queryPageBySlug(payload, read, { slug: decodedSlug, locale })
-
-  // Ultimate fallback: static seed (used when DB is empty / not yet seeded)
-  if (!page && !rawSlug) {
-    page = homeStatic as any
-  }
 
   if (!page) {
     // Slug not found in this locale — check if it belongs to another locale and redirect
@@ -74,20 +71,24 @@ export default async function Page({ params: paramsPromise }: Args) {
     if (crossPath) redirect(crossPath)
     return <PayloadRedirects url={url} />
   }
+  if (page.id == null) return <PayloadRedirects url={url} />
+  const pageId = page.id
 
-  // When a slug is explicitly in the URL (not the home route), verify it belongs to
-  // this locale. Payload's fallbackLocale means the query can return a page whose
-  // actual locale slug differs from what was requested.
-  if (rawSlug) {
-    const returnedSlug = (page as any).slug as string | undefined
-    // Home page is always served at /{locale} — redirect if accessed via any slug URL
-    if (!returnedSlug || returnedSlug === 'home-page') {
-      redirect(`/${locale}`)
-    } else if (returnedSlug !== decodedSlug) {
-      // Wrong-locale slug — redirect to the correct one for this locale
-      redirect(`/${locale}/${returnedSlug}`)
-    }
+  const publishedSlugs = await resolvePublishedLocaleSlugs({
+    collection: 'pages',
+    id: pageId,
+    payload,
+  })
+  const isHome = !rawSlug || (await isHomePageDocument(payload, read, pageId))
+
+  // Draft previews remain available to authenticated editors. Public rendering is
+  // gated before any content fallback so an unpublished locale cannot masquerade
+  // as a 200 response containing another locale's content.
+  if (!read.draft && typeof publishedSlugs[locale] !== 'string') {
+    return <PayloadRedirects url={url} />
   }
+
+  if (rawSlug && isHome) redirect(`/${locale}`)
 
   const {
     hero: rawHero,
@@ -117,24 +118,27 @@ export default async function Page({ params: paramsPromise }: Args) {
     Array.isArray(layout) &&
     layout.some((block: { blockType?: string } | null) => block?.blockType === 'planSelector')
 
-  const absoluteUrl =
-    decodedSlug === 'home'
-      ? new URL(`/${locale}`, getServerSideURL()).toString()
-      : new URL(`/${locale}/${encodeURIComponent(decodedSlug)}`, getServerSideURL()).toString()
+  const absoluteUrl = new URL(
+    getPagePath(locale, (page as { slug?: string }).slug, isHome),
+    getServerSideURL(),
+  ).toString()
 
   const pageJsonLd = buildPageJsonLd(page, absoluteUrl)
 
-  // Fetch all locale slugs so the header switcher can navigate to the correct
-  // locale-specific slug when the user changes language.
-  const pageSlugsByLocale = page?.id
-    ? await getAllLocaleSlugs(payload, read, String(page.id))
-    : null
+  // The switcher uses the same live availability map as hreflang and sitemaps.
+  const pageSlugsByLocale = publishedSlugs
 
   return (
     <>
       <JsonLd data={pageJsonLd} />
 
-      {!hideHeader && <Header locale={locale} id={headerId} pageSlugs={pageSlugsByLocale} />}
+      {!hideHeader && (
+        <Header
+          locale={locale}
+          id={headerId}
+          localizedDocument={{ route: isHome ? 'home' : 'page', slugs: pageSlugsByLocale }}
+        />
+      )}
 
       <article
         data-nb1-order-entry={isOrderEntry ? 'true' : undefined}
@@ -157,7 +161,7 @@ export default async function Page({ params: paramsPromise }: Args) {
         )}
 
         {hero ? <RenderHero {...hero} /> : null}
-        <RenderBlocks blocks={layout || []} locale={locale} />
+        <RenderBlocks blocks={layout || []} locale={locale} pageSlugs={pageSlugsByLocale} />
       </article>
 
       {!hideFooter && <Footer locale={locale} id={footerId} />}
@@ -166,65 +170,124 @@ export default async function Page({ params: paramsPromise }: Args) {
 }
 
 export async function generateMetadata({ params: paramsPromise }: Args): Promise<Metadata> {
-  const { slug = 'home-page', locale: localeParam } = await paramsPromise
+  const { slug: rawSlug, locale: localeParam } = await paramsPromise
   const locale: AppLocale = isAppLocale(localeParam) ? localeParam : 'en'
-  const decodedSlug = decodeURIComponent(slug)
+  const decodedSlug = decodeURIComponent(rawSlug ?? 'home-page')
 
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)
-  const page = await queryPageMetaBySlug(payload, read, {
+  const page = await queryPageMeta(payload, read, {
+    home: !rawSlug,
     slug: decodedSlug,
     locale,
   })
 
-  if (!page && decodedSlug !== 'home-page') return {}
+  if (!page) return {}
+  if (page.id == null) return {}
+  const pageId = page.id
 
   const siteURL = getServerSideURL()
-
-  const metaCanonical = (page as any)?.meta?.canonicalURL as string | undefined
-  const computedCanonical =
-    decodedSlug === 'home-page'
-      ? new URL(`/${locale}`, siteURL).toString()
-      : new URL(`/${locale}/${encodeURIComponent(decodedSlug)}`, siteURL).toString()
-
-  const canonical = metaCanonical || computedCanonical
-
+  const publishedSlugs = await resolvePublishedLocaleSlugs({
+    collection: 'pages',
+    id: pageId,
+    payload,
+  })
+  const isHome = !rawSlug || (await isHomePageDocument(payload, read, pageId))
+  const canonical = new URL(
+    getPagePath(locale, (page as { slug?: string }).slug, isHome),
+    siteURL,
+  ).toString()
+  const pathsByLocale = Object.fromEntries(
+    Object.entries(publishedSlugs).map(([availableLocale, slug]) => [
+      availableLocale,
+      isHome ? '' : slug,
+    ]),
+  )
+  const hreflangOverrides = readHreflangOverrides(page.meta?.seoOverrides)
+  const currentLocaleExcluded =
+    hreflangOverrides?.enabled && hreflangOverrides.excludedLocales?.includes(locale)
+  const robots = parseRobotsDirectives(page.meta?.robots)
   const alternates =
-    decodedSlug === 'home-page'
-      ? {
-          languages: {
-            'de-DE': new URL('/de', siteURL).toString(),
-            'de-AT': new URL('/de', siteURL).toString(),
-            'de-CH': new URL('/de', siteURL).toString(),
-            en: new URL('/en', siteURL).toString(),
-            'x-default': new URL('/en', siteURL).toString(),
-          },
-        }
-      : await buildLocalizedHreflang(
-          payload,
-          read,
+    read.draft || currentLocaleExcluded || robots?.index === false
+      ? undefined
+      : buildHreflangAlternates({
+          pathsByLocale,
           siteURL,
-          page?.id as string | undefined,
-          decodedSlug,
-        )
-
-  const robotsValue = (page as any)?.meta?.robots as string | undefined
-  const robots =
-    robotsValue && typeof robotsValue === 'string'
-      ? {
-          index: robotsValue.includes('index'),
-          follow: robotsValue.includes('follow'),
-        }
-      : undefined
+          overrides: hreflangOverrides,
+        })
+  const hreflangSuppressedForMissingXDefault =
+    !read.draft &&
+    !currentLocaleExcluded &&
+    robots?.index !== false &&
+    isHreflangXDefaultMissing(pathsByLocale, hreflangOverrides)
+  const baseMetadata = await generateMeta({ doc: page, locale })
 
   return {
-    ...generateMeta({ doc: page as any, locale }),
-    ...(robots ? { robots } : {}),
+    ...baseMetadata,
+    ...(read.draft ? { robots: { follow: false, index: false } } : robots ? { robots } : {}),
     alternates: {
       canonical,
-      ...alternates,
+      ...(alternates ?? {}),
     },
+    other: hreflangSuppressedForMissingXDefault
+      ? { 'nb1-hreflang': 'suppressed-missing-x-default' }
+      : undefined,
+    openGraph: baseMetadata.openGraph
+      ? {
+          ...baseMetadata.openGraph,
+          url: canonical,
+        }
+      : undefined,
   }
+}
+
+function getPagePath(locale: AppLocale, slug: string | null | undefined, home: boolean): string {
+  return home || !slug ? `/${locale}` : `/${locale}/${encodeURIComponent(slug)}`
+}
+
+function isHomeSlug(slug: unknown): boolean {
+  return slug === 'home' || slug === 'home-page'
+}
+
+async function findHomePageID(payload: Payload, read: AuthenticatedDraft) {
+  const result = await payload.find({
+    collection: 'pages',
+    draft: read.draft,
+    limit: 1,
+    pagination: false,
+    // This first query only identifies the home document. The locale-specific
+    // read below still enforces publication access.
+    overrideAccess: true,
+    where: {
+      or: [{ slug: { equals: 'home-page' } }, { slug: { equals: 'home' } }],
+    },
+    locale: 'en',
+    fallbackLocale: false,
+    depth: 0,
+    select: { slug: true },
+  })
+
+  return result.docs?.[0]?.id
+}
+
+async function isHomePageDocument(
+  payload: Payload,
+  read: AuthenticatedDraft,
+  id: number | string,
+): Promise<boolean> {
+  const english = await payload.findByID({
+    collection: 'pages',
+    id,
+    draft: read.draft,
+    depth: 0,
+    disableErrors: true,
+    fallbackLocale: false,
+    locale: 'en',
+    overrideAccess: true,
+    select: { slug: true },
+  })
+
+  return isHomeSlug(english?.slug)
 }
 
 /**
@@ -233,32 +296,18 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
  * has set a locale-specific slug for the home page (which would break a slug-based query).
  */
 async function queryHomePage(payload: Payload, read: AuthenticatedDraft, locale: AppLocale) {
-  // Step 1: find the home page ID using the English slug
-  const ref = await payload.find({
-    collection: 'pages',
-    draft: read.draft,
-    limit: 1,
-    pagination: false,
-    overrideAccess: false,
-    user: read.user,
-    where: { slug: { equals: 'home-page' } },
-    locale: 'en',
-    depth: 0,
-    select: { slug: true },
-  })
-
-  const homeId = ref.docs?.[0]?.id
+  const homeId = await findHomePageID(payload, read)
   if (!homeId) return null
 
-  // Step 2: fetch full content in the requested locale
   return payload.findByID({
     collection: 'pages',
     id: homeId,
     draft: read.draft,
+    disableErrors: true,
     overrideAccess: false,
     user: read.user,
     locale,
-    fallbackLocale: 'en',
+    fallbackLocale: getFallbackLocale(locale),
     depth: 2,
     populate: PAGE_RENDER_POPULATE,
   }) as Promise<RequiredDataFromCollectionSlug<'pages'> | null>
@@ -269,7 +318,7 @@ async function queryPageBySlug(
   read: AuthenticatedDraft,
   { slug, locale }: { slug: string; locale: AppLocale },
 ) {
-  const result = await payload.find({
+  const reference = await payload.find({
     collection: 'pages',
     draft: read.draft,
     limit: 1,
@@ -282,46 +331,26 @@ async function queryPageBySlug(
       },
     },
     locale,
-    fallbackLocale: 'en',
-    depth: 2,
-    populate: PAGE_RENDER_POPULATE,
-  })
-
-  return (result.docs?.[0] as RequiredDataFromCollectionSlug<'pages'>) || null
-}
-
-/** Fetch all locale slug variants for a page (used by both hreflang and the slug-map script). */
-async function getAllLocaleSlugs(
-  payload: Payload,
-  read: AuthenticatedDraft,
-  pageId: string,
-): Promise<Partial<Record<string, string>>> {
-  const doc = await payload.findByID({
-    collection: 'pages',
-    id: pageId,
-    locale: 'all' as unknown as AppLocale,
-    draft: read.draft,
-    overrideAccess: false,
-    user: read.user,
+    fallbackLocale: false,
     depth: 0,
     select: { slug: true },
   })
-  return (doc?.slug as unknown as Partial<Record<string, string>>) ?? {}
-}
 
-/** Fetch all locale slug variants for a page and build localized hreflang alternates. */
-async function buildLocalizedHreflang(
-  payload: Payload,
-  read: AuthenticatedDraft,
-  siteURL: string,
-  pageId: string | undefined,
-  fallbackSlug: string,
-) {
-  if (!pageId) {
-    return buildHreflangForSharedSlug({ siteURL, slug: encodeURIComponent(fallbackSlug) })
-  }
-  const slugsByLocale = await getAllLocaleSlugs(payload, read, pageId)
-  return buildHreflangForLocalizedSlugs({ siteURL, slugsByLocale })
+  const id = reference.docs?.[0]?.id
+  if (!id) return null
+
+  return payload.findByID({
+    collection: 'pages',
+    id,
+    draft: read.draft,
+    disableErrors: true,
+    overrideAccess: false,
+    user: read.user,
+    locale,
+    fallbackLocale: getFallbackLocale(locale),
+    depth: 2,
+    populate: PAGE_RENDER_POPULATE,
+  }) as Promise<RequiredDataFromCollectionSlug<'pages'> | null>
 }
 
 // generateMetadata only needs the SEO group + slug — never the page's blocks.
@@ -329,34 +358,43 @@ async function buildLocalizedHreflang(
 // ~85 block types (and on the small STG DB that draft query trips the DB-level
 // statement_timeout → "canceling statement due to statement timeout"). `select`
 // keeps this query tiny: just the scalar SEO columns + the meta image relation.
-async function queryPageMetaBySlug(
+async function queryPageMeta(
   payload: Payload,
   read: AuthenticatedDraft,
-  { slug, locale }: { slug: string; locale: AppLocale },
+  { home, slug, locale }: { home: boolean; slug: string; locale: AppLocale },
 ) {
-  const result = await payload.find({
+  const id = home
+    ? await findHomePageID(payload, read)
+    : (
+        await payload.find({
+          collection: 'pages',
+          draft: read.draft,
+          limit: 1,
+          pagination: false,
+          overrideAccess: false,
+          user: read.user,
+          where: { slug: { equals: slug } },
+          locale,
+          fallbackLocale: false,
+          depth: 0,
+          select: { slug: true },
+        })
+      ).docs?.[0]?.id
+
+  if (!id) return null
+
+  return payload.findByID({
     collection: 'pages',
+    id,
     draft: read.draft,
-    limit: 1,
-    pagination: false,
+    disableErrors: true,
     overrideAccess: false,
     user: read.user,
-    where: {
-      slug: {
-        equals: slug,
-      },
-    },
     locale,
-    fallbackLocale: 'en',
+    fallbackLocale: getFallbackLocale(locale),
     depth: 1,
-    select: {
-      slug: true,
-      title: true,
-      meta: true,
-    },
-  })
-
-  return (result.docs?.[0] as RequiredDataFromCollectionSlug<'pages'>) || null
+    select: { slug: true, title: true, meta: true },
+  }) as Promise<RequiredDataFromCollectionSlug<'pages'> | null>
 }
 
 /**
@@ -371,7 +409,7 @@ async function findCrossLocaleRedirect(
   slug: string,
   requestedLocale: AppLocale,
 ): Promise<string | null> {
-  for (const locale of LOCALES) {
+  for (const locale of appLocales) {
     if (locale === requestedLocale) continue
     const result = await payload.find({
       collection: 'pages',
@@ -382,26 +420,31 @@ async function findCrossLocaleRedirect(
       user: read.user,
       where: { slug: { equals: slug } },
       locale,
+      fallbackLocale: false,
       depth: 0,
       select: { slug: true },
     })
     const found = result.docs?.[0]
     if (!found?.id) continue
-    // Found in another locale — get the correct slug for the requested locale
-    const slugsDoc = await payload.findByID({
+
+    // Only redirect when that same document is actually available in the
+    // requested locale. Never fall back to the English URL.
+    const target = await payload.findByID({
       collection: 'pages',
       id: found.id,
-      locale: 'all' as unknown as AppLocale,
+      locale: requestedLocale,
+      fallbackLocale: false,
       draft: read.draft,
+      disableErrors: true,
       overrideAccess: false,
       user: read.user,
       depth: 0,
       select: { slug: true },
     })
-    const slugMap = slugsDoc?.slug as unknown as Partial<Record<string, string>>
-    const correctSlug = slugMap?.[requestedLocale] ?? slugMap?.['en']
-    if (!correctSlug || correctSlug === 'home-page') return `/${requestedLocale}`
-    return `/${requestedLocale}/${correctSlug}`
+    const correctSlug = target?.slug
+    if (typeof correctSlug !== 'string' || !correctSlug) return null
+    if (await isHomePageDocument(payload, read, found.id)) return `/${requestedLocale}`
+    return `/${requestedLocale}/${encodeURIComponent(correctSlug)}`
   }
   return null
 }

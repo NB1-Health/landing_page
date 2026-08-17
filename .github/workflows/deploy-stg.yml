@@ -49,3 +49,11 @@ jobs:
           STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
           STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
         run: node scripts/check-staging-containment.mjs
+
+      - name: Verify staging international SEO
+        env:
+          SEO_DEPLOY_ENV: staging
+          SEO_BASE_URL: https://stg.nb1.com
+          STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
+          STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
+        run: npm run seo:check

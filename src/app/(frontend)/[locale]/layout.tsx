@@ -36,7 +36,7 @@ import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 import StyledJsxRegistry from './registry'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { appLocales, isAppLocale, type AppLocale, defaultLocale } from '@/i18n/config'
+import { appLocales, defaultLocale, isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
 export function generateStaticParams() {
   return appLocales.map((locale) => ({ locale }))
@@ -65,17 +65,7 @@ export default async function RootLayout({
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
 
-  const ketchLocaleMap: Record<AppLocale, string> = {
-    en: 'en',
-    de: 'de-DE',
-    fr: 'fr-FR',
-    nl: 'nl-NL',
-    ch: 'de-CH',
-    be: 'nl-BE',
-    uk: 'en-GB',
-    uae: 'en-AE',
-  }
-  const ketchLang = ketchLocaleMap[locale] ?? locale
+  const ketchLang = localeConfig[locale].hreflangCodes[0]
 
   let organizationJsonLd: JsonLdValue = null
 
@@ -90,7 +80,7 @@ export default async function RootLayout({
     <html
       className={cn(GeistSans.variable, GeistMono.variable)}
       data-nb1-preview={isEnabled ? 'true' : undefined}
-      lang={locale}
+      lang={localeConfig[locale].htmlLang}
       suppressHydrationWarning
     >
       <head>

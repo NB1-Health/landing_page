@@ -1,4 +1,5 @@
 import * as migration_20260121_140435 from './20260121_140435';
+import * as migration_20260408_091158 from './20260408_091158';
 import * as migration_20260408_091809 from './20260408_091809';
 import * as migration_20260428_122159 from './20260428_122159';
 import * as migration_20260428_131604 from './20260428_131604';
@@ -139,12 +140,21 @@ import * as migration_20260716_100000_lab_localize_label_fields from './20260716
 import * as migration_20260728_120000_add_cycle_selector_tab_labels from './20260728_120000_add_cycle_selector_tab_labels';
 import * as migration_20260728_120500_plan_summary_card_cycle_1_month from './20260728_120500_plan_summary_card_cycle_1_month';
 import * as migration_20260810_120000_refer_a_friend_blocks from './20260810_120000_refer_a_friend_blocks';
+import * as migration_20260813_120000_localize_pages_posts_status from './20260813_120000_localize_pages_posts_status';
+import * as migration_20260813_130000_page_seo_overrides from './20260813_130000_page_seo_overrides';
+import * as migration_20260813_140000_complete_published_locale_enums from './20260813_140000_complete_published_locale_enums';
+import * as migration_20260813_150000_post_seo_overrides from './20260813_150000_post_seo_overrides';
 
 export const migrations = [
   {
     up: migration_20260121_140435.up,
     down: migration_20260121_140435.down,
     name: '20260121_140435',
+  },
+  {
+    up: migration_20260408_091158.up,
+    down: migration_20260408_091158.down,
+    name: '20260408_091158',
   },
   {
     up: migration_20260408_091809.up,
@@ -845,5 +855,25 @@ export const migrations = [
     up: migration_20260810_120000_refer_a_friend_blocks.up,
     down: migration_20260810_120000_refer_a_friend_blocks.down,
     name: '20260810_120000_refer_a_friend_blocks',
+  },
+  {
+    up: migration_20260813_120000_localize_pages_posts_status.up,
+    down: migration_20260813_120000_localize_pages_posts_status.down,
+    name: '20260813_120000_localize_pages_posts_status',
+  },
+  {
+    up: migration_20260813_130000_page_seo_overrides.up,
+    down: migration_20260813_130000_page_seo_overrides.down,
+    name: '20260813_130000_page_seo_overrides',
+  },
+  {
+    up: migration_20260813_140000_complete_published_locale_enums.up,
+    down: migration_20260813_140000_complete_published_locale_enums.down,
+    name: '20260813_140000_complete_published_locale_enums',
+  },
+  {
+    up: migration_20260813_150000_post_seo_overrides.up,
+    down: migration_20260813_150000_post_seo_overrides.down,
+    name: '20260813_150000_post_seo_overrides',
   },
 ];
