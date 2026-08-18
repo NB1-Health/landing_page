@@ -135,6 +135,11 @@ export const WhatArrivesComponent: React.FC<Props> = ({
         .wa-card {
           position: relative;
           z-index: 1;
+          /* Column flow so the chip can sit on a common baseline: grid items
+             stretch to the tallest card, and margin-top:auto on the chip
+             absorbs whatever slack a shorter description leaves behind. */
+          display: flex;
+          flex-direction: column;
         }
         .wa-tod {
           display: flex;
@@ -159,6 +164,7 @@ export const WhatArrivesComponent: React.FC<Props> = ({
           color: rgba(18,49,77,.55);
         }
         .wa-shot {
+          flex: none;
           aspect-ratio: 3 / 4;
           border-radius: 18px;
           overflow: hidden;
@@ -209,6 +215,8 @@ export const WhatArrivesComponent: React.FC<Props> = ({
           border: 1px solid rgba(18,49,77,.10);
           border-radius: 9px;
           padding: 7px 13px;
+          margin-top: auto;
+          align-self: flex-start;
         }
         .wa-chip-dot {
           width: 7px;
@@ -247,7 +255,7 @@ export const WhatArrivesComponent: React.FC<Props> = ({
           .wa-name { grid-column: 2; grid-row: 2; font-size: 20px; margin-top: 5px; }
           .wa-timing { display: none; }
           .wa-desc { grid-column: 2; grid-row: 4; font-size: 13.5px; margin: 9px 0 11px; }
-          .wa-chip { grid-column: 2; grid-row: 5; justify-self: start; }
+          .wa-chip { grid-column: 2; grid-row: 5; justify-self: start; margin-top: 0; }
         }
 
         /* ── Closing line ── */
