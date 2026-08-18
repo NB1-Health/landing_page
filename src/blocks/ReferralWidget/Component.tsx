@@ -40,12 +40,13 @@ export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
           padding: clamp(80px, 9vh, 104px) clamp(20px, 4vw, 32px) clamp(40px, 5vw, 60px);
           background: #fff;
         }
-        /* Contained to the widget's own card width — the Mention Me demo campaign
-           is fixed-size (isResponsive=false), so hugging it avoids white gutters. */
+        /* Contained to the widget's own card width. The Mention Me demo campaign is
+           fixed-size (isResponsive=false), so any width beyond what the live campaign
+           actually renders shows up as white gutters either side. */
         .rf-embed {
           position: relative;
           width: 100%;
-          max-width: 760px;
+          max-width: 960px;
           margin: 0 auto;
         }
         /* Navy card look + rounded corners are only for the placeholder; the real
