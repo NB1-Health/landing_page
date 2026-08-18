@@ -1,6 +1,7 @@
 'use client'
 
 import type { Ga4EventName, Ecommerce, UserData, MetaEventPayload } from './types'
+import { sanitizeAttributionUrl } from '@/lib/commercialIdentity'
 
 function getCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined
@@ -10,6 +11,25 @@ function getCookie(name: string): string | undefined {
 
 function hasMktConsent(): boolean {
   return window.__nb1Consent?.targeted_advertising === true
+}
+
+let consentResolution: Promise<void> | undefined
+
+function waitForConsentResolution(): Promise<void> {
+  if (window.__nb1ConsentResolved === true || hasMktConsent()) return Promise.resolve()
+  if (!consentResolution) {
+    consentResolution = new Promise((resolve) => {
+      window.addEventListener(
+        'nb1:consent-resolved',
+        () => {
+          consentResolution = undefined
+          resolve()
+        },
+        { once: true },
+      )
+    })
+  }
+  return consentResolution
 }
 
 /** Build fbc from fbclid query param if _fbc cookie is absent */
@@ -22,15 +42,6 @@ function resolveFbc(): string | undefined {
   return undefined
 }
 
-/** Returns consent + cookie values for the _meta sidecar in checkoutConfirmProxy */
-export function getMetaSidecar() {
-  return {
-    consent: hasMktConsent(),
-    fbp: getCookie('_fbp'),
-    fbc: resolveFbc(),
-  }
-}
-
 export async function sendMetaCapiEvent(
   event: Ga4EventName,
   event_id: string,
@@ -40,6 +51,7 @@ export async function sendMetaCapiEvent(
   } = {},
 ) {
   if (typeof window === 'undefined') return
+  await waitForConsentResolution()
   if (!hasMktConsent()) return
 
   const payload: MetaEventPayload = {
@@ -49,7 +61,7 @@ export async function sendMetaCapiEvent(
     user: opts.user,
     fbp: getCookie('_fbp'),
     fbc: resolveFbc(),
-    sourceUrl: window.location.href,
+    sourceUrl: sanitizeAttributionUrl(window.location.href),
     consent: true,
   }
 

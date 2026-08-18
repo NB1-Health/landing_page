@@ -61,6 +61,7 @@ export default async function RootLayout({
 }) {
   const { isEnabled } = await draftMode()
   const marketingEnabled = !isEnabled
+  const klaviyoCompanyId = process.env.NEXT_PUBLIC_KLAVIYO_COMPANY_ID?.trim()
 
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
@@ -92,14 +93,15 @@ export default async function RootLayout({
             <Script id="gtag-consent-mode" strategy="beforeInteractive">
               {`
             window.dataLayer = window.dataLayer || [];
-            // Temporary policy: tracking starts open until Ketch reports a rejection.
-            window.__nb1Consent = { analytics: true, targeted_advertising: true };
+            // Start closed. Provider tags may run only after Ketch resolves consent.
+            window.__nb1Consent = { analytics: false, targeted_advertising: false };
+            window.__nb1ConsentResolved = false;
             function gtag(){dataLayer.push(arguments);}
             gtag('consent', 'default', {
-              'ad_storage': 'granted',
-              'ad_user_data': 'granted',
-              'ad_personalization': 'granted',
-              'analytics_storage': 'granted',
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
               'wait_for_update': 2000
             });
           `}
@@ -312,14 +314,16 @@ export default async function RootLayout({
 
                 <ArminWidget locale={locale} />
 
-                <Script
-                  src="https://static.klaviyo.com/onsite/js/WwW2Hy/klaviyo.js?company_id=WwW2Hy"
-                  strategy="afterInteractive"
-                  async
-                />
+                {klaviyoCompanyId && (
+                  <>
+                    <Script
+                      src={`https://static.klaviyo.com/onsite/js/${klaviyoCompanyId}/klaviyo.js?company_id=${klaviyoCompanyId}`}
+                      strategy="afterInteractive"
+                      async
+                    />
 
-                <Script id="klaviyo-init" strategy="afterInteractive">
-                  {`
+                    <Script id="klaviyo-init" strategy="afterInteractive">
+                      {`
               !function(){if(!window.klaviyo){
                 window._klOnsite=window._klOnsite||[];
                 try{
@@ -347,7 +351,9 @@ export default async function RootLayout({
                 }
               }}();
             `}
-                </Script>
+                    </Script>
+                  </>
+                )}
               </>
             )}
           </Providers>

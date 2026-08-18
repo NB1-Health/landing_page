@@ -8,7 +8,7 @@ const deploymentURLs = {
 
 /**
  * @param {'production' | 'staging'} expected
- * @param {{ DEPLOY_ENV?: string, NEXT_PUBLIC_SERVER_URL?: string }} environment
+ * @param {{ DEPLOY_ENV?: string, NEXT_PUBLIC_SERVER_URL?: string, NEXT_PUBLIC_KLAVIYO_COMPANY_ID?: string }} environment
  */
 export function assertDeploymentEnvironment(expected, environment = process.env) {
   const expectedURL = deploymentURLs[expected]
@@ -19,6 +19,14 @@ export function assertDeploymentEnvironment(expected, environment = process.env)
   }
   if (environment.NEXT_PUBLIC_SERVER_URL !== expectedURL) {
     throw new Error(`NEXT_PUBLIC_SERVER_URL must be ${expectedURL}`)
+  }
+
+  const klaviyoCompanyId = environment.NEXT_PUBLIC_KLAVIYO_COMPANY_ID?.trim()
+  if (expected === 'production' && klaviyoCompanyId !== 'WwW2Hy') {
+    throw new Error('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be WwW2Hy in production')
+  }
+  if (expected === 'staging' && klaviyoCompanyId) {
+    throw new Error('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be unset in staging')
   }
 }
 

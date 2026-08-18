@@ -36,6 +36,9 @@ describe('public route event boundaries', () => {
     window.localStorage.clear()
     document.cookie = 'nb1_attr=; Path=/; Max-Age=0'
     sessionStorage.clear()
+    window.__nb1Consent = { analytics: false, targeted_advertising: false }
+    window.__nb1ConsentResolved = false
+    window.history.replaceState({}, '', '/de/bestellen')
     clearCheckoutId()
     sendMetaCapiEvent.mockReset()
     document.title = 'NB1 Order'
@@ -121,6 +124,24 @@ describe('public route event boundaries', () => {
     expect(window.dataLayer.at(-1)).toMatchObject({
       event: 'page_view',
       page_language: 'fr',
+    })
+  })
+
+  it('captures entry attribution and adds click IDs only after consent resolves', async () => {
+    window.history.replaceState({}, '', '/de/bestellen?utm_source=meta&fbclid=consented-click')
+    await act(async () => {
+      root.render(<PageViewTracker />)
+    })
+    expect(JSON.parse(sessionStorage.getItem('nb1_checkout_attribution') ?? '{}')).toEqual({
+      utm_source: 'meta',
+    })
+
+    window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
+    window.dispatchEvent(new Event('nb1:consent-resolved'))
+    expect(JSON.parse(sessionStorage.getItem('nb1_checkout_attribution') ?? '{}')).toEqual({
+      utm_source: 'meta',
+      fbclid: 'consented-click',
     })
   })
 })

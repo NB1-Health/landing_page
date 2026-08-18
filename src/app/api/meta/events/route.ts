@@ -5,6 +5,14 @@ import { buildServerEvent, sendMetaEvents } from '@/lib/meta/server'
 export async function POST(req: Request) {
   try {
     const payload: MetaEventPayload = await req.json()
+    // Keep the legacy sender until the durable backend route is verified and explicitly owns
+    // Purchase. During rollout, both paths reuse event_id so Meta can de-duplicate the overlap.
+    if (
+      payload.event === 'purchase' &&
+      process.env.NEXT_PUBLIC_META_PURCHASE_OWNER === 'backend'
+    ) {
+      return NextResponse.json({ sent: 0, owner: 'backend' })
+    }
     if (!payload.consent) {
       return NextResponse.json({ sent: 0 })
     }

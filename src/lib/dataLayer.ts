@@ -506,6 +506,12 @@ export type SubscriptionAcquiredInput = {
   planSlug?: string
   billingCycle?: string
   language?: string
+  purchaseUuid?: string
+  customerUuid?: string
+  evValue?: number | null
+  maxValue?: number | null
+  valueCurrency?: string | null
+  planTerm?: number
   externalId?: string
   paymentType: PaymentType
   paymentFlow: PaymentFlow
@@ -518,10 +524,12 @@ export type SubscriptionAcquiredInput = {
 }
 
 const acquisitionEventIds = new Map<string, string>()
+const occurrenceEventIds = new Map<string, string>()
 const successViews = new Set<string>()
 const postPurchaseSurveyViews = new Set<string>()
 const postPurchaseSurveyAnswers = new Map<string, string>()
 const ACQUISITION_STORAGE_PREFIX = 'nb1_acquisition_event:'
+const OCCURRENCE_STORAGE_PREFIX = 'nb1_event_occurrence:'
 const PAYMENT_ATTEMPT_STORAGE_PREFIX = 'nb1_payment_attempt:'
 const POST_PURCHASE_SURVEY_VIEW_STORAGE_PREFIX = 'nb1_pps_view_event:'
 const POST_PURCHASE_SURVEY_ANSWER_STORAGE_PREFIX = 'nb1_pps_answer_event:'
@@ -544,8 +552,23 @@ function writeSessionValue(key: string, value: string): void {
   }
 }
 
+/** Reuse an ID for one logical occurrence without suppressing any browser delivery. */
+export function getOrCreateOccurrenceId(occurrenceKey: string): string {
+  const storageKey = `${OCCURRENCE_STORAGE_PREFIX}${occurrenceKey}`
+  const existing = occurrenceEventIds.get(occurrenceKey) ?? readSessionValue(storageKey)
+  if (existing) {
+    occurrenceEventIds.set(occurrenceKey, existing)
+    return existing
+  }
+  const eventId = mintEventId()
+  occurrenceEventIds.set(occurrenceKey, eventId)
+  writeSessionValue(storageKey, eventId)
+  return eventId
+}
+
 export function resetCheckoutTracking(): void {
   acquisitionEventIds.clear()
+  occurrenceEventIds.clear()
   successViews.clear()
   postPurchaseSurveyViews.clear()
   postPurchaseSurveyAnswers.clear()
@@ -565,6 +588,7 @@ function trackConfirmedCheckoutInKlaviyo(input: SubscriptionAcquiredInput): void
   trackKlaviyoCheckoutCompleted({
     email: input.user.email,
     checkoutId: input.checkoutId,
+    eventId: input.eventId,
     transactionId: input.transactionId,
     orderNumber: input.orderNumber,
     planSlug: input.planSlug,
@@ -583,17 +607,24 @@ function trackConfirmedCheckoutInKlaviyo(input: SubscriptionAcquiredInput): void
 export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): string {
   const storageKey = `${ACQUISITION_STORAGE_PREFIX}${input.transactionId}`
   const existing = acquisitionEventIds.get(input.transactionId) ?? readSessionValue(storageKey)
-  trackConfirmedCheckoutInKlaviyo(input)
+  const resolvedEventId = existing ?? input.eventId
+  trackConfirmedCheckoutInKlaviyo({ ...input, eventId: resolvedEventId })
   if (existing) return existing
 
-  acquisitionEventIds.set(input.transactionId, input.eventId)
-  writeSessionValue(storageKey, input.eventId)
+  acquisitionEventIds.set(input.transactionId, resolvedEventId)
+  writeSessionValue(storageKey, resolvedEventId)
   void pushEventWithUser(
     'subscription_acquired',
     {
-      event_id: input.eventId,
+      event_id: resolvedEventId,
       checkout_id: input.checkoutId,
       transaction_id: input.transactionId,
+      purchase_uuid: input.purchaseUuid ?? input.transactionId,
+      ...(input.customerUuid ? { customer_uuid: input.customerUuid } : {}),
+      ...(input.evValue !== undefined && input.evValue !== null ? { ev_value: input.evValue } : {}),
+      ...(input.maxValue !== undefined && input.maxValue !== null ? { max_value: input.maxValue } : {}),
+      ...(input.valueCurrency ? { value_currency: input.valueCurrency } : {}),
+      ...(input.planTerm !== undefined ? { plan_term: input.planTerm } : {}),
       ...(input.externalId ? { external_id: input.externalId } : {}),
       payment_type: input.paymentType,
       payment_flow: input.paymentFlow,
@@ -610,7 +641,7 @@ export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): str
     },
     input.user,
   )
-  return input.eventId
+  return resolvedEventId
 }
 
 export type CheckoutSuccessViewedInput = {
