@@ -144,6 +144,7 @@ import * as migration_20260813_120000_localize_pages_posts_status from './202608
 import * as migration_20260813_130000_page_seo_overrides from './20260813_130000_page_seo_overrides';
 import * as migration_20260813_140000_complete_published_locale_enums from './20260813_140000_complete_published_locale_enums';
 import * as migration_20260813_150000_post_seo_overrides from './20260813_150000_post_seo_overrides';
+import * as migration_20260818_120000_localize_rfw_locale_override from './20260818_120000_localize_rfw_locale_override';
 
 export const migrations = [
   {
@@ -875,5 +876,10 @@ export const migrations = [
     up: migration_20260813_150000_post_seo_overrides.up,
     down: migration_20260813_150000_post_seo_overrides.down,
     name: '20260813_150000_post_seo_overrides',
+  },
+  {
+    up: migration_20260818_120000_localize_rfw_locale_override.up,
+    down: migration_20260818_120000_localize_rfw_locale_override.down,
+    name: '20260818_120000_localize_rfw_locale_override',
   },
 ];

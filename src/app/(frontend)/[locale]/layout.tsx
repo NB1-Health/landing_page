@@ -122,6 +122,17 @@ export default async function RootLayout({
             <Script id="ketch-lang" strategy="beforeInteractive">{`
           (function() {
             var lang = '${ketchLang}';
+            // Ketch smart tag v2.12 resolves the banner language from the first of:
+            //   ?lang=  ->  'lang' cookie  ->  localStorage.ketch_lang  ->
+            //   sessionStorage.ketch_lang  ->  <html lang>  ->  xml:lang  ->  navigator.language
+            // <html lang> is the bare two-letter code ('de'), and the Ketch property has no
+            // plain 'de' translation configured -- only de-DE / de-AT / de-CH / en -- so the
+            // banner resolved to English on German pages. Seeding sessionStorage outranks
+            // <html lang> and sends the same regional code the property is keyed on, without
+            // touching the lang attribute (several dataLayer events read it as pageLanguage).
+            // A language the visitor picks in the Ketch preference centre is stored in
+            // localStorage, which still outranks this -- an explicit choice should win.
+            try { window.sessionStorage.setItem('ketch_lang', lang); } catch(e) {}
             try {
               Object.defineProperty(navigator, 'language', { get: function() { return lang; }, configurable: true });
               Object.defineProperty(navigator, 'languages', { get: function() { return [lang]; }, configurable: true });
@@ -131,7 +142,8 @@ export default async function RootLayout({
             window.ketchConfig.language = lang;
             window.semaphore = window.semaphore || [];
             window.ketch = window.ketch || function() { window.semaphore.push(Array.from(arguments)); };
-            window.ketch('setLanguage', lang);
+            // NB: there is no 'setLanguage' action in the SDK bundle -- a ketch('setLanguage', ...)
+            // call here is silently dropped on the semaphore. Language comes from the chain above.
             window.ketch('on', 'willShowExperience', function(experience, next) {
               if (experience && next) { experience.language = lang; next(experience); }
             });
