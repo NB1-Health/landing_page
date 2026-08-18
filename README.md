@@ -259,15 +259,16 @@ copy from. Below is what each variable is for, grouped by what it configures.
 | Variable | What it's for |
 |---|---|
 | `NEXT_PUBLIC_GTM_ID` | Google Tag Manager / GA4 container ID |
+| `NEXT_PUBLIC_KLAVIYO_COMPANY_ID` | Klaviyo onsite company ID. Set to `WwW2Hy` only in production; leave blank or unset on staging/local so they cannot send browser events into production Klaviyo |
 | `NEXT_PUBLIC_META_PIXEL_ID` | Meta (Facebook) Pixel ID — used in the browser |
+| `NEXT_PUBLIC_META_PURCHASE_OWNER` | Controls only the Meta Purchase CAPI owner: keep `landing` until the durable backend route is verified, then switch to `backend`; the browser Pixel always remains enabled |
 | `META_PIXEL_ID` | Same Pixel ID, used server-side |
 | `META_CAPI_ACCESS_TOKEN` | Access token for Meta's server-side Conversions API |
 | `META_GRAPH_API_VERSION` | Which version of Meta's Graph API to call |
 | `META_TEST_EVENT_CODE` | Marks server-side events as test events in Meta's dashboard — **should only ever be set outside production** |
 
-Note: the **Klaviyo** company ID (email lead-capture, [§8](#8-tracking--analytics))
-is currently hardcoded in `src/app/(frontend)/[locale]/layout.tsx` rather than
-coming from an environment variable.
+The Klaviyo onsite loader is fail-closed: it is rendered only when
+`NEXT_PUBLIC_KLAVIYO_COMPANY_ID` is set.
 
 Payload's own configuration (which collections exist, which plugins are
 enabled, which locales, where the admin panel is mounted) lives in
@@ -320,15 +321,12 @@ approves on Klarna's/PayPal's site and is redirected back), so nothing is
 charged until the subscription is actually manufactured — the redirect
 return handler restores in-flight form data from `sessionStorage`.
 
-One extra wrinkle worth knowing: the final "confirm order" call doesn't go
-straight to the external backend from the browser. It goes to this app's own
-route, [`src/app/api/checkout/confirm/route.ts`](src/app/api/checkout/confirm/route.ts),
-which forwards it to the real backend **and then**, if the visitor consented
-to marketing tracking, also reports the purchase to Meta's server-side
-Conversions API before responding. It's a small proxy step, but it exists
-specifically so that server-side purchase tracking is reliable (it doesn't
-depend on the visitor's browser still being open, or an ad-blocker not
-interfering).
+The final confirmation goes directly to the backend. It includes a tightly
+allowlisted, consent-gated attribution snapshot. By default this app retains
+the existing landing Meta Purchase CAPI sender. After the durable backend route
+is verified, set `NEXT_PUBLIC_META_PURCHASE_OWNER=backend` to cut over the CAPI
+owner; the browser/GTM Pixel Purchase remains enabled and continues to use the
+backend-authored `event_id`.
 
 Plan/pricing content that editors manage lives in the `Products` collection
 (`src/collections/Products`) and `src/lib/plans`.
@@ -374,15 +372,17 @@ copies of an event share the same `event_id` so Meta can de-duplicate them
 into a single event.
 
 - `src/lib/meta/browser.ts` — client-side: reads Meta's tracking cookies,
-  checks consent, and sends the event to this app's own
+  checks consent, and sends funnel events to this app's own
   `/api/meta/events` route.
 - `src/app/api/meta/events/route.ts` — receives that and hands it to:
 - `src/lib/meta/server.ts` — actually POSTs to Meta's Conversions API, adding
   IP address and browser user-agent server-side (more trustworthy than
   anything the browser reports), with automatic retries on transient errors.
-- The **purchase** event is a special case: it's also sent server-to-server
-  directly from the checkout confirm route (see [§7](#7-how-checkout-works)),
-  independent of whatever happens in the browser.
+- **Purchase** is emitted to the browser data layer with the backend-authored
+  `event_id`. The landing sender remains the default server owner until
+  `NEXT_PUBLIC_META_PURCHASE_OWNER=backend` makes the backend outbox authoritative.
+  Its value is the gross monthly plan price in the checkout currency; discounts
+  and shipping remain separate, and the commitment term does not multiply it.
 
 ### Klaviyo (email lead capture)
 

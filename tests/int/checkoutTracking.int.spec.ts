@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   consumeRedirectPaymentType,
+  getOrCreateOccurrenceId,
   nextPaymentAttempt,
+  pushEvent,
   resetEnhancedUserDataCache,
   resetCheckoutTracking,
   resolveRedirectPaymentType,
@@ -68,7 +70,7 @@ describe('checkout event boundaries', () => {
       expect(track).toHaveBeenCalledWith(
         'Checkout Completed',
         expect.objectContaining({
-          $event_id: `checkout_completed:subscription-${paymentType}`,
+          $event_id: `acquisition-${paymentType}`,
           transaction_id: `subscription-${paymentType}`,
         }),
         expect.any(Function),
@@ -122,12 +124,61 @@ describe('checkout event boundaries', () => {
     expect(trackSubscriptionAcquired({ ...input, eventId: 'retry-id' })).toBe('acquisition-1')
     expect(track).toHaveBeenCalledWith(
       'Checkout Completed',
-      expect.objectContaining({ transaction_id: 'subscription-1' }),
+      expect.objectContaining({
+        $event_id: 'acquisition-1',
+        transaction_id: 'subscription-1',
+      }),
       expect.any(Function),
     )
     expect(
       window.dataLayer.filter((entry) => entry.canonical_event === 'subscription_acquired'),
     ).toHaveLength(1)
+  })
+
+  it('keeps the gross monthly purchase value separate from shipping and discounts', () => {
+    trackSubscriptionAcquired({
+      checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      purchaseUuid: 'subscription-1',
+      customerUuid: 'customer-1',
+      evValue: 49,
+      maxValue: 396,
+      valueCurrency: 'EUR',
+      planTerm: 4,
+      paymentType: 'card',
+      paymentFlow: 'inline',
+      currency: 'EUR',
+      value: 99,
+      shipping: 12,
+      coupon: 'WELCOME20',
+      item: {
+        item_id: 'core-4',
+        item_name: 'Core 4 months',
+        price: 99,
+        quantity: 1,
+        discount: 20,
+      },
+      user: { email: 'buyer@example.com' },
+    })
+
+    expect(
+      window.dataLayer.find((entry) => entry.canonical_event === 'subscription_acquired'),
+    ).toMatchObject({
+      purchase_uuid: 'subscription-1',
+      customer_uuid: 'customer-1',
+      ev_value: 49,
+      max_value: 396,
+      value_currency: 'EUR',
+      plan_term: 4,
+      ecommerce: {
+        currency: 'EUR',
+        value: 99,
+        shipping: 12,
+        coupon: 'WELCOME20',
+        items: [expect.objectContaining({ price: 99, discount: 20 })],
+      },
+    })
   })
 
   it('emits a confirmed acquisition without waiting for optional identity hashing', () => {
@@ -155,6 +206,18 @@ describe('checkout event boundaries', () => {
     expect(nextPaymentAttempt('checkout-1')).toBe(1)
     expect(nextPaymentAttempt('checkout-1')).toBe(2)
     expect(nextPaymentAttempt('checkout-2')).toBe(1)
+  })
+
+  it('reuses a logical occurrence ID while still emitting every browser copy', () => {
+    const first = getOrCreateOccurrenceId('checkout-1:begin_checkout')
+    const second = getOrCreateOccurrenceId('checkout-1:begin_checkout')
+
+    pushEvent('begin_checkout', { event_id: first, checkout_id: 'checkout-1' })
+    pushEvent('begin_checkout', { event_id: second, checkout_id: 'checkout-1' })
+
+    const events = window.dataLayer.filter((entry) => entry.canonical_event === 'begin_checkout')
+    expect(events).toHaveLength(2)
+    expect(events.map((entry) => entry.event_id)).toEqual([first, first])
   })
 
   it('persists the redirect payment type through provider navigation and consumes it once', () => {

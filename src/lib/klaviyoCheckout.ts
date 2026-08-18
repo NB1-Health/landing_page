@@ -43,6 +43,7 @@ export type KlaviyoStartedCheckoutInput = {
 }
 
 export type KlaviyoCheckoutCompletedInput = KlaviyoStartedCheckoutInput & {
+  eventId: string
   transactionId: string
   orderNumber?: string | null
   planSlug?: string
@@ -467,7 +468,8 @@ export function trackKlaviyoCheckoutCompleted(input: KlaviyoCheckoutCompletedInp
   if (completedCheckouts.has(input.transactionId) || readSession(storageKey)) return false
 
   const eventProperties = compactProperties({
-    $event_id: `checkout_completed:${input.transactionId}`,
+    $event_id: input.eventId,
+    event_name: 'subscription_acquired',
     checkout_id: input.checkoutId,
     transaction_id: input.transactionId,
     order_number: input.orderNumber,

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 
 describe('consent bootstrap ordering', () => {
-  it('establishes the temporary open consent defaults before loading GTM or Ketch', () => {
+  it('establishes closed consent defaults before loading GTM or Ketch', () => {
     const layout = readFileSync(resolve('src/app/(frontend)/[locale]/layout.tsx'), 'utf8')
     const consent = layout.indexOf('id="gtag-consent-mode"')
     const gtm = layout.indexOf('id="gtm-head"')
@@ -13,9 +13,9 @@ describe('consent bootstrap ordering', () => {
     expect(consent).toBeGreaterThan(-1)
     expect(consent).toBeLessThan(gtm)
     expect(consent).toBeLessThan(ketch)
-    expect(layout).toContain("'analytics_storage': 'granted'")
-    expect(layout).toContain("'ad_storage': 'granted'")
-    expect(layout).toContain("window.__nb1Consent = { analytics: true, targeted_advertising: true }")
+    expect(layout).toContain("'analytics_storage': 'denied'")
+    expect(layout).toContain("'ad_storage': 'denied'")
+    expect(layout).toContain("window.__nb1Consent = { analytics: false, targeted_advertising: false }")
   })
 
   it('waits safely when Ketch is unavailable and binds when it becomes callable', () => {
@@ -54,7 +54,7 @@ describe('consent bootstrap ordering', () => {
     ])
   })
 
-  it('revokes the temporary open default when Ketch reports rejected purposes', () => {
+  it('keeps providers denied when Ketch reports rejected purposes', () => {
     const updates: unknown[][] = []
     const sandbox = {
       __nb1Consent: { analytics: true, targeted_advertising: true },

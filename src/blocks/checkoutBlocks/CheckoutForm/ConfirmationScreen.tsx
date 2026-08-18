@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { persistPostPurchaseSurveyResponse } from '@/lib/checkoutApi'
 import MentionMeTag from '@/components/MentionMe/MentionMeTag'
+import { openArminChat } from '@/components/ArminWidget'
 import {
   trackPostPurchaseSurveyAnswered,
   trackPostPurchaseSurveyViewed,
@@ -406,7 +407,7 @@ export function ConfirmationScreen({
             <a href={`/${locale}/login`} className="nb1-conf-cta">{td.dashboard}</a>
             <a href={`/${locale}/login`} className="nb1-conf-cta2">{td.trackOrder}</a>
             <div className="nb1-conf-support">
-              <button type="button" className="nb1-conf-chat" onClick={() => { if (typeof window !== 'undefined' && (window as any).$chatwoot) (window as any).$chatwoot.toggle('open') }}>{td.chatUs}</button>
+              <button type="button" className="nb1-conf-chat" onClick={() => openArminChat()}>{td.chatUs}</button>
               {' '}{td.supportLine}{' '}
               <a href={`mailto:${td.supportEmail}`}>{td.supportEmail}</a>
             </div>

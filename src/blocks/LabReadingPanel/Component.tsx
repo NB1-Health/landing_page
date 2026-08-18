@@ -1583,7 +1583,7 @@ export const LabReadingPanelComponent: React.FC<LabReadingPanelBlockType & { loc
             </div>
             {seals && seals.length > 0 && (
               <div className="seals seals-rail">
-                <h4 className="seals-head">Grounded in published science</h4>
+                <h4 className="seals-head">{S.sealsHead}</h4>
                 <ul className="seals-list">
                   {seals.map((s, i) => (
                     <li key={i}>
@@ -1629,7 +1629,7 @@ export const LabReadingPanelComponent: React.FC<LabReadingPanelBlockType & { loc
                 <div className="pat-whats">{whatsShort(current.whats)}</div>
               </div>
               <div>
-                <div className="block-label">Where the formula would focus</div>
+                <div className="block-label">{S.focusLabel}</div>
                 <div className="focus">
                   {focusNodes[selectedIndex] && (
                     <RichText data={focusNodes[selectedIndex] as any} enableGutter={false} enableProse={false} />

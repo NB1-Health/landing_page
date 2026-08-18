@@ -6,7 +6,7 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import RichText from '@/components/RichText'
 import { useReveal } from '@/hooks/useReveal'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
-import { SOURCE_ICONS, SOURCE_LABELS } from './constants'
+import { SOURCE_ICONS } from './constants'
 import { BLEND_INNER_SVG, BLEND_VIEWBOX, ROD_ICON_INNER, SCENE_INNER_SVG, SCENE_VIEWBOX } from './art'
 import type { AppLocale } from '@/i18n/config'
 import { getFormulaStrings } from './i18n'
@@ -127,6 +127,12 @@ export const LabFormulaComponent: React.FC<LabFormulaBlockType & { locale?: AppL
       BLEND_INNER_SVG.replace('>too much<', `>${F.doseTooMuch.toLowerCase()}<`)
         .replace('>right for you<', `>${F.doseRightForYou.toLowerCase()}<`)
         .replace('>too little<', `>${F.doseTooLittle.toLowerCase()}<`),
+    [F],
+  )
+  // Keyed by the same closed source-type set as SOURCE_ICONS, so a job with no
+  // sourceType set still lands on the sample pill.
+  const sourceLabels = useMemo<Record<'sample' | 'quest', string>>(
+    () => ({ sample: F.sourceSample, quest: F.sourceQuest }),
     [F],
   )
   const jobRows = useMemo(() => jobs ?? [], [jobs])
@@ -951,7 +957,7 @@ export const LabFormulaComponent: React.FC<LabFormulaBlockType & { locale?: AppL
                 {workedDetailLabel && <div className="worked-l">{workedDetailLabel}</div>}
                 <div className="worked-job">{job.name}</div>
                 <div className="trigger">
-                  <span className="src" dangerouslySetInnerHTML={{ __html: (SOURCE_ICONS[job.sourceType || 'sample'] || '') + (SOURCE_LABELS[job.sourceType || 'sample'] || '') }} />
+                  <span className="src" dangerouslySetInnerHTML={{ __html: (SOURCE_ICONS[job.sourceType || 'sample'] || '') + sourceLabels[job.sourceType || 'sample'] }} />
                   {job.trigger}
                 </div>
 

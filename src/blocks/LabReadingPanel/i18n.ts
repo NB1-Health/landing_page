@@ -1,4 +1,4 @@
-import type { AppLocale } from '@/i18n/config'
+import { getFallbackLocale, type AppLocale } from '@/i18n/config'
 
 /**
  * Localized copy for the reading-dashboard's hardcoded UI strings — the pieces
@@ -6,6 +6,10 @@ import type { AppLocale } from '@/i18n/config'
  * than in the CMS. Values keyed to the enum/position logic still use the English
  * key; only the displayed text is localized. Locales without an entry fall back
  * to English. German comes from the Lab translations workbook (LAB.295–327).
+ *
+ * `focusLabel` and `sealsHead` have no workbook row yet — the FR/NL focus labels
+ * were supplied directly and the seals heading was translated in-house, so both
+ * are worth a review pass once they land in the sheet.
  */
 export type LRPStrings = {
   dims: string[] // 5, DIMS order
@@ -14,6 +18,8 @@ export type LRPStrings = {
   status: Record<'Low' | 'High' | 'In range', string> // teamStatus labels
   zone: Record<'In range' | 'Watch' | 'Needs work', string> // ratioZone labels
   borderline: string
+  focusLabel: string // summary block label; CSS-uppercased, so store sentence case
+  sealsHead: string // seals rail heading; rendered as written
   note: {
     hold: string
     stress: string
@@ -41,6 +47,8 @@ const en: LRPStrings = {
   status: { Low: 'Low', High: 'High', 'In range': 'In range' },
   zone: { 'In range': 'In range', Watch: 'Watch', 'Needs work': 'Needs work' },
   borderline: 'Borderline',
+  focusLabel: 'Where the formula would focus',
+  sealsHead: 'Grounded in published science',
   note: {
     hold: 'The job here is to <b>hold this</b>, not disturb it.',
     stress:
@@ -69,6 +77,8 @@ const de: LRPStrings = {
   status: { Low: 'Niedrig', High: 'Hoch', 'In range': 'Im Zielbereich' },
   zone: { 'In range': 'Im Zielbereich', Watch: 'Beobachten', 'Needs work': 'Optimierungsbedarf' },
   borderline: 'Grenzwertig',
+  focusLabel: 'Fokus der Formel',
+  sealsHead: 'Basierend auf veröffentlichten Studien',
   note: {
     hold: 'Hier liegt der Fokus auf dem Erhalt der Werte – statt das Gleichgewicht zu stören.',
     stress:
@@ -78,9 +88,9 @@ const de: LRPStrings = {
   },
 }
 
-// French comes from the Lab translations workbook (LAB.295–327). The status,
-// zone and borderline labels have no workbook row yet, so they stay in English
-// until a translation is added to the sheet.
+// French comes from the Lab translations workbook (LAB.295–327), except the
+// status/zone labels, which were supplied separately and are still incomplete —
+// see the inline note below.
 const fr: LRPStrings = {
   dims: ['Santé', 'Diversité', 'Métabolisme', 'Équilibre global', 'Sécurité'],
   teams: [
@@ -97,10 +107,12 @@ const fr: LRPStrings = {
     { name: 'Dépendance à la muqueuse intestinale', bad: 'Se nourrit de la muqueuse', good: 'Nourrie par votre alimentation' },
     { name: 'Sous-produits irritants', bad: 'Putréfactif', good: 'Dominé par les AGCC' },
   ],
-  // Not yet in the workbook — English until a French translation is added.
-  status: { Low: 'Low', High: 'High', 'In range': 'In range' },
-  zone: { 'In range': 'In range', Watch: 'Watch', 'Needs work': 'Needs work' },
+  // `Low`, `Watch` and `borderline` have no translation yet — English until one is added.
+  status: { Low: 'Low', High: 'Élevé', 'In range': 'À l’équilibre' },
+  zone: { 'In range': 'À l’équilibre', Watch: 'Watch', 'Needs work': 'Soutien nécessaire' },
   borderline: 'Borderline',
+  focusLabel: 'Cibles de la formule',
+  sealsHead: 'Fondé sur des études publiées',
   note: {
     hold: 'Ici, l’enjeu, c’est de <b>préserver cet équilibre</b>, pas de le bousculer.',
     stress:
@@ -110,9 +122,9 @@ const fr: LRPStrings = {
   },
 }
 
-// Dutch comes from the Lab translations workbook (LAB.295–327). The status,
-// zone and borderline labels have no workbook row yet, so they stay in English
-// until a translation is added to the sheet.
+// Dutch comes from the Lab translations workbook (LAB.295–327), except the
+// status/zone labels, which were supplied separately and are still incomplete —
+// see the inline note below.
 const nl: LRPStrings = {
   dims: ['Gezondheid', 'Diversiteit', 'Stofwisseling', 'Balans', 'Veiligheid'],
   teams: [
@@ -129,10 +141,12 @@ const nl: LRPStrings = {
     { name: 'Afhankelijk van je darmwand', bad: 'Teert op je darmwand', good: 'Voedinggestuurd' },
     { name: 'Heftige bijproducten', bad: 'Rottend', good: 'SCFA-dominant' },
   ],
-  // Not yet in the workbook — English until a Dutch translation is added.
-  status: { Low: 'Low', High: 'High', 'In range': 'In range' },
-  zone: { 'In range': 'In range', Watch: 'Watch', 'Needs work': 'Needs work' },
+  // `Low`, `Watch` and `borderline` have no translation yet — English until one is added.
+  status: { Low: 'Low', High: 'Hoog', 'In range': 'In balans' },
+  zone: { 'In range': 'In balans', Watch: 'Watch', 'Needs work': 'Ondersteuning nodig' },
   borderline: 'Borderline',
+  focusLabel: 'Waar de formule zich op richt',
+  sealsHead: 'Gebaseerd op gepubliceerd onderzoek',
   note: {
     hold: 'De bedoeling is <b>dit te behouden</b>, niet te verstoren.',
     stress:
@@ -144,6 +158,15 @@ const nl: LRPStrings = {
 
 const BY_LOCALE: Partial<Record<AppLocale, LRPStrings>> = { en, de, fr, nl }
 
+/**
+ * Resolve via the locale's configured fallback before dropping to English, so the
+ * region locales get their parent language here the way Payload gives them the
+ * parent's CMS content (ch → de, be → nl, uk/uae → en).
+ */
 export function getLRPStrings(locale?: AppLocale): LRPStrings {
-  return (locale && BY_LOCALE[locale]) || en
+  if (!locale) return en
+  const direct = BY_LOCALE[locale]
+  if (direct) return direct
+  const fallback = getFallbackLocale(locale)
+  return (fallback && BY_LOCALE[fallback]) || en
 }
