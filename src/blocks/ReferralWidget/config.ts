@@ -22,6 +22,7 @@ export const ReferralWidgetBlock: Block = {
     {
       name: 'localeOverride',
       type: 'text',
+      localized: true,
       admin: {
         description:
           'Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (en→en_GB, de→de_DE, fr→fr_FR).',
