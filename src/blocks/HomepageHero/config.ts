@@ -38,6 +38,15 @@ export const HomepageHeroBlock: Block = {
       relationTo: 'media',
     },
     {
+      name: 'showTrustpilotRating',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Lead the trust strip with the live Trustpilot rating. The localized widget source is resolved from the page locale in code. Intended to replace the starred "Loved by early access members" trust item below.',
+      },
+    },
+    {
       name: 'trustItems',
       type: 'array',
       fields: [

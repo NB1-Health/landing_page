@@ -4449,6 +4449,10 @@ export interface HomepageHeroBlock {
   ctaHref?: string | null;
   backgroundImage?: (number | null) | Media;
   backgroundImageMobile?: (number | null) | Media;
+  /**
+   * Lead the trust strip with the live Trustpilot rating. The localized widget source is resolved from the page locale in code. Intended to replace the starred "Loved by early access members" trust item below.
+   */
+  showTrustpilotRating?: boolean | null;
   trustItems?:
     | {
         text?: string | null;
@@ -9473,6 +9477,7 @@ export interface HomepageHeroBlockSelect<T extends boolean = true> {
   ctaHref?: T;
   backgroundImage?: T;
   backgroundImageMobile?: T;
+  showTrustpilotRating?: T;
   trustItems?:
     | T
     | {
