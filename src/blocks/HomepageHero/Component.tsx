@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import RichText from '@/components/RichText'
+import TrustpilotWidget from '@/components/Trustpilot/TrustpilotWidget'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 
 type TrustItem = {
@@ -17,6 +18,7 @@ type Props = {
   backgroundImage?: { url?: string | null } | null
   backgroundImageMobile?: { url?: string | null } | null
   trustItems?: TrustItem[] | null
+  showTrustpilotRating?: boolean | null
   locale?: string | null
 }
 
@@ -28,6 +30,7 @@ export const HomepageHeroComponent: React.FC<Props> = ({
   backgroundImage,
   backgroundImageMobile,
   trustItems,
+  showTrustpilotRating,
   locale,
 }) => {
   const rawHref = ctaHref || ''
@@ -39,6 +42,10 @@ export const HomepageHeroComponent: React.FC<Props> = ({
   const bgMobileUrl = backgroundImageMobile?.url ? getMediaUrl(backgroundImageMobile.url) : bgUrl
 
   const items = trustItems ?? []
+  // Trustpilot leads the strip, taking the position the starred "Loved by early
+  // access members" trust item held. Off by default so the widget only appears
+  // where an editor has opted in.
+  const showTrustpilot = Boolean(showTrustpilotRating)
   const [activeIdx, setActiveIdx] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -224,6 +231,28 @@ export const HomepageHeroComponent: React.FC<Props> = ({
           background: rgba(255, 255, 255, 0.25);
           flex-shrink: 0;
         }
+        /* The TrustBox template switches layout on the iframe's OWN width: under
+           200px the score stacks above the stars, and under 260px the Trustpilot
+           logo drops to its own line. Its type is also fixed in the template
+           (.tp-widget-trustscore is 18px) and data-style-height does not scale it.
+           So it is rendered wide enough to stay on one line -- 320px, which leaves
+           room for the longer German/Dutch score words -- then scaled down as a
+           whole to bring 18px type into line with the 12.5px seal text. */
+        .ht-tp {
+          width: 231px; /* 320 * 0.7222 */
+          height: 18px; /* 24 * 0.7222, rounded up so nothing clips */
+          flex-shrink: 0;
+          line-height: 0;
+        }
+        .ht-tp :global(.trustpilot-widget) {
+          width: 320px;
+          transform: scale(0.7222); /* 18px template type -> 13px */
+          transform-origin: left top;
+        }
+        /* Mobile-only row; on desktop the widget sits inline in the strip. */
+        .hero-trust-tp {
+          display: none;
+        }
         .ht-nav {
           display: none;
           align-items: center;
@@ -384,6 +413,28 @@ export const HomepageHeroComponent: React.FC<Props> = ({
           .ht-sep {
             display: none;
           }
+          /* The mobile strip is a fixed-height carousel with absolutely placed
+             items, so the widget cannot sit inside it — it gets its own row
+             below, on the white background, hence the light TrustBox. */
+          .ht-tp {
+            display: none;
+          }
+          .hero-trust-tp {
+            display: flex;
+            justify-content: center;
+            padding: 0 22px 14px;
+            background: #fff;
+          }
+          .ht-tp-m {
+            width: 231px;
+            height: 18px;
+            line-height: 0;
+          }
+          .ht-tp-m :global(.trustpilot-widget) {
+            width: 320px;
+            transform: scale(0.7222); /* 18px template type -> 13px */
+            transform-origin: left top;
+          }
           .ht-nav {
             display: flex;
             position: absolute;
@@ -423,7 +474,7 @@ export const HomepageHeroComponent: React.FC<Props> = ({
           </div>
         </section>
 
-        {items.length > 0 && (
+        {(items.length > 0 || showTrustpilot) && (
           <div className="hero-trust">
             <div
               className="hero-trust-in"
@@ -461,9 +512,15 @@ export const HomepageHeroComponent: React.FC<Props> = ({
                 </svg>
               </button>
 
+              {showTrustpilot && (
+                <div className="ht-tp">
+                  <TrustpilotWidget locale={locale} theme="dark" />
+                </div>
+              )}
+
               {items.map((item, i) => (
                 <React.Fragment key={i}>
-                  {i > 0 && <span className="ht-sep" aria-hidden="true" />}
+                  {(i > 0 || showTrustpilot) && <span className="ht-sep" aria-hidden="true" />}
                   <div className={`ht-item${i === activeIdx ? ' active' : ''}`}>
                     {item.showStars && <span className="ht-stars">★★★★★</span>}
                     <span className="ht-text" dangerouslySetInnerHTML={{ __html: item.text }} />
@@ -492,6 +549,14 @@ export const HomepageHeroComponent: React.FC<Props> = ({
                 </svg>
               </button>
             </div>
+
+            {showTrustpilot && (
+              <div className="hero-trust-tp">
+                <div className="ht-tp-m">
+                  <TrustpilotWidget locale={locale} theme="light" />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
