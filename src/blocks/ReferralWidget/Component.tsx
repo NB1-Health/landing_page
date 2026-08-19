@@ -48,14 +48,16 @@ export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
           width: 100%;
           max-width: 960px;
           margin: 0 auto;
+          /* overflow:hidden is what actually clips the mounted iframe to the
+             radius — border-radius alone does not clip a replaced element. */
+          border-radius: 20px;
+          overflow: hidden;
         }
-        /* Navy card look + rounded corners are only for the placeholder; the real
-           Mention Me widget brings its own styling. */
+        /* Navy card look is only for the placeholder; the real Mention Me widget
+           brings its own styling. Radius/clipping now come from .rf-embed. */
         .rf-embed.ph {
           background: #12314d;
           box-shadow: 0 44px 88px -54px rgba(18, 49, 77, 0.55);
-          border-radius: 20px;
-          overflow: hidden;
         }
         /* The Mention Me tag mounts its iframe inside #mmWrapper. Let the widget
            size its own height (do NOT force height:100% — that collapses it). */
@@ -66,6 +68,7 @@ export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
           display: block;
           width: 100%;
           border: 0;
+          border-radius: 20px;
         }
         .rf-embed-ph {
           display: flex;
