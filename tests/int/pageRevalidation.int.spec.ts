@@ -49,6 +49,7 @@ describe('page publication revalidation', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/en/new-page')
     expect(revalidatePath).toHaveBeenCalledWith('/de/neue-seite')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/new-page')
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
     expect(req.payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ req }))
   })
 
@@ -133,6 +134,7 @@ describe('page publication revalidation', () => {
 
     expect(revalidatePath).toHaveBeenCalledWith('/de/alte-seite')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/old-page')
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
   })
 
   it('keeps the localized home path when English is already unpublished', async () => {

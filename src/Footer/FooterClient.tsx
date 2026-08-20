@@ -13,14 +13,14 @@ type FooterVariant = {
   variantKey: string
   theme: Theme
   linkColor?: string | null
-  logo?: { url?: string | null; alt?: string | null } | null
+  logo?: { url?: string | null; alt?: string | null; width?: number | null; height?: number | null } | null
 }
 
 type NavLink = { label?: string | null; url?: string | null }
 type LegalLink = { label?: string | null; url?: string | null }
 
 type Props = {
-  logo?: { url?: string | null; alt?: string | null } | null
+  logo?: { url?: string | null; alt?: string | null; width?: number | null; height?: number | null } | null
   tagline?: string | null
   subnote?: string | null
   disclaimer?: string | null
@@ -62,6 +62,9 @@ export function FooterClient({
   const locale = (params?.locale as string) || 'en'
   const localizeHref = (url?: string | null) => {
     if (!url) return '#'
+    if (url === 'home-page' || url === '/home-page' || url === `/${locale}/home-page`) {
+      return `/${locale}`
+    }
     const isExternal = url.startsWith('http://') || url.startsWith('https://') || url.startsWith('#')
     if (isExternal || url.startsWith(`/${locale}`)) return url
     return `/${locale}${url.startsWith('/') ? url : `/${url}`}`
@@ -176,7 +179,15 @@ export function FooterClient({
             <div className="nbf-brand">
               {resolvedLogo?.url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img className="nbf-logo" src={resolvedLogo.url} alt={resolvedLogo.alt || 'NB1'} />
+                <img
+                  className="nbf-logo"
+                  src={resolvedLogo.url}
+                  alt={resolvedLogo.alt || 'NB1'}
+                  width={resolvedLogo.width ?? undefined}
+                  height={resolvedLogo.height ?? undefined}
+                  loading="lazy"
+                  decoding="async"
+                />
               )}
               {tagline && <p className="nbf-tag">{tagline}</p>}
               <div ref={klaviyoContainerRef} />

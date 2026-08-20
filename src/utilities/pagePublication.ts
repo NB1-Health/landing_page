@@ -37,7 +37,7 @@ export function getPageRevalidationTargets({
   previousSlugs?: LocalizedPageSlugs
 }) {
   const paths = new Set<string>()
-  const tags = new Set<string>()
+  const tags = new Set<string>(['pages'])
 
   for (const locale of locales) {
     const previousPath = getPublicPagePath(locale, previousSlugs[locale], previousIsHome)

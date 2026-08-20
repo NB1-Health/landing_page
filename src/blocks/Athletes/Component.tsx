@@ -7,7 +7,7 @@ import { getMediaUrl } from '@/utilities/getMediaUrl'
 type Athlete = {
   name?: string | null
   credential?: string | null
-  photo?: { url?: string | null } | null
+  photo?: { url?: string | null; width?: number | null; height?: number | null } | null
   hasVideo?: boolean | null
   video?: { url?: string | null } | null
   videoAriaLabel?: string | null
@@ -333,7 +333,15 @@ export const AthletesComponent: React.FC<Props> = ({
                         onKeyDown={canPlay ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(ath) } } : undefined}
                       >
                         {photoUrl && (
-                          <img className="ath-bg" src={photoUrl} alt={ath.name || ''} />
+                          <img
+                            className="ath-bg"
+                            src={photoUrl}
+                            alt={ath.name || ''}
+                            width={ath.photo?.width ?? undefined}
+                            height={ath.photo?.height ?? undefined}
+                            loading="lazy"
+                            decoding="async"
+                          />
                         )}
                         <div className="ath-scrim" />
                         {canPlay && (
