@@ -1,4 +1,5 @@
 import { isAppLocale } from '@/i18n/config'
+import { getSitemapCacheHeaders } from '@/utilities/cloudflareCache'
 import { getServerSideURL } from '@/utilities/getURL'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
@@ -30,7 +31,7 @@ ${entries}
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+      ...getSitemapCacheHeaders(),
     },
   })
 }

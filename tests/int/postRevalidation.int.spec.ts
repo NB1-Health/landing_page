@@ -1,18 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { revalidatePath, revalidateTag } = vi.hoisted(() => ({
+const { purgeCloudflareCacheTags, revalidatePath, revalidateTag } = vi.hoisted(() => ({
+  purgeCloudflareCacheTags: vi.fn(),
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath, revalidateTag }))
+vi.mock('@/utilities/cloudflareCache', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/utilities/cloudflareCache')>()),
+  purgeCloudflareCacheTags,
+}))
 
-import { capturePostPublication, revalidatePost } from '@/collections/Posts/hooks/revalidatePost'
+import {
+  capturePostPublication,
+  revalidateDelete as revalidateDeletedPost,
+  revalidatePost,
+} from '@/collections/Posts/hooks/revalidatePost'
 
 const logger = { info: vi.fn(), warn: vi.fn() }
 
 describe('post publication revalidation', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    purgeCloudflareCacheTags.mockResolvedValue(false)
+  })
 
   it('revalidates the exact locales published by Payload', async () => {
     const req = {
@@ -49,8 +61,11 @@ describe('post publication revalidation', () => {
 
     expect(revalidatePath).toHaveBeenCalledWith('/de/posts/gut-health-basics')
     expect(revalidatePath).toHaveBeenCalledWith('/en/posts/gut-health-basics')
+    expect(revalidatePath).toHaveBeenCalledWith('/de/posts', 'layout')
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts', 'layout')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/posts/gut-health-basics')
     expect(revalidateTag).toHaveBeenCalledWith('posts-sitemap-de')
+    expect(purgeCloudflareCacheTags).toHaveBeenCalledWith(['nb1-sitemaps'])
   })
 
   it('does not revalidate a draft autosave', async () => {
@@ -72,5 +87,21 @@ describe('post publication revalidation', () => {
     expect(req.payload.findByID).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
     expect(revalidateTag).not.toHaveBeenCalled()
+    expect(purgeCloudflareCacheTags).not.toHaveBeenCalled()
+  })
+
+  it('purges the sitemap edge tag after a published post is deleted', async () => {
+    const req = {
+      context: {},
+      locale: 'en',
+      payload: { logger },
+    }
+    const doc = { id: 7, _status: 'published', slug: 'retired-post' }
+
+    await expect(revalidateDeletedPost({ doc, req } as never)).resolves.toBe(doc)
+
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts/retired-post')
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts', 'layout')
+    expect(purgeCloudflareCacheTags).toHaveBeenCalledWith(['nb1-sitemaps'])
   })
 })

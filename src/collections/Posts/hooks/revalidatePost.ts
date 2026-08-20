@@ -14,6 +14,10 @@ import {
   resolvePublishedLocaleSlugs,
   type PublishedLocaleSlugs,
 } from '../../../utilities/publishedLocaleAvailability'
+import {
+  CLOUDFLARE_SITEMAP_CACHE_TAG,
+  purgeCloudflareCacheTags,
+} from '../../../utilities/cloudflareCache'
 
 const CONTEXT_KEY = 'postPublication'
 
@@ -111,6 +115,7 @@ function getPostRevalidationTargets(
   currentSlugs: PublishedLocaleSlugs,
   previousSlugs: PublishedLocaleSlugs,
 ) {
+  const archivePaths = new Set<string>()
   const paths = new Set<string>()
   const tags = new Set<string>()
 
@@ -119,10 +124,13 @@ function getPostRevalidationTargets(
     for (const slug of slugs) {
       if (slug) paths.add(`/${locale}/posts/${slug}`)
     }
-    if (slugs.some(Boolean)) tags.add(`posts-sitemap-${locale}`)
+    if (slugs.some(Boolean)) {
+      archivePaths.add(`/${locale}/posts`)
+      tags.add(`posts-sitemap-${locale}`)
+    }
   }
 
-  return { paths: [...paths], tags: [...tags] }
+  return { archivePaths: [...archivePaths], paths: [...paths], tags: [...tags] }
 }
 
 async function invalidateTargets(
@@ -138,12 +146,27 @@ async function invalidateTargets(
     }
   }
 
+  for (const path of targets.archivePaths) {
+    try {
+      revalidatePath(path, 'layout')
+      req.payload.logger.info(`Revalidated published post archive: ${path}`)
+    } catch (error) {
+      req.payload.logger.warn({ err: error, path }, 'Could not revalidate published post archive')
+    }
+  }
+
   for (const tag of targets.tags) {
     try {
       revalidateTag(tag)
     } catch (error) {
       req.payload.logger.warn({ err: error, tag }, 'Could not revalidate post sitemap')
     }
+  }
+
+  try {
+    await purgeCloudflareCacheTags([CLOUDFLARE_SITEMAP_CACHE_TAG])
+  } catch (error) {
+    req.payload.logger.warn({ err: error }, 'Could not purge Cloudflare sitemap cache')
   }
 }
 

@@ -8,7 +8,7 @@ const deploymentURLs = {
 
 /**
  * @param {'production' | 'staging'} expected
- * @param {{ DEPLOY_ENV?: string, NEXT_PUBLIC_SERVER_URL?: string, NEXT_PUBLIC_KLAVIYO_COMPANY_ID?: string }} environment
+ * @param {{ DEPLOY_ENV?: string, NEXT_PUBLIC_SERVER_URL?: string, NEXT_PUBLIC_KLAVIYO_COMPANY_ID?: string, CLOUDFLARE_EDGE_CACHE_ENABLED?: string, CLOUDFLARE_ZONE_ID?: string, CLOUDFLARE_CACHE_PURGE_TOKEN?: string }} environment
  */
 export function assertDeploymentEnvironment(expected, environment = process.env) {
   const expectedURL = deploymentURLs[expected]
@@ -27,6 +27,18 @@ export function assertDeploymentEnvironment(expected, environment = process.env)
   }
   if (expected === 'staging' && klaviyoCompanyId) {
     throw new Error('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be unset in staging')
+  }
+
+  if (environment.CLOUDFLARE_EDGE_CACHE_ENABLED === 'true') {
+    if (expected !== 'production') {
+      throw new Error('CLOUDFLARE_EDGE_CACHE_ENABLED is production-only')
+    }
+    if (!environment.CLOUDFLARE_ZONE_ID?.trim()) {
+      throw new Error('CLOUDFLARE_ZONE_ID is required when edge caching is enabled')
+    }
+    if (!environment.CLOUDFLARE_CACHE_PURGE_TOKEN?.trim()) {
+      throw new Error('CLOUDFLARE_CACHE_PURGE_TOKEN is required when edge caching is enabled')
+    }
   }
 }
 

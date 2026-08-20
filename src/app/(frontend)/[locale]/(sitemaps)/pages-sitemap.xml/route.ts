@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
+import { getSitemapCacheHeaders } from '@/utilities/cloudflareCache'
 import { readHreflangOverrides } from '@/utilities/hreflang'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
 
@@ -92,9 +93,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
       return [...defaultSitemap, ...sitemap]
     },
     ['pages-sitemap', locale],
-    { tags: ['pages-sitemap', `pages-sitemap-${locale}`] },
+    { revalidate: 600, tags: ['pages-sitemap', `pages-sitemap-${locale}`] },
   )
 
   const sitemap = await getPagesSitemap()
-  return getServerSideSitemap(sitemap)
+  return getServerSideSitemap(sitemap, getSitemapCacheHeaders())
 }

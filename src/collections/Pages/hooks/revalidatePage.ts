@@ -19,6 +19,10 @@ import {
   isPublishedForActiveLocale,
   resolvePublishedLocaleSlugs,
 } from '../../../utilities/publishedLocaleAvailability'
+import {
+  CLOUDFLARE_SITEMAP_CACHE_TAG,
+  purgeCloudflareCacheTags,
+} from '../../../utilities/cloudflareCache'
 
 const CONTEXT_KEY = 'pagePublication'
 
@@ -165,6 +169,12 @@ async function invalidateTargets(
     } catch (error) {
       req.payload.logger.warn({ err: error, tag }, 'Could not revalidate page sitemap')
     }
+  }
+
+  try {
+    await purgeCloudflareCacheTags([CLOUDFLARE_SITEMAP_CACHE_TAG])
+  } catch (error) {
+    req.payload.logger.warn({ err: error }, 'Could not purge Cloudflare sitemap cache')
   }
 }
 
