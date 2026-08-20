@@ -144,7 +144,6 @@ html[data-nb1-preview='true'] .nb1-klaviyo-preview-standin {
 }
 
 html {
-  opacity: 0;
   scroll-behavior: smooth;
 }
 
@@ -154,10 +153,6 @@ html {
   }
 }
 
-html[data-theme='dark'],
-html[data-theme='light'] {
-  opacity: initial;
-}
 
 
 /* Restore heading styles inside CMS rich text.
