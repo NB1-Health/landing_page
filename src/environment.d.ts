@@ -13,6 +13,9 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       DEPLOY_ENV: 'local' | 'production' | 'staging'
+      CLOUDFLARE_EDGE_CACHE_ENABLED?: 'false' | 'true'
+      CLOUDFLARE_ZONE_ID?: string
+      CLOUDFLARE_CACHE_PURGE_TOKEN?: string
       PAYLOAD_SECRET: string
       DATABASE_URL: string
       NEXT_PUBLIC_SERVER_URL: string
