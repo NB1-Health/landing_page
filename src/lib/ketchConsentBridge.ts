@@ -2,7 +2,7 @@ export function ketchConsentBindingScript(pageLanguage: string): string {
   const language = JSON.stringify(pageLanguage)
 
   return `(function(){
-    var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false};
+    var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false,lastConsentKey:null};
     window.__nb1Consent=window.__nb1Consent||{};
     window.__nb1ConsentResolved=window.__nb1ConsentResolved===true;
 
@@ -32,22 +32,27 @@ export function ketchConsentBindingScript(pageLanguage: string): string {
 
     function applyKetchConsent(consent){
       var purposes=consent&&consent.purposes||{};
+      var analyticsConsent=purposes.analytics===true;
+      var marketingConsent=purposes.targeted_advertising===true;
+      var consentKey=(analyticsConsent?'1':'0')+':'+(marketingConsent?'1':'0');
       window.__nb1Consent=purposes;
       window.__nb1ConsentResolved=true;
-      if(purposes.targeted_advertising!==true)scrubAdvertisingAttribution();
+      if(bridge.lastConsentKey===consentKey)return;
+      bridge.lastConsentKey=consentKey;
+      if(!marketingConsent)scrubAdvertisingAttribution();
       if(typeof window.gtag==='function'){
         window.gtag('consent','update',{
-          analytics_storage:purposes.analytics?'granted':'denied',
-          ad_storage:purposes.targeted_advertising?'granted':'denied',
-          ad_user_data:purposes.targeted_advertising?'granted':'denied',
-          ad_personalization:purposes.targeted_advertising?'granted':'denied'
+          analytics_storage:analyticsConsent?'granted':'denied',
+          ad_storage:marketingConsent?'granted':'denied',
+          ad_user_data:marketingConsent?'granted':'denied',
+          ad_personalization:marketingConsent?'granted':'denied'
         });
       }
       window.dataLayer=window.dataLayer||[];
       window.dataLayer.push({
         event:'nb1_consent_resolved',
-        analytics_consent:purposes.analytics===true,
-        marketing_consent:purposes.targeted_advertising===true
+        analytics_consent:analyticsConsent,
+        marketing_consent:marketingConsent
       });
       if(typeof window.dispatchEvent==='function'){
         window.dispatchEvent(new Event('nb1:consent-resolved'));

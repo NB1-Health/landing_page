@@ -29,7 +29,7 @@ function buildUserData(u: UserData, c: RequestContext) {
     st: hState(u.province),
     zp: hZip(u.zip),
     country: hCountry(u.country),
-    external_id: u.external_id,
+    external_id: u.external_id?.trim() || hEmail(u.email),
     client_ip_address: c.ip,
     client_user_agent: c.userAgent,
     fbp: c.fbp,
