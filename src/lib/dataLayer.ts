@@ -381,7 +381,7 @@ const normBasic = (v: string) => v.trim().toLowerCase()
 const normPhone = (v: string) => v.replace(/\D/g, '').replace(/^0+/, '') // digits only, drop leading zeros
 
 export type EcUserFields = {
-  userId?: string // stable, non-PII (e.g. external_id)
+  externalId?: string // stable, non-PII person identifier (Meta external_id)
   email?: string
   phone?: string
   firstName?: string
@@ -465,12 +465,12 @@ export function resetEnhancedUserDataCache(): void {
   enhancedUserDataHashes.clear()
 }
 
-/** Push a GA4 event that also carries Enhanced Conversions `user_data`
- *  (+ `user_id` when a stable id is available). Safe to fire-and-forget. */
+/** Push an event with consent-approved matching fields. Safe to fire-and-forget. */
 export async function pushEventWithUser(
   event: string,
   payload: Record<string, unknown>,
   fields: EcUserFields,
+  options: { identityWaitMs?: number } = {},
 ): Promise<void> {
   const hasIdentityConsent =
     typeof window !== 'undefined' && window.__nb1Consent?.targeted_advertising === true
@@ -479,15 +479,29 @@ export async function pushEventWithUser(
     return
   }
 
+  const identityWaitMs = Math.max(0, options.identityWaitMs ?? 0)
+  if (identityWaitMs > 0) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      primeEnhancedUserData(fields).catch(() => undefined),
+      new Promise<void>((resolve) => {
+        timeoutId = setTimeout(resolve, identityWaitMs)
+      }),
+    ])
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+
   const user_data = buildCachedEnhancedUserData(fields)
   const email_sha256 = cachedHash(fields.email, normBasic)
+  const external_id = fields.externalId?.trim() || email_sha256
   pushEvent(event, {
     ...payload,
-    ...(fields.userId ? { user_id: fields.userId } : {}),
+    ...(external_id ? { external_id } : {}),
     ...(email_sha256 ? { email_sha256 } : {}),
     ...(user_data ? { user_data } : {}),
   })
 
+  if (identityWaitMs > 0) return
   try {
     await primeEnhancedUserData(fields)
   } catch {
@@ -625,7 +639,6 @@ export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): str
       ...(input.maxValue !== undefined && input.maxValue !== null ? { max_value: input.maxValue } : {}),
       ...(input.valueCurrency ? { value_currency: input.valueCurrency } : {}),
       ...(input.planTerm !== undefined ? { plan_term: input.planTerm } : {}),
-      ...(input.externalId ? { external_id: input.externalId } : {}),
       payment_type: input.paymentType,
       payment_flow: input.paymentFlow,
       confirmation_source: 'checkout_confirm',
@@ -639,7 +652,10 @@ export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): str
         items: [input.item],
       },
     },
-    input.user,
+    {
+      ...input.user,
+      externalId: input.externalId ?? input.user.externalId,
+    },
   )
   return resolvedEventId
 }
@@ -720,7 +736,7 @@ export function trackPostPurchaseSurveyViewed(input: PostPurchaseSurveyContext):
       ...postPurchaseSurveyPayload(input),
     },
     {
-      userId: input.externalId,
+      externalId: input.externalId,
       email: input.email,
     },
   )
@@ -766,7 +782,7 @@ export function trackPostPurchaseSurveyAnswered(input: PostPurchaseSurveyAnswere
       persistence_status: input.persistenceStatus ?? 'client_only',
     },
     {
-      userId: input.externalId,
+      externalId: input.externalId,
       email: input.email,
     },
   )

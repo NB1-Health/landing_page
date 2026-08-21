@@ -61,11 +61,13 @@ describe('checkout event boundaries', () => {
         event_id: `acquisition-${paymentType}`,
         checkout_id: 'checkout-1',
         transaction_id: `subscription-${paymentType}`,
+        external_id: 'customer-1',
         payment_type: paymentType,
         payment_flow: paymentFlow,
         confirmation_source: 'checkout_confirm',
         signal_quality: 'confirmed',
       })
+      expect(acquisition).not.toHaveProperty('user_id')
       expect(identify).toHaveBeenCalledTimes(1)
       expect(track).toHaveBeenCalledWith(
         'Checkout Completed',
@@ -77,6 +79,30 @@ describe('checkout event boundaries', () => {
       )
     },
   )
+
+  it('omits the purchase external ID when advertising consent is denied', () => {
+    window.__nb1Consent = { analytics: true, targeted_advertising: false }
+
+    trackSubscriptionAcquired({
+      checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      externalId: 'backend-external-id',
+      paymentType: 'card',
+      paymentFlow: 'inline',
+      currency: 'EUR',
+      value: 99,
+      item: { item_id: 'core-4', item_name: 'Core 4 months', price: 99, quantity: 1 },
+      user: { email: 'buyer@example.com' },
+    })
+
+    const acquisition = window.dataLayer.find(
+      (entry) => entry.canonical_event === 'subscription_acquired',
+    )
+    expect(acquisition).not.toHaveProperty('external_id')
+    expect(acquisition).not.toHaveProperty('user_id')
+    expect(acquisition).not.toHaveProperty('user_data')
+  })
 
   it('deduplicates a reconfirmed transaction and reuses its acquisition ID', () => {
     const input = {

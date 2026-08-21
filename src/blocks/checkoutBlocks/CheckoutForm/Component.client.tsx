@@ -28,7 +28,6 @@ import {
   markCheckoutCompleted,
   mintEventId,
   nextPaymentAttempt,
-  primeEnhancedUserData,
   pushEvent,
   pushEventWithUser,
   resolveRedirectPaymentType,
@@ -758,7 +757,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           coupon: redirectCoupon,
           item: redirectItem,
           user: {
-            userId: redirectConfirmation.external_id,
             email: redirectConfirmation.user_email || saved.email || email,
             phone: saved.phone || phone || undefined,
             firstName: saved.fn ?? fn,
@@ -1148,7 +1146,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
     const checkoutId = getOrCreateCheckoutId()
     const esItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-    void primeEnhancedUserData({ email, phone: phone || undefined }).catch(() => undefined)
     void pushEventWithUser(
       'email_submitted',
       {
@@ -1162,6 +1159,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         },
       },
       { email, phone: phone || undefined },
+      { identityWaitMs: 250 },
     )
     trackKlaviyoStartedCheckout({
       email,
@@ -1549,7 +1547,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         coupon: promoApplied ?? undefined,
         item: purchaseItem,
         user: {
-          userId: confirmation.external_id,
           email: confirmation.user_email || email,
           phone: phone || undefined,
           firstName: fn,

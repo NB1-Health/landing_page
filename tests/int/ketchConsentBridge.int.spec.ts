@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 
@@ -63,5 +63,50 @@ describe('Ketch consent bridge contract', () => {
     expect(JSON.parse(values.get('nb1_checkout_attribution') ?? '{}')).toEqual({
       utm_source: 'search',
     })
+  })
+
+  it('notifies GTM once per normalized consent state', () => {
+    let consentHandler: ((consent: unknown) => void) | undefined
+    const dataLayer: Array<Record<string, unknown>> = []
+    const gtag = vi.fn()
+    const dispatchEvent = vi.fn()
+    const initialConsent = { purposes: { analytics: true, targeted_advertising: true } }
+    const sandbox = {
+      __nb1Consent: {},
+      __nb1ConsentResolved: false,
+      dataLayer,
+      gtag,
+      dispatchEvent,
+      sessionStorage: {
+        getItem: () => null,
+        removeItem: () => undefined,
+      },
+      ketch: (command: string, argument: unknown, callback?: (consent: unknown) => void) => {
+        if (command === 'getConsent' && typeof argument === 'function') argument(initialConsent)
+        if (command === 'on' && argument === 'consent') consentHandler = callback
+      },
+      setInterval: () => 1,
+      clearInterval: () => undefined,
+    } as Record<string, unknown>
+
+    Function('window', ketchConsentBindingScript('en'))(sandbox)
+    consentHandler?.(initialConsent)
+    consentHandler?.({ purposes: { analytics: true, targeted_advertising: false } })
+    consentHandler?.({ purposes: { analytics: true, targeted_advertising: false } })
+
+    expect(dataLayer).toEqual([
+      {
+        event: 'nb1_consent_resolved',
+        analytics_consent: true,
+        marketing_consent: true,
+      },
+      {
+        event: 'nb1_consent_resolved',
+        analytics_consent: true,
+        marketing_consent: false,
+      },
+    ])
+    expect(gtag).toHaveBeenCalledTimes(2)
+    expect(dispatchEvent).toHaveBeenCalledTimes(2)
   })
 })
