@@ -2862,6 +2862,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     countries={
                       COUNTRY_CODES[country] ? [COUNTRY_CODES[country].toLowerCase()] : null
                     }
+                    // UAE: we only serve Dubai + Abu Dhabi, so hide address suggestions from the
+                    // other emirates (e.g. Sharjah) that Google's country-only filter still returns.
+                    allowedCities={COUNTRY_CODES[country] === 'AE' ? UAE_ALLOWED_CITIES : null}
                     className={addrErr.a1 ? 'err' : ''}
                   />
                   {addrErr.a1 && <span className="nb1-err">{addrErr.a1}</span>}
@@ -2882,7 +2885,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   />
                 </div>
               </div>
-              <div className="nb1-frow">
+              {/* UAE hides the postal field, so the row collapses to a single column and City spans
+                  the full width instead of leaving an empty half. */}
+              <div className={`nb1-frow${COUNTRY_CODES[country] === 'AE' ? ' full' : ''}`}>
                 {/* UAE has no postal codes: hide the field (value stays "00000", still sent to the
                     backend) so the customer isn't asked for a code that doesn't exist. */}
                 {COUNTRY_CODES[country] !== 'AE' && (

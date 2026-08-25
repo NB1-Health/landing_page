@@ -15,6 +15,13 @@ type Props = {
   onPick: (place: GooglePlace, description?: string) => void
   /** ISO 3166-1 alpha-2 codes to restrict results to (e.g. ['de']). Null = no restriction. */
   countries?: string[] | null
+  /**
+   * City names to restrict predictions to WITHIN the country (e.g. ['Dubai', 'Abu Dhabi'] for the
+   * UAE, where we only serve those two emirates). Google's componentRestrictions can only filter by
+   * country, not city, so we filter the predictions ourselves: a prediction is kept only when its
+   * description mentions one of these cities. Null/empty = no city restriction. Case-insensitive.
+   */
+  allowedCities?: string[] | null
   language?: string
   id?: string
   placeholder?: string
@@ -33,6 +40,7 @@ export default function AddressAutocomplete({
   onValueChange,
   onPick,
   countries = null,
+  allowedCities = null,
   language,
   id,
   placeholder,
@@ -131,7 +139,16 @@ export default function AddressAutocomplete({
         setOpen(false)
         return
       }
-      setPredictions(preds)
+      // Google can only restrict by country, so drop predictions from cities we don't serve (e.g.
+      // for the UAE keep only Dubai / Abu Dhabi, hiding Sharjah and the other emirates).
+      let list = preds
+      if (allowedCities && allowedCities.length > 0) {
+        const wanted = allowedCities.map((c) => c.toLowerCase())
+        list = preds.filter((p: any) =>
+          wanted.some((c) => (p?.description || '').toLowerCase().includes(c)),
+        )
+      }
+      setPredictions(list)
       setOpen(true)
     })
   }
