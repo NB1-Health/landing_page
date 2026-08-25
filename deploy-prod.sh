@@ -4,6 +4,20 @@ set -euo pipefail
 APP_DIR="/var/www/landing_page"
 APP_NAME="landing_prod"
 
+# ── Single deploy at a time ───────────────────────────────────────────────────
+# Backstop for the GitHub Actions `concurrency` guard: two deploys running
+# `rm -rf node_modules && npm install` on the same tree at once race each other and
+# flood the log with `npm warn tar TAR_ENTRY_ERROR ENOENT`. Take an exclusive lock;
+# a second deploy WAITS up to 15 min for the first to finish, then aborts rather than
+# corrupting node_modules. The lock auto-releases when this script exits (fd 9 closes).
+LOCK_FILE="/tmp/${APP_NAME}-deploy.lock"
+exec 9>"$LOCK_FILE"
+if ! flock -w 900 9; then
+  echo ">>> Another deploy is still running after 15 min — aborting." >&2
+  exit 1
+fi
+echo ">>> Acquired deploy lock ($LOCK_FILE)"
+
 export NVM_DIR="$HOME/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   . "$NVM_DIR/nvm.sh"
