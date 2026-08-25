@@ -546,13 +546,21 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   // Fill the address fields from a Google Places selection: street → a1, postal_code → zip,
   // locality → city. Country is left as whatever the user picked in the Country select.
-  const handleAddressPick = (place: GooglePlace) => {
+  const handleAddressPick = (place: GooglePlace, description?: string) => {
     const comps = place?.address_components || []
     const get = (type: string) => comps.find((c) => c.types?.includes(type))?.long_name || ''
     const route = get('route')
     const num = get('street_number')
+    // Google often omits the `street_number` component (very common in the UAE) even when the number
+    // is right there in the prediction the customer clicked. Rebuilding from route alone then drops
+    // it. So: use the structured route+number only when BOTH are present; otherwise keep the picked
+    // prediction's own street line (its main text, before the city/country) which carries the number.
+    const descMain = (description || '').split(/\s[-–]\s|,/)[0].trim()
     const line1 =
-      [route, num].filter(Boolean).join(' ').trim() ||
+      (route && num ? `${route} ${num}`.trim() : '') ||
+      descMain ||
+      (place?.name || '').trim() ||
+      route ||
       (place?.formatted_address || '').split(',')[0].trim()
     const postal = get('postal_code')
     const cityName =
