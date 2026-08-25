@@ -563,22 +563,26 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       route ||
       (place?.formatted_address || '').split(',')[0].trim()
     const postal = get('postal_code')
+    const isUAE = COUNTRY_CODES[country] === 'AE'
     const cityName =
       get('locality') ||
       get('postal_town') ||
       get('administrative_area_level_2') ||
       get('sublocality') ||
+      // In the UAE the emirate (Dubai / Abu Dhabi) comes through as administrative_area_level_1, not
+      // locality, so the chain above is usually empty and the city never auto-filled. Fall back to
+      // the emirate for the UAE only (elsewhere admin_area_level_1 is a state/region, not a city).
+      (isUAE ? get('administrative_area_level_1') : '') ||
       ''
     if (line1) setA1(line1)
     if (postal) setZip(postal)
-    // For the UAE, only accept Dubai/Abu Dhabi from the pick; any other emirate is left blank
-    // so the customer picks a serviceable city from the restricted dropdown.
-    if (cityName) {
-      if (COUNTRY_CODES[country] === 'AE' && !UAE_ALLOWED_CITIES.includes(cityName)) {
-        setCity('')
-      } else {
-        setCity(cityName)
-      }
+    if (isUAE) {
+      // Normalize the emirate to our two serviceable spellings; anything else stays blank so the
+      // customer picks a serviceable one from the restricted dropdown.
+      const key = cityName.toLowerCase().replace(/[\s\-_]/g, '')
+      setCity(key.includes('dubai') ? 'Dubai' : (key.includes('abudhabi') || key.includes('abuzaby')) ? 'Abu Dhabi' : '')
+    } else if (cityName) {
+      setCity(cityName)
     }
   }
 
