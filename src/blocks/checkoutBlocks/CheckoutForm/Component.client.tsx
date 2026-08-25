@@ -137,6 +137,10 @@ const COUNTRY_CODES: Record<string, string> = {
   Romania: 'RO',
 }
 
+// UAE operations are limited to Dubai + Abu Dhabi (ClickUp 86cb99egq). When the country is the
+// UAE the city becomes a fixed dropdown of these two, so no other emirate can be selected/typed.
+const UAE_ALLOWED_CITIES = ['Dubai', 'Abu Dhabi']
+
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
 type PayMethod = 'card' | 'paypal' | 'klarna' | 'sepa'
@@ -559,7 +563,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       ''
     if (line1) setA1(line1)
     if (postal) setZip(postal)
-    if (cityName) setCity(cityName)
+    // For the UAE, only accept Dubai/Abu Dhabi from the pick; any other emirate is left blank
+    // so the customer picks a serviceable city from the restricted dropdown.
+    if (cityName) {
+      if (COUNTRY_CODES[country] === 'AE' && !UAE_ALLOWED_CITIES.includes(cityName)) {
+        setCity('')
+      } else {
+        setCity(cityName)
+      }
+    }
   }
 
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
@@ -1021,9 +1033,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (!ln.trim()) e.ln = t.required
     else if (!hasLetter(ln)) e.ln = t.nameInvalid
     if (!a1.trim()) e.a1 = t.required
-    if (!zip.trim()) e.zip = t.required
+    // Skip the postal-code check for the UAE (no postal codes; field hidden, value auto "00000").
+    if (COUNTRY_CODES[country] !== 'AE' && !zip.trim()) e.zip = t.required
     if (!city.trim()) e.city = t.required
     else if (!hasLetter(city)) e.city = t.nameInvalid
+    // UAE operations limited to Dubai + Abu Dhabi (ClickUp 86cb99egq).
+    else if (COUNTRY_CODES[country] === 'AE' && !UAE_ALLOWED_CITIES.includes(city.trim()))
+      e.city = t.required
     // Phone is required for delivery updates. The input keeps the value in
     // E.164 (+49…), so isValidPhoneNumber checks it against the numbering
     // rules of the country the visitor picked in the country-code selector.
@@ -2806,8 +2822,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       setCountry(next)
                       // UAE has no postal codes, but the field is required → auto-fill 00000.
                       // Leaving AE drops that placeholder so a real code is entered.
-                      if (COUNTRY_CODES[next] === 'AE') setZip('00000')
-                      else if (zip === '00000') setZip('')
+                      if (COUNTRY_CODES[next] === 'AE') {
+                        setZip('00000')
+                        // UAE is limited to Dubai/Abu Dhabi: drop any other city so the
+                        // customer must pick from the restricted dropdown.
+                        if (!UAE_ALLOWED_CITIES.includes(city)) setCity('')
+                      } else if (zip === '00000') setZip('')
                     }}
                   >
                     {COUNTRIES.map((c) => (
@@ -2863,28 +2883,50 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
               </div>
               <div className="nb1-frow">
-                <div className="nb1-fg">
-                  <label htmlFor="nb1-zip">{t.address.postalCode}</label>
-                  <input
-                    id="nb1-zip"
-                    type="text"
-                    autoComplete="postal-code"
-                    value={zip}
-                    onChange={(e) => setZip(e.target.value)}
-                    className={addrErr.zip ? 'err' : ''}
-                  />
-                  {addrErr.zip && <span className="nb1-err">{addrErr.zip}</span>}
-                </div>
+                {/* UAE has no postal codes: hide the field (value stays "00000", still sent to the
+                    backend) so the customer isn't asked for a code that doesn't exist. */}
+                {COUNTRY_CODES[country] !== 'AE' && (
+                  <div className="nb1-fg">
+                    <label htmlFor="nb1-zip">{t.address.postalCode}</label>
+                    <input
+                      id="nb1-zip"
+                      type="text"
+                      autoComplete="postal-code"
+                      value={zip}
+                      onChange={(e) => setZip(e.target.value)}
+                      className={addrErr.zip ? 'err' : ''}
+                    />
+                    {addrErr.zip && <span className="nb1-err">{addrErr.zip}</span>}
+                  </div>
+                )}
                 <div className="nb1-fg">
                   <label htmlFor="nb1-city">{t.address.city}</label>
-                  <input
-                    id="nb1-city"
-                    type="text"
-                    autoComplete="address-level2"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className={addrErr.city ? 'err' : ''}
-                  />
+                  {COUNTRY_CODES[country] === 'AE' ? (
+                    // UAE operations limited to Dubai + Abu Dhabi: a fixed dropdown, so no other
+                    // emirate can be selected or typed.
+                    <select
+                      id="nb1-city"
+                      value={UAE_ALLOWED_CITIES.includes(city) ? city : ''}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={addrErr.city ? 'err' : ''}
+                    >
+                      <option value=""></option>
+                      {UAE_ALLOWED_CITIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="nb1-city"
+                      type="text"
+                      autoComplete="address-level2"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={addrErr.city ? 'err' : ''}
+                    />
+                  )}
                   {addrErr.city && <span className="nb1-err">{addrErr.city}</span>}
                 </div>
               </div>
