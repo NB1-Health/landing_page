@@ -968,6 +968,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         currency,
         shipping_option: shipping,
         discount_code: promoApplied,
+        // Not read by this handler, which only refreshes prices. Sent so both /preview
+        // request bodies stay identical and nobody has to work out why one has a field the
+        // other does not.
+        lang: uiLanguage,
       }),
     })
       .then((r) => r.json())
@@ -1644,6 +1648,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           currency,
           shipping_option: shipping,
           discount_code: code,
+          // Picks the code's per-language success message. uiLanguage already collapses the
+          // 8 page locales to the 4 the backend knows (ch->de, be->nl, uk/uae->en); do not
+          // write a second mapping here.
+          lang: uiLanguage,
         }),
       })
       const data = await res.json()
@@ -1668,12 +1676,25 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           monthly_price: data.monthly_price,
           shipping_price: data.shipping_price,
         })
+        // The backend already resolved this for uiLanguage, so it is shown VERBATIM and is
+        // deliberately not put through translateDiscountMessage: that maps known English
+        // strings to dictionary keys and replaces anything unmapped with the generic
+        // fallback below, which would silently discard the admin's copy. Absent (this code
+        // has no message for this language) keeps the existing translated default.
+        // typeof-guarded for the same reason translateDiscountMessage guards: a non-string
+        // body must not render as "[object Object]".
+        const custom =
+          typeof data.discount_message_custom === 'string'
+            ? data.discount_message_custom.trim()
+            : ''
         setPromoMsg({
-          text: translateDiscountMessage(
-            data.discount_message,
-            dict,
-            dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
-          ),
+          text:
+            custom ||
+            translateDiscountMessage(
+              data.discount_message,
+              dict,
+              dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
+            ),
           ok: true,
         })
       } else {
