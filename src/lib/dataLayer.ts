@@ -256,7 +256,7 @@ export function findSubmittedEmail(data: Record<string, unknown>): string | unde
 }
 
 async function primeLeadIdentity(email: string): Promise<void> {
-  if (typeof window === 'undefined' || window.__nb1Consent?.targeted_advertising !== true) return
+  if (!hasAdvertisingIdentityConsent()) return
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined
   try {
@@ -380,8 +380,15 @@ async function sha256Hex(input: string): Promise<string> {
 const normBasic = (v: string) => v.trim().toLowerCase()
 const normPhone = (v: string) => v.replace(/\D/g, '').replace(/^0+/, '') // digits only, drop leading zeros
 
+function hasAdvertisingIdentityConsent(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.__nb1ConsentResolved === true &&
+    window.__nb1Consent?.targeted_advertising === true
+  )
+}
+
 export type EcUserFields = {
-  externalId?: string // stable, non-PII person identifier (Meta external_id)
   email?: string
   phone?: string
   firstName?: string
@@ -472,9 +479,7 @@ export async function pushEventWithUser(
   fields: EcUserFields,
   options: { identityWaitMs?: number } = {},
 ): Promise<void> {
-  const hasIdentityConsent =
-    typeof window !== 'undefined' && window.__nb1Consent?.targeted_advertising === true
-  if (!hasIdentityConsent) {
+  if (!hasAdvertisingIdentityConsent()) {
     pushEvent(event, payload)
     return
   }
@@ -493,10 +498,9 @@ export async function pushEventWithUser(
 
   const user_data = buildCachedEnhancedUserData(fields)
   const email_sha256 = cachedHash(fields.email, normBasic)
-  const external_id = fields.externalId?.trim() || email_sha256
   pushEvent(event, {
     ...payload,
-    ...(external_id ? { external_id } : {}),
+    ...(email_sha256 ? { external_id: email_sha256 } : {}),
     ...(email_sha256 ? { email_sha256 } : {}),
     ...(user_data ? { user_data } : {}),
   })
@@ -526,7 +530,6 @@ export type SubscriptionAcquiredInput = {
   maxValue?: number | null
   valueCurrency?: string | null
   planTerm?: number
-  externalId?: string
   paymentType: PaymentType
   paymentFlow: PaymentFlow
   currency: string
@@ -652,10 +655,7 @@ export function trackSubscriptionAcquired(input: SubscriptionAcquiredInput): str
         items: [input.item],
       },
     },
-    {
-      ...input.user,
-      externalId: input.externalId ?? input.user.externalId,
-    },
+    input.user,
   )
   return resolvedEventId
 }
@@ -682,7 +682,6 @@ export type PostPurchaseSurveyContext = {
   acquisitionEventId: string
   transactionId: string
   customerId: string
-  externalId?: string
   orderNumber?: string | null
   email?: string
   pageLanguage: string
@@ -696,15 +695,10 @@ function postPurchaseSurveyInstanceKey(input: PostPurchaseSurveyContext): string
 }
 
 function consentApprovedSurveyIdentity(
-  input: Pick<PostPurchaseSurveyContext, 'customerId' | 'externalId'>,
+  input: Pick<PostPurchaseSurveyContext, 'customerId'>,
 ): Record<string, string> {
-  const hasIdentityConsent =
-    typeof window !== 'undefined' && window.__nb1Consent?.targeted_advertising === true
-  if (!hasIdentityConsent) return {}
-  return {
-    customer_id: input.customerId,
-    ...(input.externalId ? { external_id: input.externalId } : {}),
-  }
+  if (!hasAdvertisingIdentityConsent()) return {}
+  return { customer_id: input.customerId }
 }
 
 function postPurchaseSurveyPayload(input: PostPurchaseSurveyContext): Record<string, unknown> {
@@ -736,7 +730,6 @@ export function trackPostPurchaseSurveyViewed(input: PostPurchaseSurveyContext):
       ...postPurchaseSurveyPayload(input),
     },
     {
-      externalId: input.externalId,
       email: input.email,
     },
   )
@@ -782,7 +775,6 @@ export function trackPostPurchaseSurveyAnswered(input: PostPurchaseSurveyAnswere
       persistence_status: input.persistenceStatus ?? 'client_only',
     },
     {
-      externalId: input.externalId,
       email: input.email,
     },
   )

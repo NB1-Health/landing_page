@@ -422,7 +422,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     eventId: string
     transactionId: string
     customerId: string
-    externalId: string
   } | null>(null)
 
   useEffect(() => {
@@ -746,7 +745,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           maxValue: redirectConfirmation.max_value,
           valueCurrency: redirectConfirmation.value_currency,
           planTerm: redirectConfirmation.plan_term,
-          externalId: redirectConfirmation.external_id,
           paymentType: redirectPaymentType,
           paymentFlow: 'redirect',
           currency: redirectCurrency,
@@ -791,7 +789,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               zip: saved.zip ?? zip,
               country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
               phone: saved.phone || phone || undefined,
-              external_id: redirectConfirmation.external_id,
             },
           })
         }
@@ -801,7 +798,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           eventId: acquisitionEventId,
           transactionId: redirectConfirmation.subscription_id,
           customerId: redirectConfirmation.user_id,
-          externalId: redirectConfirmation.external_id,
         })
         setAccountStatus('sent')
         setConfirmed(true)
@@ -1538,7 +1534,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         maxValue: confirmation.max_value,
         valueCurrency: confirmation.value_currency,
         planTerm: confirmation.plan_term,
-        externalId: confirmation.external_id,
         paymentType: payMethod,
         paymentFlow,
         currency,
@@ -1580,7 +1575,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             zip,
             country: COUNTRY_CODES[country] ?? country,
             phone,
-            external_id: confirmation.external_id,
           },
         })
       }
@@ -1590,7 +1584,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         eventId: acquisitionEventId,
         transactionId: confirmation.subscription_id,
         customerId: confirmation.user_id,
-        externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
       setConfirmed(true)
@@ -1822,7 +1815,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         acquisitionEventId={acquisitionIdentity?.eventId ?? null}
         transactionId={acquisitionIdentity?.transactionId ?? null}
         customerId={acquisitionIdentity?.customerId ?? null}
-        externalId={acquisitionIdentity?.externalId ?? null}
         planLabel={planLabel}
         cycleLabel={cycleLabel}
         priceFormatted={priceFormatted}

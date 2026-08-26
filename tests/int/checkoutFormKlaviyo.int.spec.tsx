@@ -81,6 +81,7 @@ describe('checkout form Klaviyo boundary', () => {
     )
     window.dataLayer = []
     window.__nb1Consent = { analytics: false, targeted_advertising: false }
+    window.__nb1ConsentResolved = true
     window.localStorage.clear()
     window.sessionStorage.clear()
     window.sessionStorage.setItem('nb1_checkout_plan', JSON.stringify({ plan: 'core', cycle: '4' }))
@@ -135,11 +136,22 @@ describe('checkout form Klaviyo boundary', () => {
     expect(email).not.toBeNull()
 
     await act(async () => {
+      changeInput(email!, 'not-an-email')
+      container.querySelector<HTMLButtonElement>('.nb1-acc.open .nb1-acc-next')!.click()
+    })
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'email_submitted'),
+    ).toHaveLength(0)
+
+    await act(async () => {
       changeInput(email!, 'first@company.com')
     })
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.nb1-acc.open .nb1-acc-next')!.click()
     })
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'email_submitted'),
+    ).toHaveLength(1)
 
     expect(container.querySelector<HTMLButtonElement>('.nb1-acc-edit')).not.toBeNull()
     await act(async () => {
@@ -168,5 +180,10 @@ describe('checkout form Klaviyo boundary', () => {
       nb1_utm_campaign: 'component-test',
     })
     expect(track.mock.calls[1][1].$event_id).not.toBe(track.mock.calls[0][1].$event_id)
+    const emailEvents = window.dataLayer.filter(
+      (entry) => entry.canonical_event === 'email_submitted',
+    )
+    expect(emailEvents).toHaveLength(2)
+    expect(emailEvents[1].event_id).not.toBe(emailEvents[0].event_id)
   })
 })

@@ -172,6 +172,7 @@ describe('loss-resistant delivery', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     resetEnhancedUserDataCache()
     vi.restoreAllMocks()
     vi.useRealTimers()
@@ -317,21 +318,23 @@ describe('loss-resistant delivery', () => {
     expect(window.dataLayer[1]).not.toHaveProperty('user_id')
   })
 
-  it('prefers an explicit external ID over the prepared email hash', async () => {
+  it('omits identity until advertising consent has resolved', async () => {
     vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
       new Uint8Array([1, 2, 3]).buffer,
     )
     await primeEnhancedUserData({ email: 'person@example.com' })
+    window.__nb1ConsentResolved = false
     window.dataLayer = []
 
     await pushEventWithUser(
       'add_shipping_info',
       { checkout_id: 'checkout-1' },
-      { externalId: 'backend-external-id', email: 'person@example.com' },
+      { email: 'person@example.com' },
     )
 
-    expect(window.dataLayer[1]).toHaveProperty('external_id', 'backend-external-id')
-    expect(window.dataLayer[1]).toHaveProperty('email_sha256', '010203')
+    expect(window.dataLayer[1]).not.toHaveProperty('external_id')
+    expect(window.dataLayer[1]).not.toHaveProperty('email_sha256')
+    expect(window.dataLayer[1]).not.toHaveProperty('user_data')
     expect(window.dataLayer[1]).not.toHaveProperty('user_id')
   })
 
@@ -346,7 +349,7 @@ describe('loss-resistant delivery', () => {
     await pushEventWithUser(
       'add_shipping_info',
       { checkout_id: 'checkout-1' },
-      { externalId: 'customer-1', email: 'person@example.com' },
+      { email: 'person@example.com' },
     )
 
     expect(window.dataLayer[1]).not.toHaveProperty('external_id')
@@ -359,6 +362,7 @@ describe('confirmed lead boundary', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     resetLeadDedupe()
     resetEnhancedUserDataCache()
     vi.restoreAllMocks()

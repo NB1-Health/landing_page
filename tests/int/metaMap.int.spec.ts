@@ -5,7 +5,7 @@ import { mapToMetaEvent } from '@/lib/meta/map'
 const emailHash = '542d240129883c019e106e3b1b2d3f3cb3537c43c425364de8e951d5a3083345'
 
 describe('Meta event matching identity', () => {
-  it('uses the normalized email hash when no explicit external ID is supplied', () => {
+  it('uses the normalized email hash as external ID', () => {
     expect(
       mapToMetaEvent({
         event: 'add_shipping_info',
@@ -22,7 +22,7 @@ describe('Meta event matching identity', () => {
     })
   })
 
-  it('prefers an explicit external ID over the email-derived fallback', () => {
+  it('ignores an explicit backend ID and keeps the email-derived external ID', () => {
     expect(
       mapToMetaEvent({
         event: 'purchase',
@@ -31,6 +31,6 @@ describe('Meta event matching identity', () => {
         context: {},
         consent: true,
       }),
-    ).toHaveProperty('user_data.external_id', 'backend-external-id')
+    ).toHaveProperty('user_data.external_id', emailHash)
   })
 })
