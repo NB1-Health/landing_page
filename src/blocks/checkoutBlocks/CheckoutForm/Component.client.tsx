@@ -3572,8 +3572,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
               )}
               <p className="nb1-confirm-legal">
-                {t.confirm.legalPrefix} <a href="#">{t.confirm.terms}</a> {t.confirm.and}{' '}
-                <a href="#">{t.confirm.privacyPolicy}</a>
+                {t.confirm.legalPrefix} <a href={`/${locale || 'en'}/terms-conditions`}>{t.confirm.terms}</a> {t.confirm.and}{' '}
+                <a href={`/${locale || 'en'}/privacy-policy`}>{t.confirm.privacyPolicy}</a>
                 {t.confirm.legalMid}
                 <strong>{t.confirm.feeBold}</strong> {t.confirm.legalEnd}
               </p>
