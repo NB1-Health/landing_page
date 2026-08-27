@@ -414,10 +414,6 @@ Run `npm run deploy:guard` when changing production deployment automation. It
 fails if the workflow or deploy script reintroduces staging-database copy or
 destructive schema replacement commands.
 
-The production-only Cloudflare image/sitemap cache and its Payload purge hooks are
-documented in [`ops/cloudflare/README.md`](ops/cloudflare/README.md). Its narrow
-allowlist intentionally excludes landing/content HTML, pricing, and checkout.
-
 Neither deploy actually uses the `Dockerfile`/`docker-compose.*.yml` in this
 repo, despite them existing — both servers run the app directly via PM2.
 
