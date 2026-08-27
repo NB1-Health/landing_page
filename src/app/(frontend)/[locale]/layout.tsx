@@ -224,9 +224,9 @@ export default async function RootLayout({
                   {`
                 ${ketchConsentBindingScript()}
 
-                // Temporary cutover compatibility for the currently published Ketch copy.
-                // The native-button description contains none of these links, so this becomes
-                // inert as soon as that dashboard configuration is published.
+                // Permanent action contract for the approved Ketch banner copy. The first layer
+                // uses inline links for these actions while Ketch's native buttons remain the
+                // source of truth for consent handling.
                 //   #ketch-accept   → delegates to the primary (Accept All) button
                 //   #ketch-reject   → delegates to the tertiary (Reject All) button
                 //   #ketch-settings → delegates to the secondary (Customize Settings) button

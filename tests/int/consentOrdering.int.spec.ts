@@ -30,7 +30,7 @@ describe('consent bootstrap ordering', () => {
     expect(css).not.toContain('data-ketch-backdrop')
   })
 
-  it('retains the published inline-action compatibility during the dashboard cutover', () => {
+  it('retains the approved inline-action delegation contract', () => {
     const layout = readFileSync(resolve('src/app/(frontend)/[locale]/layout.tsx'), 'utf8')
 
     expect(layout).toContain('a[href$="#ketch-accept"]')
