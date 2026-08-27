@@ -4,11 +4,13 @@ import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 
 describe('Ketch consent bridge contract', () => {
   it('resolves consent before notifying GTM and does not require gtag', () => {
-    const script = ketchConsentBindingScript('en-GB')
+    const script = ketchConsentBindingScript()
     expect(script).toContain('window.__nb1ConsentResolved=true')
     expect(script).toContain("event:'nb1_consent_resolved'")
     expect(script).toContain("new Event('nb1:consent-resolved')")
     expect(script).not.toContain("if(typeof window.gtag!=='function')return")
+    expect(script).not.toContain('setLanguage')
+    expect(script).not.toContain('willShowExperience')
   })
 
   it('keeps previously consented attribution inert while Ketch is resolving', () => {
@@ -27,7 +29,7 @@ describe('Ketch consent bridge contract', () => {
       clearInterval: () => undefined,
     } as Record<string, unknown>
 
-    Function('window', ketchConsentBindingScript('en'))(sandbox)
+    Function('window', ketchConsentBindingScript())(sandbox)
     expect(JSON.parse(values.get('nb1_checkout_attribution') ?? '{}')).toEqual({
       utm_source: 'search',
       gclid: 'stale',
@@ -58,7 +60,7 @@ describe('Ketch consent bridge contract', () => {
       clearInterval: () => undefined,
     } as Record<string, unknown>
 
-    Function('window', ketchConsentBindingScript('en'))(sandbox)
+    Function('window', ketchConsentBindingScript())(sandbox)
     consentHandler?.({ purposes: { analytics: true, targeted_advertising: false } })
     expect(JSON.parse(values.get('nb1_checkout_attribution') ?? '{}')).toEqual({
       utm_source: 'search',
@@ -89,7 +91,7 @@ describe('Ketch consent bridge contract', () => {
       clearInterval: () => undefined,
     } as Record<string, unknown>
 
-    Function('window', ketchConsentBindingScript('en'))(sandbox)
+    Function('window', ketchConsentBindingScript())(sandbox)
     consentHandler?.(initialConsent)
     consentHandler?.({ purposes: { analytics: true, targeted_advertising: false } })
     consentHandler?.({ purposes: { analytics: true, targeted_advertising: false } })
@@ -108,5 +110,29 @@ describe('Ketch consent bridge contract', () => {
     ])
     expect(gtag).toHaveBeenCalledTimes(2)
     expect(dispatchEvent).toHaveBeenCalledTimes(2)
+  })
+
+  it('binds to Ketch only once when the bridge script executes twice', () => {
+    const ketch = vi.fn((command: string, argument: unknown) => {
+      if (command === 'getConsent' && typeof argument === 'function') {
+        argument({ purposes: { analytics: false, targeted_advertising: false } })
+      }
+    })
+    const sandbox = {
+      __nb1Consent: {},
+      dataLayer: [],
+      ketch,
+      setInterval: () => 1,
+      clearInterval: () => undefined,
+    } as Record<string, unknown>
+    const script = ketchConsentBindingScript()
+
+    Function('window', script)(sandbox)
+    Function('window', script)(sandbox)
+
+    expect(ketch.mock.calls.filter(([command]) => command === 'getConsent')).toHaveLength(1)
+    expect(
+      ketch.mock.calls.filter(([command, event]) => command === 'on' && event === 'consent'),
+    ).toHaveLength(1)
   })
 })

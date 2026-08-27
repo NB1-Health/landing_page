@@ -1,6 +1,4 @@
-export function ketchConsentBindingScript(pageLanguage: string): string {
-  const language = JSON.stringify(pageLanguage)
-
+export function ketchConsentBindingScript(): string {
   return `(function(){
     var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false,lastConsentKey:null};
     window.__nb1Consent=window.__nb1Consent||{};
@@ -63,15 +61,6 @@ export function ketchConsentBindingScript(pageLanguage: string): string {
       if(bridge.bound)return true;
       if(typeof window.ketch!=='function')return false;
       try{
-        var pageLang=${language};
-        if(pageLang){
-          // No-op: 'setLanguage' is not an action in the smart tag bundle. Language is
-          // resolved from the ?lang / cookie / storage / <html lang> chain (see layout.tsx).
-          window.ketch('setLanguage',pageLang);
-          window.ketch('on','willShowExperience',function(experience,next){
-            if(experience&&next){experience.language=pageLang;next(experience);}
-          });
-        }
         window.ketch('getConsent',function(consent){
           if(consent&&consent.purposes)applyKetchConsent(consent);
         });
