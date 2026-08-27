@@ -54,8 +54,8 @@ export default async function RootLayout({
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
 
-  // Keep the consent experience English-only until every translation has legal approval.
-  const ketchLang = 'en'
+  // Use the regional language code configured in Ketch for this site locale.
+  const ketchLang = localeConfig[locale].hreflangCodes[0]
 
   let organizationJsonLd: JsonLdValue = null
 

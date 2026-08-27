@@ -20,6 +20,8 @@ describe('consent bootstrap ordering', () => {
     expect(layout.split(bootUrl)).toHaveLength(2)
     expect(layout).toContain('<link href="https://cdn.ketchjs.com" rel="preconnect" />')
     expect(layout).not.toContain('<link href="https://global.ketchcdn.com" rel="preconnect" />')
+    expect(layout).toContain('const ketchLang = localeConfig[locale].hreflangCodes[0]')
+    expect(layout).not.toContain('Object.defineProperty(navigator')
     expect(layout).toContain("'analytics_storage': 'denied'")
     expect(layout).toContain("'ad_storage': 'denied'")
     expect(layout).toContain(
