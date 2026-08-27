@@ -9,8 +9,13 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
-import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import {
+  adminOnly,
+  adminOrAgentTrash,
+  contentEditor,
+  enforceAgentDraftOperation,
+} from '../../access/roles'
 import { Banner } from '../../blocks/Banner/config'
 import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
@@ -37,11 +42,14 @@ import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
+  trash: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    admin: contentEditor,
+    create: contentEditor,
+    delete: adminOrAgentTrash,
     read: authenticatedOrPublished,
-    update: authenticated,
+    readVersions: adminOnly,
+    update: contentEditor,
   },
   defaultPopulate: {
     title: true,
@@ -137,8 +145,7 @@ export const Posts: CollectionConfig<'posts'> = {
                   ]
                 },
               }),
-              validate: (value: unknown, options: { data?: Record<string, unknown> }) => {
-                if (options?.data?.source === 'api') return true
+              validate: (value: unknown) => {
                 if (!value) return 'This field is required.'
                 return true
               },
@@ -183,7 +190,13 @@ export const Posts: CollectionConfig<'posts'> = {
               }),
               required: true,
               validate: (value: unknown, { data }: { data?: Record<string, unknown> }) => {
-                if (data?.source === 'api') return true
+                if (
+                  data?.source === 'api' &&
+                  typeof data.htmlContent === 'string' &&
+                  data.htmlContent.trim()
+                ) {
+                  return true
+                }
                 if (!value) return 'This field is required.'
                 return true
               },
@@ -405,7 +418,7 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   ],
   hooks: {
-    beforeOperation: [capturePostPublication],
+    beforeOperation: [enforceAgentDraftOperation, capturePostPublication],
     beforeChange: [parseApiContent],
     afterChange: [revalidatePost],
     afterRead: [populateAuthors],

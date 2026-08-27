@@ -9,9 +9,19 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
+import { adminOnly } from '@/access/roles'
+import { agentMcpPlugin } from '@/plugins/agentMcp'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+
+const adminManagedPublicRead = {
+  admin: adminOnly,
+  create: adminOnly,
+  delete: adminOnly,
+  read: () => true,
+  update: adminOnly,
+}
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | NB1` : 'NB1'
@@ -27,6 +37,7 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      access: adminManagedPublicRead,
       // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -59,6 +70,7 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      access: adminManagedPublicRead,
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
           if ('name' in field && field.name === 'confirmationMessage') {
@@ -79,14 +91,25 @@ export const plugins: Plugin[] = [
         })
       },
     },
+    formSubmissionOverrides: {
+      access: {
+        admin: adminOnly,
+        create: () => true,
+        delete: adminOnly,
+        read: adminOnly,
+        update: adminOnly,
+      },
+    },
   }),
   searchPlugin({
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
     searchOverrides: {
+      access: adminManagedPublicRead,
       fields: ({ defaultFields }) => {
         return [...defaultFields, ...searchFields]
       },
     },
   }),
+  agentMcpPlugin,
 ]

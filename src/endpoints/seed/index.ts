@@ -20,7 +20,7 @@ const collections: CollectionSlug[] = [
 
 // Header and Footer are now collections, not globals — no globals to seed here
 
-const categories =['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
+const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
 
 // Next.js revalidation errors are normal when seeding the database without a server running
 // i.e. running `yarn seed` locally instead of using the admin UI within an active app
@@ -85,6 +85,7 @@ export const seed = async ({
         name: 'Demo Author',
         email: 'demo-author@example.com',
         password: 'password',
+        role: 'admin',
       },
     }),
     payload.create({

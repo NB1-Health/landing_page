@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
   collections: {
@@ -76,10 +77,12 @@ export interface Config {
     authors: Author;
     headers: Header;
     footers: Footer;
+    'agent-operations': AgentOperation;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
     search: Search;
+    'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -102,10 +105,12 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     headers: HeadersSelect<false> | HeadersSelect<true>;
     footers: FootersSelect<false> | FootersSelect<true>;
+    'agent-operations': AgentOperationsSelect<false> | AgentOperationsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
+    'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -136,7 +141,7 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | PayloadMcpApiKey;
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -149,6 +154,24 @@ export interface Config {
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PayloadMcpApiKeyAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -385,6 +408,7 @@ export interface Page {
   slug: string;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -546,6 +570,7 @@ export interface Media {
   folder?: (number | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   url?: string | null;
   thumbnailURL?: string | null;
   filename?: string | null;
@@ -758,6 +783,7 @@ export interface Post {
   htmlContent?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -7366,6 +7392,7 @@ export interface ReferFaqBlock {
 export interface User {
   id: number;
   name?: string | null;
+  role: 'admin' | 'agent-editor';
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -7414,6 +7441,54 @@ export interface Product {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agent-operations".
+ */
+export interface AgentOperation {
+  id: number;
+  operationKey: string;
+  idempotencyKey: string;
+  requestHash: string;
+  tool: string;
+  status: 'planned' | 'running' | 'succeeded' | 'failed';
+  actor: number | User;
+  locale?: string | null;
+  targetCollection?: ('pages' | 'posts' | 'media') | null;
+  targetIDs?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  plan?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  planHash?: string | null;
+  approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
+  expiresAt?: string | null;
+  result?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7488,6 +7563,84 @@ export interface Search {
     | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Admin-managed MCP keys. Enable only the tools needed, set an owner, and rotate before expiry.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys".
+ */
+export interface PayloadMcpApiKey {
+  id: number;
+  enabled: boolean;
+  /**
+   * Keys are rejected after this time. The default is 90 days.
+   */
+  expiresAt: string;
+  /**
+   * The user that the API key is associated with.
+   */
+  user: number | User;
+  /**
+   * A useful label for the API key.
+   */
+  label?: string | null;
+  /**
+   * The purpose of the API key.
+   */
+  description?: string | null;
+  'payload-mcp-tool'?: {
+    /**
+     * Find Pages or Posts in one explicit locale. Returns compact draft-aware results; never returns trashed content.
+     */
+    findContent?: boolean | null;
+    /**
+     * Read one Page or Post draft in one explicit locale before editing it. Use its updatedAt value for optimistic locking.
+     */
+    getContent?: boolean | null;
+    /**
+     * Create a validated blog Post draft from constrained HTML. This cannot publish.
+     */
+    createPostDraft?: boolean | null;
+    /**
+     * Update selected fields on a blog Post draft. Requires the last-read updatedAt and cannot publish.
+     */
+    updatePostDraft?: boolean | null;
+    /**
+     * Clone an existing Page template into a new draft for one locale, replacing title and slug. This cannot publish.
+     */
+    clonePageDraft?: boolean | null;
+    /**
+     * Patch title, slug, SEO meta, or bounded copy fields on existing landing blocks in a Page draft. copyEdits uses [{blockID, blockType, patch: {field: plainText}}] with IDs from get_content and cannot change variants, links, media, IDs, or order. Requires updatedAt; raw layout, hero, system, and publish fields are rejected.
+     */
+    patchPageDraft?: boolean | null;
+    /**
+     * Upload one validated image for use in Page or Post drafts. Accepts JPEG, PNG, WebP, or GIF base64 with a bounded size.
+     */
+    uploadMedia?: boolean | null;
+    /**
+     * Validate and stage up to 20 Page/Post draft operations. Returns a plan for an admin to approve; it makes no content changes.
+     */
+    planBulkDrafts?: boolean | null;
+    /**
+     * Atomically execute an approved, unexpired bulk draft plan. Every item remains a draft and failures roll back the batch.
+     */
+    commitBulkDrafts?: boolean | null;
+    /**
+     * Soft-trash one draft Page or Post with an updatedAt check. Published content requires an admin workflow; nothing is permanently deleted.
+     */
+    trashContent?: boolean | null;
+    /**
+     * Restore one draft Page or Post with an updatedAt check. Published content requires an admin workflow; nothing is permanently deleted.
+     */
+    restoreContent?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+  collection: 'payload-mcp-api-keys';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7642,6 +7795,10 @@ export interface PayloadLockedDocument {
         value: number | Footer;
       } | null)
     | ({
+        relationTo: 'agent-operations';
+        value: number | AgentOperation;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -7658,14 +7815,23 @@ export interface PayloadLockedDocument {
         value: number | Search;
       } | null)
     | ({
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      } | null)
+    | ({
         relationTo: 'payload-folders';
         value: number | FolderInterface;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -7675,10 +7841,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   key?: string | null;
   value?:
     | {
@@ -7855,6 +8026,7 @@ export interface PagesSelect<T extends boolean = true> {
   slug?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -10857,6 +11029,7 @@ export interface PostsSelect<T extends boolean = true> {
   htmlContent?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -10869,6 +11042,7 @@ export interface MediaSelect<T extends boolean = true> {
   folder?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   url?: T;
   thumbnailURL?: T;
   filename?: T;
@@ -10978,6 +11152,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   enableAPIKey?: T;
@@ -11158,6 +11333,29 @@ export interface FootersSelect<T extends boolean = true> {
         logo?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agent-operations_select".
+ */
+export interface AgentOperationsSelect<T extends boolean = true> {
+  operationKey?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  tool?: T;
+  status?: T;
+  actor?: T;
+  locale?: T;
+  targetCollection?: T;
+  targetIDs?: T;
+  plan?: T;
+  planHash?: T;
+  approvalStatus?: T;
+  expiresAt?: T;
+  result?: T;
+  error?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -11352,6 +11550,37 @@ export interface SearchSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys_select".
+ */
+export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
+  enabled?: T;
+  expiresAt?: T;
+  user?: T;
+  label?: T;
+  description?: T;
+  'payload-mcp-tool'?:
+    | T
+    | {
+        findContent?: T;
+        getContent?: T;
+        createPostDraft?: T;
+        updatePostDraft?: T;
+        clonePageDraft?: T;
+        patchPageDraft?: T;
+        uploadMedia?: T;
+        planBulkDrafts?: T;
+        commitBulkDrafts?: T;
+        trashContent?: T;
+        restoreContent?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

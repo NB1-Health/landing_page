@@ -9,7 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
-import { authenticated } from '../access/authenticated'
+import { adminOnly, contentEditor, enforceAgentMediaOperation } from '../access/roles'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -17,11 +17,16 @@ const dirname = path.dirname(filename)
 export const Media: CollectionConfig = {
   slug: 'media',
   folders: true,
+  trash: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    admin: contentEditor,
+    create: contentEditor,
+    delete: adminOnly,
     read: anyone,
-    update: authenticated,
+    update: contentEditor,
+  },
+  hooks: {
+    beforeOperation: [enforceAgentMediaOperation],
   },
   fields: [
     {

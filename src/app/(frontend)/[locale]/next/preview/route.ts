@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { NextRequest } from 'next/server'
 
 import configPromise from '@payload-config'
+import { isAdmin } from '@/access/roles'
 import { getPreviewTarget, verifyPreviewToken } from '@/utilities/preview'
 
 async function getNormalizedPreviewPath(
@@ -79,7 +80,7 @@ export async function GET(
       req: req as unknown as PayloadRequest,
       headers: req.headers,
     })
-    if (!auth.user) {
+    if (!auth.user || !isAdmin(auth.user)) {
       const draft = await draftMode()
       draft.disable()
       return new Response('You are not allowed to preview this page', { status: 403 })
