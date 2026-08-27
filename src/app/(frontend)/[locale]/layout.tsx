@@ -54,7 +54,8 @@ export default async function RootLayout({
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
 
-  const ketchLang = localeConfig[locale].hreflangCodes[0]
+  // Keep the consent experience English-only until every translation has legal approval.
+  const ketchLang = 'en'
 
   let organizationJsonLd: JsonLdValue = null
 
@@ -115,18 +116,11 @@ export default async function RootLayout({
             // Ketch smart tag v2.12 resolves the banner language from the first of:
             //   ?lang=  ->  'lang' cookie  ->  localStorage.ketch_lang  ->
             //   sessionStorage.ketch_lang  ->  <html lang>  ->  xml:lang  ->  navigator.language
-            // <html lang> is the bare two-letter code ('de'), and the Ketch property has no
-            // plain 'de' translation configured -- only de-DE / de-AT / de-CH / en -- so the
-            // banner resolved to English on German pages. Seeding sessionStorage outranks
-            // <html lang> and sends the same regional code the property is keyed on, without
-            // touching the lang attribute (several dataLayer events read it as pageLanguage).
+            // Seeding sessionStorage outranks <html lang> and keeps the banner in the approved
+            // language without touching the page language (several dataLayer events read it).
             // A language the visitor picks in the Ketch preference centre is stored in
             // localStorage, which still outranks this -- an explicit choice should win.
             try { window.sessionStorage.setItem('ketch_lang', lang); } catch(e) {}
-            try {
-              Object.defineProperty(navigator, 'language', { get: function() { return lang; }, configurable: true });
-              Object.defineProperty(navigator, 'languages', { get: function() { return [lang]; }, configurable: true });
-            } catch(e) {}
             window.ketch_lang = lang;
             window.ketchConfig = window.ketchConfig || {};
             window.ketchConfig.language = lang;
