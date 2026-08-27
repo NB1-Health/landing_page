@@ -1,16 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { purgeCloudflareCacheTags, revalidatePath, revalidateTag } = vi.hoisted(() => ({
-  purgeCloudflareCacheTags: vi.fn(),
+const { revalidatePath, revalidateTag } = vi.hoisted(() => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath, revalidateTag }))
-vi.mock('@/utilities/cloudflareCache', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/utilities/cloudflareCache')>()),
-  purgeCloudflareCacheTags,
-}))
 
 import { Pages } from '@/collections/Pages'
 import {
@@ -22,10 +17,7 @@ import {
 const logger = { info: vi.fn(), warn: vi.fn() }
 
 describe('page publication revalidation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    purgeCloudflareCacheTags.mockResolvedValue(false)
-  })
+  beforeEach(() => vi.clearAllMocks())
 
   it('disables non-locale-aware bulk editing', () => {
     expect(Pages.disableBulkEdit).toBe(true)
@@ -62,7 +54,6 @@ describe('page publication revalidation', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/de/neue-seite')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/new-page')
     expect(revalidateTag).toHaveBeenCalledWith('pages')
-    expect(purgeCloudflareCacheTags).toHaveBeenCalledWith(['nb1-sitemaps'])
     expect(req.payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ req }))
   })
 
@@ -110,7 +101,7 @@ describe('page publication revalidation', () => {
     expect(req.locale).toBe('en')
   })
 
-  it('does not purge the edge for a draft autosave', async () => {
+  it('does not invalidate public caches for a draft autosave', async () => {
     const req = {
       context: {},
       locale: 'en',
@@ -128,7 +119,7 @@ describe('page publication revalidation', () => {
 
     expect(req.payload.findByID).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
-    expect(purgeCloudflareCacheTags).not.toHaveBeenCalled()
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 
   it('invalidates a page when the individual unpublish action removes its live version', async () => {
@@ -238,7 +229,6 @@ describe('page publication revalidation', () => {
     revalidateTag.mockImplementation(() => {
       throw new Error('Next cache context is unavailable')
     })
-    purgeCloudflareCacheTags.mockRejectedValue(new Error('Cloudflare is unavailable'))
     const req = {
       context: {},
       locale: 'en',
@@ -259,7 +249,7 @@ describe('page publication revalidation', () => {
     expect(logger.warn).toHaveBeenCalled()
   })
 
-  it('purges the sitemap edge tag after a published page is deleted', async () => {
+  it('invalidates public caches after a published page is deleted', async () => {
     const req = {
       context: {},
       locale: 'en',
@@ -270,6 +260,7 @@ describe('page publication revalidation', () => {
     await expect(revalidateDeletedPage({ doc, req } as never)).resolves.toBe(doc)
 
     expect(revalidatePath).toHaveBeenCalledWith('/en/retired-page')
-    expect(purgeCloudflareCacheTags).toHaveBeenCalledWith(['nb1-sitemaps'])
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
+    expect(revalidateTag).toHaveBeenCalledWith('pages-sitemap-en')
   })
 })

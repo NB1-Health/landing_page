@@ -14,10 +14,6 @@ import {
   resolvePublishedLocaleSlugs,
   type PublishedLocaleSlugs,
 } from '../../../utilities/publishedLocaleAvailability'
-import {
-  CLOUDFLARE_SITEMAP_CACHE_TAG,
-  purgeCloudflareCacheTags,
-} from '../../../utilities/cloudflareCache'
 
 const CONTEXT_KEY = 'postPublication'
 
@@ -133,7 +129,7 @@ function getPostRevalidationTargets(
   return { archivePaths: [...archivePaths], paths: [...paths], tags: [...tags] }
 }
 
-async function invalidateTargets(
+function invalidateTargets(
   req: PayloadRequest,
   targets: ReturnType<typeof getPostRevalidationTargets>,
 ) {
@@ -161,12 +157,6 @@ async function invalidateTargets(
     } catch (error) {
       req.payload.logger.warn({ err: error, tag }, 'Could not revalidate post sitemap')
     }
-  }
-
-  try {
-    await purgeCloudflareCacheTags([CLOUDFLARE_SITEMAP_CACHE_TAG])
-  } catch (error) {
-    req.payload.logger.warn({ err: error }, 'Could not purge Cloudflare sitemap cache')
   }
 }
 
@@ -196,7 +186,7 @@ export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
   const targets = getPostRevalidationTargets(currentSlugs, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }
 
@@ -209,6 +199,6 @@ export const revalidateDelete: CollectionAfterDeleteHook<Post> = async ({ doc, r
   const targets = getPostRevalidationTargets({}, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }

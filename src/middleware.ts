@@ -145,7 +145,7 @@ export async function middleware(req: NextRequest) {
   ).test(pathname)
 
   // Sitemaps are public, locale-explicit documents. Do not attach visitor
-  // currency/country cookies, otherwise Cloudflare correctly refuses to cache them.
+  // currency/country cookies, otherwise shared caches correctly refuse to cache them.
   if (isLocalizedSitemap) return NextResponse.next()
 
   if (pathname.includes('.')) {

@@ -90,42 +90,6 @@ describe('staging SEO containment', () => {
     ).toThrow('NEXT_PUBLIC_KLAVIYO_COMPANY_ID must be unset in staging')
   })
 
-  it('requires server-only purge credentials when production edge caching is enabled', () => {
-    const baseEnvironment = {
-      CLOUDFLARE_EDGE_CACHE_ENABLED: 'true',
-      DEPLOY_ENV: 'production',
-      NEXT_PUBLIC_KLAVIYO_COMPANY_ID: 'WwW2Hy',
-      NEXT_PUBLIC_SERVER_URL: 'https://nb1.com',
-    }
-
-    expect(() => assertDeploymentEnvironment('production', baseEnvironment)).toThrow(
-      'CLOUDFLARE_ZONE_ID is required',
-    )
-    expect(() =>
-      assertDeploymentEnvironment('production', {
-        ...baseEnvironment,
-        CLOUDFLARE_ZONE_ID: 'zone-id',
-      }),
-    ).toThrow('CLOUDFLARE_CACHE_PURGE_TOKEN is required')
-    expect(() =>
-      assertDeploymentEnvironment('production', {
-        ...baseEnvironment,
-        CLOUDFLARE_CACHE_PURGE_TOKEN: 'cache-purge-token',
-        CLOUDFLARE_ZONE_ID: 'zone-id',
-      }),
-    ).not.toThrow()
-
-    expect(() =>
-      assertDeploymentEnvironment('staging', {
-        CLOUDFLARE_CACHE_PURGE_TOKEN: 'cache-purge-token',
-        CLOUDFLARE_EDGE_CACHE_ENABLED: 'true',
-        CLOUDFLARE_ZONE_ID: 'zone-id',
-        DEPLOY_ENV: 'staging',
-        NEXT_PUBLIC_SERVER_URL: 'https://stg.nb1.com',
-      }),
-    ).toThrow('CLOUDFLARE_EDGE_CACHE_ENABLED is production-only')
-  })
-
   it('blocks crawling and omits sitemap discovery on staging', () => {
     vi.stubEnv('DEPLOY_ENV', 'staging')
 

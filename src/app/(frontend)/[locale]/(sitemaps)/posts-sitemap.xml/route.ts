@@ -4,9 +4,9 @@ import config from '@payload-config'
 import { unstable_cache } from 'next/cache'
 
 import { isAppLocale, type AppLocale } from '@/i18n/config'
-import { getSitemapCacheHeaders } from '@/utilities/cloudflareCache'
 import { getServerSideURL } from '@/utilities/getURL'
 import { readHreflangOverrides } from '@/utilities/hreflang'
+import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
   const clean = path.startsWith('/') ? path : `/${path}`
@@ -71,5 +71,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
   )
 
   const sitemap = await getPostsSitemap()
-  return getServerSideSitemap(sitemap, getSitemapCacheHeaders())
+  return getServerSideSitemap(sitemap, SITEMAP_CACHE_HEADERS)
 }

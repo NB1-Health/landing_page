@@ -19,10 +19,6 @@ import {
   isPublishedForActiveLocale,
   resolvePublishedLocaleSlugs,
 } from '../../../utilities/publishedLocaleAvailability'
-import {
-  CLOUDFLARE_SITEMAP_CACHE_TAG,
-  purgeCloudflareCacheTags,
-} from '../../../utilities/cloudflareCache'
 
 const CONTEXT_KEY = 'pagePublication'
 
@@ -150,7 +146,7 @@ export const capturePagePublication: CollectionBeforeOperationHook<'pages'> = as
   }
 }
 
-async function invalidateTargets(
+function invalidateTargets(
   req: PayloadRequest,
   targets: ReturnType<typeof getPageRevalidationTargets>,
 ) {
@@ -169,12 +165,6 @@ async function invalidateTargets(
     } catch (error) {
       req.payload.logger.warn({ err: error, tag }, 'Could not revalidate page sitemap')
     }
-  }
-
-  try {
-    await purgeCloudflareCacheTags([CLOUDFLARE_SITEMAP_CACHE_TAG])
-  } catch (error) {
-    req.payload.logger.warn({ err: error }, 'Could not purge Cloudflare sitemap cache')
   }
 }
 
@@ -212,7 +202,7 @@ export const revalidatePage: CollectionAfterChangeHook<Page> = async ({
   const locales = publicationLocales(previousSlugs, currentSlugs)
   if (locales.length === 0) return doc
 
-  await invalidateTargets(
+  invalidateTargets(
     req,
     getPageRevalidationTargets({
       currentIsHome,
@@ -235,7 +225,7 @@ export const revalidateDelete: CollectionAfterDeleteHook<Page> = async ({ doc, r
   const locales = publicationLocales(previousSlugs)
   if (locales.length === 0) return doc
 
-  await invalidateTargets(
+  invalidateTargets(
     req,
     getPageRevalidationTargets({
       locales,
