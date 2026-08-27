@@ -14,7 +14,6 @@ import { Header } from '@/Header/Component'
 import { Footer } from '@/Footer/Component'
 import { PostHero } from '@/heros/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
-import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { JsonLd } from '@/components/JsonLd'
 import { buildPostSchema } from '@/utilities/buildSchema'
@@ -100,8 +99,6 @@ export default async function PostPage({ params: paramsPromise }: Args) {
     <>
       <Header locale={locale} localizedDocument={{ route: 'post', slugs: publishedSlugs }} />
       <article className="pt-16 mr-auto ml-auto bg-white" style={{ maxWidth: '1440px' }}>
-        <PageClient />
-
         <PayloadRedirects disableNotFound url={url} />
 
         {read.draft && (

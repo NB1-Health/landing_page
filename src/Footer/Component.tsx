@@ -48,7 +48,7 @@ export async function Footer({ locale, id }: Props) {
   return (
     <Suspense>
       <FooterClient
-        logo={logo ? { url: logo.url, alt: logo.alt } : null}
+        logo={logo ? { url: logo.url, alt: logo.alt, width: logo.width, height: logo.height } : null}
         tagline={footerData?.tagline ?? null}
         subnote={footerData?.subnote ?? null}
         disclaimer={footerData?.disclaimer ?? null}
@@ -69,7 +69,7 @@ export async function Footer({ locale, id }: Props) {
             variantKey: v.variantKey,
             theme: v.theme,
             linkColor: v.linkColor,
-            logo: variantLogo ? { url: variantLogo.url, alt: variantLogo.alt } : null,
+            logo: variantLogo ? { url: variantLogo.url, alt: variantLogo.alt, width: variantLogo.width, height: variantLogo.height } : null,
           }
         })}
       />

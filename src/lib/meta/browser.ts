@@ -10,13 +10,16 @@ function getCookie(name: string): string | undefined {
 }
 
 function hasMktConsent(): boolean {
-  return window.__nb1Consent?.targeted_advertising === true
+  return (
+    window.__nb1ConsentResolved === true &&
+    window.__nb1Consent?.targeted_advertising === true
+  )
 }
 
 let consentResolution: Promise<void> | undefined
 
 function waitForConsentResolution(): Promise<void> {
-  if (window.__nb1ConsentResolved === true || hasMktConsent()) return Promise.resolve()
+  if (window.__nb1ConsentResolved === true) return Promise.resolve()
   if (!consentResolution) {
     consentResolution = new Promise((resolve) => {
       window.addEventListener(

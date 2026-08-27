@@ -55,7 +55,7 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
       if (cancelled) return
       const api = (window as unknown as { Trustpilot?: TrustpilotApi }).Trustpilot
       if (api) {
-        api.loadFromElement(el, true)
+        if (!el.querySelector('iframe')) api.loadFromElement(el, true)
         return
       }
       attempts += 1

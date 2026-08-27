@@ -4,16 +4,16 @@ import type { Metadata } from 'next'
 import { cn } from '@/utilities/ui'
 import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
-import React, { cache } from 'react'
+import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
-import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
+import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
@@ -34,23 +34,11 @@ import { ArminWidget } from '@/components/ArminWidget'
 import { PageViewTracker } from '@/components/DataLayerEvents/PageViewTracker'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 import StyledJsxRegistry from './registry'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { appLocales, defaultLocale, isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
 export function generateStaticParams() {
   return appLocales.map((locale) => ({ locale }))
 }
-
-const getSiteSettings = cache(async (locale: AppLocale) => {
-  const payload = await getPayload({ config })
-
-  return payload.findGlobal({
-    slug: 'site-settings',
-    locale,
-    fallbackLocale: defaultLocale,
-  })
-})
 
 export default async function RootLayout({
   children,
@@ -71,7 +59,7 @@ export default async function RootLayout({
   let organizationJsonLd: JsonLdValue = null
 
   try {
-    const site = await getSiteSettings(locale)
+    const site = await getSiteSettings(locale, isEnabled)
     organizationJsonLd = (site?.organizationJsonLd ?? null) as JsonLdValue
   } catch {
     organizationJsonLd = null
@@ -218,7 +206,6 @@ export default async function RootLayout({
           )}
           {/* End Google Tag Manager (noscript) */}
 
-          <Providers>
             <AdminBar
               adminBarProps={{
                 preview: isEnabled,
@@ -324,7 +311,7 @@ export default async function RootLayout({
               `}
                 </Script>
 
-                <ArminWidget locale={locale} />
+                <ArminWidget locale={localeConfig[locale].htmlLang} />
 
                 {klaviyoCompanyId && (
                   <>
@@ -368,7 +355,6 @@ export default async function RootLayout({
                 )}
               </>
             )}
-          </Providers>
         </StyledJsxRegistry>
       </body>
     </html>

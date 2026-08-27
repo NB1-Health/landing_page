@@ -164,9 +164,11 @@ describe('staging SEO containment', () => {
     ]) {
       const source = readFileSync(script, 'utf8')
       const guard = `node scripts/check-deployment-environment.mjs ${deployEnv}`
+      const installCommandIndex = source.search(/^npm install\b/m)
 
       expect(source).toContain(guard)
-      expect(source.indexOf(guard)).toBeLessThan(source.indexOf('npm install'))
+      expect(installCommandIndex).toBeGreaterThan(-1)
+      expect(source.indexOf(guard)).toBeLessThan(installCommandIndex)
       expect(source.indexOf(guard)).toBeLessThan(
         source.indexOf(`cp .env.${deployEnv === 'staging' ? 'stg' : 'prod'} .env`),
       )
