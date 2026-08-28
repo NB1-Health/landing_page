@@ -13,7 +13,7 @@ import {
   buildRateMap,
   formatMonthLabel,
   computeSavings,
-  BEST_VALUE_DICT,
+  getBestValueLabel,
   resolveTokens,
 } from '@/lib/plans/clientUtils'
 
@@ -114,7 +114,7 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
 
   useEffect(() => {
     if (!planFamily) return
-    const bestValueLabel = BEST_VALUE_DICT[locale] ?? BEST_VALUE_DICT.en
+    const bestValueLabel = getBestValueLabel(locale)
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
       const rateMap = buildRateMap(plans, currency)
