@@ -11,8 +11,6 @@ to get it running on your machine, and where to look for specific things
 > at AI coding assistants. This file is the one meant to be read
 > start-to-finish when you're new here. For generic Payload CMS feature docs
 > (not specific to this project), see [payloadcms.com/docs](https://payloadcms.com/docs).
-> [`PAYLOAD_AGENT_MCP.md`](PAYLOAD_AGENT_MCP.md) covers the local, guarded MCP
-> setup for AI content agents.
 
 ## Contents
 
