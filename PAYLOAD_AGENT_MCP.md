@@ -145,6 +145,14 @@ Before a later non-local rollout, take the normal database backup, apply the mig
 still disabled, verify current admin access and representative content, create the agent/key, then
 enable MCP. There is no separate content backfill step.
 
+Deferred follow-up: benchmark Payload's official `blocksAsJSON` migration against a recent,
+production-sized database copy before considering it here. Record migration and rollback duration,
+database-size change, and representative Page list/edit query timings; do not enable it until the
+results have been reviewed.
+
+After deployment, capture an authenticated production trace for the Pages list, Page edit, and live
+preview flows before considering the performance rollout complete.
+
 ## Verification commands
 
 ```bash

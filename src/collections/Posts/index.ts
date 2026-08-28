@@ -62,6 +62,7 @@ export const Posts: CollectionConfig<'posts'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    enableListViewSelectAPI: true,
     livePreview: {
       url: ({ data, req }) =>
         generatePreviewPath({
@@ -427,7 +428,7 @@ export const Posts: CollectionConfig<'posts'> = {
   versions: {
     drafts: {
       autosave: {
-        interval: 100,
+        interval: 5000,
       },
       localizeStatus: true,
       schedulePublish: true,

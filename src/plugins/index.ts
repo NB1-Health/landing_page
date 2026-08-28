@@ -109,6 +109,7 @@ export const plugins: Plugin[] = [
   searchPlugin({
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
+    skipSync: ({ req }) => req.query.autosave === true || req.query.autosave === 'true',
     searchOverrides: {
       access: adminManagedPublicRead,
       fields: ({ defaultFields }) => {

@@ -159,11 +159,14 @@ describe('agent editor permissions', () => {
     expect(trashAccess({ deletedAt: '2026-08-27T10:00:00.000Z' }, 'trash', 'REST')).toBe(false)
   })
 
-  it('enables recovery and retains enough page versions for review', () => {
+  it('keeps recovery and Payload performance guardrails enabled', () => {
     expect(Pages.trash).toBe(true)
     expect(Posts.trash).toBe(true)
     expect(Media.trash).toBe(true)
-    expect(typeof Pages.versions === 'object' && Pages.versions.maxPerDoc).toBe(50)
+    expect(Pages.admin?.enableListViewSelectAPI).toBe(true)
+    expect(Posts.admin?.enableListViewSelectAPI).toBe(true)
+    expect(Pages.versions).toMatchObject({ maxPerDoc: 10 })
+    expect(Posts.versions).toMatchObject({ drafts: { autosave: { interval: 5000 } } })
   })
 
   it('keeps version-history endpoints admin-only', async () => {

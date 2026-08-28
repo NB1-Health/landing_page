@@ -140,6 +140,7 @@ export const Pages: CollectionConfig<'pages'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    enableListViewSelectAPI: true,
     pagination: { defaultLimit: 5 },
 
     livePreview: {
@@ -460,6 +461,6 @@ export const Pages: CollectionConfig<'pages'> = {
       localizeStatus: true,
       schedulePublish: true,
     },
-    maxPerDoc: 50,
+    maxPerDoc: 10,
   },
 }
