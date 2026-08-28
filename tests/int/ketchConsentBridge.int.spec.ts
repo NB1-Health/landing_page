@@ -11,6 +11,7 @@ describe('Ketch consent bridge contract', () => {
     expect(script).not.toContain("if(typeof window.gtag!=='function')return")
     expect(script).not.toContain('setLanguage')
     expect(script).not.toContain('willShowExperience')
+    expect(script).not.toContain('MutationObserver')
   })
 
   it('keeps previously consented attribution inert while Ketch is resolving', () => {
@@ -134,5 +135,33 @@ describe('Ketch consent bridge contract', () => {
     expect(
       ketch.mock.calls.filter(([command, event]) => command === 'on' && event === 'consent'),
     ).toHaveLength(1)
+    expect(
+      ketch.mock.calls.filter(
+        ([command, event]) => command === 'on' && event === 'hasShownExperience',
+      ),
+    ).toHaveLength(1)
+  })
+
+  it('marks current and subsequently-rendered Ketch banners as modal', () => {
+    const setAttribute = vi.fn()
+    let shownHandler: (() => void) | undefined
+    const sandbox = {
+      __nb1Consent: {},
+      document: {
+        getElementById: () => ({ setAttribute }),
+      },
+      ketch: (command: string, event: unknown, callback?: () => void) => {
+        if (command === 'on' && event === 'hasShownExperience') shownHandler = callback
+      },
+      setInterval: () => 1,
+      clearInterval: () => undefined,
+    } as Record<string, unknown>
+
+    Function('window', ketchConsentBindingScript())(sandbox)
+    expect(setAttribute).toHaveBeenCalledWith('aria-modal', 'true')
+
+    setAttribute.mockClear()
+    shownHandler?.()
+    expect(setAttribute).toHaveBeenCalledWith('aria-modal', 'true')
   })
 })

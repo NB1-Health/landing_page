@@ -57,6 +57,17 @@ export function ketchConsentBindingScript(): string {
       }
     }
 
+    function markKetchBannerModal(){
+      var apply=function(){
+        try{
+          var banner=window.document&&window.document.getElementById('ketch-consent-banner');
+          if(banner)banner.setAttribute('aria-modal','true');
+        }catch(error){}
+      };
+      if(typeof window.requestAnimationFrame==='function')window.requestAnimationFrame(apply);
+      else apply();
+    }
+
     function bind(){
       if(bridge.bound)return true;
       if(typeof window.ketch!=='function')return false;
@@ -65,6 +76,8 @@ export function ketchConsentBindingScript(): string {
           if(consent&&consent.purposes)applyKetchConsent(consent);
         });
         window.ketch('on','consent',applyKetchConsent);
+        window.ketch('on','hasShownExperience',markKetchBannerModal);
+        markKetchBannerModal();
         bridge.bound=true;
         return true;
       }catch(error){
