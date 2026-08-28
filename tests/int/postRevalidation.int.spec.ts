@@ -7,7 +7,11 @@ const { revalidatePath, revalidateTag } = vi.hoisted(() => ({
 
 vi.mock('next/cache', () => ({ revalidatePath, revalidateTag }))
 
-import { capturePostPublication, revalidatePost } from '@/collections/Posts/hooks/revalidatePost'
+import {
+  capturePostPublication,
+  revalidateDelete as revalidateDeletedPost,
+  revalidatePost,
+} from '@/collections/Posts/hooks/revalidatePost'
 
 const logger = { info: vi.fn(), warn: vi.fn() }
 
@@ -49,6 +53,8 @@ describe('post publication revalidation', () => {
 
     expect(revalidatePath).toHaveBeenCalledWith('/de/posts/gut-health-basics')
     expect(revalidatePath).toHaveBeenCalledWith('/en/posts/gut-health-basics')
+    expect(revalidatePath).toHaveBeenCalledWith('/de/posts', 'layout')
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts', 'layout')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/posts/gut-health-basics')
     expect(revalidateTag).toHaveBeenCalledWith('posts-sitemap-de')
   })
@@ -72,5 +78,20 @@ describe('post publication revalidation', () => {
     expect(req.payload.findByID).not.toHaveBeenCalled()
     expect(revalidatePath).not.toHaveBeenCalled()
     expect(revalidateTag).not.toHaveBeenCalled()
+  })
+
+  it('invalidates public caches after a published post is deleted', async () => {
+    const req = {
+      context: {},
+      locale: 'en',
+      payload: { logger },
+    }
+    const doc = { id: 7, _status: 'published', slug: 'retired-post' }
+
+    await expect(revalidateDeletedPost({ doc, req } as never)).resolves.toBe(doc)
+
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts/retired-post')
+    expect(revalidatePath).toHaveBeenCalledWith('/en/posts', 'layout')
+    expect(revalidateTag).toHaveBeenCalledWith('posts-sitemap-en')
   })
 })

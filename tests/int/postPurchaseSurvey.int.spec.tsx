@@ -33,7 +33,6 @@ describe('post-purchase survey UI tracking', () => {
           acquisitionEventId="acquisition-1"
           transactionId="subscription-1"
           customerId="customer-1"
-          externalId="email-hash-1"
           planLabel="Core"
           cycleLabel="4 months"
           priceFormatted="99"
@@ -57,6 +56,7 @@ describe('post-purchase survey UI tracking', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     window.sessionStorage.clear()
     resetCheckoutTracking()
     resetEnhancedUserDataCache()

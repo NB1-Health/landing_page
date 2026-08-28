@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import RichText from '@/components/RichText'
+import TrustpilotWidget from '@/components/Trustpilot/TrustpilotWidget'
 
 type Props = {
   heading?: any
@@ -92,6 +93,11 @@ export const CloseBandComponent: React.FC<Props> = ({ heading, subheading, ctaLa
         }
         .cb-cta:hover { background: #b8f04e; transform: translateY(-1px); }
 
+        /* Final reassurance under the CTA. The TrustBox fills whatever width it
+           is given, so the wrapper is sized to the content and centred; nudge the
+           width if a longer locale wraps the score onto a second line. */
+        .cb-tp { width: 240px; height: 20px; margin: 26px auto 0; line-height: 0; }
+
         .r-up {
           opacity: 0; transform: translateY(20px);
           transition: opacity .7s cubic-bezier(.4,0,.2,1), transform .7s cubic-bezier(.4,0,.2,1);
@@ -121,6 +127,10 @@ export const CloseBandComponent: React.FC<Props> = ({ heading, subheading, ctaLa
               {ctaLabel}
             </a>
           )}
+
+          <div className={`cb-tp r-up${visible ? ' in' : ''}`} style={{ transitionDelay: '0.24s' }}>
+            <TrustpilotWidget locale={locale} variant="microTrustScore" theme="dark" height="20px" />
+          </div>
         </div>
       </section>
     </>

@@ -1,8 +1,6 @@
-export function ketchConsentBindingScript(pageLanguage: string): string {
-  const language = JSON.stringify(pageLanguage)
-
+export function ketchConsentBindingScript(): string {
   return `(function(){
-    var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false};
+    var bridge=window.__nb1KetchConsentBridge=window.__nb1KetchConsentBridge||{bound:false,lastConsentKey:null};
     window.__nb1Consent=window.__nb1Consent||{};
     window.__nb1ConsentResolved=window.__nb1ConsentResolved===true;
 
@@ -32,45 +30,54 @@ export function ketchConsentBindingScript(pageLanguage: string): string {
 
     function applyKetchConsent(consent){
       var purposes=consent&&consent.purposes||{};
+      var analyticsConsent=purposes.analytics===true;
+      var marketingConsent=purposes.targeted_advertising===true;
+      var consentKey=(analyticsConsent?'1':'0')+':'+(marketingConsent?'1':'0');
       window.__nb1Consent=purposes;
       window.__nb1ConsentResolved=true;
-      if(purposes.targeted_advertising!==true)scrubAdvertisingAttribution();
+      if(bridge.lastConsentKey===consentKey)return;
+      bridge.lastConsentKey=consentKey;
+      if(!marketingConsent)scrubAdvertisingAttribution();
       if(typeof window.gtag==='function'){
         window.gtag('consent','update',{
-          analytics_storage:purposes.analytics?'granted':'denied',
-          ad_storage:purposes.targeted_advertising?'granted':'denied',
-          ad_user_data:purposes.targeted_advertising?'granted':'denied',
-          ad_personalization:purposes.targeted_advertising?'granted':'denied'
+          analytics_storage:analyticsConsent?'granted':'denied',
+          ad_storage:marketingConsent?'granted':'denied',
+          ad_user_data:marketingConsent?'granted':'denied',
+          ad_personalization:marketingConsent?'granted':'denied'
         });
       }
       window.dataLayer=window.dataLayer||[];
       window.dataLayer.push({
         event:'nb1_consent_resolved',
-        analytics_consent:purposes.analytics===true,
-        marketing_consent:purposes.targeted_advertising===true
+        analytics_consent:analyticsConsent,
+        marketing_consent:marketingConsent
       });
       if(typeof window.dispatchEvent==='function'){
         window.dispatchEvent(new Event('nb1:consent-resolved'));
       }
     }
 
+    function markKetchBannerModal(){
+      var apply=function(){
+        try{
+          var banner=window.document&&window.document.getElementById('ketch-consent-banner');
+          if(banner)banner.setAttribute('aria-modal','true');
+        }catch(error){}
+      };
+      if(typeof window.requestAnimationFrame==='function')window.requestAnimationFrame(apply);
+      else apply();
+    }
+
     function bind(){
       if(bridge.bound)return true;
       if(typeof window.ketch!=='function')return false;
       try{
-        var pageLang=${language};
-        if(pageLang){
-          // No-op: 'setLanguage' is not an action in the smart tag bundle. Language is
-          // resolved from the ?lang / cookie / storage / <html lang> chain (see layout.tsx).
-          window.ketch('setLanguage',pageLang);
-          window.ketch('on','willShowExperience',function(experience,next){
-            if(experience&&next){experience.language=pageLang;next(experience);}
-          });
-        }
         window.ketch('getConsent',function(consent){
           if(consent&&consent.purposes)applyKetchConsent(consent);
         });
         window.ketch('on','consent',applyKetchConsent);
+        window.ketch('on','hasShownExperience',markKetchBannerModal);
+        markKetchBannerModal();
         bridge.bound=true;
         return true;
       }catch(error){

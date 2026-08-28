@@ -104,6 +104,7 @@ import { ContactPageBlock } from '@/blocks/ContactPage/config'
 import { ReferralWidgetBlock } from '@/blocks/ReferralWidget/config'
 import { ReferInfoBlock } from '@/blocks/ReferInfo/config'
 import { ReferFaqBlock } from '@/blocks/ReferFaq/config'
+import { CustomerReviewsBlock } from '@/blocks/CustomerReviews/config'
 import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Pages: CollectionConfig<'pages'> = {
@@ -308,6 +309,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 ReferralWidgetBlock,
                 ReferInfoBlock,
                 ReferFaqBlock,
+                CustomerReviewsBlock,
               ],
               required: true,
               admin: { initCollapsed: true },

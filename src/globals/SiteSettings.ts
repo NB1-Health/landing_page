@@ -1,4 +1,7 @@
 import type { GlobalConfig } from 'payload'
+import { revalidatePath, revalidateTag } from 'next/cache'
+
+import { appLocales } from '@/i18n/config'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -6,6 +9,22 @@ export const SiteSettings: GlobalConfig = {
   access: {
     read: () => true,
     update: ({ req }) => Boolean(req.user),
+  },
+  hooks: {
+    afterChange: [
+      ({ doc, req }) => {
+        if (req.context.disableRevalidate) return doc
+
+        try {
+          revalidateTag('global_site-settings')
+          for (const locale of appLocales) revalidatePath(`/${locale}`, 'layout')
+        } catch (error) {
+          req.payload.logger.warn({ err: error }, 'Could not revalidate site settings')
+        }
+
+        return doc
+      },
+    ],
   },
   fields: [
     {

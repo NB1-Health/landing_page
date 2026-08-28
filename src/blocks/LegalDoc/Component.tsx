@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import RichText from '@/components/RichText'
+import { getDictionary } from '@/i18n/getDictionary'
 
 type ContentBlock = {
   type?: string
@@ -34,6 +35,7 @@ type Props = {
   calloutHeading?: string | null
   calloutBody?: string | null
   calloutRows?: { label?: string | null; value?: string | null; href?: string | null }[] | null
+  locale?: string
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -49,7 +51,9 @@ export const LegalDocComponent: React.FC<Props> = ({
   calloutHeading,
   calloutBody,
   calloutRows,
+  locale,
 }) => {
+  const dict = getDictionary(locale)
   const secs = sections ?? []
   const [active, setActive] = useState<string>('')
 
@@ -114,8 +118,8 @@ export const LegalDocComponent: React.FC<Props> = ({
 
       <div className="lg-body">
         {/* sticky TOC (desktop) */}
-        <aside className="lg-toc" aria-label="On this page">
-          <div className="lg-toc-label">On this page</div>
+        <aside className="lg-toc" aria-label={dict.header.onThisPage}>
+          <div className="lg-toc-label">{dict.header.onThisPage}</div>
           <nav>
             {toc.map((t) => (
               <a key={t.id} href={`#${t.id}`} className={active === t.id ? 'active' : ''}>
@@ -129,7 +133,7 @@ export const LegalDocComponent: React.FC<Props> = ({
           {/* mobile TOC */}
           <details className="lg-toc-m">
             <summary>
-              On this page
+              {dict.header.onThisPage}
               <svg
                 className="chev"
                 width="16"

@@ -37,6 +37,9 @@ export const nl = {
   },
   forms: {
     thankYouRegistering: 'Bedankt voor je registratie!',
+    contactMessagePlaceholder: 'Hoe kunnen we je helpen?',
+    contactSubmit: 'Bericht versturen',
+    contactSending: 'Versturen…',
   },
   scienceBoard: {
     viewBio: 'Biografie bekijken',

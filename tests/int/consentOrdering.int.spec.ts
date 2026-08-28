@@ -4,18 +4,41 @@ import { describe, expect, it } from 'vitest'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 
 describe('consent bootstrap ordering', () => {
-  it('establishes closed consent defaults before loading GTM or Ketch', () => {
+  it('establishes closed consent defaults before loading GTM and Ketch', () => {
     const layout = readFileSync(resolve('src/app/(frontend)/[locale]/layout.tsx'), 'utf8')
+    const css = readFileSync(resolve('src/app/(frontend)/[locale]/globals.css'), 'utf8')
     const consent = layout.indexOf('id="gtag-consent-mode"')
     const gtm = layout.indexOf('id="gtm-head"')
-    const ketch = layout.indexOf('id="ketch-lang"')
+    const ketchLanguage = layout.indexOf('id="ketch-lang"')
+    const ketchBoot = layout.indexOf('id="ketch-boot"')
+    const bootUrl = 'https://global.ketchcdn.com/web/v3/config/nb1_health/website_smart_tag/boot.js'
 
     expect(consent).toBeGreaterThan(-1)
     expect(consent).toBeLessThan(gtm)
-    expect(consent).toBeLessThan(ketch)
+    expect(gtm).toBeLessThan(ketchLanguage)
+    expect(ketchLanguage).toBeLessThan(ketchBoot)
+    expect(layout.split(bootUrl)).toHaveLength(2)
+    expect(layout).toContain('<link href="https://cdn.ketchjs.com" rel="preconnect" />')
+    expect(layout).not.toContain('<link href="https://global.ketchcdn.com" rel="preconnect" />')
+    expect(layout).toContain('const ketchLang = localeConfig[locale].hreflangCodes[0]')
+    expect(layout).not.toContain('Object.defineProperty(navigator')
     expect(layout).toContain("'analytics_storage': 'denied'")
     expect(layout).toContain("'ad_storage': 'denied'")
-    expect(layout).toContain("window.__nb1Consent = { analytics: false, targeted_advertising: false }")
+    expect(layout).toContain(
+      'window.__nb1Consent = { analytics: false, targeted_advertising: false }',
+    )
+    expect(layout).not.toContain('new MutationObserver')
+    expect(css).not.toContain('#ketch-consent-banner')
+    expect(css).not.toContain('data-ketch-backdrop')
+  })
+
+  it('retains the approved inline-action delegation contract', () => {
+    const layout = readFileSync(resolve('src/app/(frontend)/[locale]/layout.tsx'), 'utf8')
+
+    expect(layout).toContain('a[href$="#ketch-accept"]')
+    expect(layout).toContain('a[href$="#ketch-reject"]')
+    expect(layout).toContain('a[href$="#ketch-settings"]')
+    expect(layout).toContain("'ketch-banner-button-tertiary'")
   })
 
   it('waits safely when Ketch is unavailable and binds when it becomes callable', () => {
@@ -32,7 +55,7 @@ describe('consent bootstrap ordering', () => {
     } as Record<string, unknown>
 
     expect(() => {
-      Function('window', ketchConsentBindingScript('en'))(sandbox)
+      Function('window', ketchConsentBindingScript())(sandbox)
     }).not.toThrow()
 
     sandbox.ketch = (command: string, argument: unknown) => {
@@ -68,7 +91,7 @@ describe('consent bootstrap ordering', () => {
       clearInterval: () => undefined,
     } as Record<string, unknown>
 
-    Function('window', ketchConsentBindingScript('en'))(sandbox)
+    Function('window', ketchConsentBindingScript())(sandbox)
 
     expect(updates).toContainEqual([
       'consent',

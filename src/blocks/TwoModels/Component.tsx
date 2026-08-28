@@ -16,7 +16,12 @@ type Row = {
 
 type Props = {
   heading?: any
-  nb1Logo?: { url?: string | null } | null
+  nb1Logo?: {
+    url?: string | null
+    updatedAt?: string | null
+    width?: number | null
+    height?: number | null
+  } | null
   rows?: Row[] | null
   theyLabel?: string | null
   locale?: string
@@ -24,7 +29,7 @@ type Props = {
 
 export const TwoModelsComponent: React.FC<Props> = ({ heading, nb1Logo, rows, theyLabel, locale }) => {
   const dict = getDictionary(locale)
-  const logoUrl = nb1Logo?.url ? getMediaUrl(nb1Logo.url) : null
+  const logoUrl = nb1Logo?.url ? getMediaUrl(nb1Logo.url, nb1Logo.updatedAt) : null
   const rowCount = rows?.length ?? 0
 
   return (
@@ -280,7 +285,15 @@ export const TwoModelsComponent: React.FC<Props> = ({ heading, nb1Logo, rows, th
               <div className="ctc ct-h ct-h-them">{theyLabel || dict.twoModels.theyLabel}</div>
               <div className="ctc ct-h ct-h-us">
                 {logoUrl
-                  ? <img src={logoUrl} alt="NB1" style={{ height: '24px', width: 'auto', display: 'block' }} />
+                  ? <img
+                      src={logoUrl}
+                      alt="NB1"
+                      width={nb1Logo?.width ?? undefined}
+                      height={nb1Logo?.height ?? undefined}
+                      loading="lazy"
+                      decoding="async"
+                      style={{ height: '24px', width: 'auto', display: 'block' }}
+                    />
                   : 'NB¹'}
               </div>
 

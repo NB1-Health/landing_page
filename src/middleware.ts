@@ -140,10 +140,15 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const isLocalizedSitemap =
-    pathname.endsWith('/pages-sitemap.xml') || pathname.endsWith('/posts-sitemap.xml')
+  const isLocalizedSitemap = new RegExp(
+    `^/(${localePattern})/(sitemap|pages-sitemap|posts-sitemap)\\.xml$`,
+  ).test(pathname)
 
-  if (pathname.includes('.') && !isLocalizedSitemap) {
+  // Sitemaps are public, locale-explicit documents. Do not attach visitor
+  // currency/country cookies, otherwise shared caches correctly refuse to cache them.
+  if (isLocalizedSitemap) return NextResponse.next()
+
+  if (pathname.includes('.')) {
     return NextResponse.next()
   }
 

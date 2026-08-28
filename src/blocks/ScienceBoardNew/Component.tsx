@@ -8,7 +8,7 @@ import { getDictionary } from '@/i18n/getDictionary'
 type BioParagraph = { paragraph?: string | null }
 
 type Member = {
-  photo?: { url?: string | null } | null
+  photo?: { url?: string | null; width?: number | null; height?: number | null } | null
   name?: string | null
   role?: string | null
   detail?: string | null
@@ -296,7 +296,16 @@ export const ScienceBoardNewComponent: React.FC<Props> = ({ heading, subheading,
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i) } }}
                   >
                     <div className="sb-photo">
-                      {photoUrl && <img src={photoUrl} alt={m.name || ''} />}
+                      {photoUrl && (
+                        <img
+                          src={photoUrl}
+                          alt={m.name || ''}
+                          width={m.photo?.width ?? undefined}
+                          height={m.photo?.height ?? undefined}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
                       <div className="sb-hover"><span>{dict.scienceBoard.viewBio}</span></div>
                     </div>
                     <div className="sb-body">

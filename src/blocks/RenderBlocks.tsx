@@ -108,6 +108,7 @@ import { ContactPageComponent } from './ContactPage/Component'
 import { ReferralWidgetComponent } from './ReferralWidget/Component'
 import { ReferInfoComponent } from './ReferInfo/Component'
 import { ReferFaqComponent } from './ReferFaq/Component'
+import { CustomerReviewsComponent } from './CustomerReviews/Component'
 
 const blockComponents: Record<string, React.FC<any>> = {
   content: ContentBlock,
@@ -215,6 +216,7 @@ const blockComponents: Record<string, React.FC<any>> = {
   referralWidget: ReferralWidgetComponent,
   referInfo: ReferInfoComponent,
   referFaq: ReferFaqComponent,
+  customerReviews: CustomerReviewsComponent,
 }
 
 export const RenderBlocks: React.FC<{

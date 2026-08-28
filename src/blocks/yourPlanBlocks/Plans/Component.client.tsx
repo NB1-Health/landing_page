@@ -158,9 +158,9 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       currency: ReturnType<typeof getClientCurrency>,
       plans: Awaited<ReturnType<typeof fetchPlansClient>>,
     ) {
-      // Use getDictionary (its toDictLocale maps regional locales — ch→de,
-      // be→nl, uk/uae→en) rather than PER_MONTH_DICT[locale], which only had
-      // en/de/fr/nl keys and so wrongly fell back to "/mo" on ch/be.
+      // getDictionary's toDictLocale maps regional locales (ch→de, be→nl,
+      // uk/uae→en); a lookup keyed by the raw locale only has en/de/fr/nl
+      // keys and so wrongly falls back to "/mo" on ch/be.
       const perMonth = getDictionary(locale).plans.perMonth
       const rateMap = buildRateMap(plans, currency)
       setPlanCards(
