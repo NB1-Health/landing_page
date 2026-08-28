@@ -30,7 +30,6 @@ type Props = {
   acquisitionEventId: string | null
   transactionId: string | null
   customerId: string | null
-  externalId: string | null
   planLabel: string
   cycleLabel: string
   priceFormatted: string
@@ -50,7 +49,7 @@ type Props = {
 export function ConfirmationScreen({
   fn, email, orderNumber, planLabel, cycleLabel, priceFormatted,
   ln, orderSubtotal, currency, coupon,
-  checkoutId, acquisitionEventId, transactionId, customerId, externalId,
+  checkoutId, acquisitionEventId, transactionId, customerId,
   locale, t, inboxBodyPrefix, inboxBodySuffix,
   chargeNotePrefix, chargeNoteSuffix,
   survOpts,
@@ -70,7 +69,6 @@ export function ConfirmationScreen({
       acquisitionEventId,
       transactionId,
       customerId,
-      externalId: externalId ?? undefined,
       orderNumber,
       email,
       pageLanguage: locale,
@@ -83,7 +81,6 @@ export function ConfirmationScreen({
     checkoutId,
     customerId,
     email,
-    externalId,
     locale,
     orderNumber,
     transactionId,
@@ -102,7 +99,6 @@ export function ConfirmationScreen({
       acquisitionEventId,
       transactionId,
       customerId,
-      externalId: externalId ?? undefined,
       orderNumber,
       email,
       pageLanguage: locale,

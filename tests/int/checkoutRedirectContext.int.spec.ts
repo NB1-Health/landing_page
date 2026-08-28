@@ -11,6 +11,7 @@ describe('checkout redirect analytics context', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     window.sessionStorage.clear()
     resetCheckoutTracking()
   })

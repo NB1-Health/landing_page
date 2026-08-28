@@ -111,6 +111,7 @@ function getPostRevalidationTargets(
   currentSlugs: PublishedLocaleSlugs,
   previousSlugs: PublishedLocaleSlugs,
 ) {
+  const archivePaths = new Set<string>()
   const paths = new Set<string>()
   const tags = new Set<string>()
 
@@ -119,13 +120,16 @@ function getPostRevalidationTargets(
     for (const slug of slugs) {
       if (slug) paths.add(`/${locale}/posts/${slug}`)
     }
-    if (slugs.some(Boolean)) tags.add(`posts-sitemap-${locale}`)
+    if (slugs.some(Boolean)) {
+      archivePaths.add(`/${locale}/posts`)
+      tags.add(`posts-sitemap-${locale}`)
+    }
   }
 
-  return { paths: [...paths], tags: [...tags] }
+  return { archivePaths: [...archivePaths], paths: [...paths], tags: [...tags] }
 }
 
-async function invalidateTargets(
+function invalidateTargets(
   req: PayloadRequest,
   targets: ReturnType<typeof getPostRevalidationTargets>,
 ) {
@@ -135,6 +139,15 @@ async function invalidateTargets(
       req.payload.logger.info(`Revalidated published post: ${path}`)
     } catch (error) {
       req.payload.logger.warn({ err: error, path }, 'Could not revalidate published post')
+    }
+  }
+
+  for (const path of targets.archivePaths) {
+    try {
+      revalidatePath(path, 'layout')
+      req.payload.logger.info(`Revalidated published post archive: ${path}`)
+    } catch (error) {
+      req.payload.logger.warn({ err: error, path }, 'Could not revalidate published post archive')
     }
   }
 
@@ -173,7 +186,7 @@ export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
   const targets = getPostRevalidationTargets(currentSlugs, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }
 
@@ -186,6 +199,6 @@ export const revalidateDelete: CollectionAfterDeleteHook<Post> = async ({ doc, r
   const targets = getPostRevalidationTargets({}, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }

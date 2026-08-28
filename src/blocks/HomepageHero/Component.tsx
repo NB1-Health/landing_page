@@ -10,13 +10,18 @@ type TrustItem = {
   showStars?: boolean | null
 }
 
+type HeroMedia = {
+  url?: string | null
+  updatedAt?: string | null
+}
+
 type Props = {
   heading: any
   subheading?: string | null
   ctaLabel?: string | null
   ctaHref?: string | null
-  backgroundImage?: { url?: string | null } | null
-  backgroundImageMobile?: { url?: string | null } | null
+  backgroundImage?: HeroMedia | null
+  backgroundImageMobile?: HeroMedia | null
   trustItems?: TrustItem[] | null
   showTrustpilotRating?: boolean | null
   locale?: string | null
@@ -38,8 +43,12 @@ export const HomepageHeroComponent: React.FC<Props> = ({
     rawHref && locale && !rawHref.startsWith(`/${locale}`)
       ? `/${locale}${rawHref.startsWith('/') ? '' : '/'}${rawHref}`
       : rawHref || '#'
-  const bgUrl = backgroundImage?.url ? getMediaUrl(backgroundImage.url) : ''
-  const bgMobileUrl = backgroundImageMobile?.url ? getMediaUrl(backgroundImageMobile.url) : bgUrl
+  const bgUrl = backgroundImage?.url
+    ? getMediaUrl(backgroundImage.url, backgroundImage.updatedAt)
+    : ''
+  const bgMobileUrl = backgroundImageMobile?.url
+    ? getMediaUrl(backgroundImageMobile.url, backgroundImageMobile.updatedAt)
+    : bgUrl
 
   const items = trustItems ?? []
   // Trustpilot leads the strip, taking the position the starred "Loved by early
@@ -78,6 +87,24 @@ export const HomepageHeroComponent: React.FC<Props> = ({
 
   return (
     <>
+      {bgUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={bgUrl}
+          media="(min-width: 761px)"
+          fetchPriority="high"
+        />
+      )}
+      {bgMobileUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={bgMobileUrl}
+          media="(max-width: 760px)"
+          fetchPriority="high"
+        />
+      )}
       <style jsx>{`
         /* ── hero-stack ── */
         .hero-stack {

@@ -306,17 +306,17 @@ consent** — nothing marketing-related fires until the visitor has consented.
 ### Consent management: Ketch
 
 [Ketch](https://www.ketch.com/) is the "cookie consent" tool (a "CMP" —
-Consent Management Platform) used here. It's loaded by
-`src/app/(frontend)/[locale]/KetchScriptLoader.tsx`. Once loaded, other code
-checks `window.__nb1Consent?.targeted_advertising` before sending any
-marketing event. If you're wondering why a tracking event isn't firing in
-dev, check consent first — it's the most common reason.
+Consent Management Platform) used here. Its denied-by-default bootstrap,
+single Ketch loader, and consent bridge live in
+`src/app/(frontend)/[locale]/layout.tsx`. Other code checks
+`window.__nb1Consent?.targeted_advertising` before sending any marketing
+event. If you're wondering why a tracking event isn't firing in dev, check
+consent first — it's the most common reason.
 
 ### Google Tag Manager / GA4
 
-- The GTM/`gtag.js` script itself is injected by
-  `src/components/ConditionalGoogleTagManager/index.tsx` (using
-  `NEXT_PUBLIC_GTM_ID`). It's skipped on `/cms/admin` pages.
+- The GTM script itself is injected by the locale layout using
+  `NEXT_PUBLIC_GTM_ID`. Marketing scripts are omitted from draft previews.
 - `src/lib/dataLayer.ts` has the helper functions used everywhere else to
   actually send events: `pushEvent(name, data)` pushes onto `window.dataLayer`,
   which is the array GTM reads from. It also implements **Enhanced

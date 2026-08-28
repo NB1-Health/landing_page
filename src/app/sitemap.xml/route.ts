@@ -1,5 +1,6 @@
 import { appLocales } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
+import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 const LOCALES = appLocales
 
 export async function GET(_req: Request) {
@@ -21,7 +22,7 @@ ${entries}
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+      ...SITEMAP_CACHE_HEADERS,
     },
   })
 }

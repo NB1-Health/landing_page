@@ -6,7 +6,6 @@ import { Pagination } from '@/components/Pagination'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import React from 'react'
-import PageClient from './page.client'
 import { Header } from '@/Header/Component'
 import { Footer } from '@/Footer/Component'
 import { appLocales, isAppLocale, type AppLocale } from '@/i18n/config'
@@ -40,7 +39,6 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
     <>
       <Header locale={locale} />
       <div className="pt-24 pb-24">
-        <PageClient />
         <div className="container mb-16">
           <div className="prose dark:prose-invert max-w-none">
             <h1>Posts</h1>

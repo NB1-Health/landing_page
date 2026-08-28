@@ -75,7 +75,7 @@ function resolveNavLink(link: RawLink, locale: string) {
 function pickMedia(val: number | Media | null | undefined) {
   if (typeof val === 'object' && val !== null) {
     const m = val as Media
-    return { url: m.url, alt: m.alt }
+    return { url: m.url, alt: m.alt, width: m.width, height: m.height }
   }
   return null
 }

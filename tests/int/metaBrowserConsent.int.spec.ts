@@ -42,4 +42,18 @@ describe('Meta browser-to-server consent timing', () => {
 
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('does not treat a purpose value as consent before Ketch resolves it', async () => {
+    window.__nb1Consent = { analytics: true, targeted_advertising: true }
+
+    const pending = sendMetaCapiEvent('add_shipping_info', 'event-3')
+    await Promise.resolve()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    window.__nb1ConsentResolved = true
+    window.dispatchEvent(new Event('nb1:consent-resolved'))
+    await pending
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
 })

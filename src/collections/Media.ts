@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
 import { adminOnly, contentEditor, enforceAgentMediaOperation } from '../access/roles'
+import { revalidateDeletedMedia, revalidateMedia } from './Media/hooks/revalidateMedia'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -26,6 +27,8 @@ export const Media: CollectionConfig = {
     update: contentEditor,
   },
   hooks: {
+    afterChange: [revalidateMedia],
+    afterDelete: [revalidateDeletedMedia],
     beforeOperation: [enforceAgentMediaOperation],
   },
   fields: [
