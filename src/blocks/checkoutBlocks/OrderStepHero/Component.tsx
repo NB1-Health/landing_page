@@ -3,6 +3,7 @@
 import React from 'react'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 import RichText from '@/components/RichText'
+import TrustpilotWidget from '@/components/Trustpilot/TrustpilotWidget'
 import { useReveal } from '../useReveal'
 
 type Seal = {
@@ -15,15 +16,19 @@ type Seal = {
 type Props = {
   headline?: SerializedEditorState | null
   subtitle?: string | null
+  showTrustpilotRating?: boolean | null
   showSeals?: boolean | null
   seals?: Seal[] | null
+  locale?: string | null
 }
 
 export const OrderStepHeroComponent: React.FC<Props> = ({
   headline,
   subtitle,
+  showTrustpilotRating,
   showSeals,
   seals,
+  locale,
 }) => {
   const { ref, revealed } = useReveal()
 
@@ -93,6 +98,18 @@ export const OrderStepHeroComponent: React.FC<Props> = ({
           width: 6px; height: 6px; border-radius: 50%;
           background: #0a8fb0; flex-shrink: 0;
         }
+        /* The TrustBox sits in its own pill so it reads as one of the seals.
+           Sizing mirrors the homepage hero: the template reflows on the iframe's
+           OWN width (the score stacks under 200px, the logo wraps under 260px)
+           and its type is fixed at 18px regardless of data-style-height, so it
+           is rendered wide enough to stay on one line and then scaled down as a
+           whole to bring that 18px type into line with the 12.5px seal text. */
+        .nb1-tp-box { width: 231px; height: 18px; line-height: 0; }
+        .nb1-tp-box :global(.trustpilot-widget) {
+          width: 320px;
+          transform: scale(0.7222); /* 18px template type -> 13px */
+          transform-origin: left top;
+        }
         .nb1-seal-mini { display: none; }
         @media (max-width: 560px) {
           .nb1-ok-hero { padding: 28px 0 20px; }
@@ -115,9 +132,22 @@ export const OrderStepHeroComponent: React.FC<Props> = ({
           </div>
         )}
         {subtitle && <p className="nb1-ok-sub">{subtitle}</p>}
-        {showSeals && seals && seals.length > 0 && (
+        {(showTrustpilotRating || (showSeals && seals && seals.length > 0)) && (
           <div className="nb1-ok-seals">
-            {seals.map((seal, i) => (
+            {showTrustpilotRating && (
+              <span className="nb1-seal">
+                <span className="nb1-tp-box">
+                  <TrustpilotWidget
+                    locale={locale}
+                    variant="microStar"
+                    theme="light"
+                    fontFamily="Inter"
+                    textColor="#596F82"
+                  />
+                </span>
+              </span>
+            )}
+            {showSeals && seals && seals.map((seal, i) => (
               <span key={i} className="nb1-seal">
                 {seal.type === 'stars' ? (
                   <>

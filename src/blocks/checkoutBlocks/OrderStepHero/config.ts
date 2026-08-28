@@ -32,6 +32,16 @@ export const OrderStepHero: Block = {
       localized: true,
     },
     {
+      name: 'showTrustpilotRating',
+      type: 'checkbox',
+      label: 'Show Trustpilot rating',
+      defaultValue: false,
+      admin: {
+        description:
+          'Lead the seal row with the live Trustpilot score. The localized widget source is resolved from the page locale in code, the same way the homepage hero does it.',
+      },
+    },
+    {
       name: 'showSeals',
       type: 'checkbox',
       label: 'Show trust seals',

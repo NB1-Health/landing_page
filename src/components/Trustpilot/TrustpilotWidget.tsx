@@ -3,9 +3,10 @@
 import React, { useEffect, useRef } from 'react'
 import Script from 'next/script'
 import {
+  DEFAULT_TRUSTPILOT_VARIANT,
   TRUSTPILOT_BUSINESS_UNIT_ID,
-  TRUSTPILOT_TEMPLATE_ID,
   getTrustpilotConfig,
+  type TrustpilotVariant,
 } from './config'
 
 // The bootstrap only auto-scans for .trustpilot-widget elements present when it
@@ -20,12 +21,21 @@ const INIT_MAX_ATTEMPTS = 100
 export type TrustpilotWidgetProps = {
   /** App locale (en, de, fr, nl, ch, be, uk, uae) — picks the localized source. */
   locale?: string | null
+  /** Which TrustBox template to render. Defaults to the Micro Star used in the hero. */
+  variant?: TrustpilotVariant
   /** TrustBox theme; must match the background it sits on. */
   theme?: 'light' | 'dark'
   /** Height passed to the TrustBox. Micro Star is 24px. */
   height?: string
   /** Class on the wrapper, so the caller owns width and spacing. */
   className?: string
+  /**
+   * Trustpilot-side type overrides. The TrustBox renders inside an iframe, so
+   * page CSS cannot reach its text — these data attributes are the only lever.
+   * Omitted from the DOM when unset so the template keeps its own defaults.
+   */
+  fontFamily?: string
+  textColor?: string
 }
 
 /**
@@ -34,11 +44,14 @@ export type TrustpilotWidgetProps = {
  */
 export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
   locale,
+  variant = DEFAULT_TRUSTPILOT_VARIANT,
   theme = 'light',
   height = '24px',
   className,
+  fontFamily,
+  textColor,
 }) => {
-  const tp = getTrustpilotConfig(locale)
+  const tp = getTrustpilotConfig(locale, variant)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -68,7 +81,7 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [tp.dataLocale, tp.token, theme])
+  }, [tp.dataLocale, tp.token, tp.templateId, theme, fontFamily, textColor])
 
   return (
     <>
@@ -77,12 +90,14 @@ export const TrustpilotWidget: React.FC<TrustpilotWidgetProps> = ({
         ref={ref}
         className={['trustpilot-widget', className].filter(Boolean).join(' ')}
         data-locale={tp.dataLocale}
-        data-template-id={TRUSTPILOT_TEMPLATE_ID}
+        data-template-id={tp.templateId}
         data-businessunit-id={TRUSTPILOT_BUSINESS_UNIT_ID}
         data-style-height={height}
         data-style-width="100%"
         data-theme={theme}
         data-token={tp.token}
+        {...(fontFamily ? { 'data-font-family': fontFamily } : {})}
+        {...(textColor ? { 'data-text-color': textColor } : {})}
       >
         <a href={tp.reviewUrl} target="_blank" rel="noopener">
           Trustpilot

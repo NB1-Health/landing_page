@@ -146,6 +146,8 @@ import * as migration_20260813_140000_complete_published_locale_enums from './20
 import * as migration_20260813_150000_post_seo_overrides from './20260813_150000_post_seo_overrides';
 import * as migration_20260818_120000_localize_rfw_locale_override from './20260818_120000_localize_rfw_locale_override';
 import * as migration_20260819_120000_hero_trustpilot_toggle from './20260819_120000_hero_trustpilot_toggle';
+import * as migration_20260828_120000_customer_reviews_block from './20260828_120000_customer_reviews_block';
+import * as migration_20260828_140000_order_step_hero_trustpilot_toggle from './20260828_140000_order_step_hero_trustpilot_toggle';
 
 export const migrations = [
   {
@@ -887,5 +889,15 @@ export const migrations = [
     up: migration_20260819_120000_hero_trustpilot_toggle.up,
     down: migration_20260819_120000_hero_trustpilot_toggle.down,
     name: '20260819_120000_hero_trustpilot_toggle',
+  },
+  {
+    up: migration_20260828_120000_customer_reviews_block.up,
+    down: migration_20260828_120000_customer_reviews_block.down,
+    name: '20260828_120000_customer_reviews_block',
+  },
+  {
+    up: migration_20260828_140000_order_step_hero_trustpilot_toggle.up,
+    down: migration_20260828_140000_order_step_hero_trustpilot_toggle.down,
+    name: '20260828_140000_order_step_hero_trustpilot_toggle',
   },
 ];
