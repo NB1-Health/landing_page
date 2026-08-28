@@ -2,12 +2,7 @@ import { APIError, type CollectionConfig, type PayloadRequest } from 'payload'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { parsePagePatch, uploadMedia } from '@/mcp/contentOperations'
-
-async function loadOptions(enabled: string) {
-  vi.stubEnv('MCP_ENABLED', enabled)
-  vi.resetModules()
-  return (await import('@/plugins/agentMcp')).agentMcpOptions
-}
+import { agentMcpOptions } from '@/plugins/agentMcp'
 
 function testRequest(payload: Record<string, unknown>) {
   return {
@@ -29,14 +24,11 @@ function errorStatus(run: () => unknown): number | undefined {
 
 afterEach(() => {
   vi.restoreAllMocks()
-  vi.unstubAllEnvs()
 })
 
 describe('agent MCP configuration', () => {
-  it('is opt-in and exposes only the constrained custom tool surface', async () => {
-    expect((await loadOptions('')).disabled).toBe(true)
-
-    const options = await loadOptions('true')
+  it('is always enabled and exposes only the constrained custom tool surface', () => {
+    const options = agentMcpOptions
     expect(options.disabled).toBe(false)
     expect(options.collections).toEqual({})
     expect(options.globals).toEqual({})
@@ -58,8 +50,8 @@ describe('agent MCP configuration', () => {
     expect(names.some((name) => /delete|publish/i.test(name))).toBe(false)
   })
 
-  it('makes API-key administration admin-only and custom tools opt-in per key', async () => {
-    const options = await loadOptions('true')
+  it('makes API-key administration admin-only and custom tools opt-in per key', () => {
+    const options = agentMcpOptions
     const source = {
       slug: 'payload-mcp-api-keys',
       fields: [
@@ -105,7 +97,7 @@ describe('agent MCP configuration', () => {
   })
 
   it('attaches a valid key owner and rejects disabled, expired, or non-editor keys', async () => {
-    const options = await loadOptions('true')
+    const options = agentMcpOptions
     const overrideAuth = options.overrideAuth
     expect(overrideAuth).toBeTypeOf('function')
 

@@ -715,19 +715,8 @@ const MEDIA_EXTENSIONS: Record<string, string[]> = {
   'image/webp': ['.webp'],
 }
 
-function mediaLimitBytes(): number {
-  const parsed = Number(process.env.MCP_MEDIA_MAX_BYTES ?? 5 * 1024 * 1024)
-  return Number.isFinite(parsed)
-    ? Math.min(Math.max(Math.floor(parsed), 1024), 25 * 1024 * 1024)
-    : 5 * 1024 * 1024
-}
-
-function mediaLimitPixels(): number {
-  const parsed = Number(process.env.MCP_MEDIA_MAX_PIXELS ?? 40_000_000)
-  return Number.isFinite(parsed)
-    ? Math.min(Math.max(Math.floor(parsed), 1_000_000), 100_000_000)
-    : 40_000_000
-}
+const mediaLimitBytes = 5 * 1024 * 1024
+const mediaLimitPixels = 40_000_000
 
 export async function uploadMedia({
   alt,
@@ -754,7 +743,7 @@ export async function uploadMedia({
     badRequest(`Filename extension does not match ${mimeType}.`)
   }
   if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64)) badRequest('File is not valid base64.')
-  const maxBytes = mediaLimitBytes()
+  const maxBytes = mediaLimitBytes
   if (base64.length > Math.ceil(maxBytes / 3) * 4 + 4) {
     throw new APIError(`Media exceeds the ${maxBytes}-byte MCP upload limit.`, 413)
   }
@@ -766,7 +755,7 @@ export async function uploadMedia({
     badRequest(`File bytes do not match ${mimeType}.`)
   }
 
-  const maxPixels = mediaLimitPixels()
+  const maxPixels = mediaLimitPixels
   try {
     const metadata = await sharp(data, { animated: true, limitInputPixels: maxPixels }).metadata()
     const width = metadata.width ?? 0

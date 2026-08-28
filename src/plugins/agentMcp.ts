@@ -26,7 +26,7 @@ export const agentMcpOptions: MCPOptions = {
   // Generic collection/global tools are intentionally absent. This prevents
   // arbitrary bulk update, live publishing, and permanent delete operations.
   collections: {},
-  disabled: process.env.MCP_ENABLED !== 'true',
+  disabled: false,
   globals: {},
   mcp: {
     handlerOptions: {

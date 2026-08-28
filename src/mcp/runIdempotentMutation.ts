@@ -9,7 +9,7 @@ import {
 } from '@/mcp/mutationTransaction'
 
 const auditCollection = 'agent-operations'
-const defaultWritesPerMinute = 10
+const writesPerMinute = 10
 const redacted = '[REDACTED]'
 const sensitiveKey = /api.?key|authorization|cookie|password|secret|token/i
 const verboseKey = /body|content|html|markdown|prompt/i
@@ -128,12 +128,6 @@ const resolveExisting = <TResult>(
   return { result: existing.result as TResult }
 }
 
-const writesPerMinute = (): number => {
-  const configured = Number(process.env.MCP_WRITES_PER_MINUTE)
-  const value = Number.isFinite(configured) ? Math.floor(configured) : defaultWritesPerMinute
-  return Math.min(100, Math.max(1, value))
-}
-
 const collectPrivateStrings = (
   value: unknown,
   key = '',
@@ -237,7 +231,7 @@ export const runIdempotentMutation = async <TArgs, TResult>({
         createdAt: { greater_than: cutoff },
       },
     })
-    if (totalDocs >= writesPerMinute()) {
+    if (totalDocs >= writesPerMinute) {
       throw new APIError('Agent mutation rate limit exceeded. Try again shortly.', 429)
     }
 

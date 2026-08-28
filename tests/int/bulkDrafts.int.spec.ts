@@ -87,7 +87,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
-  vi.unstubAllEnvs()
 })
 
 describe('bulk draft planning', () => {
@@ -268,9 +267,8 @@ describe('bulk draft planning', () => {
   })
 
   it('rate-limits new plans per actor without blocking idempotent replays', async () => {
-    vi.stubEnv('MCP_WRITES_PER_MINUTE', '2')
     const payload = makePayload()
-    payload.count.mockResolvedValue({ totalDocs: 2 })
+    payload.count.mockResolvedValue({ totalDocs: 10 })
     const req = makeRequest(payload)
 
     const error = await planBulkDrafts({
@@ -357,9 +355,8 @@ describe('bulk draft commit', () => {
   })
 
   it('rate-limits a new commit before any content write starts', async () => {
-    vi.stubEnv('MCP_WRITES_PER_MINUTE', '1')
     const payload = makePayload()
-    payload.count.mockResolvedValue({ totalDocs: 1 })
+    payload.count.mockResolvedValue({ totalDocs: 10 })
     payload.findByID.mockResolvedValue(approvedPlan())
     const req = makeRequest(payload)
 

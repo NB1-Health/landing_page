@@ -1,14 +1,10 @@
 import { APIError, type PayloadRequest } from 'payload'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { hashStableJSON, runIdempotentMutation, stableStringify } from '@/mcp/runIdempotentMutation'
 
 const makeRequest = (payload: Record<string, unknown>) =>
   ({ payload, user: { id: 42 } }) as unknown as PayloadRequest
-
-afterEach(() => {
-  vi.unstubAllEnvs()
-})
 
 describe('runIdempotentMutation', () => {
   it('replays a succeeded result for the same stable request hash', async () => {
@@ -67,10 +63,9 @@ describe('runIdempotentMutation', () => {
     expect((error as APIError).status).toBe(409)
   })
 
-  it('enforces the configured rolling per-actor quota', async () => {
-    vi.stubEnv('MCP_WRITES_PER_MINUTE', '2')
+  it('enforces the rolling per-actor quota', async () => {
     const payload = {
-      count: vi.fn().mockResolvedValue({ totalDocs: 2 }),
+      count: vi.fn().mockResolvedValue({ totalDocs: 10 }),
       create: vi.fn(),
       find: vi.fn().mockResolvedValue({ docs: [] }),
     }

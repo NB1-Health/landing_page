@@ -21,7 +21,7 @@ const auditCollection = 'agent-operations'
 const maxItems = 20
 const maxPayloadBytes = 250_000
 const planLifetimeMs = 24 * 60 * 60 * 1_000
-const defaultWritesPerMinute = 10
+const writesPerMinute = 10
 const approvalInstructions =
   'An admin must review this plan and set Approval Status to Approved in Payload Admin before it can be committed.'
 
@@ -417,13 +417,6 @@ const lockPlan = async (req: PayloadRequest, planID: ID): Promise<void> => {
   })
 }
 
-const writesPerMinute = (): number => {
-  const configured = Number(process.env.MCP_WRITES_PER_MINUTE)
-  const value =
-    Number.isFinite(configured) && configured > 0 ? Math.floor(configured) : defaultWritesPerMinute
-  return Math.min(100, Math.max(1, value))
-}
-
 const enforceQuota = async (
   payload: AuditPayload,
   req: PayloadRequest,
@@ -438,7 +431,7 @@ const enforceQuota = async (
       createdAt: { greater_than: new Date(Date.now() - 60_000).toISOString() },
     },
   })
-  if (totalDocs >= writesPerMinute()) {
+  if (totalDocs >= writesPerMinute) {
     throw new APIError('Agent mutation rate limit exceeded. Try again shortly.', 429)
   }
 }

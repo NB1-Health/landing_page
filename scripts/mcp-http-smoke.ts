@@ -9,7 +9,7 @@ import { getPayload } from 'payload'
 import config from '../src/payload.config'
 
 async function main() {
-  const endpoint = new URL(process.env.MCP_SMOKE_URL ?? 'http://127.0.0.1:3000/cms/api/mcp')
+  const endpoint = new URL('http://127.0.0.1:3000/cms/api/mcp')
   const apiKey = randomBytes(32).toString('hex')
   const payload = await getPayload({ config })
   let client: Client | undefined
