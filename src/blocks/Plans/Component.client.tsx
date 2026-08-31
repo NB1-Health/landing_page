@@ -336,8 +336,12 @@ export const PlansClient: React.FC<Props> = (props) => {
         }
         .adv .pl-list li :global(svg) { stroke: #13A6CC; }
 
+        /* The arrow is a sibling of the label, not part of the copy: a long or
+           translated label then wraps inside the label, centred, and the arrow
+           stays beside it rather than dropping onto a line of its own. */
         .pl-btn {
-          display: flex; align-items: center; justify-content: center;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          text-align: center; text-wrap: balance;
           width: 100%; margin-top: auto; padding: 14px;
           font-family: 'Inter', -apple-system, sans-serif;
           font-size: 15px; font-weight: 700;
@@ -357,6 +361,13 @@ export const PlansClient: React.FC<Props> = (props) => {
           border: none;
         }
         .adv .pl-btn:hover { background: #b8f04e; }
+        .pl-btn-arrow, :global(.cbtn-arrow) {
+          flex: none; line-height: 1;
+          transition: transform .15s ease;
+        }
+        .pl-btn:hover .pl-btn-arrow, :global(.cbtn:hover .cbtn-arrow) {
+          transform: translateX(2px);
+        }
 
         /* ── Mobile dots ── */
         .pl-dots {
@@ -464,7 +475,8 @@ export const PlansClient: React.FC<Props> = (props) => {
 
         :global(.crow.cta .ccell) { padding: 24px 22px; }
         :global(.cbtn) {
-          width: 100%; display: flex; align-items: center; justify-content: center;
+          width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+          text-align: center; text-wrap: balance;
           font-family: 'Inter', -apple-system, sans-serif;
           font-weight: 700; font-size: 15px;
           border-radius: 100px; padding: 14px;
@@ -576,7 +588,10 @@ export const PlansClient: React.FC<Props> = (props) => {
                     event.preventDefault()
                     trackPlanSelectionAndNavigate({ href: coreHref, planKey: 'core', rate: coreRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.core })
                   }
-                }}>{coreCtaLabel}</a>
+                }}>
+                  <span className="pl-btn-label">{coreCtaLabel}</span>
+                  <span className="pl-btn-arrow" aria-hidden="true">→</span>
+                </a>
               )}
             </div>
 
@@ -610,7 +625,10 @@ export const PlansClient: React.FC<Props> = (props) => {
                     event.preventDefault()
                     trackPlanSelectionAndNavigate({ href: advHref, planKey: 'advanced', rate: advRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.advanced })
                   }
-                }}>{advCtaLabel}</a>
+                }}>
+                  <span className="pl-btn-label">{advCtaLabel}</span>
+                  <span className="pl-btn-arrow" aria-hidden="true">→</span>
+                </a>
               )}
             </div>
           </div>
@@ -684,7 +702,10 @@ export const PlansClient: React.FC<Props> = (props) => {
                             event.preventDefault()
                             trackPlanSelectionAndNavigate({ href: coreHref, planKey: 'core', rate: coreRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.core })
                           }
-                        }}>{coreCtaLabel || 'Start with Core'}</a>
+                        }}>
+                  <span className="cbtn-label">{coreCtaLabel || 'Start with Core'}</span>
+                  <span className="cbtn-arrow" aria-hidden="true">→</span>
+                </a>
                       </div>
                       <div className="ccell center adv">
                         <a href={advHref} className="cbtn lime" onClick={(event) => {
@@ -693,7 +714,10 @@ export const PlansClient: React.FC<Props> = (props) => {
                             event.preventDefault()
                             trackPlanSelectionAndNavigate({ href: advHref, planKey: 'advanced', rate: advRateRef.current, currency: currencyRef.current, planTitle: planTitlesRef.current.advanced })
                           }
-                        }}>{advCtaLabel || 'Start with Advanced'}</a>
+                        }}>
+                  <span className="cbtn-label">{advCtaLabel || 'Start with Advanced'}</span>
+                  <span className="cbtn-arrow" aria-hidden="true">→</span>
+                </a>
                       </div>
                     </div>
                   </div>

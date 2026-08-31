@@ -4273,6 +4273,9 @@ export interface PlanPivotBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   ctaText: string;
   ctaHref: string;
   id?: string | null;
@@ -4316,6 +4319,9 @@ export interface PlanSelectorBlock {
         minNote?: string | null;
         monthlyLinkText?: string | null;
         monthlyLinkHref?: string | null;
+        /**
+         * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+         */
         ctaText: string;
         ctaHref: string;
         id?: string | null;
@@ -6906,6 +6912,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   coreCtaLabel?: string | null;
   coreCtaHref?: string | null;
   advBadge?: string | null;
@@ -6919,6 +6928,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   advCtaLabel?: string | null;
   advCtaHref?: string | null;
   guarantees?:

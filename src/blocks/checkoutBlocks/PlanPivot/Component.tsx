@@ -98,6 +98,12 @@ export const PlanPivotComponent: React.FC<Props> = ({
         .nb1-pp-cta {
           display: inline-flex;
           align-items: center;
+          /* Long or translated CTA copy wraps inside the pill, so both lines are
+             centred rather than ragged-left. text-wrap: balance evens the two
+             lines out where supported and is ignored everywhere else. */
+          justify-content: center;
+          text-align: center;
+          text-wrap: balance;
           gap: 8px;
           padding: 13px 22px;
           background: #fff;
@@ -109,9 +115,23 @@ export const PlanPivotComponent: React.FC<Props> = ({
           text-decoration: none;
           transition: all 0.18s;
         }
+        /* The arrow is its own flex item, so long or translated copy wraps
+           inside the label and the arrow stays put beside it, vertically
+           centred, instead of being pushed onto a line of its own. */
+        .nb1-pp-cta-label {
+          text-align: center;
+        }
+        .nb1-pp-cta-arrow {
+          flex: none;
+          line-height: 1;
+          transition: transform 0.18s;
+        }
         .nb1-pp-cta:hover {
           background: #0a8fb0;
           color: #fff;
+        }
+        .nb1-pp-cta:hover .nb1-pp-cta-arrow {
+          transform: translateX(2px);
         }
         .nb1-pp-box.nb1-pp-down .nb1-pp-cta {
           color: #12314d;
@@ -142,7 +162,12 @@ export const PlanPivotComponent: React.FC<Props> = ({
       )}
 
       {ctaHref && ctaText && (
-        <a href={ctaHref} className="nb1-pp-cta">{ctaText}</a>
+        <a href={ctaHref} className="nb1-pp-cta">
+          <span className="nb1-pp-cta-label">{ctaText}</span>
+          <span className="nb1-pp-cta-arrow" aria-hidden="true">
+            →
+          </span>
+        </a>
       )}
     </div>
     </div>

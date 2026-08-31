@@ -344,17 +344,31 @@ export const PlanSelectorClient: React.FC<Props> = ({
           color: #0a8fb0;
           font-weight: 700;
         }
+        /* Flex rather than block so the arrow is a sibling of the label: long or
+           translated copy then wraps inside the label, centred, and the arrow
+           stays beside it instead of dropping onto a line of its own. */
         .nb1-ps-cta {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
           border-radius: 100px;
           padding: 13px 20px;
           font-weight: 600;
           font-size: 14px;
           text-align: center;
+          text-wrap: balance;
           text-decoration: none;
           transition: transform 0.18s, background 0.18s, border-color 0.18s;
         }
+        .nb1-ps-cta-label { text-align: center; }
+        .nb1-ps-cta-arrow {
+          flex: none;
+          line-height: 1;
+          transition: transform 0.18s;
+        }
         .nb1-ps-cta:hover { transform: translateY(-1px); }
+        .nb1-ps-cta:hover .nb1-ps-cta-arrow { transform: translateX(2px); }
         .nb1-ps-cta.advanced {
           background: #c6ff5b;
           color: #0e2740;
@@ -589,7 +603,12 @@ export const PlanSelectorClient: React.FC<Props> = ({
                     })
                   }}
                 >
-                  {plan.ctaText}
+                  <span className="nb1-ps-cta-label">
+                    {plan.ctaText}
+                  </span>
+                  <span className="nb1-ps-cta-arrow" aria-hidden="true">
+                    →
+                  </span>
                 </a>
               </div>
             )
