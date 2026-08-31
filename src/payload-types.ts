@@ -7392,7 +7392,7 @@ export interface ReferFaqBlock {
 export interface User {
   id: number;
   name?: string | null;
-  role: 'admin' | 'agent-editor';
+  role: 'admin' | 'editor' | 'agent-editor';
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;

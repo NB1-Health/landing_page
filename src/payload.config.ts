@@ -1,7 +1,14 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import {
+  type Access,
+  buildConfig,
+  type CollectionConfig,
+  type GlobalConfig,
+  PayloadRequest,
+  type Where,
+} from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
@@ -21,7 +28,7 @@ import { Authors } from './collections/Authors'
 import { FAQ } from './globals/FAQ'
 import { defaultLocale, payloadLocales } from './i18n/config'
 import { AgentOperations } from './collections/AgentOperations'
-import { adminOnly, isAdmin } from './access/roles'
+import { adminOnly, adminOrEditor, isAdmin, isEditor } from './access/roles'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -44,6 +51,32 @@ const adminManagedCollectionAccess = {
   unlock: adminOnly,
   update: adminOnly,
 }
+const adminOrOwnLock: Access = ({ req: { user } }) => {
+  if (isAdmin(user)) return true
+  if (!user || user.collection !== 'users' || !isEditor(user)) return false
+  const ownLock: Where = {
+    and: [{ 'user.value': { equals: user.id } }, { 'user.relationTo': { equals: 'users' } }],
+  }
+  return ownLock
+}
+const editorLockAccess = {
+  admin: adminOnly,
+  create: adminOnly,
+  delete: adminOrOwnLock,
+  read: adminOrEditor,
+  readVersions: adminOnly,
+  unlock: adminOnly,
+  update: adminOnly,
+}
+const hiddenFromNonAdmins = ({ user }: { user: unknown }) => !isAdmin(user)
+const hideCollectionFromNonAdmins = (collection: CollectionConfig): CollectionConfig => ({
+  ...collection,
+  admin: { ...collection.admin, hidden: hiddenFromNonAdmins },
+})
+const hideGlobalFromNonAdmins = (global: GlobalConfig): GlobalConfig => ({
+  ...global,
+  admin: { ...global.admin, hidden: hiddenFromNonAdmins },
+})
 export default buildConfig({
   // Canonical absolute URL for this deployment. Without it Payload falls back to
   // an empty serverURL and logs "Failed to create URL object from URL: , falling
@@ -96,21 +129,28 @@ export default buildConfig({
     Pages,
     Posts,
     Media,
-    Categories,
+    hideCollectionFromNonAdmins(Categories),
     Users,
-    Products,
-    Authors,
-    Headers,
-    Footers,
+    hideCollectionFromNonAdmins(Products),
+    hideCollectionFromNonAdmins(Authors),
+    hideCollectionFromNonAdmins(Headers),
+    hideCollectionFromNonAdmins(Footers),
     AgentOperations,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   folders: {
     collectionOverrides: [
-      ({ collection }) => ({ ...collection, access: adminManagedCollectionAccess }),
+      ({ collection }) => ({
+        ...collection,
+        access: { ...adminManagedCollectionAccess, read: adminOrEditor },
+      }),
     ],
   },
-  globals: [Navigation, SiteSettings, FAQ],
+  globals: [
+    hideGlobalFromNonAdmins(Navigation),
+    hideGlobalFromNonAdmins(SiteSettings),
+    hideGlobalFromNonAdmins(FAQ),
+  ],
   plugins,
   onInit: (payload) => {
     // The MCP plugin uses its key hash directly at /mcp. Its generated key
@@ -119,7 +159,7 @@ export default buildConfig({
       ({ name }) => name !== 'payload-mcp-api-keys-api-key',
     )
     const lockedDocuments = payload.collections['payload-locked-documents']?.config
-    if (lockedDocuments) lockedDocuments.access = adminManagedCollectionAccess
+    if (lockedDocuments) lockedDocuments.access = editorLockAccess
   },
   secret: process.env.PAYLOAD_SECRET,
   sharp,

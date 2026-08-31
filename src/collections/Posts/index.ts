@@ -11,8 +11,8 @@ import {
 
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import {
-  adminOnly,
-  adminOrAgentTrash,
+  adminOrContentTrash,
+  adminOrEditor,
   contentEditor,
   enforceAgentDraftOperation,
 } from '../../access/roles'
@@ -46,9 +46,9 @@ export const Posts: CollectionConfig<'posts'> = {
   access: {
     admin: contentEditor,
     create: contentEditor,
-    delete: adminOrAgentTrash,
+    delete: adminOrContentTrash,
     read: authenticatedOrPublished,
-    readVersions: adminOnly,
+    readVersions: adminOrEditor,
     update: contentEditor,
   },
   defaultPopulate: {

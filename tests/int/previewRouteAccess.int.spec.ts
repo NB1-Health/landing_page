@@ -58,18 +58,21 @@ describe('preview route access', () => {
     expect(enable).not.toHaveBeenCalled()
   })
 
-  it('enables the exact draft target for an authenticated admin', async () => {
-    auth.mockResolvedValue({
-      permissions: {},
-      user: { collection: 'users', id: 1, role: 'admin' },
-    })
+  it.each(['admin', 'editor'])(
+    'enables the exact draft target for an authenticated %s',
+    async (role) => {
+      auth.mockResolvedValue({
+        permissions: {},
+        user: { collection: 'users', id: 1, role },
+      })
 
-    await expect(GET(request(), { params: Promise.resolve({ locale: 'de' }) })).rejects.toThrow(
-      'NEXT_REDIRECT',
-    )
-    expect(enable).toHaveBeenCalledOnce()
-    expect(redirect).toHaveBeenCalledWith('/de/ueber-nb1')
-  })
+      await expect(GET(request(), { params: Promise.resolve({ locale: 'de' }) })).rejects.toThrow(
+        'NEXT_REDIRECT',
+      )
+      expect(enable).toHaveBeenCalledOnce()
+      expect(redirect).toHaveBeenCalledWith('/de/ueber-nb1')
+    },
+  )
 
   it('rejects an agent-editor even with a valid signed preview link', async () => {
     auth.mockResolvedValue({

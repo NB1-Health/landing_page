@@ -10,7 +10,7 @@ import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
-import { adminOnly } from '@/access/roles'
+import { adminOnly, isAdmin } from '@/access/roles'
 import { agentMcpPlugin } from '@/plugins/agentMcp'
 
 import { Page, Post } from '@/payload-types'
@@ -23,6 +23,7 @@ const adminManagedPublicRead = {
   read: () => true,
   update: adminOnly,
 }
+const hiddenFromNonAdmins = ({ user }: { user: unknown }) => !isAdmin(user)
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | NB1` : 'NB1'
@@ -39,6 +40,7 @@ export const plugins: Plugin[] = [
     collections: ['pages', 'posts'],
     overrides: {
       access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
       // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -72,6 +74,7 @@ export const plugins: Plugin[] = [
     },
     formOverrides: {
       access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
       hooks: {
         afterChange: [revalidatePages],
         afterDelete: [revalidatePages],
@@ -112,6 +115,7 @@ export const plugins: Plugin[] = [
     skipSync: ({ req }) => req.query.autosave === true || req.query.autosave === 'true',
     searchOverrides: {
       access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
       fields: ({ defaultFields }) => {
         return [...defaultFields, ...searchFields]
       },

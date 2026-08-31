@@ -23,8 +23,8 @@ describe('authenticated draft reads', () => {
     expect(auth).not.toHaveBeenCalled()
   })
 
-  it('includes drafts only while an admin Payload session is authenticated', async () => {
-    const user = { collection: 'users', id: 7, role: 'admin' }
+  it.each(['admin', 'editor'])('includes drafts for an authenticated %s session', async (role) => {
+    const user = { collection: 'users', id: 7, role }
     draftMode.mockResolvedValue({ isEnabled: true })
     auth.mockResolvedValue({ user })
 

@@ -1,18 +1,20 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOnly, adminOrSelf, isAdmin, userRoles } from '../../access/roles'
+import { adminOnly, adminOrEditor, adminOrSelf, isAdmin, userRoles } from '../../access/roles'
 
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
-    admin: adminOnly,
+    admin: adminOrEditor,
     create: adminOnly,
     delete: adminOnly,
     read: adminOrSelf,
+    unlock: adminOnly,
     update: adminOnly,
   },
   admin: {
     defaultColumns: ['name', 'email'],
+    hidden: ({ user }) => !isAdmin(user),
     useAsTitle: 'name',
   },
   auth: {
@@ -29,7 +31,7 @@ export const Users: CollectionConfig = {
       required: true,
       defaultValue: 'admin',
       options: userRoles.map((role) => ({
-        label: role === 'admin' ? 'Admin' : 'Agent editor',
+        label: role === 'admin' ? 'Admin' : role === 'editor' ? 'Editor' : 'Agent editor',
         value: role,
       })),
       saveToJWT: true,

@@ -1,6 +1,6 @@
 import { APIError, type Access, type AccessArgs, type PayloadRequest } from 'payload'
 
-export const userRoles = ['admin', 'agent-editor'] as const
+export const userRoles = ['admin', 'editor', 'agent-editor'] as const
 
 export type UserRole = (typeof userRoles)[number]
 
@@ -16,35 +16,45 @@ export const isAgentEditor = (user: unknown): boolean => {
   return (user as UserWithRole | null | undefined)?.role === 'agent-editor'
 }
 
+export const isEditor = (user: unknown): boolean => {
+  return (user as UserWithRole | null | undefined)?.role === 'editor'
+}
+
+export const isAdminOrEditor = (user: unknown): boolean => isAdmin(user) || isEditor(user)
+
 type BooleanAccess = (args: AccessArgs) => boolean
 
 export const adminOnly: BooleanAccess = ({ req: { user } }) => isAdmin(user)
 
+export const adminOrEditor: BooleanAccess = ({ req: { user } }) => isAdminOrEditor(user)
+
 export const contentEditor: BooleanAccess = ({ req }) =>
-  isAdmin(req.user) || (req.payloadAPI === 'MCP' && isAgentEditor(req.user))
+  isAdminOrEditor(req.user) || (req.payloadAPI === 'MCP' && isAgentEditor(req.user))
 
 /**
  * Payload checks delete access when an update sets `deletedAt`. Permit only the
- * constrained MCP trash update; permanent delete operations have no matching data.
+ * constrained soft-trash update; permanent delete operations have no matching data.
  */
-export const adminOrAgentTrash: BooleanAccess = ({ data, req }) => {
+export const adminOrContentTrash: BooleanAccess = ({ data, req }) => {
   if (isAdmin(req.user)) return true
+
+  if (!data || typeof data !== 'object') return false
+  const trashData = data as Record<string, unknown>
+  const hasTrashTimestamp =
+    typeof trashData.deletedAt === 'string' && trashData.deletedAt.length > 0
+  const isTrashOnlyUpdate = Object.keys(trashData).length === 1 && hasTrashTimestamp
+
+  // Payload includes the full document when checking the admin UI trash action.
+  if (isEditor(req.user)) return hasTrashTimestamp
   if (
     !isAgentEditor(req.user) ||
     req.payloadAPI !== 'MCP' ||
-    req.context.agentTrashAction !== 'trash' ||
-    !data ||
-    typeof data !== 'object'
+    req.context.agentTrashAction !== 'trash'
   ) {
     return false
   }
 
-  const trashData = data as Record<string, unknown>
-  return (
-    Object.keys(trashData).length === 1 &&
-    typeof trashData.deletedAt === 'string' &&
-    trashData.deletedAt.length > 0
-  )
+  return isTrashOnlyUpdate
 }
 
 export const adminOrSelf: Access = ({ req: { user } }) => {
@@ -61,7 +71,8 @@ export const adminOrPublished: Access = ({ req: { user } }) => {
 }
 
 export const contentEditorOrPublished: Access = ({ req }) => {
-  if (isAdmin(req.user) || (req.payloadAPI === 'MCP' && isAgentEditor(req.user))) return true
+  if (isAdminOrEditor(req.user) || (req.payloadAPI === 'MCP' && isAgentEditor(req.user)))
+    return true
 
   return { _status: { equals: 'published' } }
 }

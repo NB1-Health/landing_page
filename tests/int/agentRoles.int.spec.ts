@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   adminOnly,
-  adminOrAgentTrash,
+  adminOrContentTrash,
+  adminOrEditor,
   adminOrSelf,
   contentEditor,
   contentEditorOrPublished,
   enforceAgentDraftOperation,
   enforceAgentMediaOperation,
+  userRoles,
 } from '@/access/roles'
 import { Media } from '@/collections/Media'
 import { Pages } from '@/collections/Pages'
@@ -23,20 +25,30 @@ const accessArgs = (role?: string, payloadAPI?: string) =>
     },
   }) as never
 
-describe('agent editor permissions', () => {
+describe('content role permissions', () => {
   it('keeps administration restricted to admins', async () => {
     expect(await adminOnly(accessArgs('admin'))).toBe(true)
+    expect(await adminOnly(accessArgs('editor'))).toBe(false)
     expect(await adminOnly(accessArgs('agent-editor'))).toBe(false)
     expect(await adminOnly(accessArgs())).toBe(false)
 
+    expect(await adminOrEditor(accessArgs('admin'))).toBe(true)
+    expect(await adminOrEditor(accessArgs('editor'))).toBe(true)
+    expect(await adminOrEditor(accessArgs('agent-editor'))).toBe(false)
+
     expect(await contentEditor(accessArgs('admin'))).toBe(true)
+    expect(await contentEditor(accessArgs('editor'))).toBe(true)
     expect(await contentEditor(accessArgs('agent-editor'))).toBe(false)
     expect(await contentEditor(accessArgs('agent-editor', 'MCP'))).toBe(true)
     expect(await contentEditor(accessArgs('unknown'))).toBe(false)
 
     expect(await Users.access?.update?.(accessArgs('agent-editor'))).toBe(false)
+    expect(await Users.access?.update?.(accessArgs('editor'))).toBe(false)
+    expect(await Users.access?.unlock?.(accessArgs('editor'))).toBe(false)
     expect(await Products.access?.update?.(accessArgs('agent-editor'))).toBe(false)
+    expect(await Products.access?.update?.(accessArgs('editor'))).toBe(false)
     expect(await Media.access?.delete?.(accessArgs('agent-editor'))).toBe(false)
+    expect(userRoles).toEqual(['admin', 'editor', 'agent-editor'])
 
     const self = { collection: 'users', id: 42, role: 'agent-editor' }
     expect(await adminOrSelf({ req: { user: self } } as never)).toEqual({
@@ -44,6 +56,43 @@ describe('agent editor permissions', () => {
     })
     expect(
       await adminOrSelf({ req: { user: { collection: 'payload-mcp-api-keys', id: 42 } } } as never),
+    ).toBe(false)
+  })
+
+  it('lets human editors manage content without administrative or permanent-delete access', async () => {
+    expect(await Users.access?.admin?.(accessArgs('editor'))).toBe(true)
+
+    for (const collection of [Pages, Posts]) {
+      expect(await collection.access?.admin?.(accessArgs('editor'))).toBe(true)
+      expect(await collection.access?.create?.(accessArgs('editor'))).toBe(true)
+      expect(await collection.access?.read?.(accessArgs('editor'))).toBe(true)
+      expect(await collection.access?.update?.(accessArgs('editor'))).toBe(true)
+      expect(await collection.access?.delete?.(accessArgs('editor'))).toBe(false)
+      expect(await collection.access?.readVersions?.(accessArgs('editor'))).toBe(true)
+    }
+
+    expect(await Media.access?.admin?.(accessArgs('editor'))).toBe(true)
+    expect(await Media.access?.create?.(accessArgs('editor'))).toBe(true)
+    expect(await Media.access?.update?.(accessArgs('editor'))).toBe(true)
+    expect(await Media.access?.delete?.(accessArgs('editor'))).toBe(false)
+
+    const editorReq = { context: {}, payloadAPI: 'REST', user: { role: 'editor' } }
+    const trashRequest = {
+      data: {
+        deletedAt: '2026-08-31T10:00:00.000Z',
+        id: 12,
+        title: 'Payload includes the document in its permission probe',
+      },
+      req: editorReq,
+    } as never
+    expect(await Pages.access?.delete?.(trashRequest)).toBe(true)
+    expect(await Posts.access?.delete?.(trashRequest)).toBe(true)
+    expect(await Media.access?.delete?.(trashRequest)).toBe(true)
+    expect(
+      await Pages.access?.delete?.({
+        data: { id: 12, title: 'No trash timestamp' },
+        req: editorReq,
+      } as never),
     ).toBe(false)
   })
 
@@ -67,6 +116,7 @@ describe('agent editor permissions', () => {
   })
 
   it('shows drafts only to known content editors', async () => {
+    expect(await contentEditorOrPublished(accessArgs('editor', 'REST'))).toBe(true)
     expect(await contentEditorOrPublished(accessArgs('agent-editor', 'MCP'))).toBe(true)
     expect(await contentEditorOrPublished(accessArgs('agent-editor', 'REST'))).toEqual({
       _status: { equals: 'published' },
@@ -107,6 +157,7 @@ describe('agent editor permissions', () => {
 
     expect(() => run({ data: { _status: 'draft' }, draft: true }, 'create')).not.toThrow()
     expect(() => run({ data: { _status: 'published' } }, 'update', 'admin')).not.toThrow()
+    expect(() => run({ data: { _status: 'published' } }, 'update', 'editor')).not.toThrow()
   })
 
   it('allows only the narrow MCP trash and restore updates', () => {
@@ -143,7 +194,7 @@ describe('agent editor permissions', () => {
     expect(() => runMedia({ deletedAt: 'not-null' }, 'restore')).toThrow(/through MCP tools/i)
 
     const trashAccess = (data: unknown, action: unknown = 'trash', payloadAPI = 'MCP') =>
-      adminOrAgentTrash({
+      adminOrContentTrash({
         data,
         req: {
           context: { agentTrashAction: action },
@@ -169,13 +220,16 @@ describe('agent editor permissions', () => {
     expect(Posts.versions).toMatchObject({ drafts: { autosave: { interval: 5000 } } })
   })
 
-  it('keeps version-history endpoints admin-only', async () => {
-    for (const collection of [Pages, Posts, Products]) {
+  it('lets human editors use content history while keeping agents and products restricted', async () => {
+    for (const collection of [Pages, Posts]) {
       expect(await collection.access?.readVersions?.(accessArgs('admin'))).toBe(true)
+      expect(await collection.access?.readVersions?.(accessArgs('editor'))).toBe(true)
       expect(await collection.access?.readVersions?.(accessArgs('agent-editor', 'REST'))).toBe(
         false,
       )
       expect(await collection.access?.readVersions?.(accessArgs('agent-editor', 'MCP'))).toBe(false)
     }
+    expect(await Products.access?.readVersions?.(accessArgs('admin'))).toBe(true)
+    expect(await Products.access?.readVersions?.(accessArgs('editor'))).toBe(false)
   })
 })

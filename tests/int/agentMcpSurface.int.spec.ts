@@ -116,6 +116,7 @@ describe('agent MCP configuration', () => {
       { ...validSettings, enabled: false },
       { ...validSettings, expiresAt: new Date(Date.now() - 60_000).toISOString() },
       { ...validSettings, user: { id: 43, role: 'admin' } },
+      { ...validSettings, user: { id: 43, role: 'editor' } },
       { ...validSettings, user: { id: 43, role: 'viewer' } },
     ]
     for (const invalid of invalidSettings) {

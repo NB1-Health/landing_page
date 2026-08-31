@@ -9,7 +9,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
-import { adminOnly, contentEditor, enforceAgentMediaOperation } from '../access/roles'
+import { adminOrContentTrash, contentEditor, enforceAgentMediaOperation } from '../access/roles'
 import { revalidateDeletedMedia, revalidateMedia } from './Media/hooks/revalidateMedia'
 
 const filename = fileURLToPath(import.meta.url)
@@ -22,7 +22,7 @@ export const Media: CollectionConfig = {
   access: {
     admin: contentEditor,
     create: contentEditor,
-    delete: adminOnly,
+    delete: adminOrContentTrash,
     read: anyone,
     update: contentEditor,
   },

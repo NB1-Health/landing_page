@@ -2,8 +2,8 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import {
-  adminOnly,
-  adminOrAgentTrash,
+  adminOrContentTrash,
+  adminOrEditor,
   contentEditor,
   enforceAgentDraftOperation,
 } from '../../access/roles'
@@ -119,9 +119,9 @@ export const Pages: CollectionConfig<'pages'> = {
   access: {
     admin: contentEditor,
     create: contentEditor,
-    delete: adminOrAgentTrash,
+    delete: adminOrContentTrash,
     read: authenticatedOrPublished,
-    readVersions: adminOnly,
+    readVersions: adminOrEditor,
     update: contentEditor,
   },
   defaultPopulate: {

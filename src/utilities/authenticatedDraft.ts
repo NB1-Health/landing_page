@@ -2,7 +2,7 @@ import type { Payload, PayloadRequest } from 'payload'
 
 import { draftMode, headers } from 'next/headers'
 
-import { isAdmin } from '@/access/roles'
+import { isAdminOrEditor } from '@/access/roles'
 
 export type AuthenticatedDraft = {
   draft: boolean
@@ -16,7 +16,7 @@ export async function getAuthenticatedDraft(payload: Payload): Promise<Authentic
 
   try {
     const { user } = await payload.auth({ headers: await headers() })
-    return isAdmin(user) ? { draft: true, user } : { draft: false, user: null }
+    return isAdminOrEditor(user) ? { draft: true, user } : { draft: false, user: null }
   } catch {
     return { draft: false, user: null }
   }

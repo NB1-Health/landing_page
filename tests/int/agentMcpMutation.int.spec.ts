@@ -6,12 +6,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import config from '@/payload.config'
 import { createPostDraft, setContentTrashState, updatePostDraft } from '@/mcp/contentOperations'
 import { runIdempotentMutation } from '@/mcp/runIdempotentMutation'
+import { parseHtmlToContent } from '@/utilities/parseHtmlToBlocks'
 
 describe('agent MCP mutation (Postgres)', () => {
   let payload: Payload
   let req: PayloadRequest
   let secondReq: PayloadRequest
+  let editorID: number
   let userID: number
+  const lockIDs: number[] = []
   const postIDs: number[] = []
 
   beforeAll(async () => {
@@ -24,6 +27,15 @@ describe('agent MCP mutation (Postgres)', () => {
       false,
     )
     expect(await lockedAccess?.create?.({ req: { user: { role: 'admin' } } } as never)).toBe(true)
+    const editorLockRequest = {
+      req: { user: { collection: 'users', id: 7, role: 'editor' } },
+    } as never
+    expect(await lockedAccess?.create?.(editorLockRequest)).toBe(false)
+    expect(await lockedAccess?.read?.(editorLockRequest)).toBe(true)
+    expect(await lockedAccess?.update?.(editorLockRequest)).toBe(false)
+    expect(await lockedAccess?.delete?.(editorLockRequest)).toEqual({
+      and: [{ 'user.value': { equals: 7 } }, { 'user.relationTo': { equals: 'users' } }],
+    })
     const user = await payload.create({
       collection: 'users',
       data: {
@@ -35,6 +47,17 @@ describe('agent MCP mutation (Postgres)', () => {
       overrideAccess: true,
     })
     userID = user.id
+    const editor = await payload.create({
+      collection: 'users',
+      data: {
+        email: `human-editor-${randomUUID()}@example.invalid`,
+        name: 'Human editor integration test',
+        password: randomUUID(),
+        role: 'editor',
+      },
+      overrideAccess: true,
+    })
+    editorID = editor.id
     req = await createLocalReq({ user }, payload)
     req.payloadAPI = 'MCP'
     secondReq = await createLocalReq({ user }, payload)
@@ -42,6 +65,11 @@ describe('agent MCP mutation (Postgres)', () => {
   }, 600_000)
 
   afterAll(async () => {
+    for (const id of lockIDs) {
+      await payload
+        .delete({ collection: 'payload-locked-documents', id, overrideAccess: true })
+        .catch(() => undefined)
+    }
     for (const id of postIDs) {
       await payload
         .delete({
@@ -64,8 +92,169 @@ describe('agent MCP mutation (Postgres)', () => {
         .delete({ collection: 'users', id: userID, overrideAccess: true })
         .catch(() => undefined)
     }
+    if (editorID !== undefined) {
+      await payload
+        .delete({ collection: 'users', id: editorID, overrideAccess: true })
+        .catch(() => undefined)
+    }
     await payload?.destroy()
   })
+
+  it('persists the human editor role and grants authenticated draft reads', async () => {
+    const editor = await payload.findByID({
+      collection: 'users',
+      id: editorID,
+      overrideAccess: true,
+    })
+    expect(editor).toMatchObject({ id: editorID, role: 'editor' })
+
+    const editorReq = await createLocalReq({ user: editor }, payload)
+    await expect(
+      payload.find({
+        collection: 'pages',
+        draft: true,
+        limit: 1,
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).resolves.toMatchObject({ docs: expect.any(Array) })
+  })
+
+  it('enforces the human editor lifecycle through Payload operations', async () => {
+    const editor = await payload.findByID({
+      collection: 'users',
+      id: editorID,
+      overrideAccess: true,
+    })
+    const editorReq = await createLocalReq({ user: editor }, payload)
+    const suffix = randomUUID().slice(0, 8)
+    const created = await payload.create({
+      collection: 'posts',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        htmlContent: '<p>Editor lifecycle content.</p>',
+        intro: parseHtmlToContent('<p>Editor lifecycle introduction.</p>'),
+        meta: {
+          description: 'Payload editor lifecycle integration test.',
+          title: 'Editor lifecycle',
+        },
+        slug: `editor-lifecycle-${suffix}`,
+        source: 'api',
+        title: 'Editor lifecycle',
+      } as never,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: false,
+      req: editorReq,
+    })
+    postIDs.push(created.id)
+
+    const published = await payload.update({
+      collection: 'posts',
+      context: { disableRevalidate: true },
+      data: { _status: 'published', title: 'Editor lifecycle published' },
+      draft: true,
+      id: created.id,
+      locale: 'en',
+      overrideAccess: false,
+      publishSpecificLocale: 'en',
+      req: editorReq,
+    })
+    expect(published).toMatchObject({ _status: 'published', title: 'Editor lifecycle published' })
+
+    const versions = await payload.findVersions({
+      collection: 'posts',
+      limit: 10,
+      locale: 'en',
+      overrideAccess: false,
+      req: editorReq,
+      where: { parent: { equals: created.id } },
+    })
+    expect(versions.docs.length).toBeGreaterThan(0)
+    const versionID = versions.docs[0]?.id
+    expect(versionID).toBeDefined()
+    await expect(
+      payload.restoreVersion({
+        collection: 'posts',
+        draft: true,
+        id: String(versionID),
+        locale: 'en',
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).resolves.toMatchObject({ id: created.id })
+
+    const deletedAt = new Date().toISOString()
+    await expect(
+      payload.update({
+        collection: 'posts',
+        context: { disableRevalidate: true },
+        data: { deletedAt },
+        id: created.id,
+        locale: 'en',
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).resolves.toMatchObject({ deletedAt })
+    await expect(
+      payload.update({
+        collection: 'posts',
+        context: { disableRevalidate: true },
+        data: { deletedAt: null },
+        id: created.id,
+        locale: 'en',
+        overrideAccess: false,
+        req: editorReq,
+        trash: true,
+      }),
+    ).resolves.toMatchObject({ deletedAt: null })
+    await expect(
+      payload.delete({
+        collection: 'posts',
+        id: created.id,
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+
+    const ownLock = await payload.create({
+      collection: 'payload-locked-documents',
+      data: {
+        document: { relationTo: 'posts', value: created.id },
+        user: { relationTo: 'users', value: editorID },
+      },
+      overrideAccess: true,
+    })
+    lockIDs.push(ownLock.id)
+    const otherLock = await payload.create({
+      collection: 'payload-locked-documents',
+      data: {
+        document: { relationTo: 'posts', value: created.id },
+        user: { relationTo: 'users', value: userID },
+      },
+      overrideAccess: true,
+    })
+    lockIDs.push(otherLock.id)
+
+    await expect(
+      payload.delete({
+        collection: 'payload-locked-documents',
+        id: ownLock.id,
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).resolves.toMatchObject({ id: ownLock.id })
+    await expect(
+      payload.delete({
+        collection: 'payload-locked-documents',
+        id: otherLock.id,
+        overrideAccess: false,
+        req: editorReq,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
+  }, 600_000)
 
   it('creates a draft with access control and replays the idempotent result', async () => {
     const suffix = randomUUID().slice(0, 8)
