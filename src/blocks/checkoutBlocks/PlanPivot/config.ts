@@ -49,7 +49,11 @@ export const PlanPivot: Block = {
       label: 'CTA text',
       localized: true,
       required: true,
-      admin: { placeholder: 'Switch to Advanced · €149/mo →' },
+      admin: {
+        placeholder: 'Switch to Advanced · €149/mo',
+        description:
+          'Label only — the button draws its own arrow, so do not type one at the end or it will show twice.',
+      },
     },
     {
       name: 'ctaHref',

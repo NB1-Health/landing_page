@@ -24,7 +24,15 @@ export const PlansBlock: Block = {
     { name: 'coreCommit', type: 'text', localized: true },
     { name: 'coreFeaturesLabel', type: 'text', localized: true },
     { name: 'coreFeatures', type: 'array', fields: [{ name: 'item', type: 'text', localized: true }] },
-    { name: 'coreCtaLabel', type: 'text', localized: true },
+    {
+      name: 'coreCtaLabel',
+      type: 'text',
+      localized: true,
+      admin: {
+        description:
+          'Label only — the button draws its own arrow, so do not type one at the end or it will show twice.',
+      },
+    },
     { name: 'coreCtaHref', type: 'text', localized: true },
     { name: 'advBadge', type: 'text', localized: true },
     { name: 'advLabel', type: 'text', localized: true },
@@ -34,7 +42,15 @@ export const PlansBlock: Block = {
     { name: 'advCommit', type: 'text', localized: true },
     { name: 'advFeaturesLabel', type: 'text', localized: true },
     { name: 'advFeatures', type: 'array', fields: [{ name: 'item', type: 'text', localized: true }] },
-    { name: 'advCtaLabel', type: 'text', localized: true },
+    {
+      name: 'advCtaLabel',
+      type: 'text',
+      localized: true,
+      admin: {
+        description:
+          'Label only — the button draws its own arrow, so do not type one at the end or it will show twice.',
+      },
+    },
     { name: 'advCtaHref', type: 'text', localized: true },
     { name: 'guarantees', type: 'array', fields: [
       { name: 'iconSvg', type: 'textarea' },
