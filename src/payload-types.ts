@@ -5409,7 +5409,7 @@ export interface ProtocolLibraryBlock {
  */
 export interface ProtocolCredStripBlock {
   /**
-   * Up to 6, rendered as two interlocking rows of 3.
+   * Up to 7, rendered as two interlocking rows: the first holds 3, the second holds the rest. Seven gives a row of 3 above a row of 4.
    */
   faces?:
     | {
