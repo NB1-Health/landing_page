@@ -351,9 +351,14 @@ export const LabScienceBoardComponent: React.FC<LabScienceBoardBlockType & { loc
           line-height: 1.55;
           max-width: 52ch;
         }
+        /* Track count follows the member count instead of being fixed at 3, so a
+           fourth member joins the row rather than orphaning onto a second one.
+           The 210px minimum caps the grid at 4 tracks in the 1016px .wrap
+           (1040 / 234 = 4.4), and auto-fit collapses the unused track, so three
+           members still fill the width exactly as before. */
         .sbx-team {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
           gap: 24px;
           margin-top: 64px;
         }

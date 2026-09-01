@@ -172,6 +172,7 @@ describe('loss-resistant delivery', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     resetEnhancedUserDataCache()
     vi.restoreAllMocks()
     vi.useRealTimers()
@@ -225,6 +226,7 @@ describe('loss-resistant delivery', () => {
           ecommerce: { currency: 'EUR', value: 99 },
         },
         { email: 'person@example.com' },
+        { identityWaitMs: 250 },
       ),
     ).resolves.toBeUndefined()
 
@@ -234,7 +236,30 @@ describe('loss-resistant delivery', () => {
       canonical_event: 'email_submitted',
       checkout_id: 'checkout-1',
     })
+    expect(window.dataLayer[1]).not.toHaveProperty('external_id')
     expect(window.dataLayer[1]).not.toHaveProperty('user_data')
+  })
+
+  it('emits one base email event after the bounded identity wait times out', async () => {
+    vi.useFakeTimers()
+    vi.spyOn(window.crypto.subtle, 'digest').mockReturnValue(new Promise<ArrayBuffer>(() => {}))
+
+    const pending = pushEventWithUser(
+      'email_submitted',
+      { checkout_id: 'checkout-1' },
+      { email: 'person@example.com' },
+      { identityWaitMs: 250 },
+    )
+
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'email_submitted'),
+    ).toHaveLength(0)
+    await vi.advanceTimersByTimeAsync(250)
+    await pending
+    expect(
+      window.dataLayer.filter((entry) => entry.canonical_event === 'email_submitted'),
+    ).toHaveLength(1)
+    expect(window.dataLayer[1]).not.toHaveProperty('external_id')
   })
 
   it('pushes the base event synchronously while optional identity preparation is pending', async () => {
@@ -266,7 +291,16 @@ describe('loss-resistant delivery', () => {
     vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
       new Uint8Array([1, 2, 3]).buffer,
     )
-    await primeEnhancedUserData({ email: 'person@example.com' })
+
+    await pushEventWithUser(
+      'email_submitted',
+      { checkout_id: 'checkout-1' },
+      { email: 'person@example.com' },
+      { identityWaitMs: 250 },
+    )
+
+    expect(window.dataLayer[1]).toHaveProperty('external_id', '010203')
+    expect(window.dataLayer[1]).toHaveProperty('email_sha256', '010203')
     window.dataLayer = []
 
     await pushEventWithUser(
@@ -279,6 +313,29 @@ describe('loss-resistant delivery', () => {
       'user_data.sha256_email_address',
       '010203',
     )
+    expect(window.dataLayer[1]).toHaveProperty('email_sha256', '010203')
+    expect(window.dataLayer[1]).toHaveProperty('external_id', '010203')
+    expect(window.dataLayer[1]).not.toHaveProperty('user_id')
+  })
+
+  it('omits identity until advertising consent has resolved', async () => {
+    vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
+      new Uint8Array([1, 2, 3]).buffer,
+    )
+    await primeEnhancedUserData({ email: 'person@example.com' })
+    window.__nb1ConsentResolved = false
+    window.dataLayer = []
+
+    await pushEventWithUser(
+      'add_shipping_info',
+      { checkout_id: 'checkout-1' },
+      { email: 'person@example.com' },
+    )
+
+    expect(window.dataLayer[1]).not.toHaveProperty('external_id')
+    expect(window.dataLayer[1]).not.toHaveProperty('email_sha256')
+    expect(window.dataLayer[1]).not.toHaveProperty('user_data')
+    expect(window.dataLayer[1]).not.toHaveProperty('user_id')
   })
 
   it('omits matching identifiers after consent is rejected', async () => {
@@ -292,9 +349,10 @@ describe('loss-resistant delivery', () => {
     await pushEventWithUser(
       'add_shipping_info',
       { checkout_id: 'checkout-1' },
-      { userId: 'customer-1', email: 'person@example.com' },
+      { email: 'person@example.com' },
     )
 
+    expect(window.dataLayer[1]).not.toHaveProperty('external_id')
     expect(window.dataLayer[1]).not.toHaveProperty('user_id')
     expect(window.dataLayer[1]).not.toHaveProperty('user_data')
   })
@@ -304,6 +362,7 @@ describe('confirmed lead boundary', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     resetLeadDedupe()
     resetEnhancedUserDataCache()
     vi.restoreAllMocks()
@@ -337,6 +396,7 @@ describe('confirmed lead boundary', () => {
       provider: 'klaviyo',
       provider_submission_id: 'submission-1',
       page_language: 'en',
+      external_id: '010203',
       email_sha256: '010203',
       user_data: {
         sha256_email_address: '010203',

@@ -23,8 +23,8 @@ describe('authenticated draft reads', () => {
     expect(auth).not.toHaveBeenCalled()
   })
 
-  it('includes drafts only while the Payload session is authenticated', async () => {
-    const user = { collection: 'users', id: 7 }
+  it.each(['admin', 'editor'])('includes drafts for an authenticated %s session', async (role) => {
+    const user = { collection: 'users', id: 7, role }
     draftMode.mockResolvedValue({ isEnabled: true })
     auth.mockResolvedValue({ user })
 
@@ -33,6 +33,18 @@ describe('authenticated draft reads', () => {
       user,
     })
     expect(auth).toHaveBeenCalledOnce()
+  })
+
+  it('does not expose draft mode to an authenticated agent-editor', async () => {
+    draftMode.mockResolvedValue({ isEnabled: true })
+    auth.mockResolvedValue({
+      user: { collection: 'users', id: 8, role: 'agent-editor' },
+    })
+
+    await expect(getAuthenticatedDraft({ auth } as never)).resolves.toEqual({
+      draft: false,
+      user: null,
+    })
   })
 
   it.each([

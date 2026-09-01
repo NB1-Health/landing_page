@@ -1,5 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
+import { adminOnly } from '@/access/roles'
+
 import { revalidateSiteSettings } from './hooks/revalidateSiteSettings'
 
 export const SiteSettings: GlobalConfig = {
@@ -7,7 +9,7 @@ export const SiteSettings: GlobalConfig = {
   label: 'Site Settings',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: adminOnly,
   },
   hooks: {
     afterChange: [revalidateSiteSettings],

@@ -234,10 +234,18 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           gap: 18px;
         }
 
-        /* flip card container */
+        /* Flip card container. Height follows the taller of the two faces rather
+           than being fixed: both faces share one grid cell (see .cstat-face), so
+           the longest copy sets the card height instead of overflowing it. The
+           old fixed value survives as a floor so short cards look unchanged.
+           align-items is pinned because a <button> grid container is centred by
+           the UA stylesheet, which would stop the faces filling the card. */
         .cstat {
           position: relative;
-          height: 256px;
+          display: grid;
+          align-items: stretch;
+          justify-items: stretch;
+          min-height: 256px;
           border: 0;
           background: none;
           padding: 0;
@@ -253,8 +261,10 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           border-radius: 16px;
         }
         .cstat-inner {
-          position: absolute;
-          inset: 0;
+          /* relative, not static: .cstat-shell is positioned and comes first in
+             the DOM, so an unpositioned inner would paint underneath it. */
+          position: relative;
+          display: grid;
           transform-style: preserve-3d;
           transition: transform 0.6s cubic-bezier(.4,0,.2,1);
           will-change: transform;
@@ -294,8 +304,7 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           box-shadow: 0 36px 68px -32px rgba(18,49,77,.30), inset 0 1px 0 rgba(255,255,255,1), inset 0 0 0 1px rgba(255,255,255,.36);
         }
         .cstat-face {
-          position: absolute;
-          inset: 0;
+          grid-area: 1 / 1;
           -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
           display: flex;
@@ -355,6 +364,9 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           color: rgba(18,49,77,.70);
         }
         .cstat-more {
+          /* auto pins the label to the bottom of the face; the padding is a
+             floor, so when the copy fills the card and the auto margin collapses
+             to zero the label still cannot touch the text. */
           margin-top: auto;
           display: inline-flex;
           align-items: center;
@@ -368,7 +380,7 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
           transition: color 0.25s ease;
           background: none;
           border: none;
-          padding: 0;
+          padding: 10px 0 0;
           cursor: pointer;
         }
         .cstat:hover .cstat-more {
@@ -419,7 +431,7 @@ export const TheCaseComponent: React.FC<Props> = ({ heading, lede, stats, pivotH
             margin-top: 42px;
           }
           .cstat {
-            height: 216px;
+            min-height: 216px;
           }
         }
       `}</style>

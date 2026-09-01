@@ -93,6 +93,9 @@ export const fr = {
   },
   forms: {
     thankYouRegistering: 'Merci pour ton inscription !',
+    contactMessagePlaceholder: "Comment pouvons-nous t'aider ?",
+    contactSubmit: 'Envoyer le message',
+    contactSending: 'Envoi en cours…',
   },
   scienceBoard: {
     viewBio: 'Voir la biographie',

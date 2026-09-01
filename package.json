@@ -25,6 +25,7 @@
     "migrate:down": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:down",
     "migrate:fresh": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:fresh",
     "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status",
+    "test:mcp": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/mcp-http-smoke.ts",
     "migrate:reset": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:reset",
     "postinstall": "patch-package && node scripts/patch-payload-block-ui.mjs",
     "seo:check": "node scripts/check-international-seo.mjs",
@@ -45,12 +46,14 @@
     "@fontsource/instrument-sans": "^5.2.8",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
+    "@modelcontextprotocol/sdk": "1.27.1",
     "@next/third-parties": "^16.1.7",
     "@payloadcms/admin-bar": "3.82.1",
     "@payloadcms/db-postgres": "3.82.1",
     "@payloadcms/live-preview": "3.82.1",
     "@payloadcms/next": "3.82.1",
     "@payloadcms/plugin-form-builder": "3.82.1",
+    "@payloadcms/plugin-mcp": "3.82.1",
     "@payloadcms/plugin-nested-docs": "3.82.1",
     "@payloadcms/plugin-redirects": "3.82.1",
     "@payloadcms/plugin-search": "3.82.1",
@@ -83,7 +86,8 @@
     "sharp": "0.34.2",
     "slugify": "^1.6.6",
     "tailwind-merge": "^2.3.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -106,6 +110,7 @@
     "postcss": "^8.4.38",
     "prettier": "^3.4.2",
     "tailwindcss": "^3.4.3",
+    "tsx": "4.21.0",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.3"

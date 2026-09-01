@@ -49,8 +49,18 @@ export interface HeaderClientProps {
    * any returning visitor whose stored currency differed from the 'EUR'
    * fallback used during SSR (localStorage isn't available on the server). */
   initialCurrency?: string
-  logo?: { url?: string | null; alt?: string | null } | null
-  logoDark?: { url?: string | null; alt?: string | null } | null
+  logo?: {
+    url?: string | null
+    alt?: string | null
+    width?: number | null
+    height?: number | null
+  } | null
+  logoDark?: {
+    url?: string | null
+    alt?: string | null
+    width?: number | null
+    height?: number | null
+  } | null
   defaultTheme?: Theme
   darkHero?: boolean
   loginText?: string | null
@@ -812,7 +822,12 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
         <div className="nb1-nav-in">
           <Link href={`/${locale}`} className="nb1-logo" aria-label="NB1">
             {activeLogo?.url ? (
-              <img src={activeLogo.url} alt={activeLogo.alt || 'NB1'} />
+              <img
+                src={activeLogo.url}
+                alt={activeLogo.alt || 'NB1'}
+                width={activeLogo.width ?? undefined}
+                height={activeLogo.height ?? undefined}
+              />
             ) : (
               <span
                 style={{ fontWeight: 800, fontSize: 18, color: isTransparent ? '#fff' : '#0B1E33' }}

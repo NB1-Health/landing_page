@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { authenticated } from '../../access/authenticated'
+import { adminOnly } from '../../access/roles'
 
 export const Authors: CollectionConfig<'authors'> = {
   slug: 'authors',
@@ -8,10 +8,11 @@ export const Authors: CollectionConfig<'authors'> = {
     defaultColumns: ['name', 'slug', 'updatedAt'],
   },
   access: {
+    admin: adminOnly,
     read: () => true, // public (for frontend)
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
   },
   fields: [
     {

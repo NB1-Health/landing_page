@@ -33,6 +33,7 @@ export interface UserData {
   province?: string
   zip?: string
   country?: string // 2-letter ISO
+  /** Legacy/untrusted input. Mapping derives external_id only from normalized email. */
   external_id?: string
 }
 

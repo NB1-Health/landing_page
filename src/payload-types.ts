@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
   collections: {
@@ -76,6 +77,7 @@ export interface Config {
     authors: Author;
     headers: Header;
     footers: Footer;
+    'agent-operations': AgentOperation;
     hubs: Hub;
     pillars: Pillar;
     disclaimers: Disclaimer;
@@ -88,6 +90,7 @@ export interface Config {
     forms: Form;
     'form-submissions': FormSubmission;
     search: Search;
+    'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-folders': FolderInterface;
@@ -110,6 +113,7 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     headers: HeadersSelect<false> | HeadersSelect<true>;
     footers: FootersSelect<false> | FootersSelect<true>;
+    'agent-operations': AgentOperationsSelect<false> | AgentOperationsSelect<true>;
     hubs: HubsSelect<false> | HubsSelect<true>;
     pillars: PillarsSelect<false> | PillarsSelect<true>;
     disclaimers: DisclaimersSelect<false> | DisclaimersSelect<true>;
@@ -122,6 +126,7 @@ export interface Config {
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     search: SearchSelect<false> | SearchSelect<true>;
+    'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-folders': PayloadFoldersSelect<false> | PayloadFoldersSelect<true>;
@@ -152,7 +157,7 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | PayloadMcpApiKey;
   jobs: {
     tasks: {
       schedulePublish: TaskSchedulePublish;
@@ -165,6 +170,24 @@ export interface Config {
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PayloadMcpApiKeyAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -345,6 +368,7 @@ export interface Page {
     | ReferralWidgetBlock
     | ReferInfoBlock
     | ReferFaqBlock
+    | CustomerReviewsBlock
   )[];
   meta?: {
     /**
@@ -401,6 +425,7 @@ export interface Page {
   slug: string;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -540,6 +565,7 @@ export interface Header {
  */
 export interface Media {
   id: number;
+  agentTrashEligible: boolean;
   /**
    * Describe the image for screen readers and SEO (not decorative text).
    */
@@ -562,6 +588,7 @@ export interface Media {
   folder?: (number | null) | FolderInterface;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   url?: string | null;
   thumbnailURL?: string | null;
   filename?: string | null;
@@ -839,6 +866,7 @@ export interface Post {
   htmlContent?: string | null;
   updatedAt: string;
   createdAt: string;
+  deletedAt?: string | null;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -4101,6 +4129,10 @@ export interface OrderStepHeroBlock {
     [k: string]: unknown;
   } | null;
   subtitle?: string | null;
+  /**
+   * Lead the seal row with the live Trustpilot score. The localized widget source is resolved from the page locale in code, the same way the homepage hero does it.
+   */
+  showTrustpilotRating?: boolean | null;
   showSeals?: boolean | null;
   seals?:
     | {
@@ -4362,6 +4394,9 @@ export interface PlanPivotBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   ctaText: string;
   ctaHref: string;
   id?: string | null;
@@ -4405,6 +4440,9 @@ export interface PlanSelectorBlock {
         minNote?: string | null;
         monthlyLinkText?: string | null;
         monthlyLinkHref?: string | null;
+        /**
+         * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+         */
         ctaText: string;
         ctaHref: string;
         id?: string | null;
@@ -5498,7 +5536,7 @@ export interface ProtocolLibraryBlock {
  */
 export interface ProtocolCredStripBlock {
   /**
-   * Up to 6, rendered as two interlocking rows of 3.
+   * Up to 7, rendered as two interlocking rows: the first holds 3, the second holds the rest. Seven gives a row of 3 above a row of 4.
    */
   faces?:
     | {
@@ -6995,6 +7033,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   coreCtaLabel?: string | null;
   coreCtaHref?: string | null;
   advBadge?: string | null;
@@ -7008,6 +7049,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   advCtaLabel?: string | null;
   advCtaHref?: string | null;
   guarantees?:
@@ -7455,11 +7499,73 @@ export interface ReferFaqBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CustomerReviewsBlock".
+ */
+export interface CustomerReviewsBlock {
+  /**
+   * Section heading, e.g. "Their own words." Renders as an <h2>.
+   */
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Add as many reviews as you need — the carousel scrolls horizontally and the progress bar adapts automatically. Every text field is per-locale; the photo is shared across locales.
+   */
+  reviews?:
+    | {
+        /**
+         * The short headline quote at the top of the card, e.g. "A smarter way to understand your gut health." Include the quotation marks if the design calls for them.
+         */
+        quote: string;
+        /**
+         * The full review. Clamped to two lines on the card; a "See more" toggle appears automatically when it is longer.
+         */
+        body?: string | null;
+        authorName: string;
+        /**
+         * Small uppercase line under the name, e.g. "NB1 customer".
+         */
+        authorMeta?: string | null;
+        /**
+         * Optional. When empty, the initials below are shown inside the avatar circle instead.
+         */
+        photo?: (number | null) | Media;
+        /**
+         * Fallback shown in the avatar when no photo is uploaded. Leave empty to derive it from the reviewer name.
+         */
+        initials?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  seeMoreLabel?: string | null;
+  seeLessLabel?: string | null;
+  prevAriaLabel?: string | null;
+  nextAriaLabel?: string | null;
+  railAriaLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'customerReviews';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number;
   name?: string | null;
+  role: 'admin' | 'editor' | 'agent-editor';
   updatedAt: string;
   createdAt: string;
   enableAPIKey?: boolean | null;
@@ -7508,6 +7614,54 @@ export interface Product {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agent-operations".
+ */
+export interface AgentOperation {
+  id: number;
+  operationKey: string;
+  idempotencyKey: string;
+  requestHash: string;
+  tool: string;
+  status: 'planned' | 'running' | 'succeeded' | 'failed';
+  actor: number | User;
+  locale?: string | null;
+  targetCollection?: ('pages' | 'posts' | 'media') | null;
+  targetIDs?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  plan?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  planHash?: string | null;
+  approvalStatus: 'not-required' | 'pending' | 'approved' | 'rejected';
+  expiresAt?: string | null;
+  result?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * The three content hubs. Their slugs are per-locale, so the same hub is /en/microbiome and /de/mikrobiom. The Journal is not here — it has its own route because its name does not change between languages.
@@ -8278,6 +8432,84 @@ export interface Search {
   createdAt: string;
 }
 /**
+ * Admin-managed MCP keys. Enable only the tools needed, set an owner, and rotate before expiry.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys".
+ */
+export interface PayloadMcpApiKey {
+  id: number;
+  enabled: boolean;
+  /**
+   * Keys are rejected after this time. The default is 90 days.
+   */
+  expiresAt: string;
+  /**
+   * The user that the API key is associated with.
+   */
+  user: number | User;
+  /**
+   * A useful label for the API key.
+   */
+  label?: string | null;
+  /**
+   * The purpose of the API key.
+   */
+  description?: string | null;
+  'payload-mcp-tool'?: {
+    /**
+     * Find Pages or Posts in one explicit locale. Returns compact draft-aware results; never returns trashed content.
+     */
+    findContent?: boolean | null;
+    /**
+     * Read one Page or Post draft in one explicit locale before editing it. Use its updatedAt value for optimistic locking.
+     */
+    getContent?: boolean | null;
+    /**
+     * Create a validated blog Post draft from constrained HTML. This cannot publish.
+     */
+    createPostDraft?: boolean | null;
+    /**
+     * Update selected fields on a blog Post draft. Requires the last-read updatedAt and cannot publish.
+     */
+    updatePostDraft?: boolean | null;
+    /**
+     * Clone an existing Page template into a new draft for one locale, replacing title and slug. This cannot publish.
+     */
+    clonePageDraft?: boolean | null;
+    /**
+     * Patch title, slug, SEO meta, or bounded copy fields on existing landing blocks in a Page draft. copyEdits uses [{blockID, blockType, patch: {field: plainText}}] with IDs from get_content and cannot change variants, links, media, IDs, or order. Requires updatedAt; raw layout, hero, system, and publish fields are rejected.
+     */
+    patchPageDraft?: boolean | null;
+    /**
+     * Upload one validated image for use in Page or Post drafts. Accepts JPEG, PNG, WebP, or GIF base64 with a bounded size.
+     */
+    uploadMedia?: boolean | null;
+    /**
+     * Validate and stage up to 20 Page/Post draft operations. Returns a plan for an admin to approve; it makes no content changes.
+     */
+    planBulkDrafts?: boolean | null;
+    /**
+     * Atomically execute an approved, unexpired bulk draft plan. Every item remains a draft and failures roll back the batch.
+     */
+    commitBulkDrafts?: boolean | null;
+    /**
+     * Soft-trash one draft Page or Post, or one unused, unmodified Media document uploaded through MCP, with an updatedAt check. Published Pages and Posts and other Media require an admin workflow; nothing is permanently deleted.
+     */
+    trashContent?: boolean | null;
+    /**
+     * Restore one trashed Page or Post, or one still-eligible Media document uploaded through MCP, with an updatedAt check; nothing is permanently deleted.
+     */
+    restoreContent?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+  collection: 'payload-mcp-api-keys';
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -8430,6 +8662,10 @@ export interface PayloadLockedDocument {
         value: number | Footer;
       } | null)
     | ({
+        relationTo: 'agent-operations';
+        value: number | AgentOperation;
+      } | null)
+    | ({
         relationTo: 'hubs';
         value: number | Hub;
       } | null)
@@ -8478,14 +8714,23 @@ export interface PayloadLockedDocument {
         value: number | Search;
       } | null)
     | ({
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      } | null)
+    | ({
         relationTo: 'payload-folders';
         value: number | FolderInterface;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -8495,10 +8740,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   key?: string | null;
   value?:
     | {
@@ -8651,6 +8901,7 @@ export interface PagesSelect<T extends boolean = true> {
         referralWidget?: T | ReferralWidgetBlockSelect<T>;
         referInfo?: T | ReferInfoBlockSelect<T>;
         referFaq?: T | ReferFaqBlockSelect<T>;
+        customerReviews?: T | CustomerReviewsBlockSelect<T>;
       };
   meta?:
     | T
@@ -8675,6 +8926,7 @@ export interface PagesSelect<T extends boolean = true> {
   slug?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -9950,6 +10202,7 @@ export interface LegalStripBlockSelect<T extends boolean = true> {
 export interface OrderStepHeroBlockSelect<T extends boolean = true> {
   headline?: T;
   subtitle?: T;
+  showTrustpilotRating?: T;
   showSeals?: T;
   seals?:
     | T
@@ -11623,6 +11876,31 @@ export interface ReferFaqBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CustomerReviewsBlock_select".
+ */
+export interface CustomerReviewsBlockSelect<T extends boolean = true> {
+  heading?: T;
+  reviews?:
+    | T
+    | {
+        quote?: T;
+        body?: T;
+        authorName?: T;
+        authorMeta?: T;
+        photo?: T;
+        initials?: T;
+        id?: T;
+      };
+  seeMoreLabel?: T;
+  seeLessLabel?: T;
+  prevAriaLabel?: T;
+  nextAriaLabel?: T;
+  railAriaLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
@@ -11694,6 +11972,7 @@ export interface PostsSelect<T extends boolean = true> {
   htmlContent?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   _status?: T;
 }
 /**
@@ -11701,11 +11980,13 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  agentTrashEligible?: T;
   alt?: T;
   caption?: T;
   folder?: T;
   updatedAt?: T;
   createdAt?: T;
+  deletedAt?: T;
   url?: T;
   thumbnailURL?: T;
   filename?: T;
@@ -11815,6 +12096,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  role?: T;
   updatedAt?: T;
   createdAt?: T;
   enableAPIKey?: T;
@@ -12002,6 +12284,29 @@ export interface FootersSelect<T extends boolean = true> {
         logo?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "agent-operations_select".
+ */
+export interface AgentOperationsSelect<T extends boolean = true> {
+  operationKey?: T;
+  idempotencyKey?: T;
+  requestHash?: T;
+  tool?: T;
+  status?: T;
+  actor?: T;
+  locale?: T;
+  targetCollection?: T;
+  targetIDs?: T;
+  plan?: T;
+  planHash?: T;
+  approvalStatus?: T;
+  expiresAt?: T;
+  result?: T;
+  error?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -12427,6 +12732,37 @@ export interface SearchSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys_select".
+ */
+export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
+  enabled?: T;
+  expiresAt?: T;
+  user?: T;
+  label?: T;
+  description?: T;
+  'payload-mcp-tool'?:
+    | T
+    | {
+        findContent?: T;
+        getContent?: T;
+        createPostDraft?: T;
+        updatePostDraft?: T;
+        clonePageDraft?: T;
+        patchPageDraft?: T;
+        uploadMedia?: T;
+        planBulkDrafts?: T;
+        commitBulkDrafts?: T;
+        trashContent?: T;
+        restoreContent?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

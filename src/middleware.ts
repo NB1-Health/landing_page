@@ -169,13 +169,25 @@ export async function middleware(req: NextRequest) {
   }
 
   // Per-locale sitemap children skip the extension bypass below, so they still
-  // get locale normalization. Matched by suffix rather than named one by one:
-  // the list was `pages` and `posts`, and adding `hubs` and `pillars` meant two
-  // routes silently taking a different path through the middleware than the two
-  // beside them. The lexicon and scientific-article sitemaps are still to come.
-  const isLocalizedSitemap = /\/[a-z-]+-sitemap\.xml$/.test(pathname)
+  // get locale normalization. Matched by SUFFIX rather than named one by one:
+  // the list was `sitemap`, `pages` and `posts`, and this branch adds `hubs`,
+  // `pillars`, `lexicon`, `lexicon-categories` and `research` — five routes that
+  // would otherwise take a different path through the middleware than the three
+  // beside them, silently, with nothing to notice it.
+  //
+  // Anchored to a REAL locale prefix, which is origin/main's contribution: an
+  // arbitrary `/anything/x-sitemap.xml` must not claim the bypass. The optional
+  // `[a-z-]+-` group keeps the bare `/{locale}/sitemap.xml` index matching too —
+  // this branch's suffix-only pattern had silently dropped it.
+  const isLocalizedSitemap = new RegExp(`^/(${localePattern})/([a-z-]+-)?sitemap\\.xml$`).test(
+    pathname,
+  )
 
-  if (pathname.includes('.') && !isLocalizedSitemap) {
+  // Sitemaps are public, locale-explicit documents. Do not attach visitor
+  // currency/country cookies, otherwise shared caches correctly refuse to cache them.
+  if (isLocalizedSitemap) return NextResponse.next()
+
+  if (pathname.includes('.')) {
     return NextResponse.next()
   }
 

@@ -1,7 +1,14 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
 import path from 'path'
-import { buildConfig, PayloadRequest } from 'payload'
+import {
+  type Access,
+  buildConfig,
+  type CollectionConfig,
+  type GlobalConfig,
+  PayloadRequest,
+  type Where,
+} from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
@@ -28,6 +35,8 @@ import { Products } from './collections/Products'
 import { Authors } from './collections/Authors'
 import { FAQ } from './globals/FAQ'
 import { defaultLocale, payloadLocales } from './i18n/config'
+import { AgentOperations } from './collections/AgentOperations'
+import { adminOnly, adminOrEditor, isAdmin, isEditor } from './access/roles'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,6 +50,41 @@ const pgPoolDefault = isNextBuild ? 2 : 10
 const pgPoolEnv = isNextBuild ? process.env.PG_POOL_MAX_BUILD : process.env.PG_POOL_MAX
 const pgPoolParsed = Number(pgPoolEnv ?? pgPoolDefault)
 const pgPoolMax = Number.isFinite(pgPoolParsed) && pgPoolParsed > 0 ? pgPoolParsed : pgPoolDefault
+const adminManagedCollectionAccess = {
+  admin: adminOnly,
+  create: adminOnly,
+  delete: adminOnly,
+  read: adminOnly,
+  readVersions: adminOnly,
+  unlock: adminOnly,
+  update: adminOnly,
+}
+const adminOrOwnLock: Access = ({ req: { user } }) => {
+  if (isAdmin(user)) return true
+  if (!user || user.collection !== 'users' || !isEditor(user)) return false
+  const ownLock: Where = {
+    and: [{ 'user.value': { equals: user.id } }, { 'user.relationTo': { equals: 'users' } }],
+  }
+  return ownLock
+}
+const editorLockAccess = {
+  admin: adminOnly,
+  create: adminOnly,
+  delete: adminOrOwnLock,
+  read: adminOrEditor,
+  readVersions: adminOnly,
+  unlock: adminOnly,
+  update: adminOnly,
+}
+const hiddenFromNonAdmins = ({ user }: { user: unknown }) => !isAdmin(user)
+const hideCollectionFromNonAdmins = (collection: CollectionConfig): CollectionConfig => ({
+  ...collection,
+  admin: { ...collection.admin, hidden: hiddenFromNonAdmins },
+})
+const hideGlobalFromNonAdmins = (global: GlobalConfig): GlobalConfig => ({
+  ...global,
+  admin: { ...global.admin, hidden: hiddenFromNonAdmins },
+})
 export default buildConfig({
   // Canonical absolute URL for this deployment. Without it Payload falls back to
   // an empty serverURL and logs "Failed to create URL object from URL: , falling
@@ -93,12 +137,19 @@ export default buildConfig({
     Pages,
     Posts,
     Media,
-    Categories,
+    // origin/main hides the operational collections from non-admins in the
+    // admin UI. Kept as-is.
+    hideCollectionFromNonAdmins(Categories),
     Users,
-    Products,
-    Authors,
-    Headers,
-    Footers,
+    hideCollectionFromNonAdmins(Products),
+    hideCollectionFromNonAdmins(Authors),
+    hideCollectionFromNonAdmins(Headers),
+    hideCollectionFromNonAdmins(Footers),
+    AgentOperations,
+    // The Journal collections are deliberately NOT wrapped. They are editorial
+    // content — an editor who cannot see Hubs, Pillars or LexiconTerms cannot do
+    // the job the Journal exists for. The wrapper is for operational config
+    // (products, headers, footers), not for the things editors write.
     Hubs,
     Pillars,
     // Keyed content library (SEO-007 P5). Referenced by the ComplianceNote and
@@ -111,8 +162,29 @@ export default buildConfig({
     LexiconTerms,
   ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [Navigation, SiteSettings, FAQ],
+  folders: {
+    collectionOverrides: [
+      ({ collection }) => ({
+        ...collection,
+        access: { ...adminManagedCollectionAccess, read: adminOrEditor },
+      }),
+    ],
+  },
+  globals: [
+    hideGlobalFromNonAdmins(Navigation),
+    hideGlobalFromNonAdmins(SiteSettings),
+    hideGlobalFromNonAdmins(FAQ),
+  ],
   plugins,
+  onInit: (payload) => {
+    // The MCP plugin uses its key hash directly at /mcp. Its generated key
+    // collection must not also authenticate against Payload's generic API.
+    payload.authStrategies = payload.authStrategies.filter(
+      ({ name }) => name !== 'payload-mcp-api-keys-api-key',
+    )
+    const lockedDocuments = payload.collections['payload-locked-documents']?.config
+    if (lockedDocuments) lockedDocuments.access = editorLockAccess
+  },
   secret: process.env.PAYLOAD_SECRET,
   sharp,
   // File upload (express-fileupload) options. Raise the size ceiling so larger
@@ -130,12 +202,20 @@ export default buildConfig({
   },
   jobs: {
     access: {
+      cancel: ({ req }: { req: PayloadRequest }): boolean => isAdmin(req.user),
+      queue: ({ req }: { req: PayloadRequest }): boolean => isAdmin(req.user),
       run: ({ req }: { req: PayloadRequest }): boolean => {
-        if (req.user) return true
+        if (isAdmin(req.user)) return true
+        const cronSecret = process.env.CRON_SECRET
+        if (!cronSecret) return false
         const authHeader = req.headers.get('authorization')
-        return authHeader === `Bearer ${process.env.CRON_SECRET}`
+        return authHeader === `Bearer ${cronSecret}`
       },
     },
+    jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
+      ...defaultJobsCollection,
+      access: adminManagedCollectionAccess,
+    }),
     tasks: [],
   },
   localization: {

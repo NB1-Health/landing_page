@@ -17,24 +17,28 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en'],
         htmlLang: 'en',
         label: 'English (EU / Rest of World)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/en',
       },
       de: {
         hreflangCodes: ['de-DE', 'de-AT'],
         htmlLang: 'de',
         label: 'German (Germany & Austria)',
+        lexiconBrowseSegment: 'themen',
         urlPrefix: '/de',
       },
       fr: {
         hreflangCodes: ['fr-FR'],
         htmlLang: 'fr',
         label: 'French (France)',
+        lexiconBrowseSegment: 'sujets',
         urlPrefix: '/fr',
       },
       nl: {
         hreflangCodes: ['nl-NL'],
         htmlLang: 'nl',
         label: 'Dutch (Netherlands)',
+        lexiconBrowseSegment: 'onderwerpen',
         urlPrefix: '/nl',
       },
       ch: {
@@ -42,6 +46,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['de-CH'],
         htmlLang: 'de',
         label: 'German (Switzerland)',
+        lexiconBrowseSegment: 'themen',
         urlPrefix: '/ch',
       },
       be: {
@@ -49,6 +54,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['nl-BE'],
         htmlLang: 'nl',
         label: 'Dutch (Belgium)',
+        lexiconBrowseSegment: 'onderwerpen',
         urlPrefix: '/be',
       },
       uk: {
@@ -56,6 +62,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en-GB'],
         htmlLang: 'en',
         label: 'English (United Kingdom)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/uk',
       },
       uae: {
@@ -63,6 +70,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en-AE'],
         htmlLang: 'en',
         label: 'English (UAE)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/uae',
       },
     })

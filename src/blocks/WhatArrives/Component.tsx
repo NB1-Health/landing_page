@@ -7,7 +7,7 @@ import { getMediaUrl } from '@/utilities/getMediaUrl'
 type Card = {
   todColor?: string | null
   todLabel?: string | null
-  image?: { url?: string | null } | null
+  image?: { url?: string | null; width?: number | null; height?: number | null } | null
   name?: string | null
   timing?: string | null
   description?: string | null
@@ -314,7 +314,16 @@ export const WhatArrivesComponent: React.FC<Props> = ({
                       {card.todLabel && <span className="wa-tod-label">{card.todLabel}</span>}
                     </div>
                     <div className="wa-shot">
-                      {imgUrl && <img src={imgUrl} alt={card.name || ''} />}
+                      {imgUrl && (
+                        <img
+                          src={imgUrl}
+                          alt={card.name || ''}
+                          width={card.image?.width ?? undefined}
+                          height={card.image?.height ?? undefined}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
                     </div>
                     {card.name && <div className="wa-name">{card.name}</div>}
                     {card.timing && <div className="wa-timing">{card.timing}</div>}

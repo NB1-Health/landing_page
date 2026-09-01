@@ -146,7 +146,7 @@ export const capturePagePublication: CollectionBeforeOperationHook<'pages'> = as
   }
 }
 
-async function invalidateTargets(
+function invalidateTargets(
   req: PayloadRequest,
   targets: ReturnType<typeof getPageRevalidationTargets>,
 ) {
@@ -202,7 +202,7 @@ export const revalidatePage: CollectionAfterChangeHook<Page> = async ({
   const locales = publicationLocales(previousSlugs, currentSlugs)
   if (locales.length === 0) return doc
 
-  await invalidateTargets(
+  invalidateTargets(
     req,
     getPageRevalidationTargets({
       currentIsHome,
@@ -225,7 +225,7 @@ export const revalidateDelete: CollectionAfterDeleteHook<Page> = async ({ doc, r
   const locales = publicationLocales(previousSlugs)
   if (locales.length === 0) return doc
 
-  await invalidateTargets(
+  invalidateTargets(
     req,
     getPageRevalidationTargets({
       locales,

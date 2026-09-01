@@ -6,7 +6,7 @@ import { getMediaUrl } from '@/utilities/getMediaUrl'
 
 type Card = {
   category?: string | null
-  image?: { url?: string | null } | null
+  image?: { url?: string | null; width?: number | null; height?: number | null } | null
   frontTitle?: string | null
   deltaChip?: string | null
   valueBefore?: string | null
@@ -807,7 +807,15 @@ export const OutcomesComponent: React.FC<Props> = ({
                         {/* Front */}
                         <div className="rto-face rto-front">
                           {imgUrl ? (
-                            <img className="cphoto" src={imgUrl} alt={card.category || ''} />
+                            <img
+                              className="cphoto"
+                              src={imgUrl}
+                              alt={card.category || ''}
+                              width={card.image?.width ?? undefined}
+                              height={card.image?.height ?? undefined}
+                              loading="lazy"
+                              decoding="async"
+                            />
                           ) : (
                             <div
                               style={{ position: 'absolute', inset: 0, background: '#1a3040' }}

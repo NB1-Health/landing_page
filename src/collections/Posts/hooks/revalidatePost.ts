@@ -155,7 +155,7 @@ function getPostRevalidationTargets(
   return { paths: [...paths.values()], tags: [...tags] }
 }
 
-async function invalidateTargets(
+function invalidateTargets(
   req: PayloadRequest,
   targets: ReturnType<typeof getPostRevalidationTargets>,
 ) {
@@ -204,7 +204,7 @@ export const revalidatePost: CollectionAfterChangeHook<Post> = async ({
   const targets = getPostRevalidationTargets(currentSlugs, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }
 
@@ -217,6 +217,6 @@ export const revalidateDelete: CollectionAfterDeleteHook<Post> = async ({ doc, r
   const targets = getPostRevalidationTargets({}, previousSlugs)
   if (targets.paths.length === 0) return doc
 
-  await invalidateTargets(req, targets)
+  invalidateTargets(req, targets)
   return doc
 }

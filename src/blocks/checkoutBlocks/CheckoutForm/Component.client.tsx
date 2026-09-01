@@ -28,7 +28,6 @@ import {
   markCheckoutCompleted,
   mintEventId,
   nextPaymentAttempt,
-  primeEnhancedUserData,
   pushEvent,
   pushEventWithUser,
   resolveRedirectPaymentType,
@@ -136,6 +135,10 @@ const COUNTRY_CODES: Record<string, string> = {
   Switzerland: 'CH',
   Romania: 'RO',
 }
+
+// UAE operations are limited to Dubai + Abu Dhabi (ClickUp 86cb99egq). When the country is the
+// UAE the city becomes a fixed dropdown of these two, so no other emirate can be selected/typed.
+const UAE_ALLOWED_CITIES = ['Dubai', 'Abu Dhabi']
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -419,7 +422,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     eventId: string
     transactionId: string
     customerId: string
-    externalId: string
   } | null>(null)
 
   useEffect(() => {
@@ -542,24 +544,44 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   // Fill the address fields from a Google Places selection: street → a1, postal_code → zip,
   // locality → city. Country is left as whatever the user picked in the Country select.
-  const handleAddressPick = (place: GooglePlace) => {
+  const handleAddressPick = (place: GooglePlace, description?: string) => {
     const comps = place?.address_components || []
     const get = (type: string) => comps.find((c) => c.types?.includes(type))?.long_name || ''
     const route = get('route')
     const num = get('street_number')
+    // Google often omits the `street_number` component (very common in the UAE) even when the number
+    // is right there in the prediction the customer clicked. Rebuilding from route alone then drops
+    // it. So: use the structured route+number only when BOTH are present; otherwise keep the picked
+    // prediction's own street line (its main text, before the city/country) which carries the number.
+    const descMain = (description || '').split(/\s[-–]\s|,/)[0].trim()
     const line1 =
-      [route, num].filter(Boolean).join(' ').trim() ||
+      (route && num ? `${route} ${num}`.trim() : '') ||
+      descMain ||
+      (place?.name || '').trim() ||
+      route ||
       (place?.formatted_address || '').split(',')[0].trim()
     const postal = get('postal_code')
+    const isUAE = COUNTRY_CODES[country] === 'AE'
     const cityName =
       get('locality') ||
       get('postal_town') ||
       get('administrative_area_level_2') ||
       get('sublocality') ||
+      // In the UAE the emirate (Dubai / Abu Dhabi) comes through as administrative_area_level_1, not
+      // locality, so the chain above is usually empty and the city never auto-filled. Fall back to
+      // the emirate for the UAE only (elsewhere admin_area_level_1 is a state/region, not a city).
+      (isUAE ? get('administrative_area_level_1') : '') ||
       ''
     if (line1) setA1(line1)
     if (postal) setZip(postal)
-    if (cityName) setCity(cityName)
+    if (isUAE) {
+      // Normalize the emirate to our two serviceable spellings; anything else stays blank so the
+      // customer picks a serviceable one from the restricted dropdown.
+      const key = cityName.toLowerCase().replace(/[\s\-_]/g, '')
+      setCity(key.includes('dubai') ? 'Dubai' : (key.includes('abudhabi') || key.includes('abuzaby')) ? 'Abu Dhabi' : '')
+    } else if (cityName) {
+      setCity(cityName)
+    }
   }
 
   /* step 4 — Apple/Google Pay + Link + card are all handled by the Payment
@@ -723,7 +745,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           maxValue: redirectConfirmation.max_value,
           valueCurrency: redirectConfirmation.value_currency,
           planTerm: redirectConfirmation.plan_term,
-          externalId: redirectConfirmation.external_id,
           paymentType: redirectPaymentType,
           paymentFlow: 'redirect',
           currency: redirectCurrency,
@@ -734,7 +755,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           coupon: redirectCoupon,
           item: redirectItem,
           user: {
-            userId: redirectConfirmation.external_id,
             email: redirectConfirmation.user_email || saved.email || email,
             phone: saved.phone || phone || undefined,
             firstName: saved.fn ?? fn,
@@ -769,7 +789,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               zip: saved.zip ?? zip,
               country: COUNTRY_CODES[saved.country ?? country] ?? saved.country ?? country,
               phone: saved.phone || phone || undefined,
-              external_id: redirectConfirmation.external_id,
             },
           })
         }
@@ -779,7 +798,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           eventId: acquisitionEventId,
           transactionId: redirectConfirmation.subscription_id,
           customerId: redirectConfirmation.user_id,
-          externalId: redirectConfirmation.external_id,
         })
         setAccountStatus('sent')
         setConfirmed(true)
@@ -948,6 +966,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         currency,
         shipping_option: shipping,
         discount_code: promoApplied,
+        // Not read by this handler, which only refreshes prices. Sent so both /preview
+        // request bodies stay identical and nobody has to work out why one has a field the
+        // other does not.
+        lang: uiLanguage,
       }),
     })
       .then((r) => r.json())
@@ -1021,9 +1043,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (!ln.trim()) e.ln = t.required
     else if (!hasLetter(ln)) e.ln = t.nameInvalid
     if (!a1.trim()) e.a1 = t.required
-    if (!zip.trim()) e.zip = t.required
+    // Skip the postal-code check for the UAE (no postal codes; field hidden, value auto "00000").
+    if (COUNTRY_CODES[country] !== 'AE' && !zip.trim()) e.zip = t.required
     if (!city.trim()) e.city = t.required
     else if (!hasLetter(city)) e.city = t.nameInvalid
+    // UAE operations limited to Dubai + Abu Dhabi (ClickUp 86cb99egq).
+    else if (COUNTRY_CODES[country] === 'AE' && !UAE_ALLOWED_CITIES.includes(city.trim()))
+      e.city = t.required
     // Phone is required for delivery updates. The input keeps the value in
     // E.164 (+49…), so isValidPhoneNumber checks it against the numbering
     // rules of the country the visitor picked in the country-code selector.
@@ -1116,7 +1142,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
     const checkoutId = getOrCreateCheckoutId()
     const esItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-    void primeEnhancedUserData({ email, phone: phone || undefined }).catch(() => undefined)
     void pushEventWithUser(
       'email_submitted',
       {
@@ -1130,6 +1155,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         },
       },
       { email, phone: phone || undefined },
+      { identityWaitMs: 250 },
     )
     trackKlaviyoStartedCheckout({
       email,
@@ -1508,7 +1534,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         maxValue: confirmation.max_value,
         valueCurrency: confirmation.value_currency,
         planTerm: confirmation.plan_term,
-        externalId: confirmation.external_id,
         paymentType: payMethod,
         paymentFlow,
         currency,
@@ -1517,7 +1542,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         coupon: promoApplied ?? undefined,
         item: purchaseItem,
         user: {
-          userId: confirmation.external_id,
           email: confirmation.user_email || email,
           phone: phone || undefined,
           firstName: fn,
@@ -1551,7 +1575,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             zip,
             country: COUNTRY_CODES[country] ?? country,
             phone,
-            external_id: confirmation.external_id,
           },
         })
       }
@@ -1561,7 +1584,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         eventId: acquisitionEventId,
         transactionId: confirmation.subscription_id,
         customerId: confirmation.user_id,
-        externalId: confirmation.external_id,
       })
       setAccountStatus('sent')
       setConfirmed(true)
@@ -1620,6 +1642,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           currency,
           shipping_option: shipping,
           discount_code: code,
+          // Picks the code's per-language success message. uiLanguage already collapses the
+          // 8 page locales to the 4 the backend knows (ch->de, be->nl, uk/uae->en); do not
+          // write a second mapping here.
+          lang: uiLanguage,
         }),
       })
       const data = await res.json()
@@ -1644,12 +1670,25 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           monthly_price: data.monthly_price,
           shipping_price: data.shipping_price,
         })
+        // The backend already resolved this for uiLanguage, so it is shown VERBATIM and is
+        // deliberately not put through translateDiscountMessage: that maps known English
+        // strings to dictionary keys and replaces anything unmapped with the generic
+        // fallback below, which would silently discard the admin's copy. Absent (this code
+        // has no message for this language) keeps the existing translated default.
+        // typeof-guarded for the same reason translateDiscountMessage guards: a non-string
+        // body must not render as "[object Object]".
+        const custom =
+          typeof data.discount_message_custom === 'string'
+            ? data.discount_message_custom.trim()
+            : ''
         setPromoMsg({
-          text: translateDiscountMessage(
-            data.discount_message,
-            dict,
-            dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
-          ),
+          text:
+            custom ||
+            translateDiscountMessage(
+              data.discount_message,
+              dict,
+              dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
+            ),
           ok: true,
         })
       } else {
@@ -1776,7 +1815,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         acquisitionEventId={acquisitionIdentity?.eventId ?? null}
         transactionId={acquisitionIdentity?.transactionId ?? null}
         customerId={acquisitionIdentity?.customerId ?? null}
-        externalId={acquisitionIdentity?.externalId ?? null}
         planLabel={planLabel}
         cycleLabel={cycleLabel}
         priceFormatted={priceFormatted}
@@ -2806,8 +2844,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       setCountry(next)
                       // UAE has no postal codes, but the field is required → auto-fill 00000.
                       // Leaving AE drops that placeholder so a real code is entered.
-                      if (COUNTRY_CODES[next] === 'AE') setZip('00000')
-                      else if (zip === '00000') setZip('')
+                      if (COUNTRY_CODES[next] === 'AE') {
+                        setZip('00000')
+                        // UAE is limited to Dubai/Abu Dhabi: drop any other city so the
+                        // customer must pick from the restricted dropdown.
+                        if (!UAE_ALLOWED_CITIES.includes(city)) setCity('')
+                      } else if (zip === '00000') setZip('')
                     }}
                   >
                     {COUNTRIES.map((c) => (
@@ -2842,6 +2884,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     countries={
                       COUNTRY_CODES[country] ? [COUNTRY_CODES[country].toLowerCase()] : null
                     }
+                    // UAE: we only serve Dubai + Abu Dhabi, so hide address suggestions from the
+                    // other emirates (e.g. Sharjah) that Google's country-only filter still returns.
+                    allowedCities={COUNTRY_CODES[country] === 'AE' ? UAE_ALLOWED_CITIES : null}
                     className={addrErr.a1 ? 'err' : ''}
                   />
                   {addrErr.a1 && <span className="nb1-err">{addrErr.a1}</span>}
@@ -2862,29 +2907,53 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   />
                 </div>
               </div>
-              <div className="nb1-frow">
-                <div className="nb1-fg">
-                  <label htmlFor="nb1-zip">{t.address.postalCode}</label>
-                  <input
-                    id="nb1-zip"
-                    type="text"
-                    autoComplete="postal-code"
-                    value={zip}
-                    onChange={(e) => setZip(e.target.value)}
-                    className={addrErr.zip ? 'err' : ''}
-                  />
-                  {addrErr.zip && <span className="nb1-err">{addrErr.zip}</span>}
-                </div>
+              {/* UAE hides the postal field, so the row collapses to a single column and City spans
+                  the full width instead of leaving an empty half. */}
+              <div className={`nb1-frow${COUNTRY_CODES[country] === 'AE' ? ' full' : ''}`}>
+                {/* UAE has no postal codes: hide the field (value stays "00000", still sent to the
+                    backend) so the customer isn't asked for a code that doesn't exist. */}
+                {COUNTRY_CODES[country] !== 'AE' && (
+                  <div className="nb1-fg">
+                    <label htmlFor="nb1-zip">{t.address.postalCode}</label>
+                    <input
+                      id="nb1-zip"
+                      type="text"
+                      autoComplete="postal-code"
+                      value={zip}
+                      onChange={(e) => setZip(e.target.value)}
+                      className={addrErr.zip ? 'err' : ''}
+                    />
+                    {addrErr.zip && <span className="nb1-err">{addrErr.zip}</span>}
+                  </div>
+                )}
                 <div className="nb1-fg">
                   <label htmlFor="nb1-city">{t.address.city}</label>
-                  <input
-                    id="nb1-city"
-                    type="text"
-                    autoComplete="address-level2"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className={addrErr.city ? 'err' : ''}
-                  />
+                  {COUNTRY_CODES[country] === 'AE' ? (
+                    // UAE operations limited to Dubai + Abu Dhabi: a fixed dropdown, so no other
+                    // emirate can be selected or typed.
+                    <select
+                      id="nb1-city"
+                      value={UAE_ALLOWED_CITIES.includes(city) ? city : ''}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={addrErr.city ? 'err' : ''}
+                    >
+                      <option value=""></option>
+                      {UAE_ALLOWED_CITIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="nb1-city"
+                      type="text"
+                      autoComplete="address-level2"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className={addrErr.city ? 'err' : ''}
+                    />
+                  )}
                   {addrErr.city && <span className="nb1-err">{addrErr.city}</span>}
                 </div>
               </div>
@@ -3492,8 +3561,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
               )}
               <p className="nb1-confirm-legal">
-                {t.confirm.legalPrefix} <a href="#">{t.confirm.terms}</a> {t.confirm.and}{' '}
-                <a href="#">{t.confirm.privacyPolicy}</a>
+                {t.confirm.legalPrefix} <a href={`/${locale || 'en'}/terms-conditions`}>{t.confirm.terms}</a> {t.confirm.and}{' '}
+                <a href={`/${locale || 'en'}/privacy-policy`}>{t.confirm.privacyPolicy}</a>
                 {t.confirm.legalMid}
                 <strong>{t.confirm.feeBold}</strong> {t.confirm.legalEnd}
               </p>

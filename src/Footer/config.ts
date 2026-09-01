@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { adminOnly } from '@/access/roles'
 import { link } from '@/fields/link'
 import { revalidateFooter } from './hooks/revalidateFooter'
 
@@ -11,7 +12,11 @@ const themeOptions = [
 export const Footers: CollectionConfig = {
   slug: 'footers',
   access: {
+    admin: adminOnly,
+    create: adminOnly,
+    delete: adminOnly,
     read: () => true,
+    update: adminOnly,
   },
   hooks: {
     afterChange: [revalidateFooter],
@@ -111,7 +116,8 @@ export const Footers: CollectionConfig = {
       ],
       maxRows: 8,
       admin: {
-        description: 'Links shown in the "Get Started" column (e.g. Order your kit, Log in, Contact).',
+        description:
+          'Links shown in the "Get Started" column (e.g. Order your kit, Log in, Contact).',
         initCollapsed: true,
       },
     },

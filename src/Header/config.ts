@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { adminOnly } from '@/access/roles'
 import { link } from '@/fields/link'
 import { enforceSingleDefault } from './hooks/enforceSingleDefault'
 import { revalidateHeader } from './hooks/revalidateHeader'
@@ -12,7 +13,11 @@ const themeOptions = [
 export const Headers: CollectionConfig = {
   slug: 'headers',
   access: {
+    admin: adminOnly,
+    create: adminOnly,
+    delete: adminOnly,
     read: () => true,
+    update: adminOnly,
   },
   admin: {
     useAsTitle: 'name',

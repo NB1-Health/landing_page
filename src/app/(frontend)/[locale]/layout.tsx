@@ -4,16 +4,16 @@ import type { Metadata } from 'next'
 import { cn } from '@/utilities/ui'
 import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
-import React, { cache } from 'react'
+import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
-import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
 import './globals.css'
 import { getServerSideURL } from '@/utilities/getURL'
+import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
 import '@fontsource/inter/400.css'
 import '@fontsource/inter/500.css'
@@ -34,23 +34,11 @@ import { ArminWidget } from '@/components/ArminWidget'
 import { PageViewTracker } from '@/components/DataLayerEvents/PageViewTracker'
 import { ketchConsentBindingScript } from '@/lib/ketchConsentBridge'
 import StyledJsxRegistry from './registry'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { appLocales, defaultLocale, isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
 export function generateStaticParams() {
   return appLocales.map((locale) => ({ locale }))
 }
-
-const getSiteSettings = cache(async (locale: AppLocale) => {
-  const payload = await getPayload({ config })
-
-  return payload.findGlobal({
-    slug: 'site-settings',
-    locale,
-    fallbackLocale: defaultLocale,
-  })
-})
 
 export default async function RootLayout({
   children,
@@ -66,12 +54,13 @@ export default async function RootLayout({
   const resolved = await params
   const locale: AppLocale = isAppLocale(resolved.locale) ? resolved.locale : defaultLocale
 
+  // Use the regional language code configured in Ketch for this site locale.
   const ketchLang = localeConfig[locale].hreflangCodes[0]
 
   let organizationJsonLd: JsonLdValue = null
 
   try {
-    const site = await getSiteSettings(locale)
+    const site = await getSiteSettings(locale, isEnabled)
     organizationJsonLd = (site?.organizationJsonLd ?? null) as JsonLdValue
   } catch {
     organizationJsonLd = null
@@ -90,6 +79,8 @@ export default async function RootLayout({
 
         {marketingEnabled && (
           <>
+            <link href="https://cdn.ketchjs.com" rel="preconnect" />
+
             <Script id="gtag-consent-mode" strategy="beforeInteractive">
               {`
             window.dataLayer = window.dataLayer || [];
@@ -107,7 +98,8 @@ export default async function RootLayout({
           `}
             </Script>
 
-            {/* Google Tag Manager */}
+            {/* Keep GTM ahead of the external CMP script: Ketch may fail without
+            preventing the denied-by-default container from booting. */}
             {process.env.NEXT_PUBLIC_GTM_ID && (
               <Script id="gtm-head" strategy="beforeInteractive">{`
             (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -117,7 +109,6 @@ export default async function RootLayout({
             })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
           `}</Script>
             )}
-            {/* End Google Tag Manager */}
 
             <Script id="ketch-lang" strategy="beforeInteractive">{`
           (function() {
@@ -125,18 +116,11 @@ export default async function RootLayout({
             // Ketch smart tag v2.12 resolves the banner language from the first of:
             //   ?lang=  ->  'lang' cookie  ->  localStorage.ketch_lang  ->
             //   sessionStorage.ketch_lang  ->  <html lang>  ->  xml:lang  ->  navigator.language
-            // <html lang> is the bare two-letter code ('de'), and the Ketch property has no
-            // plain 'de' translation configured -- only de-DE / de-AT / de-CH / en -- so the
-            // banner resolved to English on German pages. Seeding sessionStorage outranks
-            // <html lang> and sends the same regional code the property is keyed on, without
-            // touching the lang attribute (several dataLayer events read it as pageLanguage).
+            // Seeding sessionStorage outranks <html lang> and keeps the banner in the approved
+            // language without touching the page language (several dataLayer events read it).
             // A language the visitor picks in the Ketch preference centre is stored in
             // localStorage, which still outranks this -- an explicit choice should win.
             try { window.sessionStorage.setItem('ketch_lang', lang); } catch(e) {}
-            try {
-              Object.defineProperty(navigator, 'language', { get: function() { return lang; }, configurable: true });
-              Object.defineProperty(navigator, 'languages', { get: function() { return [lang]; }, configurable: true });
-            } catch(e) {}
             window.ketch_lang = lang;
             window.ketchConfig = window.ketchConfig || {};
             window.ketchConfig.language = lang;
@@ -150,6 +134,7 @@ export default async function RootLayout({
           })();
         `}</Script>
             <Script
+              id="ketch-boot"
               src="https://global.ketchcdn.com/web/v3/config/nb1_health/website_smart_tag/boot.js"
               strategy="beforeInteractive"
               data-ketch-lang={ketchLang}
@@ -218,7 +203,6 @@ export default async function RootLayout({
           )}
           {/* End Google Tag Manager (noscript) */}
 
-          <Providers>
             <AdminBar
               adminBarProps={{
                 preview: isEnabled,
@@ -232,9 +216,11 @@ export default async function RootLayout({
               <>
                 <Script id="ketch-consent-bridge" strategy="afterInteractive">
                   {`
-                ${ketchConsentBindingScript(ketchLang)}
+                ${ketchConsentBindingScript()}
 
-                // Intercept inline action links added via Ketch dashboard description field:
+                // Permanent action contract for the approved Ketch banner copy. The first layer
+                // uses inline links for these actions while Ketch's native buttons remain the
+                // source of truth for consent handling.
                 //   #ketch-accept   → delegates to the primary (Accept All) button
                 //   #ketch-reject   → delegates to the tertiary (Reject All) button
                 //   #ketch-settings → delegates to the secondary (Customize Settings) button
@@ -250,81 +236,10 @@ export default async function RootLayout({
                   if (btn) btn.click();
                 });
 
-                // MutationObserver: enforce layout via inline styles so Ketch's own
-                // sm:ketch-flex-row / sm:ketch-w-auto !important classes can't override us.
-                function applyKetchLayout() {
-                  var banner = document.getElementById('ketch-consent-banner');
-                  if (!banner) return;
-
-                  // Header section: force column so logo and title stack
-                  var headerSection = banner.querySelector(':scope > div:first-child');
-                  if (headerSection) headerSection.style.setProperty('flex-direction', 'column', 'important');
-
-                  // Header row: center contents (X button is absolute, only logo+title group remains)
-                  var logoRow = banner.querySelector(':scope > div:first-child > div:first-child');
-                  if (logoRow) logoRow.style.setProperty('justify-content', 'center', 'important');
-
-                  // Logo + title inner group (ketch-items-center): stack vertically
-                  var logoImg = banner.querySelector('img[alt="header-logo"]');
-                  if (logoImg) {
-                    var logoTitleGroup = logoImg.closest('.ketch-flex');
-                    while (logoTitleGroup && !logoTitleGroup.querySelector('h3')) {
-                      logoTitleGroup = logoTitleGroup.parentElement ? logoTitleGroup.parentElement.closest('.ketch-flex') : null;
-                    }
-                    if (logoTitleGroup) {
-                      logoTitleGroup.style.setProperty('flex-direction', 'column', 'important');
-                      logoTitleGroup.style.setProperty('align-items', 'stretch', 'important');
-                      logoTitleGroup.style.setProperty('width', '100%', 'important');
-                      logoTitleGroup.style.setProperty('gap', '8px', 'important');
-                    }
-                    // Logo wrapper: center the img
-                    var logoWrapper = logoImg.parentElement;
-                    if (logoWrapper) {
-                      logoWrapper.style.setProperty('align-items', 'center', 'important');
-                      logoWrapper.style.setProperty('width', '100%', 'important');
-                    }
-                  }
-
-                  // Content wrapper (sm:ketch-flex-row): force column on all screens
-                  var contentWrapper = banner.querySelector(':scope > div:nth-child(2)');
-                  if (contentWrapper) contentWrapper.style.setProperty('flex-direction', 'column', 'important');
-
-                  // Buttons container: force row
-                  var btnContainer = banner.querySelector('#ketch-banner-buttons-container-compact, #ketch-banner-buttons-container-standard');
-                  if (btnContainer) {
-                    btnContainer.style.setProperty('display', 'flex', 'important');
-                    btnContainer.style.setProperty('flex-direction', 'row', 'important');
-                    btnContainer.style.setProperty('width', '100%', 'important');
-                    btnContainer.style.setProperty('gap', '10px', 'important');
-                  }
-
-                  // Each button: equal half-width, override sm:ketch-w-auto
-                  ['ketch-banner-button-primary', 'ketch-banner-button-secondary'].forEach(function(id) {
-                    var btn = document.getElementById(id);
-                    if (!btn) return;
-                    btn.style.setProperty('flex', '1 1 0%', 'important');
-                    btn.style.setProperty('width', '0', 'important');
-                    btn.style.setProperty('min-width', '0', 'important');
-                    btn.style.setProperty('max-width', '100%', 'important');
-                  });
-
-                  // Override md:ketch-max-w-[50%] wherever Ketch places it inside the banner
-                  banner.querySelectorAll('[class*="ketch-max-w-"]').forEach(function(el) {
-                    el.style.setProperty('max-width', '100%', 'important');
-                  });
-                }
-
-                var ketchObserver = new MutationObserver(function() {
-                  if (document.getElementById('ketch-consent-banner')) {
-                    applyKetchLayout();
-                    ketchObserver.disconnect();
-                  }
-                });
-                ketchObserver.observe(document.body, { childList: true, subtree: true });
               `}
                 </Script>
 
-                <ArminWidget locale={locale} />
+                <ArminWidget locale={localeConfig[locale].htmlLang} />
 
                 {klaviyoCompanyId && (
                   <>
@@ -368,7 +283,6 @@ export default async function RootLayout({
                 )}
               </>
             )}
-          </Providers>
         </StyledJsxRegistry>
       </body>
     </html>

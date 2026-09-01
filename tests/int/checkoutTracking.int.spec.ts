@@ -4,6 +4,7 @@ import {
   consumeRedirectPaymentType,
   getOrCreateOccurrenceId,
   nextPaymentAttempt,
+  primeEnhancedUserData,
   pushEvent,
   resetEnhancedUserDataCache,
   resetCheckoutTracking,
@@ -19,9 +20,11 @@ describe('checkout event boundaries', () => {
   beforeEach(() => {
     window.dataLayer = []
     window.__nb1Consent = { analytics: true, targeted_advertising: true }
+    window.__nb1ConsentResolved = true
     window.sessionStorage.clear()
     resetCheckoutTracking()
     resetEnhancedUserDataCache()
+    vi.restoreAllMocks()
   })
 
   it.each([
@@ -31,7 +34,11 @@ describe('checkout event boundaries', () => {
     ['klarna', 'redirect'],
   ] as const)(
     'emits the same confirmed acquisition contract for %s',
-    (paymentType, paymentFlow) => {
+    async (paymentType, paymentFlow) => {
+      vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
+        new Uint8Array([1, 2, 3]).buffer,
+      )
+      await primeEnhancedUserData({ email: 'buyer@example.com' })
       const identify = vi.fn((_properties: Record<string, unknown>, callback: () => void) =>
         callback(),
       )
@@ -42,7 +49,6 @@ describe('checkout event boundaries', () => {
         eventId: `acquisition-${paymentType}`,
         transactionId: `subscription-${paymentType}`,
         language: 'en',
-        externalId: 'customer-1',
         paymentType,
         paymentFlow,
         currency: 'EUR',
@@ -61,11 +67,13 @@ describe('checkout event boundaries', () => {
         event_id: `acquisition-${paymentType}`,
         checkout_id: 'checkout-1',
         transaction_id: `subscription-${paymentType}`,
+        external_id: '010203',
         payment_type: paymentType,
         payment_flow: paymentFlow,
         confirmation_source: 'checkout_confirm',
         signal_quality: 'confirmed',
       })
+      expect(acquisition).not.toHaveProperty('user_id')
       expect(identify).toHaveBeenCalledTimes(1)
       expect(track).toHaveBeenCalledWith(
         'Checkout Completed',
@@ -77,6 +85,29 @@ describe('checkout event boundaries', () => {
       )
     },
   )
+
+  it('omits the purchase external ID when advertising consent is denied', () => {
+    window.__nb1Consent = { analytics: true, targeted_advertising: false }
+
+    trackSubscriptionAcquired({
+      checkoutId: 'checkout-1',
+      eventId: 'acquisition-1',
+      transactionId: 'subscription-1',
+      paymentType: 'card',
+      paymentFlow: 'inline',
+      currency: 'EUR',
+      value: 99,
+      item: { item_id: 'core-4', item_name: 'Core 4 months', price: 99, quantity: 1 },
+      user: { email: 'buyer@example.com' },
+    })
+
+    const acquisition = window.dataLayer.find(
+      (entry) => entry.canonical_event === 'subscription_acquired',
+    )
+    expect(acquisition).not.toHaveProperty('external_id')
+    expect(acquisition).not.toHaveProperty('user_id')
+    expect(acquisition).not.toHaveProperty('user_data')
+  })
 
   it('deduplicates a reconfirmed transaction and reuses its acquisition ID', () => {
     const input = {
@@ -280,13 +311,16 @@ describe('checkout event boundaries', () => {
     })
   })
 
-  it('tracks one client-side PPS view and one normalized answer', () => {
+  it('tracks one client-side PPS view and one normalized answer', async () => {
+    vi.spyOn(window.crypto.subtle, 'digest').mockResolvedValue(
+      new Uint8Array([1, 2, 3]).buffer,
+    )
+    await primeEnhancedUserData({ email: 'buyer@example.com' })
     const context = {
       checkoutId: 'checkout-1',
       acquisitionEventId: 'acquisition-1',
       transactionId: 'subscription-1',
       customerId: 'customer-1',
-      externalId: 'email-hash-1',
       orderNumber: 'NB1-ABC234',
       email: 'buyer@example.com',
       pageLanguage: 'de',
@@ -319,7 +353,7 @@ describe('checkout event boundaries', () => {
       event: 'post_purchase_survey_viewed',
       event_key: '330_post_purchase_survey_viewed',
       customer_id: 'customer-1',
-      external_id: 'email-hash-1',
+      external_id: '010203',
       transaction_id: 'subscription-1',
       survey_key: 'checkout_attribution',
       survey_version: 1,
@@ -334,7 +368,7 @@ describe('checkout event boundaries', () => {
       event_key: '340_post_purchase_survey_answered',
       event_id: 'pps-answer-1',
       customer_id: 'customer-1',
-      external_id: 'email-hash-1',
+      external_id: '010203',
       transaction_id: 'subscription-1',
       question_key: 'discovery_source',
       question_version: 1,
@@ -354,7 +388,6 @@ describe('checkout event boundaries', () => {
       acquisitionEventId: 'acquisition-1',
       transactionId: 'subscription-1',
       customerId: 'customer-1',
-      externalId: 'email-hash-1',
       email: 'buyer@example.com',
       pageLanguage: 'en',
       surveyKey: 'checkout_attribution',

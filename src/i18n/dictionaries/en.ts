@@ -93,6 +93,9 @@ export const en = {
   },
   forms: {
     thankYouRegistering: 'Thank you for registering!',
+    contactMessagePlaceholder: 'How can we help?',
+    contactSubmit: 'Send message',
+    contactSending: 'Sending…',
   },
   scienceBoard: {
     viewBio: 'View bio',

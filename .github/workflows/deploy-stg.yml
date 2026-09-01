@@ -8,6 +8,15 @@ on:
 permissions:
   contents: write
 
+# Only one staging deploy at a time. A new push to main WAITS for the running deploy to finish
+# (queued, not cancelled) so two runs never execute `rm -rf node_modules && npm install` on the
+# server at once — the race that floods the log with `npm warn tar TAR_ENTRY_ERROR ENOENT`.
+# cancel-in-progress is deliberately false: cancelling the GitHub run would NOT kill the remote SSH
+# `npm install`, leaving an orphaned install to race the next one (making the corruption worse).
+concurrency:
+  group: deploy-stg
+  cancel-in-progress: false
+
 jobs:
   merge-and-deploy:
     runs-on: ubuntu-latest
@@ -37,6 +46,9 @@ jobs:
           host: ${{ secrets.STG_HOST }}
           username: ${{ secrets.STG_USER }}
           key: ${{ secrets.STG_SSH_KEY }}
+          # deploy-stg.sh does `rm -rf node_modules && npm install` + a full Next.js build,
+          # which regularly runs past appleboy/ssh-action's 10m default and killed the deploy.
+          command_timeout: 30m
           script: |
             set -e
             cd /var/www/landing_page

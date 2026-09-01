@@ -8,7 +8,11 @@ const { revalidatePath, revalidateTag } = vi.hoisted(() => ({
 vi.mock('next/cache', () => ({ revalidatePath, revalidateTag }))
 
 import { Pages } from '@/collections/Pages'
-import { capturePagePublication, revalidatePage } from '@/collections/Pages/hooks/revalidatePage'
+import {
+  capturePagePublication,
+  revalidateDelete as revalidateDeletedPage,
+  revalidatePage,
+} from '@/collections/Pages/hooks/revalidatePage'
 
 const logger = { info: vi.fn(), warn: vi.fn() }
 
@@ -49,6 +53,7 @@ describe('page publication revalidation', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/en/new-page')
     expect(revalidatePath).toHaveBeenCalledWith('/de/neue-seite')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/new-page')
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
     expect(req.payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ req }))
   })
 
@@ -96,6 +101,27 @@ describe('page publication revalidation', () => {
     expect(req.locale).toBe('en')
   })
 
+  it('does not invalidate public caches for a draft autosave', async () => {
+    const req = {
+      context: {},
+      locale: 'en',
+      payload: { findByID: vi.fn(), logger },
+      query: { draft: 'true' },
+    }
+    const doc = { id: 42, _status: 'draft', slug: 'draft-page' }
+
+    await capturePagePublication({
+      args: { data: { _status: 'draft' }, draft: true, id: 42 },
+      operation: 'update',
+      req,
+    } as never)
+    await expect(revalidatePage({ doc, previousDoc: doc, req } as never)).resolves.toBe(doc)
+
+    expect(req.payload.findByID).not.toHaveBeenCalled()
+    expect(revalidatePath).not.toHaveBeenCalled()
+    expect(revalidateTag).not.toHaveBeenCalled()
+  })
+
   it('invalidates a page when the individual unpublish action removes its live version', async () => {
     const req = {
       context: {},
@@ -133,6 +159,7 @@ describe('page publication revalidation', () => {
 
     expect(revalidatePath).toHaveBeenCalledWith('/de/alte-seite')
     expect(revalidatePath).not.toHaveBeenCalledWith('/fr/old-page')
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
   })
 
   it('keeps the localized home path when English is already unpublished', async () => {
@@ -220,5 +247,20 @@ describe('page publication revalidation', () => {
 
     await expect(revalidatePage({ doc, previousDoc: null, req } as never)).resolves.toBe(doc)
     expect(logger.warn).toHaveBeenCalled()
+  })
+
+  it('invalidates public caches after a published page is deleted', async () => {
+    const req = {
+      context: {},
+      locale: 'en',
+      payload: { logger },
+    }
+    const doc = { id: 42, _status: 'published', slug: 'retired-page' }
+
+    await expect(revalidateDeletedPage({ doc, req } as never)).resolves.toBe(doc)
+
+    expect(revalidatePath).toHaveBeenCalledWith('/en/retired-page')
+    expect(revalidateTag).toHaveBeenCalledWith('pages')
+    expect(revalidateTag).toHaveBeenCalledWith('pages-sitemap-en')
   })
 })

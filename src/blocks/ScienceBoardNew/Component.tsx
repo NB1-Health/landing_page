@@ -8,7 +8,7 @@ import { getDictionary } from '@/i18n/getDictionary'
 type BioParagraph = { paragraph?: string | null }
 
 type Member = {
-  photo?: { url?: string | null } | null
+  photo?: { url?: string | null; width?: number | null; height?: number | null } | null
   name?: string | null
   role?: string | null
   detail?: string | null
@@ -30,6 +30,22 @@ export const ScienceBoardNewComponent: React.FC<Props> = ({ heading, subheading,
   const secRef = useRef<HTMLElement>(null)
   const [visible, setVisible] = useState(false)
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+
+  // Up to 6 members the original 3-up grid is left alone. From 7 the cards drop
+  // to the 4-up size, and any leftover count rides in a centred last row so no
+  // row is ever left ragged -- 7 renders as 4, then 3 centred.
+  const memberCount = members?.length ?? 0
+  const isCompact = memberCount > 6
+  const remainder = isCompact ? memberCount % 4 : 0
+  // Index of the card that opens the short final row, so it can be offset.
+  const lastRowStart = remainder ? memberCount - remainder : -1
+  // 24 tracks, each card spanning 6 => 4 per row. Centring r cards leaves
+  // (24 - 6r)/2 empty tracks on each side, so that card starts at 13 - 3r.
+  const lastRowStartColumn = remainder ? 13 - 3 * remainder : 1
+  const gridStyle = {
+    transitionDelay: '0.1s',
+    ...(isCompact ? { '--sb-last-row-start': String(lastRowStartColumn) } : {}),
+  } as React.CSSProperties
 
   useEffect(() => {
     const el = secRef.current
@@ -103,6 +119,14 @@ export const ScienceBoardNewComponent: React.FC<Props> = ({ heading, subheading,
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           gap: 22px;
+        }
+        /* 24 tracks with each card spanning 6 reproduces the 4-up width exactly
+           (243.5px in the 1040px .sb-in, same maths as 3-up giving 332px), and
+           keeps everything on fr units so it still scales below 1040px. */
+        .sb-grid.is-compact { grid-template-columns: repeat(24, 1fr); }
+        .sb-grid.is-compact .sb-card { grid-column: span 6; }
+        .sb-grid.is-compact .sb-card.is-row-start {
+          grid-column: var(--sb-last-row-start, 1) / span 6;
         }
         @media (max-width: 680px) {
           .sb-grid {
@@ -282,13 +306,16 @@ export const ScienceBoardNewComponent: React.FC<Props> = ({ heading, subheading,
           </div>
 
           {members && members.length > 0 && (
-            <div className={`sb-grid r-up${visible ? ' in' : ''}`} style={{ transitionDelay: '0.1s' }}>
+            <div
+              className={`sb-grid r-up${isCompact ? ' is-compact' : ''}${visible ? ' in' : ''}`}
+              style={gridStyle}
+            >
               {members.map((m, i) => {
                 const photoUrl = m.photo?.url ? getMediaUrl(m.photo.url) : null
                 return (
                   <article
                     key={i}
-                    className="sb-card"
+                    className={`sb-card${i === lastRowStart ? ' is-row-start' : ''}`}
                     role="button"
                     tabIndex={0}
                     aria-label={`${dict.scienceBoard.viewBio}: ${m.name}`}
@@ -296,7 +323,16 @@ export const ScienceBoardNewComponent: React.FC<Props> = ({ heading, subheading,
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i) } }}
                   >
                     <div className="sb-photo">
-                      {photoUrl && <img src={photoUrl} alt={m.name || ''} />}
+                      {photoUrl && (
+                        <img
+                          src={photoUrl}
+                          alt={m.name || ''}
+                          width={m.photo?.width ?? undefined}
+                          height={m.photo?.height ?? undefined}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      )}
                       <div className="sb-hover"><span>{dict.scienceBoard.viewBio}</span></div>
                     </div>
                     <div className="sb-body">

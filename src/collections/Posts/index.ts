@@ -9,8 +9,13 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
-import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import {
+  adminOrContentTrash,
+  adminOrEditor,
+  contentEditor,
+  enforceAgentDraftOperation,
+} from '../../access/roles'
 import { Banner } from '../../blocks/Banner/config'
 import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
@@ -47,11 +52,14 @@ import { estimateReadTime } from '@/utilities/countLexicalWords'
 
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
+  trash: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    admin: contentEditor,
+    create: contentEditor,
+    delete: adminOrContentTrash,
     read: authenticatedOrPublished,
-    update: authenticated,
+    readVersions: adminOrEditor,
+    update: contentEditor,
   },
   // Everything a Journal card needs, so index / related-post queries can stay
   // at depth 1 instead of pulling whole documents.
@@ -72,6 +80,7 @@ export const Posts: CollectionConfig<'posts'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    enableListViewSelectAPI: true,
     livePreview: {
       url: ({ data, req }) =>
         generatePreviewPath({
@@ -191,8 +200,7 @@ export const Posts: CollectionConfig<'posts'> = {
                   ]
                 },
               }),
-              validate: (value: unknown, options: { data?: Record<string, unknown> }) => {
-                if (options?.data?.source === 'api') return true
+              validate: (value: unknown) => {
                 if (!value) return 'This field is required.'
                 return true
               },
@@ -241,7 +249,13 @@ export const Posts: CollectionConfig<'posts'> = {
               }),
               required: true,
               validate: (value: unknown, { data }: { data?: Record<string, unknown> }) => {
-                if (data?.source === 'api') return true
+                if (
+                  data?.source === 'api' &&
+                  typeof data.htmlContent === 'string' &&
+                  data.htmlContent.trim()
+                ) {
+                  return true
+                }
                 if (!value) return 'This field is required.'
                 return true
               },
@@ -564,7 +578,7 @@ export const Posts: CollectionConfig<'posts'> = {
     },
   ],
   hooks: {
-    beforeOperation: [capturePostPublication],
+    beforeOperation: [enforceAgentDraftOperation, capturePostPublication],
     beforeChange: [parseApiContent],
     // enforceSingleFeatured runs first so the index revalidation that
     // revalidatePost triggers already reflects the cleared flags.
@@ -575,7 +589,7 @@ export const Posts: CollectionConfig<'posts'> = {
   versions: {
     drafts: {
       autosave: {
-        interval: 100,
+        interval: 5000,
       },
       localizeStatus: true,
       schedulePublish: true,

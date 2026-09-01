@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { unstable_cache } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { PayloadRedirects } from '@/components/PayloadRedirects'
@@ -13,7 +14,6 @@ import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { buildPageJsonLd } from '@/utilities/buildPageJsonLd'
-import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
 import { getServerSideURL } from '@/utilities/getURL'
@@ -43,6 +43,55 @@ type Args = {
     slug?: string
   }>
 }
+
+const PAGE_CACHE_SECONDS = 600
+const PAGE_CACHE_TAG = 'pages'
+const PUBLISHED_READ: AuthenticatedDraft = { draft: false, user: null }
+
+const getCachedHomePage = unstable_cache(
+  async (locale: AppLocale) => {
+    const payload = await getPayload({ config: configPromise })
+    return queryHomePage(payload, PUBLISHED_READ, locale)
+  },
+  ['published-page', 'home'],
+  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+)
+
+const getCachedPageBySlug = unstable_cache(
+  async (slug: string, locale: AppLocale) => {
+    const payload = await getPayload({ config: configPromise })
+    return queryPageBySlug(payload, PUBLISHED_READ, { slug, locale })
+  },
+  ['published-page', 'slug'],
+  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+)
+
+const getCachedPageMeta = unstable_cache(
+  async (home: boolean, slug: string, locale: AppLocale) => {
+    const payload = await getPayload({ config: configPromise })
+    return queryPageMeta(payload, PUBLISHED_READ, { home, slug, locale })
+  },
+  ['published-page', 'meta'],
+  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+)
+
+const getCachedPublishedLocaleSlugs = unstable_cache(
+  async (id: number | string) => {
+    const payload = await getPayload({ config: configPromise })
+    return resolvePublishedLocaleSlugs({ collection: 'pages', id, payload })
+  },
+  ['published-page', 'locale-slugs'],
+  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+)
+
+const getCachedIsHomePage = unstable_cache(
+  async (id: number | string) => {
+    const payload = await getPayload({ config: configPromise })
+    return isHomePageDocument(payload, PUBLISHED_READ, id)
+  },
+  ['published-page', 'is-home'],
+  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+)
 
 // Currency-sensitive page copy is rendered from the visitor's cookie. Keep
 // landing pages request-rendered so newly published slugs work immediately and
@@ -75,9 +124,13 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   // Home route (/{locale}): always look up the home page by its canonical en slug so
   // it's found even when a locale-specific slug has been set for it in the CMS.
-  const page: RequiredDataFromCollectionSlug<'pages'> | null = !rawSlug
-    ? await queryHomePage(payload, read, locale)
-    : await queryPageBySlug(payload, read, { slug: decodedSlug, locale })
+  const page: RequiredDataFromCollectionSlug<'pages'> | null = read.draft
+    ? !rawSlug
+      ? await queryHomePage(payload, read, locale)
+      : await queryPageBySlug(payload, read, { slug: decodedSlug, locale })
+    : !rawSlug
+      ? await getCachedHomePage(locale)
+      : await getCachedPageBySlug(decodedSlug, locale)
 
   if (!page) {
     // Slug not found in this locale — check if it belongs to another locale and redirect
@@ -88,12 +141,14 @@ export default async function Page({ params: paramsPromise }: Args) {
   if (page.id == null) return <PayloadRedirects url={url} />
   const pageId = page.id
 
-  const publishedSlugs = await resolvePublishedLocaleSlugs({
-    collection: 'pages',
-    id: pageId,
-    payload,
-  })
-  const isHome = !rawSlug || (await isHomePageDocument(payload, read, pageId))
+  const publishedSlugs = read.draft
+    ? await resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
+    : await getCachedPublishedLocaleSlugs(pageId)
+  const isHome =
+    !rawSlug ||
+    (read.draft
+      ? await isHomePageDocument(payload, read, pageId)
+      : await getCachedIsHomePage(pageId))
 
   // Draft previews remain available to authenticated editors. Public rendering is
   // gated before any content fallback so an unpublished locale cannot masquerade
@@ -161,8 +216,6 @@ export default async function Page({ params: paramsPromise }: Args) {
           width: '100%',
         }}
       >
-        <PageClient />
-
         <PayloadRedirects disableNotFound url={url} />
 
         {read.draft && page.id != null && typeof page.updatedAt === 'string' && (
@@ -195,23 +248,27 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
 
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)
-  const page = await queryPageMeta(payload, read, {
-    home: !rawSlug,
-    slug: decodedSlug,
-    locale,
-  })
+  const page = read.draft
+    ? await queryPageMeta(payload, read, {
+        home: !rawSlug,
+        slug: decodedSlug,
+        locale,
+      })
+    : await getCachedPageMeta(!rawSlug, decodedSlug, locale)
 
   if (!page) return {}
   if (page.id == null) return {}
   const pageId = page.id
 
   const siteURL = getServerSideURL()
-  const publishedSlugs = await resolvePublishedLocaleSlugs({
-    collection: 'pages',
-    id: pageId,
-    payload,
-  })
-  const isHome = !rawSlug || (await isHomePageDocument(payload, read, pageId))
+  const publishedSlugs = read.draft
+    ? await resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
+    : await getCachedPublishedLocaleSlugs(pageId)
+  const isHome =
+    !rawSlug ||
+    (read.draft
+      ? await isHomePageDocument(payload, read, pageId)
+      : await getCachedIsHomePage(pageId))
   const canonical = new URL(
     getPagePath(locale, (page as { slug?: string }).slug, isHome),
     siteURL,

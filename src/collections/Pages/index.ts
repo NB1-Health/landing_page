@@ -1,7 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import {
+  adminOrContentTrash,
+  adminOrEditor,
+  contentEditor,
+  enforceAgentDraftOperation,
+} from '../../access/roles'
 
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
@@ -106,17 +111,21 @@ import { ContactPageBlock } from '@/blocks/ContactPage/config'
 import { ReferralWidgetBlock } from '@/blocks/ReferralWidget/config'
 import { ReferInfoBlock } from '@/blocks/ReferInfo/config'
 import { ReferFaqBlock } from '@/blocks/ReferFaq/config'
+import { CustomerReviewsBlock } from '@/blocks/CustomerReviews/config'
 import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
+  trash: true,
   // Publication status is locale-specific, so editors publish one locale at a time.
   disableBulkEdit: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    admin: contentEditor,
+    create: contentEditor,
+    delete: adminOrContentTrash,
     read: authenticatedOrPublished,
-    update: authenticated,
+    readVersions: adminOrEditor,
+    update: contentEditor,
   },
   defaultPopulate: {
     title: true,
@@ -134,6 +143,7 @@ export const Pages: CollectionConfig<'pages'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    enableListViewSelectAPI: true,
     pagination: { defaultLimit: 5 },
 
     livePreview: {
@@ -269,6 +279,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 ReferralWidgetBlock,
                 ReferInfoBlock,
                 ReferFaqBlock,
+                CustomerReviewsBlock,
               ],
               required: true,
               admin: { initCollapsed: true },
@@ -387,7 +398,7 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
 
   hooks: {
-    beforeOperation: [capturePagePublication],
+    beforeOperation: [enforceAgentDraftOperation, capturePagePublication],
     beforeValidate: [
       // First, so a colliding slug is refused before any of the meta defaulting
       // below runs and before the document is written.

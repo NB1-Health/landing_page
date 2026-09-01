@@ -5,13 +5,26 @@ import { seoPlugin } from '@payloadcms/plugin-seo'
 import { searchPlugin } from '@payloadcms/plugin-search'
 import { Plugin } from 'payload'
 import { revalidateRedirects } from '@/hooks/revalidateRedirects'
+import { revalidatePages } from '@/hooks/revalidatePages'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
+import { adminOnly, isAdmin } from '@/access/roles'
+import { agentMcpPlugin } from '@/plugins/agentMcp'
+import { mediaReferenceSafetyPlugin } from '@/mcp/mediaReferenceSafety'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
+
+const adminManagedPublicRead = {
+  admin: adminOnly,
+  create: adminOnly,
+  delete: adminOnly,
+  read: () => true,
+  update: adminOnly,
+}
+const hiddenFromNonAdmins = ({ user }: { user: unknown }) => !isAdmin(user)
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | NB1` : 'NB1'
@@ -27,6 +40,8 @@ export const plugins: Plugin[] = [
   redirectsPlugin({
     collections: ['pages', 'posts'],
     overrides: {
+      access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
       // @ts-expect-error - This is a valid override, mapped fields don't resolve to the same type
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
@@ -59,6 +74,12 @@ export const plugins: Plugin[] = [
       payment: false,
     },
     formOverrides: {
+      access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
+      hooks: {
+        afterChange: [revalidatePages],
+        afterDelete: [revalidatePages],
+      },
       fields: ({ defaultFields }) => {
         return defaultFields.map((field) => {
           if ('name' in field && field.name === 'confirmationMessage') {
@@ -79,14 +100,28 @@ export const plugins: Plugin[] = [
         })
       },
     },
+    formSubmissionOverrides: {
+      access: {
+        admin: adminOnly,
+        create: () => true,
+        delete: adminOnly,
+        read: adminOnly,
+        update: adminOnly,
+      },
+    },
   }),
   searchPlugin({
     collections: ['posts'],
     beforeSync: beforeSyncWithSearch,
+    skipSync: ({ req }) => req.query.autosave === true || req.query.autosave === 'true',
     searchOverrides: {
+      access: adminManagedPublicRead,
+      admin: { hidden: hiddenFromNonAdmins },
       fields: ({ defaultFields }) => {
         return [...defaultFields, ...searchFields]
       },
     },
   }),
+  agentMcpPlugin,
+  mediaReferenceSafetyPlugin,
 ]
