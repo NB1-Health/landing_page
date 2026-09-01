@@ -90,17 +90,17 @@ export const seed = async ({
     }),
     payload.create({
       collection: 'media',
-      data: image1,
+      data: { ...image1, agentTrashEligible: false },
       file: image1Buffer,
     }),
     payload.create({
       collection: 'media',
-      data: image2,
+      data: { ...image2, agentTrashEligible: false },
       file: image2Buffer,
     }),
     payload.create({
       collection: 'media',
-      data: imageHero1,
+      data: { ...imageHero1, agentTrashEligible: false },
       file: hero1Buffer,
     }),
     ...categories.map((category) =>

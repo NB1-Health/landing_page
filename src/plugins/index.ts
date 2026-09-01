@@ -12,6 +12,7 @@ import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { adminOnly, isAdmin } from '@/access/roles'
 import { agentMcpPlugin } from '@/plugins/agentMcp'
+import { mediaReferenceSafetyPlugin } from '@/mcp/mediaReferenceSafety'
 
 import { Page, Post } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
@@ -122,4 +123,5 @@ export const plugins: Plugin[] = [
     },
   }),
   agentMcpPlugin,
+  mediaReferenceSafetyPlugin,
 ]

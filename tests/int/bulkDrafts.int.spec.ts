@@ -197,6 +197,96 @@ describe('bulk draft planning', () => {
     expect(payload.create).not.toHaveBeenCalled()
   })
 
+  it('rejects Post fields above the individual MCP tool limits before planning', async () => {
+    const payload = makePayload()
+    const req = makeRequest(payload)
+    const limits = [
+      ['focusKeyword', 100],
+      ['introHtml', 25_000],
+      ['metaDescription', 155],
+      ['metaTitle', 60],
+      ['subtitle', 180],
+    ] as const
+
+    for (const [field, limit] of limits) {
+      const value = 'x'.repeat(limit + 1)
+      const items = [
+        { ...postCreate, [field]: value },
+        {
+          expectedUpdatedAt: '2026-08-27T12:00:00.000Z',
+          id: 12,
+          patch: { [field]: value },
+          type: 'post-update',
+        },
+      ]
+
+      for (const item of items) {
+        const error = await planBulkDrafts({
+          idempotencyKey: `over-limit-${field}-${item.type}`,
+          itemsJson: JSON.stringify([item]),
+          locale: 'en',
+          req,
+        }).catch((caught) => caught)
+
+        expect(error).toBeInstanceOf(APIError)
+        expect(error.status).toBe(400)
+      }
+    }
+
+    expect(payload.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects relationship IDs above the individual MCP tool limit before planning', async () => {
+    const payload = makePayload()
+    const req = makeRequest(payload)
+    const oversizedID = 'x'.repeat(65)
+    const items = [
+      { ...postCreate, authorIDs: [oversizedID] },
+      {
+        expectedUpdatedAt: '2026-08-27T12:00:00.000Z',
+        id: 12,
+        patch: { heroImageID: oversizedID },
+        type: 'post-update',
+      },
+    ]
+
+    for (const item of items) {
+      await expect(
+        planBulkDrafts({
+          idempotencyKey: `over-limit-id-${item.type}`,
+          itemsJson: JSON.stringify([item]),
+          locale: 'en',
+          req,
+        }),
+      ).rejects.toMatchObject({ status: 400 })
+    }
+
+    expect(payload.create).not.toHaveBeenCalled()
+  })
+
+  it('rejects Page clone titles above the individual MCP tool limit before planning', async () => {
+    const payload = makePayload()
+    const req = makeRequest(payload)
+
+    await expect(
+      planBulkDrafts({
+        idempotencyKey: 'over-limit-page-clone-title',
+        itemsJson: JSON.stringify([
+          {
+            slug: 'bulk-page-clone',
+            sourcePageID: 12,
+            title: 'x'.repeat(121),
+            type: 'page-clone',
+          },
+        ]),
+        locale: 'en',
+        req,
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+
+    expect(payload.create).not.toHaveBeenCalled()
+  })
+
   it('uses the Page copy-edit parser for bulk page updates', async () => {
     const payload = makePayload()
     const req = makeRequest(payload)

@@ -149,10 +149,42 @@ async function main() {
         name: 'upload_media',
       }),
     )
-    if (typeof uploaded.id !== 'number' || uploaded.mimeType !== 'image/png') {
+    if (
+      typeof uploaded.id !== 'number' ||
+      uploaded.mimeType !== 'image/png' ||
+      typeof uploaded.updatedAt !== 'string'
+    ) {
       throw new Error('upload_media returned an invalid media record.')
     }
     mediaID = uploaded.id
+
+    const trashedMedia = readToolJSON(
+      await client.callTool({
+        arguments: {
+          collection: 'media',
+          expectedUpdatedAt: uploaded.updatedAt,
+          id: mediaID,
+          idempotencyKey: `trash-media-${unique}`,
+          locale: 'en',
+        },
+        name: 'trash_content',
+      }),
+    )
+    if (typeof trashedMedia.updatedAt !== 'string') {
+      throw new Error('trash_content returned no Media updatedAt value.')
+    }
+    readToolJSON(
+      await client.callTool({
+        arguments: {
+          collection: 'media',
+          expectedUpdatedAt: trashedMedia.updatedAt,
+          id: mediaID,
+          idempotencyKey: `restore-media-${unique}`,
+          locale: 'en',
+        },
+        name: 'restore_content',
+      }),
+    )
 
     const createArguments = {
       contentHtml: '<h2>Local MCP smoke heading</h2><p>Validated draft body.</p>',
@@ -295,6 +327,7 @@ async function main() {
       idempotentReplay: 'ok',
       invalidKeyStatus: invalidResponse.status,
       listedTools: toolNames,
+      mediaTrashRestore: 'ok',
       mediaUpload: 'ok',
       readToolCall: 'ok',
       trashRestore: 'ok',

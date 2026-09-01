@@ -208,9 +208,11 @@ const id = (value: unknown, label: string): ID => {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value
   if (typeof value === 'string') {
     const normalized = value.trim()
-    if (normalized && normalized.length <= 128) return normalized
+    if (normalized && normalized.length <= 64) return normalized
   }
-  return badRequest(`${label} must be a positive integer or a non-empty ID string.`)
+  return badRequest(
+    `${label} must be a positive integer or a non-empty ID string up to 64 characters.`,
+  )
 }
 
 const ids = (value: unknown, label: string): ID[] | undefined => {
@@ -259,8 +261,8 @@ const postCreate = (raw: Record<string, unknown>, index: number): PostCreateItem
 
   const authorIDs = ids(raw.authorIDs, `${label}.authorIDs`)
   const categoryIDs = ids(raw.categoryIDs, `${label}.categoryIDs`)
-  const focusKeyword = optionalText(raw.focusKeyword, `${label}.focusKeyword`, 200)
-  const subtitle = optionalText(raw.subtitle, `${label}.subtitle`, 300)
+  const focusKeyword = optionalText(raw.focusKeyword, `${label}.focusKeyword`, 100)
+  const subtitle = optionalText(raw.subtitle, `${label}.subtitle`, 180)
   const heroImageID =
     raw.heroImageID === undefined ? undefined : id(raw.heroImageID, `${label}.heroImageID`)
 
@@ -270,9 +272,9 @@ const postCreate = (raw: Record<string, unknown>, index: number): PostCreateItem
     contentHtml: requiredText(raw.contentHtml, `${label}.contentHtml`, 220_000, true),
     ...(focusKeyword === undefined ? {} : { focusKeyword }),
     ...(heroImageID === undefined ? {} : { heroImageID }),
-    introHtml: requiredText(raw.introHtml, `${label}.introHtml`, 30_000, true),
-    metaDescription: requiredText(raw.metaDescription, `${label}.metaDescription`, 220),
-    metaTitle: requiredText(raw.metaTitle, `${label}.metaTitle`, 70),
+    introHtml: requiredText(raw.introHtml, `${label}.introHtml`, 25_000, true),
+    metaDescription: requiredText(raw.metaDescription, `${label}.metaDescription`, 155),
+    metaTitle: requiredText(raw.metaTitle, `${label}.metaTitle`, 60),
     slug: slug(raw.slug, `${label}.slug`),
     ...(subtitle === undefined ? {} : { subtitle }),
     title: requiredText(raw.title, `${label}.title`, 70),
@@ -309,21 +311,21 @@ const postPatch = (rawValue: unknown, index: number): PostUpdateItem['patch'] =>
     patch.contentHtml = requiredText(raw.contentHtml, `${label}.contentHtml`, 220_000, true)
   }
   if ('focusKeyword' in raw) {
-    patch.focusKeyword = optionalText(raw.focusKeyword, `${label}.focusKeyword`, 200, true)
+    patch.focusKeyword = optionalText(raw.focusKeyword, `${label}.focusKeyword`, 100, true)
   }
   if ('heroImageID' in raw) {
     patch.heroImageID =
       raw.heroImageID === null ? null : id(raw.heroImageID, `${label}.heroImageID`)
   }
   if ('introHtml' in raw) {
-    patch.introHtml = requiredText(raw.introHtml, `${label}.introHtml`, 30_000, true)
+    patch.introHtml = requiredText(raw.introHtml, `${label}.introHtml`, 25_000, true)
   }
   if ('metaDescription' in raw) {
-    patch.metaDescription = requiredText(raw.metaDescription, `${label}.metaDescription`, 220)
+    patch.metaDescription = requiredText(raw.metaDescription, `${label}.metaDescription`, 155)
   }
-  if ('metaTitle' in raw) patch.metaTitle = requiredText(raw.metaTitle, `${label}.metaTitle`, 70)
+  if ('metaTitle' in raw) patch.metaTitle = requiredText(raw.metaTitle, `${label}.metaTitle`, 60)
   if ('slug' in raw) patch.slug = slug(raw.slug, `${label}.slug`)
-  if ('subtitle' in raw) patch.subtitle = optionalText(raw.subtitle, `${label}.subtitle`, 300, true)
+  if ('subtitle' in raw) patch.subtitle = optionalText(raw.subtitle, `${label}.subtitle`, 180, true)
   if ('title' in raw) patch.title = requiredText(raw.title, `${label}.title`, 70)
   return patch
 }
@@ -331,7 +333,7 @@ const postPatch = (rawValue: unknown, index: number): PostUpdateItem['patch'] =>
 const pagePatch = (rawValue: unknown, index: number): Record<string, unknown> => {
   const raw = asRecord(rawValue, `items[${index}].patch`)
   const patch = parsePagePatch(JSON.stringify(raw))
-  if ('title' in patch) patch.title = requiredText(patch.title, `items[${index}].patch.title`, 200)
+  if ('title' in patch) patch.title = requiredText(patch.title, `items[${index}].patch.title`, 120)
   if ('slug' in patch) patch.slug = slug(patch.slug, `items[${index}].patch.slug`)
   return patch
 }
@@ -354,7 +356,7 @@ const normalizeItem = (value: unknown, index: number): BulkDraftItem => {
       return {
         slug: slug(raw.slug, `items[${index}].slug`),
         sourcePageID: id(raw.sourcePageID, `items[${index}].sourcePageID`),
-        title: requiredText(raw.title, `items[${index}].title`, 200),
+        title: requiredText(raw.title, `items[${index}].title`, 120),
         type: 'page-clone',
       }
     case 'page-update':

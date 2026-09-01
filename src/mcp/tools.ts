@@ -272,11 +272,15 @@ const commitBulkDraftsTool = defineTool(
 
 function trashTool(action: 'restore' | 'trash') {
   const name = action === 'trash' ? 'trash_content' : 'restore_content'
+  const description =
+    action === 'trash'
+      ? 'Soft-trash one draft Page or Post, or one unused, unmodified Media document uploaded through MCP, with an updatedAt check. Published Pages and Posts and other Media require an admin workflow; nothing is permanently deleted.'
+      : 'Restore one trashed Page or Post, or one still-eligible Media document uploaded through MCP, with an updatedAt check; nothing is permanently deleted.'
   return defineTool(
     name,
-    `${action === 'trash' ? 'Soft-trash' : 'Restore'} one draft Page or Post with an updatedAt check. Published content requires an admin workflow; nothing is permanently deleted.`,
+    description,
     {
-      collection: z.enum(['pages', 'posts']),
+      collection: z.enum(['media', 'pages', 'posts']),
       expectedUpdatedAt: updatedAtSchema,
       id: idSchema,
       idempotencyKey: idempotencySchema,

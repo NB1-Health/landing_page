@@ -20,6 +20,8 @@ export type TrashableCollection = ContentCollection | 'media'
 
 type RecordDoc = Record<string, unknown> & {
   _status?: unknown
+  agentTrashEligible?: unknown
+  deletedAt?: unknown
   id: number | string
   updatedAt?: unknown
 }
@@ -448,6 +450,81 @@ async function withDocumentLock<T>(
   }
 }
 
+function quoteSQLIdentifier(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`
+}
+
+/** Block Media trash while any relational current or historical row still references it. */
+async function assertMediaIsUnreferenced(req: PayloadRequest, id: number | string): Promise<void> {
+  const transactionID = await req.transactionID
+  const database = req.payload.db as unknown as PostgresAdapter
+  const session = transactionID ? database.sessions[String(transactionID)] : undefined
+  if (!session) throw new APIError('Could not check Media references.', 500)
+
+  const referenceColumns = await database.execute({
+    db: session.db,
+    raw: `
+      SELECT
+        source_namespace.nspname AS "schemaName",
+        source_table.relname AS "tableName",
+        source_column.attname AS "columnName"
+      FROM pg_constraint constraint_record
+      JOIN pg_class source_table ON source_table.oid = constraint_record.conrelid
+      JOIN pg_namespace source_namespace ON source_namespace.oid = source_table.relnamespace
+      JOIN pg_class target_table ON target_table.oid = constraint_record.confrelid
+      JOIN pg_namespace target_namespace ON target_namespace.oid = target_table.relnamespace
+      JOIN LATERAL unnest(constraint_record.conkey) WITH ORDINALITY source_key(attnum, ordinal)
+        ON true
+      JOIN LATERAL unnest(constraint_record.confkey) WITH ORDINALITY target_key(attnum, ordinal)
+        ON target_key.ordinal = source_key.ordinal
+      JOIN pg_attribute source_column
+        ON source_column.attrelid = source_table.oid
+        AND source_column.attnum = source_key.attnum
+      JOIN pg_attribute target_column
+        ON target_column.attrelid = target_table.oid
+        AND target_column.attnum = target_key.attnum
+      WHERE constraint_record.contype = 'f'
+        AND target_table.relname = 'media'
+        AND target_namespace.nspname = current_schema()
+        AND target_column.attname = 'id'
+        AND NOT (
+          source_namespace.nspname = target_namespace.nspname AND (
+            (
+              source_table.relname = 'media_locales'
+              AND source_column.attname = '_parent_id'
+            )
+            OR (
+              source_table.relname = 'payload_locked_documents_rels'
+              AND source_column.attname = 'media_id'
+            )
+          )
+        )
+    `,
+  })
+  const columns = referenceColumns.rows as unknown as Array<{
+    columnName: string
+    schemaName: string
+    tableName: string
+  }>
+  if (columns.length === 0) return
+
+  const mediaID = numericDocumentID(id)
+  const queries = columns.map(({ columnName, schemaName, tableName }) => {
+    const column = quoteSQLIdentifier(columnName)
+    const table = `${quoteSQLIdentifier(schemaName)}.${quoteSQLIdentifier(tableName)}`
+    return `SELECT 1 FROM ${table} WHERE ${column} = ${mediaID}`
+  })
+  const references = await database.execute({
+    db: session.db,
+    raw: `SELECT 1 FROM (${queries.join(' UNION ALL ')}) AS "media_references" LIMIT 1`,
+  })
+  if (references.rowCount) {
+    conflict(
+      'Media is referenced by current or historical content. An admin must review it before removal.',
+    )
+  }
+}
+
 export async function findContent({
   collection,
   locale,
@@ -572,47 +649,52 @@ export async function updatePostDraft({
   assertAgentRequest(req)
   if (Object.keys(patch).length === 0) badRequest('Post patch must change at least one field.')
 
-  return withDocumentLock(req, 'posts', id, async () => {
-    const current = await findByID(req, 'posts', id, locale)
-    assertFresh(current, expectedUpdatedAt)
+  const update = () =>
+    withDocumentLock(req, 'posts', id, async () => {
+      const current = await findByID(req, 'posts', id, locale)
+      assertFresh(current, expectedUpdatedAt)
 
-    const data: Record<string, unknown> = { _status: 'draft' }
-    if (patch.title !== undefined) data.title = patch.title
-    if (patch.subtitle !== undefined) data.subtitle = patch.subtitle
-    if (patch.slug !== undefined) data.slug = patch.slug
-    if (patch.focusKeyword !== undefined) data.focusKeyword = patch.focusKeyword
-    if (patch.heroImageID !== undefined) data.heroImage = patch.heroImageID
-    if (patch.categoryIDs !== undefined) data.categories = patch.categoryIDs
-    if (patch.authorIDs !== undefined) data.authors = patch.authorIDs
-    if (patch.introHtml !== undefined) data.intro = parseHtmlToContent(patch.introHtml)
-    if (patch.contentHtml !== undefined) {
-      data.htmlContent = patch.contentHtml
-      data.source = 'api'
-    }
-    if (patch.metaTitle !== undefined || patch.metaDescription !== undefined) {
-      const currentMeta = asRecord(current.meta ?? {}, 'Current post meta')
-      data.meta = {
-        ...currentMeta,
-        ...(patch.metaDescription !== undefined ? { description: patch.metaDescription } : {}),
-        ...(patch.metaTitle !== undefined ? { title: patch.metaTitle } : {}),
+      const data: Record<string, unknown> = { _status: 'draft' }
+      if (patch.title !== undefined) data.title = patch.title
+      if (patch.subtitle !== undefined) data.subtitle = patch.subtitle
+      if (patch.slug !== undefined) data.slug = patch.slug
+      if (patch.focusKeyword !== undefined) data.focusKeyword = patch.focusKeyword
+      if (patch.heroImageID !== undefined) data.heroImage = patch.heroImageID
+      if (patch.categoryIDs !== undefined) data.categories = patch.categoryIDs
+      if (patch.authorIDs !== undefined) data.authors = patch.authorIDs
+      if (patch.introHtml !== undefined) data.intro = parseHtmlToContent(patch.introHtml)
+      if (patch.contentHtml !== undefined) {
+        data.htmlContent = patch.contentHtml
+        data.source = 'api'
       }
-    }
+      if (patch.metaTitle !== undefined || patch.metaDescription !== undefined) {
+        const currentMeta = asRecord(current.meta ?? {}, 'Current post meta')
+        data.meta = {
+          ...currentMeta,
+          ...(patch.metaDescription !== undefined ? { description: patch.metaDescription } : {}),
+          ...(patch.metaTitle !== undefined ? { title: patch.metaTitle } : {}),
+        }
+      }
 
-    const doc = await req.payload.update({
-      collection: 'posts',
-      id,
-      data: data as never,
-      depth: 0,
-      draft: true,
-      fallbackLocale: false,
-      locale,
-      overrideAccess: false,
-      overrideLock: false,
-      req,
+      const doc = await req.payload.update({
+        collection: 'posts',
+        id,
+        data: data as never,
+        depth: 0,
+        draft: true,
+        fallbackLocale: false,
+        locale,
+        overrideAccess: false,
+        overrideLock: false,
+        req,
+      })
+      const latest = await findByID(req, 'posts', doc.id, locale)
+      return compactDocument(latest, 'posts')
     })
-    const latest = await findByID(req, 'posts', doc.id, locale)
-    return compactDocument(latest, 'posts')
-  })
+
+  return patch.heroImageID === undefined || patch.heroImageID === null
+    ? update()
+    : withDocumentLock(req, 'media', patch.heroImageID, update)
 }
 
 export async function clonePageDraft({
@@ -774,17 +856,25 @@ export async function uploadMedia({
     badRequest(`Image is invalid or exceeds the ${maxPixels}-pixel decode limit.`)
   }
 
-  const doc = await req.payload.create({
-    collection: 'media',
-    data: { alt },
-    depth: 0,
-    fallbackLocale: false,
-    file: { data, mimetype: mimeType, name: safeName, size: data.length },
-    locale,
-    overrideAccess: false,
-    req,
-  })
-  const media = doc as unknown as RecordDoc
+  const previousUpload = req.context.agentMediaUpload
+  req.context.agentMediaUpload = true
+  let media: RecordDoc
+  try {
+    const doc = await req.payload.create({
+      collection: 'media',
+      data: { agentTrashEligible: false, alt },
+      depth: 0,
+      fallbackLocale: false,
+      file: { data, mimetype: mimeType, name: safeName, size: data.length },
+      locale,
+      overrideAccess: false,
+      req,
+    })
+    media = doc as unknown as RecordDoc
+  } finally {
+    if (previousUpload === undefined) delete req.context.agentMediaUpload
+    else req.context.agentMediaUpload = previousUpload
+  }
   return {
     id: media.id,
     filename: media.filename,
@@ -828,6 +918,19 @@ export async function setContentTrashState({
   return withDocumentLock(req, collection, id, async () => {
     const current = await findByID(req, collection, id, locale, action === 'restore')
     assertFresh(current, expectedUpdatedAt)
+
+    if (action === 'restore' && typeof current.deletedAt !== 'string') {
+      conflict('Content is not in trash and cannot be restored.')
+    }
+
+    if (collection === 'media') {
+      if (current.agentTrashEligible !== true) {
+        conflict(
+          'Only MCP-uploaded Media that has never been referenced or manually modified can be trashed or restored by an agent.',
+        )
+      }
+      if (action === 'trash') await assertMediaIsUnreferenced(req, id)
+    }
 
     if (collection !== 'media') {
       const liveCommon = {

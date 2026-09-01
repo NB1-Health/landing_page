@@ -548,6 +548,7 @@ export interface Header {
  */
 export interface Media {
   id: number;
+  agentTrashEligible: boolean;
   /**
    * Describe the image for screen readers and SEO (not decorative text).
    */
@@ -7627,11 +7628,11 @@ export interface PayloadMcpApiKey {
      */
     commitBulkDrafts?: boolean | null;
     /**
-     * Soft-trash one draft Page or Post with an updatedAt check. Published content requires an admin workflow; nothing is permanently deleted.
+     * Soft-trash one draft Page or Post, or one unused, unmodified Media document uploaded through MCP, with an updatedAt check. Published Pages and Posts and other Media require an admin workflow; nothing is permanently deleted.
      */
     trashContent?: boolean | null;
     /**
-     * Restore one draft Page or Post with an updatedAt check. Published content requires an admin workflow; nothing is permanently deleted.
+     * Restore one trashed Page or Post, or one still-eligible Media document uploaded through MCP, with an updatedAt check; nothing is permanently deleted.
      */
     restoreContent?: boolean | null;
   };
@@ -11037,6 +11038,7 @@ export interface PostsSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  agentTrashEligible?: T;
   alt?: T;
   caption?: T;
   folder?: T;

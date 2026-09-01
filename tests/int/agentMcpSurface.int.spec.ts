@@ -2,6 +2,13 @@ import { APIError, type CollectionConfig, type PayloadRequest } from 'payload'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { parsePagePatch, uploadMedia } from '@/mcp/contentOperations'
+import {
+  embeddedMediaIDs,
+  protectCollectionMediaReferences,
+  protectGlobalMediaReferences,
+} from '@/mcp/mediaReferenceSafety'
+import { agentMcpTools } from '@/mcp/tools'
+import configPromise from '@/payload.config'
 import { agentMcpOptions } from '@/plugins/agentMcp'
 
 function testRequest(payload: Record<string, unknown>) {
@@ -48,6 +55,71 @@ describe('agent MCP configuration', () => {
       ]),
     )
     expect(names.some((name) => /delete|publish/i.test(name))).toBe(false)
+  })
+
+  it('allows uploaded Media to be trashed and restored through the safe tools', () => {
+    for (const name of ['trash_content', 'restore_content']) {
+      const tool = agentMcpTools.find((candidate) => candidate.name === name)
+      const collection = (
+        tool?.parameters as
+          | { collection?: { safeParse: (value: unknown) => { success: boolean } } }
+          | undefined
+      )?.collection
+
+      expect(collection?.safeParse('media').success).toBe(true)
+      expect(collection?.safeParse('users').success).toBe(false)
+    }
+  })
+
+  it('protects Media references in every app and plugin content surface', async () => {
+    const config = await configPromise
+    const protectedCollections = [
+      'authors',
+      'footers',
+      'forms',
+      'headers',
+      'media',
+      'pages',
+      'posts',
+      'search',
+    ]
+    for (const slug of protectedCollections) {
+      const collection = config.collections.find((candidate) => candidate.slug === slug)
+      expect(collection, `${slug} collection`).toBeDefined()
+      expect(collection?.hooks?.beforeChange).toContain(protectCollectionMediaReferences)
+    }
+
+    for (const global of config.globals) {
+      expect(global.hooks?.beforeChange).toContain(protectGlobalMediaReferences)
+    }
+  })
+
+  it('normalizes every supported embedded Media reference shape', () => {
+    expect(
+      embeddedMediaIDs({
+        children: [
+          { relationTo: 'media', value: { id: 9 } },
+          { blockType: 'mediaBlock', media: 3 },
+          { blockType: 'expertQuote', avatar: '7' },
+          { relationTo: 'media', value: 3 },
+        ],
+      }),
+    ).toEqual([3, 7, 9])
+  })
+
+  it('does no database work for unchanged Media references on autosave', async () => {
+    const data = { heroImage: 42, title: 'Unchanged autosave' }
+    await expect(
+      protectCollectionMediaReferences({
+        collection: {
+          fields: [{ name: 'heroImage', relationTo: 'media', type: 'upload' }],
+          slug: 'posts',
+        },
+        data,
+        originalDoc: data,
+        req: {},
+      } as never),
+    ).resolves.toBe(data)
   })
 
   it('makes API-key administration admin-only and custom tools opt-in per key', () => {
@@ -189,7 +261,7 @@ describe('agent MCP input boundaries', () => {
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'media',
-        data: { alt: 'Pixel' },
+        data: { agentTrashEligible: false, alt: 'Pixel' },
         file: expect.objectContaining({
           data: pngBytes,
           mimetype: 'image/png',

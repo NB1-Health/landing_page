@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 
 import { anyone } from '../access/anyone'
 import { adminOrContentTrash, contentEditor, enforceAgentMediaOperation } from '../access/roles'
+import { preserveAgentTrashEligibility } from '../mcp/mediaReferenceSafety'
 import { revalidateDeletedMedia, revalidateMedia } from './Media/hooks/revalidateMedia'
 
 const filename = fileURLToPath(import.meta.url)
@@ -29,9 +30,21 @@ export const Media: CollectionConfig = {
   hooks: {
     afterChange: [revalidateMedia],
     afterDelete: [revalidateDeletedMedia],
+    beforeChange: [preserveAgentTrashEligibility],
     beforeOperation: [enforceAgentMediaOperation],
   },
   fields: [
+    {
+      name: 'agentTrashEligible',
+      type: 'checkbox',
+      access: {
+        create: () => false,
+        update: () => false,
+      },
+      defaultValue: false,
+      required: true,
+      admin: { hidden: true },
+    },
     {
       name: 'alt',
       type: 'text',

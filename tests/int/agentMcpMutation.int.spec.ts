@@ -4,7 +4,12 @@ import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'p
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import config from '@/payload.config'
-import { createPostDraft, setContentTrashState, updatePostDraft } from '@/mcp/contentOperations'
+import {
+  createPostDraft,
+  setContentTrashState,
+  updatePostDraft,
+  uploadMedia,
+} from '@/mcp/contentOperations'
 import { runIdempotentMutation } from '@/mcp/runIdempotentMutation'
 import { parseHtmlToContent } from '@/utilities/parseHtmlToBlocks'
 
@@ -15,6 +20,8 @@ describe('agent MCP mutation (Postgres)', () => {
   let editorID: number
   let userID: number
   const lockIDs: number[] = []
+  const mediaIDs: number[] = []
+  const pageIDs: number[] = []
   const postIDs: number[] = []
 
   beforeAll(async () => {
@@ -78,6 +85,22 @@ describe('agent MCP mutation (Postgres)', () => {
           id,
           overrideAccess: true,
         })
+        .catch(() => undefined)
+    }
+    for (const id of pageIDs) {
+      await payload
+        .delete({
+          collection: 'pages',
+          context: { disableRevalidate: true },
+          id,
+          overrideAccess: true,
+          trash: true,
+        })
+        .catch(() => undefined)
+    }
+    for (const id of mediaIDs) {
+      await payload
+        .delete({ collection: 'media', id, overrideAccess: true, trash: true })
         .catch(() => undefined)
     }
     if (userID !== undefined) {
@@ -368,6 +391,260 @@ describe('agent MCP mutation (Postgres)', () => {
         collection: 'posts',
         expectedUpdatedAt: latestDraft.updatedAt,
         id,
+        locale: 'en',
+        req,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+  }, 600_000)
+
+  it('trashes and restores only unreferenced Media', async () => {
+    const suffix = randomUUID().slice(0, 8)
+    const upload = async (label: string) => {
+      const media = await uploadMedia({
+        alt: `${label} agent media`,
+        base64:
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+        filename: `agent-media-${label}-${suffix}.png`,
+        locale: 'en',
+        mimeType: 'image/png',
+        req,
+      })
+      mediaIDs.push(media.id as number)
+      return media
+    }
+    const inlineUpload = (mediaID: number | string) => ({
+      root: {
+        children: [
+          {
+            fields: {},
+            format: '',
+            id: randomUUID(),
+            relationTo: 'media',
+            type: 'upload',
+            value: mediaID,
+            version: 3,
+          },
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    })
+
+    const directMedia = await upload('direct-reference')
+    const richTextMedia = await upload('rich-text-reference')
+    const referencedPost = await payload.create({
+      collection: 'posts',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        content: {
+          root: {
+            children: [
+              {
+                fields: {
+                  blockType: 'mediaBlock',
+                  id: randomUUID(),
+                  media: richTextMedia.id,
+                },
+                type: 'block',
+                version: 2,
+              },
+            ],
+            direction: 'ltr',
+            format: '',
+            indent: 0,
+            type: 'root',
+            version: 1,
+          },
+        },
+        heroImage: directMedia.id,
+        intro: parseHtmlToContent('<p>Published Media reference introduction.</p>'),
+        meta: {
+          description: 'A published Post that protects its referenced Media.',
+          title: 'Referenced Media guard',
+        },
+        slug: `referenced-media-${suffix}`,
+        source: 'manual',
+        title: 'Referenced Media guard',
+      } as never,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    postIDs.push(referencedPost.id)
+    await payload.update({
+      collection: 'posts',
+      context: { disableRevalidate: true },
+      data: { _status: 'published' },
+      depth: 0,
+      id: referencedPost.id,
+      locale: 'en',
+      overrideAccess: true,
+      publishSpecificLocale: 'en',
+    })
+
+    for (const media of [directMedia, richTextMedia]) {
+      await expect(
+        setContentTrashState({
+          action: 'trash',
+          collection: 'media',
+          expectedUpdatedAt: media.updatedAt as string,
+          id: media.id,
+          locale: 'en',
+          req,
+        }),
+      ).rejects.toMatchObject({ status: 409 })
+    }
+
+    const bodyMedia = await upload('legal-body-reference')
+    const summaryMedia = await upload('legal-summary-reference')
+    const pairMedia = await upload('legal-pair-reference')
+    const legalPage = await payload.create({
+      collection: 'pages',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        layout: [
+          {
+            blockType: 'legalDoc',
+            sections: [
+              {
+                content: [
+                  {
+                    body: inlineUpload(bodyMedia.id),
+                    type: 'clause',
+                  },
+                  {
+                    pairRows: [{ left: 'Protected image', right: inlineUpload(pairMedia.id) }],
+                    type: 'keyvalue',
+                  },
+                ],
+                title: 'Media safety',
+              },
+            ],
+            showSummary: true,
+            summaryItems: [{ text: inlineUpload(summaryMedia.id) }],
+            title: 'Media safety policy',
+          },
+        ],
+        slug: `inline-media-${suffix}`,
+        title: 'Inline Media reference guard',
+      } as never,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    pageIDs.push(legalPage.id)
+    await payload.update({
+      collection: 'pages',
+      context: { disableRevalidate: true },
+      data: { _status: 'published' },
+      depth: 0,
+      id: legalPage.id,
+      locale: 'en',
+      overrideAccess: true,
+      publishSpecificLocale: 'en',
+    })
+    for (const media of [bodyMedia, summaryMedia, pairMedia]) {
+      await expect(
+        setContentTrashState({
+          action: 'trash',
+          collection: 'media',
+          expectedUpdatedAt: media.updatedAt as string,
+          id: media.id,
+          locale: 'en',
+          req,
+        }),
+      ).rejects.toMatchObject({ status: 409 })
+    }
+
+    const unusedMedia = await upload('unused')
+    const mediaLock = await payload.create({
+      collection: 'payload-locked-documents',
+      data: {
+        document: { relationTo: 'media', value: unusedMedia.id as number },
+        user: { relationTo: 'users', value: userID },
+      },
+      overrideAccess: true,
+    })
+    lockIDs.push(mediaLock.id)
+    const trashed = await setContentTrashState({
+      action: 'trash',
+      collection: 'media',
+      expectedUpdatedAt: unusedMedia.updatedAt as string,
+      id: unusedMedia.id,
+      locale: 'en',
+      req,
+    })
+    const inTrash = await payload.findByID({
+      collection: 'media',
+      id: unusedMedia.id,
+      locale: 'en',
+      overrideAccess: true,
+      trash: true,
+    })
+    expect(inTrash.deletedAt).toEqual(expect.any(String))
+
+    const postInput = {
+      contentHtml: '<p>Trashed Media must not be assignable.</p>',
+      heroImageID: unusedMedia.id,
+      introHtml: '<p>Media assignment safety test.</p>',
+      metaDescription: 'Verifies that trashed Media cannot be assigned to agent-created Posts.',
+      metaTitle: 'Trashed Media assignment guard',
+      slug: `trashed-media-create-${suffix}`,
+      title: 'Trashed Media assignment guard',
+    }
+    await expect(createPostDraft({ input: postInput, locale: 'en', req })).rejects.toMatchObject({
+      status: 409,
+    })
+
+    const updateTarget = await createPostDraft({
+      input: {
+        ...postInput,
+        heroImageID: undefined,
+        slug: `trashed-media-update-${suffix}`,
+      },
+      locale: 'en',
+      req,
+    })
+    postIDs.push(updateTarget.id as number)
+    await expect(
+      updatePostDraft({
+        expectedUpdatedAt: updateTarget.updatedAt as string,
+        id: updateTarget.id,
+        locale: 'en',
+        patch: { heroImageID: unusedMedia.id },
+        req,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+
+    const restored = await setContentTrashState({
+      action: 'restore',
+      collection: 'media',
+      expectedUpdatedAt: trashed.updatedAt as string,
+      id: unusedMedia.id,
+      locale: 'en',
+      req,
+    })
+    const active = await payload.findByID({
+      collection: 'media',
+      id: unusedMedia.id,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    expect(active).toMatchObject({ deletedAt: null, filename: unusedMedia.filename })
+
+    await expect(
+      setContentTrashState({
+        action: 'restore',
+        collection: 'media',
+        expectedUpdatedAt: restored.updatedAt as string,
+        id: unusedMedia.id,
         locale: 'en',
         req,
       }),

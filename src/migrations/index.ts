@@ -150,6 +150,7 @@ import * as migration_20260827_102140_payload_agent_mcp_source from './20260827_
 import * as migration_20260827_102410_payload_agent_mcp_bulk_tools from './20260827_102410_payload_agent_mcp_bulk_tools'
 import * as migration_20260827_175000_payload_agent_mcp_fk_restrict from './20260827_175000_payload_agent_mcp_fk_restrict'
 import * as migration_20260831_120000_add_editor_role from './20260831_120000_add_editor_role'
+import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility'
 
 export const migrations = [
   {
@@ -911,5 +912,10 @@ export const migrations = [
     up: migration_20260831_120000_add_editor_role.up,
     down: migration_20260831_120000_add_editor_role.down,
     name: '20260831_120000_add_editor_role',
+  },
+  {
+    up: migration_20260901_120000_agent_media_trash_eligibility.up,
+    down: migration_20260901_120000_agent_media_trash_eligibility.down,
+    name: '20260901_120000_agent_media_trash_eligibility',
   },
 ]
