@@ -14,6 +14,8 @@ import { capturePagePublication, revalidateDelete, revalidatePage } from './hook
 import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 
 import { costomSlugField } from '@/fields/slug'
+import { chromeFields } from '@/fields/contentDocument'
+import { rejectHubSlugCollision } from './hooks/rejectHubSlugCollision'
 import { FormulaCardBlock } from '@/blocks/landingBlocks/FormulaCard/config'
 import { ResultsCardBlock } from '@/blocks/landingBlocks/ResultsCard/config'
 import { ReviewCardBlock } from '@/blocks/landingBlocks/ReviewCard/config'
@@ -159,48 +161,7 @@ export const Pages: CollectionConfig<'pages'> = {
       localized: true,
     },
 
-    {
-      name: 'header',
-      label: 'Header',
-      type: 'relationship',
-      relationTo: 'headers',
-      required: false,
-      admin: {
-        description: 'Leave blank to use the site default header.',
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'hideHeader',
-      label: 'Hide Header',
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        description: 'Do not render any header on this page.',
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'footer',
-      label: 'Footer',
-      type: 'relationship',
-      relationTo: 'footers',
-      required: false,
-      admin: {
-        description: 'Leave blank to use the site default footer.',
-        position: 'sidebar',
-      },
-    },
-    {
-      name: 'hideFooter',
-      label: 'Hide Footer',
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        description: 'Do not render any footer on this page.',
-        position: 'sidebar',
-      },
-    },
+    ...chromeFields({ noun: 'page' }),
 
     {
       type: 'tabs',
@@ -428,6 +389,9 @@ export const Pages: CollectionConfig<'pages'> = {
   hooks: {
     beforeOperation: [capturePagePublication],
     beforeValidate: [
+      // First, so a colliding slug is refused before any of the meta defaulting
+      // below runs and before the document is written.
+      rejectHubSlugCollision,
       ({ data }) => {
         if (!data) return data
 

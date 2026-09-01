@@ -20,6 +20,34 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
        <loc>${site}/${locale}/posts-sitemap.xml</loc>
        <lastmod>${lastmod}</lastmod>
      </sitemap>`,
+    // The hubs are not Page documents — they render through the Pages route but
+    // live in their own collection, so `pages-sitemap` cannot see them.
+    `<sitemap>
+       <loc>${site}/${locale}/hubs-sitemap.xml</loc>
+       <lastmod>${lastmod}</lastmod>
+     </sitemap>`,
+    // One child per content type, not one big file. At 408 scientific articles
+    // and 854 lexicon terms a single sitemap would be slow to regenerate on every
+    // publish, and a crawler would re-fetch all of it because one term changed.
+    `<sitemap>
+       <loc>${site}/${locale}/pillars-sitemap.xml</loc>
+       <lastmod>${lastmod}</lastmod>
+     </sitemap>`,
+    `<sitemap>
+       <loc>${site}/${locale}/research-sitemap.xml</loc>
+       <lastmod>${lastmod}</lastmod>
+     </sitemap>`,
+    // Terms and their browse pages are listed separately: ~13 category pages
+    // against 854 terms, and only one of the two changes when a term is
+    // published.
+    `<sitemap>
+       <loc>${site}/${locale}/lexicon-sitemap.xml</loc>
+       <lastmod>${lastmod}</lastmod>
+     </sitemap>`,
+    `<sitemap>
+       <loc>${site}/${locale}/lexicon-categories-sitemap.xml</loc>
+       <lastmod>${lastmod}</lastmod>
+     </sitemap>`,
   ].join('')
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

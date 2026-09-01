@@ -28,6 +28,14 @@ type Props = {
   instagramUrl?: string | null
   exploreLinks?: NavLink[]
   getStartedLinks?: NavLink[]
+  /** Journal + the three hubs, already locale-prefixed. Generated, not CMS copy. */
+  contentLinks?: NavLink[]
+  /**
+   * Column headings. These were hardcoded English strings — a German visitor got
+   * "Explore" and "Get started" — which only became untenable once a third,
+   * localized column sat beside them.
+   */
+  headings?: { explore: string; getStarted: string; content: string }
   defaultTheme?: Theme
   defaultLinkColor?: string | null
   variants?: FooterVariant[]
@@ -46,6 +54,8 @@ export function FooterClient({
   instagramUrl,
   exploreLinks = [],
   getStartedLinks = [],
+  contentLinks = [],
+  headings = { explore: 'Explore', getStarted: 'Get started', content: 'Content' },
   defaultTheme = 'dark',
   defaultLinkColor,
   variants = [],
@@ -145,7 +155,7 @@ export function FooterClient({
         .nbf { background: ${isDark ? '#0B1E33' : '#ffffff'}; color: ${isDark ? '#fff' : '#0B1E33'}; font-family: 'Inter', system-ui, sans-serif; }
         .nbf * { box-sizing: border-box; }
         .nbf-in { max-width: 1200px; margin: 0 auto; padding: 72px 32px 36px; }
-        .nbf-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 48px; padding-bottom: 42px; border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(18,49,77,0.1)'}; }
+        .nbf-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 42px; border-bottom: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(18,49,77,0.1)'}; }
         .nbf-brand { max-width: 390px; }
         .nbf-logo { height: 30px; width: auto; display: block; }
         .nbf-tag { font-size: 14px; line-height: 1.6; color: ${isDark ? 'rgba(255,255,255,0.62)' : 'rgba(18,49,77,0.62)'}; margin: 18px 0 22px; }
@@ -159,9 +169,19 @@ export function FooterClient({
         .nbf-legal a, .nbf-soc a { font-size: 13px; color: ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(18,49,77,0.5)'}; text-decoration: none; transition: color 0.15s; }
         .nbf-legal a:hover, .nbf-soc a:hover { color: ${isDark ? '#fff' : '#0B1E33'}; }
         .nbf-disc { font-size: 11.5px; line-height: 1.6; color: ${isDark ? 'rgba(255,255,255,0.34)' : 'rgba(18,49,77,0.34)'}; margin: 24px 0 0; max-width: 820px; }
-        @media (max-width: 820px) {
-          .nbf-top { grid-template-columns: 1fr 1fr; }
+        /* 1024px in German is the stated worst case for the nav work, and the
+           footer inherits it: at four columns "Wissenschaftliche Artikel" has
+           ~180px. Tightening the gap first buys the room without dropping a
+           column. */
+        @media (max-width: 1100px) {
+          .nbf-top { gap: 32px; }
+        }
+        @media (max-width: 980px) {
+          .nbf-top { grid-template-columns: repeat(3, 1fr); }
           .nbf-brand { grid-column: 1 / -1; max-width: none; }
+        }
+        @media (max-width: 700px) {
+          .nbf-top { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 560px) {
           .nbf-top { grid-template-columns: 1fr; gap: 34px; }
@@ -184,10 +204,25 @@ export function FooterClient({
               {subnote && <p className="nbf-subnote">{subnote}</p>}
             </div>
 
+            {/*
+              Content column — Journal and the three hubs (SEO-007 §11.0).
+              Generated from the Hubs collection, so it is never stale and never
+              needs an editor to retype a localized slug. `contentLinks` arrives
+              already locale-prefixed; `localizeHref` leaves such paths alone.
+            */}
+            {contentLinks.length > 0 && (
+              <nav className="nbf-col" aria-label={headings.content}>
+                <h4>{headings.content}</h4>
+                {contentLinks.map((link, i) => (
+                  <a key={i} href={localizeHref(link.url)}>{link.label}</a>
+                ))}
+              </nav>
+            )}
+
             {/* Explore column */}
             {exploreLinks.length > 0 && (
-              <nav className="nbf-col">
-                <h4>Explore</h4>
+              <nav className="nbf-col" aria-label={headings.explore}>
+                <h4>{headings.explore}</h4>
                 {exploreLinks.map((link, i) => (
                   <a key={i} href={localizeHref(link.url)}>{link.label}</a>
                 ))}
@@ -196,8 +231,8 @@ export function FooterClient({
 
             {/* Get Started column */}
             {getStartedLinks.length > 0 && (
-              <nav className="nbf-col">
-                <h4>Get started</h4>
+              <nav className="nbf-col" aria-label={headings.getStarted}>
+                <h4>{headings.getStarted}</h4>
                 {getStartedLinks.map((link, i) => (
                   <a key={i} href={localizeHref(link.url)}>{link.label}</a>
                 ))}

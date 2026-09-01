@@ -43,6 +43,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
           slug: true,
           title: true,
           updatedAt: true,
+          noindex: true,
+          primaryCategory: true,
           meta: {
             seoOverrides: true,
           },
@@ -55,14 +57,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
         results.docs
           ?.filter((post) => {
             if (!post?.slug || typeof post.title !== 'string' || !post.title.trim()) return false
+            // Blanket exclusion set on the post. Per-locale exclusion is
+            // handled by the hreflang overrides check below.
+            if (post.noindex) return false
             const overrides = readHreflangOverrides(post.meta?.seoOverrides)
             return !(overrides?.enabled && overrides.excludedLocales?.includes(locale))
           })
           .map((post) => ({
-            loc: withLocale(SITE_URL, locale, `/posts/${post.slug}`),
+            loc: withLocale(SITE_URL, locale, `/journal/${post.slug}`),
             lastmod: post.updatedAt || dateFallback,
           })) || []
 
+      // No category archives here. Brief 1 §4 asked for a crawlable URL per
+      // category and we shipped it; TICKET-SEO-007 §10 reversed that, because
+      // `/journal/category/gut-health` competes with `/en/microbiome/gut-health`
+      // — a pillar page built specifically to rank for that term. The chips are
+      // client-side filters again, so there is no category URL to list.
       return sitemap
     },
     ['posts-sitemap', locale],

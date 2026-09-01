@@ -132,6 +132,34 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 308)
   }
 
+  // The Journal has moved twice: /posts → /library (the original content brief)
+  // → /journal (TICKET-SEO-007 §8, which treats the name/canonical mismatch as
+  // a launch blocker and requires that no reference to /library survives).
+  // Both old bases redirect straight to /journal — one hop each, never a chain.
+  //
+  // Handled here rather than in next.config.js `redirects` because middleware
+  // runs first, so the rule cannot be shadowed by the locale-redirect logic
+  // further down. Matches the existing /{locale}/cms and /{locale}/login
+  // compatibility branches above.
+  //
+  // Catches both `/{locale}/posts/...` (one hop) and the locale-less
+  // `/posts/...` (redirects to `/journal/...`, which the locale branch below
+  // then sends on to `/{locale}/journal/...`).
+  //
+  // Note `/{locale}/posts-sitemap.xml` deliberately does NOT match — the
+  // trailing group requires a `/`, and that sitemap URL stays as-is.
+  const legacyJournalMatch = pathname.match(
+    new RegExp(`^(/(?:${localePattern}))?/(?:posts|library)(/.*)?$`),
+  )
+  if (legacyJournalMatch) {
+    const localePrefix = legacyJournalMatch[1] || ''
+    const rest = legacyJournalMatch[2] || ''
+    const url = req.nextUrl.clone()
+    url.pathname = `${localePrefix}/journal${rest}`
+    url.search = search
+    return NextResponse.redirect(url, 301)
+  }
+
   if (pathname === '/robots.txt' || pathname === '/sitemap.xml') {
     return NextResponse.next()
   }
@@ -140,8 +168,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const isLocalizedSitemap =
-    pathname.endsWith('/pages-sitemap.xml') || pathname.endsWith('/posts-sitemap.xml')
+  // Per-locale sitemap children skip the extension bypass below, so they still
+  // get locale normalization. Matched by suffix rather than named one by one:
+  // the list was `pages` and `posts`, and adding `hubs` and `pillars` meant two
+  // routes silently taking a different path through the middleware than the two
+  // beside them. The lexicon and scientific-article sitemaps are still to come.
+  const isLocalizedSitemap = /\/[a-z-]+-sitemap\.xml$/.test(pathname)
 
   if (pathname.includes('.') && !isLocalizedSitemap) {
     return NextResponse.next()

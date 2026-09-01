@@ -215,6 +215,11 @@ describe('international SEO locale config', () => {
   it('builds localized home, page, and post paths without path indexes', () => {
     expect(buildLocalizedDocumentPath('de', 'startseite', 'home')).toBe('/de')
     expect(buildLocalizedDocumentPath('de', 'unsere-plane', 'page')).toBe('/de/unsere-plane')
-    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/posts/artikel')
+    // Posts moved from /posts to /journal in Phase 2 of the Journal integration
+    // (JOURNAL_INTEGRATION_PLAN.md); the old paths 301 from middleware.
+    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/journal/artikel')
+    // The language switcher builds these, so a stale prefix here would send every
+    // cross-locale click on an article through a redirect.
+    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).not.toContain('/posts/')
   })
 })

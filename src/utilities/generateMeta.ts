@@ -4,6 +4,25 @@ import type { Media, Page, Post, Config } from '../payload-types'
 import { mergeOpenGraph } from './mergeOpenGraph'
 import { getServerSideURL } from './getURL'
 
+/**
+ * Best Open Graph image for a document: the explicit meta image if the editor
+ * set one, otherwise the cover image, otherwise the site default.
+ *
+ * Previously only `meta.image` was consulted, so an article with a cover but no
+ * separate meta image fell all the way through to the generic site OG card —
+ * which is the common case, since the brief has the cover image driving the OG
+ * image. Pages have no `heroImage`, hence the property check rather than a cast.
+ */
+const resolveOgImageSource = (doc: Partial<Page> | Partial<Post> | null) => {
+  const metaImage = doc?.meta?.image
+  if (metaImage && typeof metaImage === 'object') return metaImage
+
+  const hero = doc && 'heroImage' in doc ? (doc as Partial<Post>).heroImage : undefined
+  if (hero && typeof hero === 'object') return hero
+
+  return undefined
+}
+
 const getImageURL = (image?: Media | Config['db']['defaultIDType'] | null) => {
   const serverUrl = getServerSideURL()
 
@@ -43,7 +62,7 @@ export const generateMeta = async (args: {
 }): Promise<Metadata> => {
   const { doc, locale } = args
 
-  const ogImage = getImageURL(doc?.meta?.image)
+  const ogImage = getImageURL(resolveOgImageSource(doc ?? null))
   const canonical = buildCanonicalURL(doc, locale)
 
   const title = doc?.meta?.title ? doc.meta.title + ' | NB1' : 'NB1'

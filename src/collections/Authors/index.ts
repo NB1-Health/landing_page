@@ -52,7 +52,41 @@ export const Authors: CollectionConfig<'authors'> = {
     {
       name: 'website',
       type: 'text',
-      admin: { description: 'Public profile URL (optional)' },
+      admin: {
+        description:
+          'Legacy single profile URL. Prefer Profile links below; this is still read as a fallback.',
+      },
+    },
+    {
+      /**
+       * Three profile links, per the designer brief §4: the author box is
+       * designed once for *an* author with "name, role, credential, affiliation,
+       * photo, three profile links".
+       *
+       * An array rather than three named fields, because the brief does not say
+       * WHICH three — in practice ORCID, Google Scholar, LinkedIn or an
+       * institutional page, and which three differ per author. Named fields would
+       * force every author into the same set and leave two empty on most records.
+       *
+       * `label` is not localized: "ORCID" and "LinkedIn" are proper nouns.
+       */
+      name: 'profileLinks',
+      type: 'array',
+      maxRows: 3,
+      labels: { singular: 'Profile link', plural: 'Profile links' },
+      admin: {
+        description:
+          'Up to three. e.g. ORCID, Google Scholar, an institutional page. The author box renders whichever exist.',
+      },
+      fields: [
+        {
+          name: 'label',
+          type: 'text',
+          required: true,
+          admin: { description: 'e.g. ORCID, Google Scholar, LinkedIn' },
+        },
+        { name: 'url', type: 'text', required: true },
+      ],
     },
 
     // Optional: organization/role

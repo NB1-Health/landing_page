@@ -34,7 +34,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // This repo is npm-only (see `engines` and package-lock.json); `pnpm dev`
+    // only ever worked because reuseExistingServer masked it.
+    command: 'npm run dev',
     reuseExistingServer: true,
     url: 'http://localhost:3000',
   },

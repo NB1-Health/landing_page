@@ -29,6 +29,9 @@ import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailabi
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
 
 import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
+import { HubPage } from '@/components/HubPage'
+import { buildHubMetadata } from '@/utilities/hubMetadata'
+import { getCachedHubBySlug } from '@/utilities/hubQueries'
 const PAGE_RENDER_POPULATE = {
   headers: { name: true },
   footers: { name: true },
@@ -58,6 +61,17 @@ export default async function Page({ params: paramsPromise }: Args) {
   const url =
     `/${locale}/${decodedSlug === 'home-page' ? '' : decodedSlug}`.replace(/\/+$/, '') ||
     `/${locale}`
+
+  // A content hub (Microbiome / Research / Lexicon) shares this route, because
+  // its URL segment is a localized field and Next allows only one dynamic
+  // parameter name per depth — `[locale]/[hub]` beside `[locale]/[slug]` is a
+  // build error. The lookup is cached and tagged, including the null result, so
+  // asking on every page request is cheap. Hubs win over Pages: a slug
+  // collision is refused at save time by `rejectPageSlugCollision`.
+  if (rawSlug) {
+    const hub = await getCachedHubBySlug(locale, decodedSlug)()
+    if (hub) return <HubPage hub={hub} locale={locale} />
+  }
 
   // Home route (/{locale}): always look up the home page by its canonical en slug so
   // it's found even when a locale-specific slug has been set for it in the CMS.
@@ -173,6 +187,11 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const { slug: rawSlug, locale: localeParam } = await paramsPromise
   const locale: AppLocale = isAppLocale(localeParam) ? localeParam : 'en'
   const decodedSlug = decodeURIComponent(rawSlug ?? 'home-page')
+
+  if (rawSlug) {
+    const hub = await getCachedHubBySlug(locale, decodedSlug)()
+    if (hub) return buildHubMetadata(hub, locale)
+  }
 
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)

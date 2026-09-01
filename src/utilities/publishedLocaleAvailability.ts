@@ -2,7 +2,12 @@ import type { Payload, PayloadRequest } from 'payload'
 
 import { appLocales, defaultLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 
-export type PublicationCollection = 'pages' | 'posts'
+export type PublicationCollection =
+  | 'pages'
+  | 'posts'
+  | 'pillars'
+  | 'scientific-articles'
+  | 'lexicon-terms'
 export type PublishedLocaleSlugs = Partial<Record<AppLocale, string>>
 
 type PublicationDocument = {
@@ -38,12 +43,43 @@ function readExactLocalizedValue(value: unknown, locale: AppLocale): unknown {
   return locale === defaultLocale ? value : undefined
 }
 
+/**
+ * Whether the collection's `slug` is a localized field.
+ *
+ * A localized slug arrives from a `locale: 'all'` read as a map keyed by locale;
+ * a non-localized one arrives as a plain string that is the same in every
+ * market. Reading the wrong shape does not throw — it silently returns
+ * `undefined` for every locale, which reads as "published nowhere" and quietly
+ * disables revalidation.
+ *
+ * Every content collection is localized now. The map is kept rather than
+ * collapsed because it is the thing that has to stay in step with the field
+ * configs, and a collection added with a non-localized slug should have to say so
+ * here rather than inherit an assumption.
+ */
+const HAS_LOCALIZED_SLUG: Record<PublicationCollection, boolean> = {
+  pages: true,
+  pillars: true,
+  // Flipped when `Posts.slug` became localized, alongside migration
+  // `20260825_135859`. The two must move together: read a localized slug as a
+  // scalar and every locale gets the English one; read a scalar as localized and
+  // every locale gets `undefined`, which reads as "published nowhere" and
+  // silently disables revalidation.
+  posts: true,
+  // Both declare `costomSlugField({ ..., localized: true })`. Verified against
+  // the field call rather than assumed from the pattern — this map going out of
+  // step with a collection config is the exact failure the comment above
+  // describes, and it fails silently.
+  'scientific-articles': true,
+  'lexicon-terms': true,
+}
+
 function readExactSlug(
   collection: PublicationCollection,
   value: unknown,
   locale: AppLocale,
 ): unknown {
-  return collection === 'pages' ? readExactLocalizedValue(value, locale) : value
+  return HAS_LOCALIZED_SLUG[collection] ? readExactLocalizedValue(value, locale) : value
 }
 
 export function isPublishedForActiveLocale(status: unknown, locale: unknown): boolean {

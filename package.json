@@ -13,6 +13,12 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "db:sync-stg": "bash scripts/sync-from-stg.sh",
+    "db:check-drift": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/check-schema-drift.ts",
+    "db:resync-snapshot": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/resync-snapshot.ts",
+    "seed:journal": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-journal.ts",
+    "seed:hubs": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-hubs.ts",
+    "seed:pillars": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-pillars.ts",
+    "seed:lexicon": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-lexicon.ts",
     "deploy:guard": "node scripts/check-production-deploy-safety.mjs",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
@@ -30,7 +36,10 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "test": "npm run test:int && npm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" npx playwright test --config=playwright.config.ts",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "check:seo": "node scripts/check-journal-seo.mjs",
+    "check:locales": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/check-locales.ts",
+    "dump:jsonld": "node scripts/dump-jsonld.mjs"
   },
   "dependencies": {
     "@fontsource/instrument-sans": "^5.2.8",

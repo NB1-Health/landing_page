@@ -1,12 +1,24 @@
 import React from 'react'
 import type { DataTableBlock as DataTableBlockProps } from '@/payload-types'
 import { getDictionary } from '@/i18n/getDictionary'
-import '@/styles/article-template.css'
 
 type Props = DataTableBlockProps & {
   locale?: string
 }
 
+/**
+ * Tabular content inside an article body.
+ *
+ * "Table" is on the brief's allowed block list and the approved template already
+ * styles `table`/`th`/`td`, so this renders a plain table and lets `.jr-prose`
+ * style it — rather than `.art-table` from article-template.css, which is a
+ * different visual system.
+ *
+ * The comparison highlight and glossary term column survive as small `jr-`
+ * modifiers reusing the existing teal tint, instead of introducing new accents.
+ * The wrapper scrolls horizontally: the prose column is 680px and a comparison
+ * table is routinely wider, so without it the whole page scrolls sideways.
+ */
 export const DataTableBlockComponent: React.FC<Props> = ({
   sectionTitle,
   variant,
@@ -33,11 +45,11 @@ export const DataTableBlockComponent: React.FC<Props> = ({
     variant === 'comparison' && Number.isInteger(highlightColumn) ? Number(highlightColumn) : null
 
   return (
-    <section className="art-card">
-      {sectionTitle && <h2 className="art-heading">{sectionTitle}</h2>}
+    <>
+      {sectionTitle ? <h3>{sectionTitle}</h3> : null}
 
-      <div className="art-table-wrap">
-        <table className="art-table" style={{ minWidth: variant === 'comparison' ? '760px' : '520px' }}>
+      <div className="jr-table-wrap">
+        <table>
           <thead>
             <tr>
               {normalizedHeaders.map((header, index) => {
@@ -45,7 +57,7 @@ export const DataTableBlockComponent: React.FC<Props> = ({
                   variant === 'glossary' || (variant === 'comparison' && highlightIndex === index)
 
                 return (
-                  <th key={index} className={isAccent ? 'art-th--accent' : undefined}>
+                  <th className={isAccent ? 'jr-cell--accent' : undefined} key={index}>
                     {header}
                   </th>
                 )
@@ -58,19 +70,12 @@ export const DataTableBlockComponent: React.FC<Props> = ({
               <tr key={rowIndex}>
                 {(row?.cells || []).map((cell, cellIndex) => {
                   const isAccent = variant === 'comparison' && highlightIndex === cellIndex
-                  const isBold = variant === 'glossary' && cellIndex === 0
+                  // In a glossary the first column is the term being defined.
+                  const isTerm = variant === 'glossary' && cellIndex === 0
 
                   return (
-                    <td
-                      key={cellIndex}
-                      className={[
-                        isAccent ? 'art-td--accent' : '',
-                        isBold ? 'art-td--bold' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ') || undefined}
-                    >
-                      {cell?.value}
+                    <td className={isAccent ? 'jr-cell--accent' : undefined} key={cellIndex}>
+                      {isTerm ? <b>{cell?.value}</b> : cell?.value}
                     </td>
                   )
                 })}
@@ -80,7 +85,7 @@ export const DataTableBlockComponent: React.FC<Props> = ({
         </table>
       </div>
 
-      {caption && <p className="art-caption">{caption}</p>}
-    </section>
+      {caption ? <p className="jr-table-caption">{caption}</p> : null}
+    </>
   )
 }

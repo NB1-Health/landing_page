@@ -68,8 +68,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
       ])
       const homePageID = englishHome.docs[0]?.id
 
+      // The Journal index is a route, not a Page document, so nothing in the
+      // query below can produce it. Hardcoded here because it exists in every
+      // locale unconditionally.
+      //
+      // This said `/posts` until now — a leftover the `/posts` → `/library` →
+      // `/journal` renames both missed. That URL 301s, and a sitemap entry that
+      // redirects is reported as "Page with redirect" and not indexed, so the
+      // Journal index has been absent from the sitemap the whole time.
       const defaultSitemap = [
-        { loc: withLocale(SITE_URL, locale, '/posts'), lastmod: dateFallback },
+        { loc: withLocale(SITE_URL, locale, '/journal'), lastmod: dateFallback },
       ]
 
       const sitemap =

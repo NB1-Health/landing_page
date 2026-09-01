@@ -1,52 +1,77 @@
 {
   "en": {
-    "hreflangCodes": ["en"],
+    "hreflangCodes": [
+      "en"
+    ],
+    "lexiconBrowseSegment": "topics",
     "htmlLang": "en",
     "label": "English (EU / Rest of World)",
     "urlPrefix": "/en"
   },
   "de": {
-    "hreflangCodes": ["de-DE", "de-AT"],
+    "hreflangCodes": [
+      "de-DE",
+      "de-AT"
+    ],
+    "lexiconBrowseSegment": "themen",
     "htmlLang": "de",
     "label": "German (Germany & Austria)",
     "urlPrefix": "/de"
   },
   "fr": {
-    "hreflangCodes": ["fr-FR"],
+    "hreflangCodes": [
+      "fr-FR"
+    ],
+    "lexiconBrowseSegment": "sujets",
     "htmlLang": "fr",
     "label": "French (France)",
     "urlPrefix": "/fr"
   },
   "nl": {
-    "hreflangCodes": ["nl-NL"],
+    "hreflangCodes": [
+      "nl-NL"
+    ],
+    "lexiconBrowseSegment": "onderwerpen",
     "htmlLang": "nl",
     "label": "Dutch (Netherlands)",
     "urlPrefix": "/nl"
   },
   "ch": {
     "fallbackLocale": "de",
-    "hreflangCodes": ["de-CH"],
+    "hreflangCodes": [
+      "de-CH"
+    ],
+    "lexiconBrowseSegment": "themen",
     "htmlLang": "de",
     "label": "German (Switzerland)",
     "urlPrefix": "/ch"
   },
   "be": {
     "fallbackLocale": "nl",
-    "hreflangCodes": ["nl-BE"],
+    "hreflangCodes": [
+      "nl-BE"
+    ],
+    "lexiconBrowseSegment": "onderwerpen",
     "htmlLang": "nl",
     "label": "Dutch (Belgium)",
     "urlPrefix": "/be"
   },
   "uk": {
     "fallbackLocale": "en",
-    "hreflangCodes": ["en-GB"],
+    "hreflangCodes": [
+      "en-GB"
+    ],
+    "lexiconBrowseSegment": "topics",
     "htmlLang": "en",
     "label": "English (United Kingdom)",
     "urlPrefix": "/uk"
   },
   "uae": {
     "fallbackLocale": "en",
-    "hreflangCodes": ["en-AE"],
+    "hreflangCodes": [
+      "en-AE"
+    ],
+    "lexiconBrowseSegment": "topics",
     "htmlLang": "en",
     "label": "English (UAE)",
     "urlPrefix": "/uae"

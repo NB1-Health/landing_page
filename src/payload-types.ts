@@ -76,6 +76,14 @@ export interface Config {
     authors: Author;
     headers: Header;
     footers: Footer;
+    hubs: Hub;
+    pillars: Pillar;
+    disclaimers: Disclaimer;
+    'conversion-blocks': ConversionBlock;
+    'article-categories': ArticleCategory;
+    'scientific-articles': ScientificArticle;
+    'lexicon-categories': LexiconCategory;
+    'lexicon-terms': LexiconTerm;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -102,6 +110,14 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     headers: HeadersSelect<false> | HeadersSelect<true>;
     footers: FootersSelect<false> | FootersSelect<true>;
+    hubs: HubsSelect<false> | HubsSelect<true>;
+    pillars: PillarsSelect<false> | PillarsSelect<true>;
+    disclaimers: DisclaimersSelect<false> | DisclaimersSelect<true>;
+    'conversion-blocks': ConversionBlocksSelect<false> | ConversionBlocksSelect<true>;
+    'article-categories': ArticleCategoriesSelect<false> | ArticleCategoriesSelect<true>;
+    'scientific-articles': ScientificArticlesSelect<false> | ScientificArticlesSelect<true>;
+    'lexicon-categories': LexiconCategoriesSelect<false> | LexiconCategoriesSelect<true>;
+    'lexicon-terms': LexiconTermsSelect<false> | LexiconTermsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -650,8 +666,18 @@ export interface Post {
    * Max 70 characters (recommended for SEO)
    */
   title: string;
+  /**
+   * One or two sentences under the title that expand on it and earn the click. May differ from the excerpt.
+   */
   subtitle?: string | null;
+  /**
+   * Cover image. Drives the Journal card thumbnail, the article hero and the Open Graph image. Alt text lives on the media item itself. Recommended 1600x800 (2:1); the card crops to 16:10.
+   */
   heroImage?: (number | null) | Media;
+  /**
+   * Plain summary with the primary keyword, max 160 characters. Shown on the Journal card, and used for the meta description when that is left empty.
+   */
+  excerpt?: string | null;
   /**
    * Write 2–3 introductory paragraphs. This appears before all content blocks.
    */
@@ -685,6 +711,22 @@ export interface Post {
     };
     [k: string]: unknown;
   };
+  /**
+   * Rendered as the numbered "References" list at the foot of the article. Cite primary sources and link out where possible.
+   */
+  references?:
+    | {
+        /**
+         * Author(s). Title. Journal or source, year.
+         */
+        citation: string;
+        /**
+         * Optional URL or DOI.
+         */
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   schemaMarkup: {
     type: 'Article' | 'TechArticle' | 'FAQPage';
     /**
@@ -700,6 +742,13 @@ export interface Post {
       | null;
   };
   relatedArticles?: (number | Post)[] | null;
+  /**
+   * The single primary category. Drives the card label, the breadcrumb, the topic filter chip and article:section. Use "Categories" below for secondary topics.
+   */
+  primaryCategory?: (number | null) | Category;
+  /**
+   * Optional secondary topics, used for related-article matching.
+   */
   categories?: (number | Category)[] | null;
   meta: {
     /**
@@ -711,7 +760,7 @@ export interface Post {
      */
     image?: (number | null) | Media;
     /**
-     * SEO meta description. Max 155 characters.
+     * SEO meta description. Max 155 characters. Left empty, it is generated from the excerpt.
      */
     description: string;
     /**
@@ -735,6 +784,38 @@ export interface Post {
   focusKeyword?: string | null;
   publishedAt?: string | null;
   authors?: (number | Author)[] | null;
+  /**
+   * Optional. Renders the "Reviewed by" line in the byline, which reinforces E-E-A-T on health content. The line is hidden when this is empty.
+   */
+  reviewer?: (number | null) | Author;
+  /**
+   * Filled automatically from the word count when left empty. Type a value to override it, or clear the field to recalculate on the next save.
+   */
+  readTime?: number | null;
+  /**
+   * Shows this article in the single featured slot on the Journal index. Publishing another featured article clears this one automatically.
+   */
+  featured?: boolean | null;
+  /**
+   * Adds robots noindex and drops the article from the sitemap, while leaving it live. For thin or seasonal pages. To exclude only certain locales, use International SEO Overrides on the SEO tab instead.
+   */
+  noindex?: boolean | null;
+  /**
+   * Leave blank to use the site default header.
+   */
+  header?: (number | null) | Header;
+  /**
+   * Do not render any header on this article.
+   */
+  hideHeader?: boolean | null;
+  /**
+   * Leave blank to use the site default footer.
+   */
+  footer?: (number | null) | Footer;
+  /**
+   * Do not render any footer on this article.
+   */
+  hideFooter?: boolean | null;
   populatedAuthors?:
     | {
         id?: string | null;
@@ -798,9 +879,22 @@ export interface Author {
   bio?: string | null;
   avatar?: (number | null) | Media;
   /**
-   * Public profile URL (optional)
+   * Legacy single profile URL. Prefer Profile links below; this is still read as a fallback.
    */
   website?: string | null;
+  /**
+   * Up to three. e.g. ORCID, Google Scholar, an institutional page. The author box renders whichever exist.
+   */
+  profileLinks?:
+    | {
+        /**
+         * e.g. ORCID, Google Scholar, LinkedIn
+         */
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Example: Scientific Writer / Medical Reviewer
    */
@@ -7416,6 +7510,700 @@ export interface Product {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * The three content hubs. Their slugs are per-locale, so the same hub is /en/microbiome and /de/mikrobiom. The Journal is not here — it has its own route because its name does not change between languages.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hubs".
+ */
+export interface Hub {
+  id: number;
+  /**
+   * Stable identifier the code matches on. Never changes, and is never shown to a visitor — rename the hub with the Title field instead.
+   */
+  key: 'microbiome' | 'research' | 'lexicon';
+  /**
+   * The visible name, used as the H1, the breadcrumb rung and the nav label. Because the breadcrumb JSON-LD must match the rendered text character for character (SEO-007 §5), this one string feeds all three.
+   */
+  title: string;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug: string;
+  /**
+   * Two or three sentences under the title. The only authored prose on a hub page — everything below it is generated from the documents in the hub.
+   */
+  intro?: string | null;
+  /**
+   * Optional. Left empty, it is built from the title. Max 60 characters.
+   */
+  metaTitle?: string | null;
+  /**
+   * Optional. Left empty, the intro is used. Max 155 characters.
+   */
+  metaDescription?: string | null;
+  /**
+   * Leave blank to use the site default.
+   */
+  header?: (number | null) | Header;
+  hideHeader?: boolean | null;
+  /**
+   * Leave blank to use the site default.
+   */
+  footer?: (number | null) | Footer;
+  hideFooter?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * The 10 Microbiome explainers. Around 1,400 words each, with a comparison table and a step-by-step section.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pillars".
+ */
+export interface Pillar {
+  id: number;
+  /**
+   * Two lines on desktop, three on mobile. Real ones run 43–71 characters; German about 8% longer.
+   */
+  title: string;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug: string;
+  /**
+   * Always Microbiome. Supplies the middle URL segment and the breadcrumb rung.
+   */
+  hub: number | Hub;
+  /**
+   * One or two sentences under the title. Also used as the card summary.
+   */
+  standfirst?: string | null;
+  /**
+   * 16:8. Required before publishing.
+   */
+  heroImage?: (number | null) | Media;
+  /**
+   * Optional. Shown under the hero. Not the same as the image alt text.
+   */
+  heroCaption?: string | null;
+  /**
+   * Around 1,400 words. Section titles are H2 and drive the contents list — three heading levels, no more (designer brief, Rule 1).
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Optional, 2–5 entries. The one place an accordion is allowed — Rule 3 forbids hiding body content behind a click, and names the FAQ as the exception.
+   */
+  faq?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * 2–6 entries. Each one ends in a link.
+   */
+  references?:
+    | {
+        text: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  authors?: (number | Author)[] | null;
+  /**
+   * Optional. Renders the "Last reviewed" line; hidden entirely when empty.
+   */
+  reviewer?: (number | null) | Author;
+  /**
+   * Set when the reviewer actually re-checked the content. Not the last edit date.
+   */
+  reviewedAt?: string | null;
+  /**
+   * Optional manual picks for "Related research". Left empty, the strip fills with the newest articles.
+   */
+  relatedResearch?: (number | ScientificArticle)[] | null;
+  /**
+   * Optional manual picks for the "Related topics" strip. Left empty, the strip fills itself.
+   */
+  relatedPillars?: (number | Pillar)[] | null;
+  publishedAt?: string | null;
+  noindex?: boolean | null;
+  /**
+   * Set by the content pipeline. Do not edit.
+   */
+  externalId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Study summaries under Research. Seven sections in a fixed order; most fields are filled by the content pipeline.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scientific-articles".
+ */
+export interface ScientificArticle {
+  id: number;
+  /**
+   * Study titles run long — the measured worst case is 122 characters. Check how it wraps rather than trimming the meaning out of it.
+   */
+  title: string;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug: string;
+  /**
+   * Always Research. Supplies the middle URL segment and the breadcrumb rung.
+   */
+  hub: number | Hub;
+  /**
+   * The subject label shown above the title. 26 in use.
+   */
+  category?: (number | null) | ArticleCategory;
+  /**
+   * One or two sentences under the title. Also used as the card summary.
+   */
+  standfirst?: string | null;
+  /**
+   * One paragraph, before the first section, with no heading above it. Sets up the study.
+   */
+  lead?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Section 1 of 7. Order is fixed and cannot vary per article.
+   */
+  background?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Background").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 2 of 7. Order is fixed and cannot vary per article.
+   */
+  studyDesign?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Study Design").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 3 of 7. Order is fixed and cannot vary per article.
+   */
+  keyFindings?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Key Findings").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 4 of 7. Order is fixed and cannot vary per article.
+   */
+  mechanism?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Mechanism").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 5 of 7. Order is fixed and cannot vary per article.
+   */
+  clinicalImplications?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Clinical Implications").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 6 of 7. Order is fixed and cannot vary per article.
+   */
+  limitations?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("Limitations and Open Questions").
+     */
+    heading?: string | null;
+    /**
+     * H3 for sub-headings. The section title itself is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 7 of 7. Order is fixed and cannot vary per article.
+   */
+  inPlainLanguage?: {
+    /**
+     * Optional. Leave empty for the standard translated heading ("In Plain Language").
+     */
+    heading?: string | null;
+    /**
+     * Four short paragraphs, each opening with a bold lead-in question. Renders in the tinted panel.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * 2–20 entries. Each one ends in a link.
+   */
+  references?:
+    | {
+        text: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  authors?: (number | Author)[] | null;
+  /**
+   * Optional but expected on study summaries. Renders the "Reviewed by" line — the strongest E-E-A-T signal this collection has.
+   */
+  reviewer?: (number | null) | Author;
+  /**
+   * Set when the reviewer actually re-checked the content. Not the last edit date.
+   */
+  reviewedAt?: string | null;
+  /**
+   * Title of the study being summarised.
+   */
+  sourceTitle?: string | null;
+  /**
+   * e.g. Nature Microbiology
+   */
+  sourceJournal?: string | null;
+  /**
+   * Publication year of the source study.
+   */
+  studyYear?: number | null;
+  /**
+   * e.g. 10.1038/s41564-024-01234-5. Rendered as a link to doi.org.
+   */
+  doi?: string | null;
+  publishedAt?: string | null;
+  noindex?: boolean | null;
+  /**
+   * Set by the content pipeline. Do not edit.
+   */
+  externalId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Subject labels for scientific articles. Displayed above the title; translate the name per locale.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "article-categories".
+ */
+export interface ArticleCategory {
+  id: number;
+  /**
+   * Shown above the article title. Real ones run 12–42 characters; the longest is "Antibiotics & Drug-Microbiome Interactions".
+   */
+  title: string;
+  /**
+   * Stable identity, e.g. "bacterial-taxa". Used by the content pipeline. Rename the title rather than the key.
+   */
+  key: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Reusable compliance wording. Edit here and every article using it updates — never retype legal copy into an article.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disclaimers".
+ */
+export interface Disclaimer {
+  id: number;
+  /**
+   * Internal label, for the dropdown editors choose from. Not shown to visitors.
+   */
+  name: string;
+  /**
+   * Stable identity, e.g. "wellness-not-medical". Used by the content pipeline. Changing it breaks anything referencing it by name — rename the label instead.
+   */
+  key: string;
+  /**
+   * The health notice runs about 540 characters, more than twice the quiet note. Check it renders before publishing.
+   */
+  weight: 'note' | 'standard' | 'health' | 'fine';
+  /**
+   * Bold lead-in, e.g. "A note on claims:". Leave empty to use the standard translated one.
+   */
+  label?: string | null;
+  /**
+   * The wording itself. Translate per locale — legal copy does not travel.
+   */
+  text: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Reusable in-article CTAs. Edit here and every article using one updates — which is what makes testing a variant possible at all.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversion-blocks".
+ */
+export interface ConversionBlock {
+  id: number;
+  /**
+   * Internal label for the dropdown. Not shown to visitors.
+   */
+  name: string;
+  /**
+   * Stable identity, e.g. "order-kit". Used by the content pipeline. Rename the label rather than the key.
+   */
+  key: string;
+  /**
+   * Leave empty to use the standard translated heading.
+   */
+  heading?: string | null;
+  /**
+   * Optional italic line above the body. Only one of the five records uses one — leave empty unless it is that one.
+   */
+  lede?: string | null;
+  /**
+   * 1–3 sentences connecting the article topic to the NB1 kit.
+   */
+  body: string;
+  /**
+   * Leave empty to use the standard translated button text.
+   */
+  buttonLabel?: string | null;
+  /**
+   * Fine print under the body. Pick from the library — never retype legal copy.
+   */
+  disclaimer?: (number | null) | Disclaimer;
+  /**
+   * Site path without the locale — "/order", not "/de/order". An absolute URL is passed through untouched.
+   */
+  href: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Browse pages for the lexicon. Each lists every term in its category.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lexicon-categories".
+ */
+export interface LexiconCategory {
+  id: number;
+  /**
+   * Display name, e.g. "Bacterial taxa". One or two words; German runs up to 20% longer on short labels.
+   */
+  title: string;
+  /**
+   * The URL segment and the stable identity: /en/lexicon/topics/{key}. Untranslated, and changing it breaks every link to this page.
+   */
+  key: string;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug?: string | null;
+  /**
+   * 2–3 sentences. The only authored prose on the category page.
+   */
+  intro?: string | null;
+  /**
+   * Optional. Three term names for the index card, comma separated. Left empty, the card fills itself from the newest terms.
+   */
+  exampleTerms?: string | null;
+  publishedAt?: string | null;
+  noindex?: boolean | null;
+  /**
+   * Set by the content pipeline. Do not edit.
+   */
+  externalId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * One page per term. Three fixed sections, opening with a definition sentence.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lexicon-terms".
+ */
+export interface LexiconTerm {
+  id: number;
+  /**
+   * The term. Real ones run 5–41 characters. Often a species name.
+   */
+  title: string;
+  /**
+   * For species and genus names — Akkermansia muciniphila, Bacteroides.
+   */
+  italicName?: boolean | null;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug: string;
+  /**
+   * Always Lexicon. Supplies the URL segment and the third breadcrumb rung.
+   */
+  hub: number | Hub;
+  /**
+   * The fourth breadcrumb rung, and which browse page lists this term. Not part of the URL.
+   */
+  category?: (number | null) | LexiconCategory;
+  /**
+   * Optional, and most terms have none — the brief says to design the version without it first. Synonyms, comma separated.
+   */
+  alsoKnownAs?: string | null;
+  /**
+   * ONE sentence, complete on its own. This is what gets quoted elsewhere and what the category page lists.
+   */
+  definition?: string | null;
+  /**
+   * Section 1 of 3. Order is fixed. Around 270 words.
+   */
+  inSimpleTerms?: {
+    /**
+     * H3 for sub-headings. The section title is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 2 of 3. Order is fixed. Around 270 words.
+   */
+  scientificBackground?: {
+    /**
+     * H3 for sub-headings. The section title is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Section 3 of 3. Order is fixed. Around 270 words.
+   */
+  roleInGutHealth?: {
+    /**
+     * H3 for sub-headings. The section title is generated.
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * 2–3 entries. Each one ends in a link.
+   */
+  references?:
+    | {
+        text: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Optional. Exactly five are shown; left empty the row fills from the same category.
+   */
+  relatedTerms?: (number | LexiconTerm)[] | null;
+  /**
+   * Adds the health notice and the reviewer line, and switches the conversion block. About one term in seven.
+   */
+  isCondition?: boolean | null;
+  /**
+   * Required in practice on condition terms — it renders the reviewer line.
+   */
+  reviewer?: (number | null) | Author;
+  /**
+   * Set when the reviewer actually re-checked the content. Not the last edit date.
+   */
+  reviewedAt?: string | null;
+  publishedAt?: string | null;
+  noindex?: boolean | null;
+  /**
+   * Set by the content pipeline. Do not edit.
+   */
+  externalId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
@@ -7640,6 +8428,38 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'footers';
         value: number | Footer;
+      } | null)
+    | ({
+        relationTo: 'hubs';
+        value: number | Hub;
+      } | null)
+    | ({
+        relationTo: 'pillars';
+        value: number | Pillar;
+      } | null)
+    | ({
+        relationTo: 'disclaimers';
+        value: number | Disclaimer;
+      } | null)
+    | ({
+        relationTo: 'conversion-blocks';
+        value: number | ConversionBlock;
+      } | null)
+    | ({
+        relationTo: 'article-categories';
+        value: number | ArticleCategory;
+      } | null)
+    | ({
+        relationTo: 'scientific-articles';
+        value: number | ScientificArticle;
+      } | null)
+    | ({
+        relationTo: 'lexicon-categories';
+        value: number | LexiconCategory;
+      } | null)
+    | ({
+        relationTo: 'lexicon-terms';
+        value: number | LexiconTerm;
       } | null)
     | ({
         relationTo: 'redirects';
@@ -10809,8 +11629,16 @@ export interface PostsSelect<T extends boolean = true> {
   title?: T;
   subtitle?: T;
   heroImage?: T;
+  excerpt?: T;
   intro?: T;
   content?: T;
+  references?:
+    | T
+    | {
+        citation?: T;
+        url?: T;
+        id?: T;
+      };
   schemaMarkup?:
     | T
     | {
@@ -10825,6 +11653,7 @@ export interface PostsSelect<T extends boolean = true> {
             };
       };
   relatedArticles?: T;
+  primaryCategory?: T;
   categories?: T;
   meta?:
     | T
@@ -10843,6 +11672,14 @@ export interface PostsSelect<T extends boolean = true> {
   focusKeyword?: T;
   publishedAt?: T;
   authors?: T;
+  reviewer?: T;
+  readTime?: T;
+  featured?: T;
+  noindex?: T;
+  header?: T;
+  hideHeader?: T;
+  footer?: T;
+  hideFooter?: T;
   populatedAuthors?:
     | T
     | {
@@ -11024,6 +11861,13 @@ export interface AuthorsSelect<T extends boolean = true> {
   bio?: T;
   avatar?: T;
   website?: T;
+  profileLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
   roleTitle?: T;
   affiliation?: T;
   updatedAt?: T;
@@ -11160,6 +12004,237 @@ export interface FootersSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hubs_select".
+ */
+export interface HubsSelect<T extends boolean = true> {
+  key?: T;
+  title?: T;
+  slug?: T;
+  intro?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  header?: T;
+  hideHeader?: T;
+  footer?: T;
+  hideFooter?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pillars_select".
+ */
+export interface PillarsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  hub?: T;
+  standfirst?: T;
+  heroImage?: T;
+  heroCaption?: T;
+  content?: T;
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  references?:
+    | T
+    | {
+        text?: T;
+        url?: T;
+        id?: T;
+      };
+  authors?: T;
+  reviewer?: T;
+  reviewedAt?: T;
+  relatedResearch?: T;
+  relatedPillars?: T;
+  publishedAt?: T;
+  noindex?: T;
+  externalId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disclaimers_select".
+ */
+export interface DisclaimersSelect<T extends boolean = true> {
+  name?: T;
+  key?: T;
+  weight?: T;
+  label?: T;
+  text?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "conversion-blocks_select".
+ */
+export interface ConversionBlocksSelect<T extends boolean = true> {
+  name?: T;
+  key?: T;
+  heading?: T;
+  lede?: T;
+  body?: T;
+  buttonLabel?: T;
+  disclaimer?: T;
+  href?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "article-categories_select".
+ */
+export interface ArticleCategoriesSelect<T extends boolean = true> {
+  title?: T;
+  key?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "scientific-articles_select".
+ */
+export interface ScientificArticlesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  hub?: T;
+  category?: T;
+  standfirst?: T;
+  lead?: T;
+  background?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  studyDesign?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  keyFindings?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  mechanism?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  clinicalImplications?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  limitations?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  inPlainLanguage?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+      };
+  references?:
+    | T
+    | {
+        text?: T;
+        url?: T;
+        id?: T;
+      };
+  authors?: T;
+  reviewer?: T;
+  reviewedAt?: T;
+  sourceTitle?: T;
+  sourceJournal?: T;
+  studyYear?: T;
+  doi?: T;
+  publishedAt?: T;
+  noindex?: T;
+  externalId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lexicon-categories_select".
+ */
+export interface LexiconCategoriesSelect<T extends boolean = true> {
+  title?: T;
+  key?: T;
+  slug?: T;
+  intro?: T;
+  exampleTerms?: T;
+  publishedAt?: T;
+  noindex?: T;
+  externalId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "lexicon-terms_select".
+ */
+export interface LexiconTermsSelect<T extends boolean = true> {
+  title?: T;
+  italicName?: T;
+  slug?: T;
+  hub?: T;
+  category?: T;
+  alsoKnownAs?: T;
+  definition?: T;
+  inSimpleTerms?:
+    | T
+    | {
+        body?: T;
+      };
+  scientificBackground?:
+    | T
+    | {
+        body?: T;
+      };
+  roleInGutHealth?:
+    | T
+    | {
+        body?: T;
+      };
+  references?:
+    | T
+    | {
+        text?: T;
+        url?: T;
+        id?: T;
+      };
+  relatedTerms?: T;
+  isCondition?: T;
+  reviewer?: T;
+  reviewedAt?: T;
+  publishedAt?: T;
+  noindex?: T;
+  externalId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -11473,6 +12548,53 @@ export interface SiteSetting {
     | number
     | boolean
     | null;
+  /**
+   * Copy for the Journal hub at /journal. Every field is per-locale and optional — leave one empty and the built-in translation is used, so no locale can end up blank.
+   */
+  journal?: {
+    /**
+     * The large headline at the top of the Journal index.
+     */
+    heroTitle?: string | null;
+    /**
+     * The paragraph under the headline. Two sentences at most.
+     */
+    heroLede?: string | null;
+    /**
+     * Optional. The <title> for /journal. Left empty, it is built from the hero headline. Max 60 characters.
+     */
+    metaTitle?: string | null;
+    /**
+     * Optional. The meta description for /journal. Left empty, the hero lede is used. Max 155 characters.
+     */
+    metaDescription?: string | null;
+    /**
+     * The panel that closes every article. Left empty, the built-in copy is used.
+     */
+    ctaHeading?: string | null;
+    ctaBody?: string | null;
+    ctaLabel?: string | null;
+    /**
+     * A site path such as /your-plan — the locale prefix is added automatically. A full https:// URL is used as-is. Per-locale, so markets can point at different pages.
+     */
+    ctaUrl?: string | null;
+    /**
+     * Header for the Journal index and its paginated pages. Leave blank to use the site default. Individual articles have their own header field.
+     */
+    header?: (number | null) | Header;
+    /**
+     * Do not render any header on the Journal index.
+     */
+    hideHeader?: boolean | null;
+    /**
+     * Footer for the Journal index and its paginated pages. Leave blank to use the site default. Individual articles have their own footer field.
+     */
+    footer?: (number | null) | Footer;
+    /**
+     * Do not render any footer on the Journal index.
+     */
+    hideFooter?: boolean | null;
+  };
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -11528,6 +12650,22 @@ export interface NavigationSelect<T extends boolean = true> {
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   organizationJsonLd?: T;
+  journal?:
+    | T
+    | {
+        heroTitle?: T;
+        heroLede?: T;
+        metaTitle?: T;
+        metaDescription?: T;
+        ctaHeading?: T;
+        ctaBody?: T;
+        ctaLabel?: T;
+        ctaUrl?: T;
+        header?: T;
+        hideHeader?: T;
+        footer?: T;
+        hideFooter?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -11581,6 +12719,14 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'posts';
           value: number | Post;
+        } | null)
+      | ({
+          relationTo: 'pillars';
+          value: number | Pillar;
+        } | null)
+      | ({
+          relationTo: 'scientific-articles';
+          value: number | ScientificArticle;
         } | null);
     global?: string | null;
     user?: (number | null) | User;
@@ -11716,10 +12862,14 @@ export interface DataTableBlock {
  */
 export interface CtaBlock {
   /**
-   * 1–3 sentences connecting the article topic to the NB1 kit. This is the only editable content.
+   * Pick the CTA from the library. Preferred — editing the record updates every article using it.
    */
-  body: string;
-  buttonUrl: string;
+  conversionBlock?: (number | null) | ConversionBlock;
+  /**
+   * 1–3 sentences connecting the article topic to the NB1 kit. Override for this article only; ignored when a conversion block is selected.
+   */
+  body?: string | null;
+  buttonUrl?: string | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'ctaBlock';
@@ -11738,6 +12888,118 @@ export interface BulletListBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'bulletList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ComplianceNoteBlock".
+ */
+export interface ComplianceNoteBlock {
+  /**
+   * Pick the wording from the library. Preferred — editing the record updates every article at once.
+   */
+  disclaimer?: (number | null) | Disclaimer;
+  /**
+   * Override for this article only. Ignored when a disclaimer is selected above. Leave both empty for the standard NB1 wellness disclaimer.
+   */
+  text?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'complianceNote';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "EvidenceTableBlock".
+ */
+export interface EvidenceTableBlock {
+  /**
+   * Optional heading above the table. Not an H2 — it does not belong in the contents list.
+   */
+  sectionTitle?: string | null;
+  rows: {
+    /**
+     * The claim being rated, e.g. "Fibre increases microbial diversity".
+     */
+    claim: string;
+    /**
+     * Drawn as filled dots out of five. The wording is translated at render time, so pick the level, not a phrase.
+     */
+    strength: '1' | '2' | '3' | '4' | '5';
+    /**
+     * Optional caveat. One short sentence — this is a table cell.
+     */
+    note?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Optional. Where the ratings come from, if that needs saying.
+   */
+  caption?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'evidenceTable';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StepFlowBlock".
+ */
+export interface StepFlowBlock {
+  /**
+   * Optional heading above the steps.
+   */
+  sectionTitle?: string | null;
+  /**
+   * Numbered automatically. Do not type "1." into the titles — reordering would leave them wrong.
+   */
+  steps: {
+    title: string;
+    /**
+     * Optional. One or two sentences.
+     */
+    body?: string | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'stepFlow';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HighlightCalloutBlock".
+ */
+export interface HighlightCalloutBlock {
+  /**
+   * Optional short heading, a few words.
+   */
+  title?: string | null;
+  body: string;
+  /**
+   * Caution is for genuine "be careful" content — interactions, dosage, when to see a doctor. Not for emphasis.
+   */
+  tone: 'info' | 'caution';
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'highlightCallout';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PullQuoteBlock".
+ */
+export interface PullQuoteBlock {
+  /**
+   * One or two sentences. Longer than that stops reading as a pull quote.
+   */
+  quote: string;
+  /**
+   * Optional. Leave empty when lifting the article own words — use Expert Quote when a named person is speaking.
+   */
+  attribution?: string | null;
+  /**
+   * Keep checked when the quote repeats a sentence from the article. It stays visible, but is skipped by screen readers so it is not read twice.
+   */
+  duplicatesBody?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'pullQuote';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

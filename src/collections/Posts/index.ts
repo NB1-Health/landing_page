@@ -29,11 +29,21 @@ import { FAQBlock } from '@/blocks/FAQ/config'
 import { DataTableBlock } from '@/blocks/DataTable/config'
 import { CtaBlock } from '@/blocks/CTA/config'
 import { BulletListBlock } from '@/blocks/BulletList/config'
+import { ComplianceNote } from '@/blocks/ComplianceNote/config'
 
 import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 import { costomSlugField } from '@/fields/slug'
-import { isPublishedForActiveLocale } from '@/utilities/publishedLocaleAvailability'
+import {
+  authorsField,
+  chromeFields,
+  noindexField,
+  publishedAtField,
+  reviewerField,
+} from '@/fields/contentDocument'
 import { seoOverridesField } from '@/fields/seoOverrides'
+import { enforceSingleFeatured } from './hooks/enforceSingleFeatured'
+import { requiredOnPublish } from './hooks/requiredOnPublish'
+import { estimateReadTime } from '@/utilities/countLexicalWords'
 
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
@@ -43,10 +53,18 @@ export const Posts: CollectionConfig<'posts'> = {
     read: authenticatedOrPublished,
     update: authenticated,
   },
+  // Everything a Journal card needs, so index / related-post queries can stay
+  // at depth 1 instead of pulling whole documents.
   defaultPopulate: {
     title: true,
     slug: true,
     categories: true,
+    primaryCategory: true,
+    excerpt: true,
+    readTime: true,
+    heroImage: true,
+    featured: true,
+    publishedAt: true,
     meta: {
       image: true,
       description: true,
@@ -94,10 +112,18 @@ export const Posts: CollectionConfig<'posts'> = {
       },
     },
     {
+      // The brief calls this the "standfirst" (dek). Kept as `subtitle` so no
+      // migration or existing content is disturbed — only the label changes.
       name: 'subtitle',
       type: 'text',
+      label: 'Standfirst (dek)',
       localized: true,
       required: false,
+      admin: {
+        description:
+          'One or two sentences under the title that expand on it and earn the click. May differ from the excerpt.',
+      },
+      validate: requiredOnPublish('Standfirst'),
     },
     {
       name: 'focusKeywordReference',
@@ -120,6 +146,34 @@ export const Posts: CollectionConfig<'posts'> = {
               name: 'heroImage',
               type: 'upload',
               relationTo: 'media',
+              admin: {
+                description:
+                  'Cover image. Drives the Journal card thumbnail, the article hero and the Open Graph image. Alt text lives on the media item itself. Recommended 1600x800 (2:1); the card crops to 16:10.',
+              },
+            },
+            {
+              name: 'excerpt',
+              type: 'textarea',
+              localized: true,
+              maxLength: 160,
+              label: 'Excerpt (card summary)',
+              admin: {
+                description:
+                  'Plain summary with the primary keyword, max 160 characters. Shown on the Journal card, and used for the meta description when that is left empty.',
+                components: {
+                  afterInput: [
+                    {
+                      path: '/components/Payload/fields/RemainingCharacterCounter',
+                      exportName: 'RemainingCharacterCounter',
+                      clientProps: {
+                        path: 'excerpt',
+                        maxLength: 160,
+                      },
+                    },
+                  ],
+                },
+              },
+              validate: requiredOnPublish('Excerpt'),
             },
             {
               name: 'intro',
@@ -156,7 +210,10 @@ export const Posts: CollectionConfig<'posts'> = {
                 features: ({ rootFeatures }) => {
                   return [
                     ...rootFeatures,
-                    HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                    // Exactly one h1 per page, and that is the title. The
+                    // template styles h2/h3 only, and the table of contents is
+                    // built from h2s, so deeper levels have nowhere to render.
+                    HeadingFeature({ enabledHeadingSizes: ['h2', 'h3'] }),
                     BlocksFeature({
                       blocks: [
                         Banner,
@@ -173,6 +230,7 @@ export const Posts: CollectionConfig<'posts'> = {
                         DataTableBlock,
                         CtaBlock,
                         BulletListBlock,
+                        ComplianceNote,
                       ],
                     }),
                     FixedToolbarFeature(),
@@ -187,6 +245,37 @@ export const Posts: CollectionConfig<'posts'> = {
                 if (!value) return 'This field is required.'
                 return true
               },
+            },
+            {
+              name: 'references',
+              type: 'array',
+              label: 'References',
+              admin: {
+                description:
+                  'Rendered as the numbered "References" list at the foot of the article. Cite primary sources and link out where possible.',
+                initCollapsed: true,
+              },
+              fields: [
+                {
+                  name: 'citation',
+                  type: 'text',
+                  required: true,
+                  // The rows themselves are shared across locales so the agency
+                  // enters each source once; only the rendered text is
+                  // translatable.
+                  localized: true,
+                  admin: {
+                    description: 'Author(s). Title. Journal or source, year.',
+                  },
+                },
+                {
+                  name: 'url',
+                  type: 'text',
+                  admin: {
+                    description: 'Optional URL or DOI.',
+                  },
+                },
+              ],
             },
             {
               name: 'schemaMarkup',
@@ -247,10 +336,24 @@ export const Posts: CollectionConfig<'posts'> = {
               relationTo: 'posts',
             },
             {
-              name: 'categories',
+              name: 'primaryCategory',
               type: 'relationship',
+              relationTo: 'categories',
+              hasMany: false,
               admin: {
                 position: 'sidebar',
+                description:
+                  'The single primary category. Drives the card label, the breadcrumb, the topic filter chip and article:section. Use "Categories" below for secondary topics.',
+              },
+              validate: requiredOnPublish('Primary category'),
+            },
+            {
+              name: 'categories',
+              type: 'relationship',
+              label: 'Categories (secondary topics)',
+              admin: {
+                position: 'sidebar',
+                description: 'Optional secondary topics, used for related-article matching.',
               },
               hasMany: true,
               relationTo: 'categories',
@@ -298,8 +401,40 @@ export const Posts: CollectionConfig<'posts'> = {
               type: 'textarea',
               required: true,
               maxLength: 155,
+              hooks: {
+                // MUST be beforeValidate, not beforeChange. Field `beforeChange`
+                // runs *after* validation, so a value produced there cannot
+                // satisfy `required: true` — the save would still be rejected
+                // for an empty description. `beforeValidate` runs first, which is
+                // also why the slug field uses it to derive from the title.
+                beforeValidate: [
+                  ({ data, originalDoc, value }) => {
+                    if (typeof value === 'string' && value.trim()) return value
+
+                    // Fall back to the excerpt so the agency writes the summary
+                    // once. On a partial update (autosave sends only changed
+                    // fields) the excerpt may be absent from `data` while still
+                    // present on the stored document.
+                    const incoming = (data as Record<string, unknown> | undefined)?.excerpt
+                    const stored = (originalDoc as Record<string, unknown> | undefined)?.excerpt
+                    const excerpt = typeof incoming === 'string' ? incoming : stored
+
+                    if (typeof excerpt !== 'string' || !excerpt.trim()) return value
+
+                    // The excerpt allows 160 characters and this field caps at
+                    // 155, so trim at a word boundary rather than overflowing.
+                    const trimmed = excerpt.trim()
+                    if (trimmed.length <= 155) return trimmed
+
+                    const cut = trimmed.slice(0, 155)
+                    const lastSpace = cut.lastIndexOf(' ')
+                    return lastSpace > 100 ? cut.slice(0, lastSpace) : cut
+                  },
+                ],
+              },
               admin: {
-                description: 'SEO meta description. Max 155 characters.',
+                description:
+                  'SEO meta description. Max 155 characters. Left empty, it is generated from the excerpt.',
                 components: {
                   afterInput: [
                     {
@@ -335,33 +470,48 @@ export const Posts: CollectionConfig<'posts'> = {
           'Primary SEO keyword for this article. For editor reference only; not rendered on the frontend.',
       },
     },
+    publishedAtField(),
+    authorsField(),
+    reviewerField(),
     {
-      name: 'publishedAt',
-      type: 'date',
+      name: 'readTime',
+      type: 'number',
+      min: 1,
+      localized: true,
+      label: 'Read time (minutes)',
       admin: {
-        date: {
-          pickerAppearance: 'dayAndTime',
-        },
         position: 'sidebar',
+        description:
+          'Filled automatically from the word count when left empty. Type a value to override it, or clear the field to recalculate on the next save.',
       },
       hooks: {
         beforeChange: [
-          ({ req, siblingData, value }) => {
-            if (isPublishedForActiveLocale(siblingData._status, req.locale) && !value) {
-              return new Date()
-            }
-            return value
+          ({ data, value }) => {
+            // Same convention as `publishedAt` below and the slug field: only
+            // compute when the editor has not supplied a value.
+            if (typeof value === 'number' && value > 0) return value
+
+            const doc = data as Record<string, unknown> | undefined
+            return estimateReadTime(doc?.intro, doc?.content) ?? value
           },
         ],
       },
     },
     {
-      name: 'authors',
-      type: 'relationship',
-      admin: { position: 'sidebar' },
-      hasMany: true,
-      relationTo: 'authors',
+      name: 'featured',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Shows this article in the single featured slot on the Journal index. Publishing another featured article clears this one automatically.',
+      },
     },
+    noindexField({
+      description:
+        'Adds robots noindex and drops the article from the sitemap, while leaving it live. For thin or seasonal pages. To exclude only certain locales, use International SEO Overrides on the SEO tab instead.',
+    }),
+    ...chromeFields({ noun: 'article' }),
     {
       name: 'populatedAuthors',
       type: 'array',
@@ -380,7 +530,16 @@ export const Posts: CollectionConfig<'posts'> = {
         { name: 'avatarUrl', type: 'text' },
       ],
     },
-    costomSlugField(),
+    // Localized, matching Pages, Hubs and Pillars. Previously one slug served all
+    // eight markets, so `/de/journal/what-your-gut-is-telling-you` was an English
+    // URL with German content — and the only content type on the site that could
+    // not have a translated address.
+    //
+    // Per-locale uniqueness is a validate hook, not a DB constraint: a unique
+    // index on a localized column enforces uniqueness across ALL locales at once,
+    // which would reject a German slug because an unrelated Dutch post already
+    // used that string.
+    costomSlugField({ localized: true, collection: 'posts' }),
     {
       name: 'source',
       type: 'select',
@@ -407,7 +566,9 @@ export const Posts: CollectionConfig<'posts'> = {
   hooks: {
     beforeOperation: [capturePostPublication],
     beforeChange: [parseApiContent],
-    afterChange: [revalidatePost],
+    // enforceSingleFeatured runs first so the index revalidation that
+    // revalidatePost triggers already reflects the cleared flags.
+    afterChange: [enforceSingleFeatured, revalidatePost],
     afterRead: [populateAuthors],
     afterDelete: [revalidateDelete],
   },

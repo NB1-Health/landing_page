@@ -1,0 +1,74 @@
+/* ============================================================================
+   NB1 Journal — design tokens
+   ----------------------------------------------------------------------------
+   Extracted from the :root block of the approved Journal / Library Article
+   templates. Every token is prefixed `--jr-` so it cannot collide with the
+   shadcn tokens in globals.css, the `--art-*` tokens in article-template.css,
+   or the `--banner-*` tokens in banner-template.css.
+
+   Import this once alongside the journal page CSS:
+     import '@/styles/journal-tokens.css'
+
+   NOTE: the source templates also shipped a large set of global element resets
+   (`body`, `a`, `img`, `.h1/.h2/.h3`, `.btn*`) from their shared stylesheet.
+   Those are deliberately NOT ported — they would fight Tailwind's Preflight.
+   Page-level typography lives on the scoped `.jr-*` classes instead.
+   ========================================================================= */
+
+:root {
+  /* core palette */
+  --jr-navy: #12314d;
+  --jr-navy-deep: #0e2740;
+  --jr-navy-2: #1b3e5c;
+
+  /* teal — SIGNAL ONLY: labels, marks, data, links */
+  --jr-teal: #0a8fb0;
+  --jr-teal-l: #13a6cc;
+  --jr-teal-tint: rgba(10, 143, 176, 0.08);
+  --jr-teal-tint2: rgba(10, 143, 176, 0.14);
+  --jr-teal-border: rgba(10, 143, 176, 0.22);
+
+  /* lime — owns conversion actions only */
+  --jr-lime: #c6ff5b;
+  --jr-lime-d: #aaea42;
+  --jr-on-lime: #0e2740;
+
+  /* surfaces */
+  --jr-paper: #ffffff;
+  --jr-off: #f1f4f7;
+  --jr-panel: #f7fafc; /* hero + author box background */
+  --jr-panel-2: #eef2f5; /* in-body figure placeholder */
+  --jr-cream: #faf8f2;
+  --jr-warm: #f5f3ee;
+
+  /* ink */
+  --jr-ink: #12314d;
+  --jr-ink-80: #33475b;
+  --jr-ink-70: rgba(18, 49, 77, 0.7);
+  --jr-ink-55: rgba(18, 49, 77, 0.55);
+  --jr-ink-45: rgba(18, 49, 77, 0.45);
+  --jr-ink-40: rgba(18, 49, 77, 0.4);
+  --jr-line: rgba(18, 49, 77, 0.1);
+  --jr-line-2: rgba(18, 49, 77, 0.07);
+
+  /* on-dark */
+  --jr-w-90: rgba(255, 255, 255, 0.9);
+  --jr-w-70: rgba(255, 255, 255, 0.7);
+  --jr-w-55: rgba(255, 255, 255, 0.55);
+  --jr-w-40: rgba(255, 255, 255, 0.4);
+
+  /* type — faces are already loaded in layout.tsx via @fontsource */
+  --jr-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --jr-display: 'Instrument Sans', 'Inter', sans-serif;
+  --jr-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* shape */
+  --jr-r-panel: 30px;
+  --jr-r-card: 18px;
+  --jr-r-pill: 100px;
+
+  /* layout */
+  --jr-maxw: 1180px;
+  --jr-shadow-card: 0 24px 44px -32px rgba(18, 49, 77, 0.5);
+  --jr-shadow-feat: 0 30px 60px -46px rgba(18, 49, 77, 0.5);
+}

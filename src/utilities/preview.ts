@@ -33,7 +33,7 @@ export function getPreviewTarget({
       ? locale === 'en' && (slug === 'home' || slug === 'home-page')
         ? `/${locale}`
         : `/${locale}/${slug}`
-      : `/${locale}/posts/${slug}`
+      : `/${locale}/journal/${slug}`
 
   return { collection, locale, path, slug }
 }

@@ -146,6 +146,23 @@ import * as migration_20260813_140000_complete_published_locale_enums from './20
 import * as migration_20260813_150000_post_seo_overrides from './20260813_150000_post_seo_overrides';
 import * as migration_20260818_120000_localize_rfw_locale_override from './20260818_120000_localize_rfw_locale_override';
 import * as migration_20260819_120000_hero_trustpilot_toggle from './20260819_120000_hero_trustpilot_toggle';
+import * as migration_20260820_120000_journal_post_fields from './20260820_120000_journal_post_fields';
+import * as migration_20260820_140000_journal_site_settings from './20260820_140000_journal_site_settings';
+import * as migration_20260820_160000_journal_article_cta from './20260820_160000_journal_article_cta';
+import * as migration_20260820_180000_journal_footer_selection from './20260820_180000_journal_footer_selection';
+import * as migration_20260820_190000_journal_header_selection from './20260820_190000_journal_header_selection';
+import * as migration_20260825_120000_hubs from './20260825_120000_hubs';
+import * as migration_20260825_122530 from './20260825_122530';
+import * as migration_20260825_130000_hubs_locked_documents_rel from './20260825_130000_hubs_locked_documents_rel';
+import * as migration_20260825_135859 from './20260825_135859';
+import * as migration_20260825_141516 from './20260825_141516';
+import * as migration_20260826_064315 from './20260826_064315';
+import * as migration_20260826_073823 from './20260826_073823';
+import * as migration_20260826_081825 from './20260826_081825';
+import * as migration_20260826_082119 from './20260826_082119';
+import * as migration_20260826_082706 from './20260826_082706';
+import * as migration_20260826_083810 from './20260826_083810';
+import * as migration_20260826_085702 from './20260826_085702';
 
 export const migrations = [
   {
@@ -887,5 +904,90 @@ export const migrations = [
     up: migration_20260819_120000_hero_trustpilot_toggle.up,
     down: migration_20260819_120000_hero_trustpilot_toggle.down,
     name: '20260819_120000_hero_trustpilot_toggle',
+  },
+  {
+    up: migration_20260820_120000_journal_post_fields.up,
+    down: migration_20260820_120000_journal_post_fields.down,
+    name: '20260820_120000_journal_post_fields',
+  },
+  {
+    up: migration_20260820_140000_journal_site_settings.up,
+    down: migration_20260820_140000_journal_site_settings.down,
+    name: '20260820_140000_journal_site_settings',
+  },
+  {
+    up: migration_20260820_160000_journal_article_cta.up,
+    down: migration_20260820_160000_journal_article_cta.down,
+    name: '20260820_160000_journal_article_cta',
+  },
+  {
+    up: migration_20260820_180000_journal_footer_selection.up,
+    down: migration_20260820_180000_journal_footer_selection.down,
+    name: '20260820_180000_journal_footer_selection',
+  },
+  {
+    up: migration_20260820_190000_journal_header_selection.up,
+    down: migration_20260820_190000_journal_header_selection.down,
+    name: '20260820_190000_journal_header_selection',
+  },
+  {
+    up: migration_20260825_120000_hubs.up,
+    down: migration_20260825_120000_hubs.down,
+    name: '20260825_120000_hubs',
+  },
+  {
+    up: migration_20260825_122530.up,
+    down: migration_20260825_122530.down,
+    name: '20260825_122530',
+  },
+  {
+    up: migration_20260825_130000_hubs_locked_documents_rel.up,
+    down: migration_20260825_130000_hubs_locked_documents_rel.down,
+    name: '20260825_130000_hubs_locked_documents_rel',
+  },
+  {
+    up: migration_20260825_135859.up,
+    down: migration_20260825_135859.down,
+    name: '20260825_135859',
+  },
+  {
+    up: migration_20260825_141516.up,
+    down: migration_20260825_141516.down,
+    name: '20260825_141516',
+  },
+  {
+    up: migration_20260826_064315.up,
+    down: migration_20260826_064315.down,
+    name: '20260826_064315',
+  },
+  {
+    up: migration_20260826_073823.up,
+    down: migration_20260826_073823.down,
+    name: '20260826_073823',
+  },
+  {
+    up: migration_20260826_081825.up,
+    down: migration_20260826_081825.down,
+    name: '20260826_081825',
+  },
+  {
+    up: migration_20260826_082119.up,
+    down: migration_20260826_082119.down,
+    name: '20260826_082119',
+  },
+  {
+    up: migration_20260826_082706.up,
+    down: migration_20260826_082706.down,
+    name: '20260826_082706',
+  },
+  {
+    up: migration_20260826_083810.up,
+    down: migration_20260826_083810.down,
+    name: '20260826_083810',
+  },
+  {
+    up: migration_20260826_085702.up,
+    down: migration_20260826_085702.down,
+    name: '20260826_085702'
   },
 ];

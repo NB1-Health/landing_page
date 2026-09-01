@@ -6,8 +6,31 @@ import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
 import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 import { buildLocalizedDocumentPath, type LocalizedDocument } from './localizedDocument'
+import type { JournalNavNode } from '@/utilities/journalNav'
 
 type Theme = 'light' | 'dark'
+
+/**
+ * Prefix a nav link's URL with the locale from the current path.
+ *
+ * The URL an editor types in a nav item is locale-agnostic (`/journal`), so it
+ * gets the active locale prepended at render time. Nav items live in a
+ * `localized: true` array, so each locale already has its own rows — this only
+ * saves the editor from typing the prefix, and from getting it wrong.
+ *
+ * The boundary check matters. This was four copies of
+ * `!raw.startsWith(`/${loc}`)`, with no trailing slash, so any path whose first
+ * segment merely *begins* with a locale code was treated as already-prefixed and
+ * rendered without one: `/deals` on `/de`, `/benefits` on `/be`, `/chat` on
+ * `/ch`, `/uk...` on `/uk`. Those links silently dropped their locale. Matching
+ * on a full segment fixes it, and cannot regress a URL that really is prefixed.
+ */
+function localizeNavHref(raw: string, localeFromPath: string): string {
+  if (!raw) return '#'
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('#')) return raw
+  if (raw === `/${localeFromPath}` || raw.startsWith(`/${localeFromPath}/`)) return raw
+  return `/${localeFromPath}${raw.startsWith('/') ? raw : `/${raw}`}`
+}
 
 type HeaderVariant = {
   variantKey: string
@@ -51,6 +74,12 @@ export interface HeaderClientProps {
   sectionNavItems?: Array<{ sectionId: string; label: string }>
   discoverNavEnabled?: boolean
   discoverNavLabel?: string | null
+  /**
+   * The Journal branch, generated server-side from hub and pillar slugs.
+   * `null` in a locale with no hub slugs — the item is then absent entirely
+   * rather than an arrow opening a blank panel.
+   */
+  journalNav?: JournalNavNode | null
   discoverNavItems?: Array<{
     link?: {
       label?: string | null
@@ -174,6 +203,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   discoverNavEnabled = false,
   discoverNavLabel,
   discoverNavItems = [],
+  journalNav = null,
 }) => {
   const searchParams = useSearchParams()
   const variantParam = searchParams.get('v')
@@ -602,6 +632,13 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     .nb1-sheet.open { transform:translateY(0); opacity:1; visibility:visible; }
     .nb1-sheet a { display:block; padding:16px 28px; font-size:17px; font-weight:500; color:rgb(18,49,77); border-bottom:1px solid rgba(18,49,77,.08); text-decoration:none; }
     .nb1-sheet a:hover { color:rgb(10,143,176); }
+    /* Journal branch rows. Indented by depth so the hierarchy reads without any
+       disclosure controls, and stepped down in size so a pillar does not compete
+       with a hub for attention. The 16px vertical padding above is unchanged —
+       depth affects the left edge, never the tap height. */
+    .nb1-sheet a.nb1-sheet-sub { font-size:16px; color:rgba(18,49,77,.82); }
+    .nb1-sheet a.nb1-sheet-d1 { padding-left:44px; }
+    .nb1-sheet a.nb1-sheet-d2 { padding-left:60px; font-size:15px; color:rgba(18,49,77,.7); }
     .nb1-sheet-cta { margin:18px 24px 0 !important; padding:16px !important; text-align:center; border-radius:100px; background:#C6FF5B; color:#0B1E33 !important; font-weight:700 !important; font-size:15.5px; border-bottom:none !important; display:block; }
     .nb1-sheet-cta:hover { background:#b8f04a; color:#0B1E33 !important; }
     .nb1-sheet-loc { margin:14px 24px 0; padding:16px 0 2px; border-top:1px solid rgba(18,49,77,.10); }
@@ -650,6 +687,120 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     .nb1-disc-menu a:hover{ background:#F4F8FB; color:#0A8FB0; }
     @media (prefers-reduced-motion: reduce){ .nb1-disc-btn .chev, .nb1-disc-menu{ transition:none; } }
     @media (max-width:860px){ .nb1-nav-right .nb1-disc{ display:none; } }
+
+    /* ── Journal branch: three levels, and it works with JavaScript off ──────
+       The parent menu is right-aligned (right:0), so panels open LEFTWARD.
+       At 1024px: menu 236 + panel 236 + panel 260 = 732px, which clears the
+       viewport with room for the logo. Opening rightward would run off-screen
+       at the second level, before German ever got a chance to make it worse. */
+    .nb1-disc-divider{ height:1px; margin:7px 9px; background:rgba(18,49,77,.1); }
+
+    /* width:100% matters. Without it the sub shrink-wraps its content — measured
+       218px at level 2 but only 147px at level 3 — and since the panel is
+       positioned with left:calc(100% + …), that 100% shrank with nesting and the
+       third panel landed 10px INSIDE its parent. Pinning the sub to its parent
+       panel's content width makes the offset mean the same thing at every level. */
+    .nb1-disc-sub{ position:relative; }
+
+    /* FIXED widths, not percentages, and this is the third attempt so it is worth
+       saying why. The child panel is positioned with left:calc(100% + …), where
+       100% resolves against the sub — and the sub's own width:100% resolved
+       against the parent panel's CONTENT box, which overflow-y:auto shrinks by
+       the scrollbar width. Measured: 218px at level 2, 147px at level 3 against a
+       164px content box. So the same offset meant different things at different
+       depths and the third panel landed 10px inside its parent.
+
+       Pinning both the panel and the sub to fixed pixels makes the arithmetic
+       exact: sub 174 + 14 offset = 188, parent's right edge sits at 182 from the
+       same origin, so every level gets a 6px gap regardless of scrollbars. */
+    .nb1-disc-menu > .nb1-disc-sub{ width:220px; }
+    .nb1-disc-panel > .nb1-disc-sub{ width:174px; }
+    .nb1-disc-row{ display:flex; align-items:stretch; gap:2px; }
+    /* The label takes the space; the arrow is its own target beside it. */
+    .nb1-disc-row > a{ flex:1 1 auto; }
+
+    .nb1-disc-arrow{ display:inline-flex; align-items:center; justify-content:center;
+      /* 34px, not the visual 20px. The brief's separate-tap-target rule is
+         pointless if the target is too small to hit on a phone. */
+      flex:0 0 34px; min-height:34px; padding:0; border:none; border-radius:9px;
+      background:none; color:rgb(18,49,77); cursor:pointer; transition:background .12s,color .12s; }
+    .nb1-disc-arrow svg{ width:13px; height:13px; opacity:.65; transition:transform .18s; }
+    .nb1-disc-arrow:hover{ background:#F4F8FB; color:#0A8FB0; }
+    .nb1-disc-arrow:focus-visible{ outline:2px solid #0A8FB0; outline-offset:2px; }
+
+    /* Opens to the RIGHT, and that is measured rather than assumed.
+       The Discover menu is right-aligned inside a width-constrained header, so
+       the space to its LEFT varies with the viewport — 212px at 880, 356px at
+       1024, 612px at 1280 — while the space to its RIGHT is a constant 432px at
+       every width. Two 200px panels plus gaps need 416px, so rightward fits
+       everywhere the flyout is visible and leftward fails below about 1280.
+       Opening left is what pushed the third panel 162px off a 1024px screen.
+
+       The +14px, not +6px: 100% is the ROW's width, and the row sits inside the
+       menu's 8px padding — so +6 put the panel 2px INSIDE the parent, which is
+       the 9px overlap the brief forbids. 8px padding + 6px gap = 14. */
+    .nb1-disc-panel{ position:absolute; top:-8px; left:calc(100% + 14px); width:190px;
+      background:#fff; border:1px solid rgba(18,49,77,.1); border-radius:14px;
+      box-shadow:0 26px 54px -22px rgba(12,30,52,.34); padding:8px;
+      opacity:0; visibility:hidden; pointer-events:none; transform:translateX(-6px);
+      transition:opacity .18s,transform .18s,visibility .18s; z-index:61;
+      /* Ten pillars in German is a tall panel. Scroll inside it rather than
+         off the bottom of a 768px-tall laptop screen. */
+      /* Capped against where the panel STARTS, not just the viewport height.
+         70vh looked right and was wrong: the Mikrobiom panel opens ~280px down
+         the page, so on an 880x700 laptop it ran 65px below the fold with no way
+         to reach the last two pillars. Subtracting the start offset keeps the
+         whole panel on screen; the floor stops it collapsing on a short window. */
+      max-height:max(220px, calc(100vh - 300px)); }
+
+    /* ONLY the deepest panel scrolls, and this is the bug the measurements missed.
+       overflow-y:auto on a panel that CONTAINS another panel makes that child part
+       of the parent's scrollable area — the nested panel is positioned outside the
+       parent's content box on purpose, so the parent grew a horizontal scrollbar,
+       scrolled sideways, and clipped its own labels to "ew", "iome", "rch", "n".
+       getBoundingClientRect reports layout position, not clipping, so every
+       overlap and viewport check passed while the menu was visibly broken.
+
+       :has() asks the only question that matters — does this panel contain
+       another? A leaf panel can scroll safely because nothing is positioned
+       outside it. */
+    .nb1-disc-panel:not(:has(.nb1-disc-panel)){ overflow-y:auto; overflow-x:hidden; }
+
+    /* Panel rows WRAP. The Discover menu sets white-space:nowrap, which is right
+       for a 236px menu of short items and wrong once it is inherited into a 190px
+       panel of German pillar names: "Ernährung und Mikrobiom" overflowed, the
+       panel grew a horizontal scrollbar, and the label was cut mid-word. Wrapping
+       to two lines costs a little height and loses nothing. */
+    .nb1-disc-panel a{ white-space:normal; line-height:1.35; }
+
+    /* Three ways in, on purpose. :hover and :focus-within are CSS-only, so the
+       submenu opens with JavaScript disabled and from the keyboard; [data-open]
+       is the React button, which is what touch needs. */
+    .nb1-disc-sub:hover > .nb1-disc-panel,
+    .nb1-disc-sub:focus-within > .nb1-disc-panel,
+    .nb1-disc-sub[data-open='true'] > .nb1-disc-panel{
+      opacity:1; visibility:visible; pointer-events:auto; transform:translateX(0); }
+
+    /* No rotation. The chevron already points right, which is now the direction
+       the panel opens — rotating it 90deg made it point DOWN at a panel that
+       appears to the side. Nudged instead, so open state still reads. */
+    .nb1-disc-sub[data-open='true'] > .nb1-disc-row .nb1-disc-arrow svg,
+    .nb1-disc-sub:hover > .nb1-disc-row .nb1-disc-arrow svg{ transform:translateX(2px); }
+
+    /* The same CSS-only opening for the top-level Discover menu. Without this the
+       four existing items are in the HTML but unreachable with JavaScript off,
+       which is the brief's §5 test. */
+    .nb1-disc:hover .nb1-disc-menu,
+    .nb1-disc:focus-within .nb1-disc-menu{
+      opacity:1; visibility:visible; transform:translateY(0); pointer-events:auto; }
+
+    /* Below the desktop breakpoint the whole flyout is replaced by the mobile
+       sheet, which renders the same links as a flat list. Three hover panels on a
+       360px screen is not a design, it is a trap. */
+    @media (max-width:860px){ .nb1-disc-panel{ display:none; } }
+
+    @media (prefers-reduced-motion: reduce){
+      .nb1-disc-panel, .nb1-disc-arrow, .nb1-disc-arrow svg{ transition:none; } }
   `
 
   return (
@@ -726,16 +877,10 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
               {navItems.map(({ link }, i) => {
                 if (!link) return null
                 const label = link.localizedLabel || link.label || ''
-                const raw = link.url || ''
-                const isExternal =
-                  raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('#')
                 // Use the locale from the URL path (e.g. 'be'), not curLang (e.g. 'nl'),
                 // to avoid double-prefixing when locale differs from language code.
                 const localeFromPath = pathname.split('/')[1] || locale
-                const href =
-                  raw && !isExternal && !raw.startsWith(`/${localeFromPath}`)
-                    ? `/${localeFromPath}${raw.startsWith('/') ? raw : `/${raw}`}`
-                    : raw || '#'
+                const href = localizeNavHref(link.url || '', localeFromPath)
                 return (
                   <a
                     key={i}
@@ -781,14 +926,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
                   {discoverNavItems.map(({ link }, i) => {
                     if (!link) return null
                     const label = link.localizedLabel || link.label || ''
-                    const raw = link.url || ''
-                    const isExternal =
-                      raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('#')
                     const localeFromPath = pathname.split('/')[1] || locale
-                    const href =
-                      raw && !isExternal && !raw.startsWith(`/${localeFromPath}`)
-                        ? `/${localeFromPath}${raw.startsWith('/') ? raw : `/${raw}`}`
-                        : raw || '#'
+                    const href = localizeNavHref(link.url || '', localeFromPath)
                     return (
                       <a
                         key={i}
@@ -802,6 +941,27 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
                       </a>
                     )
                   })}
+
+                  {/*
+                    Journal — last, below a divider, per the brief. The four items
+                    above stay on try.nb1.com and are untouched.
+
+                    TWO TAP TARGETS. The label is an `<a href>` to the Journal
+                    index; the arrow is a separate `<button>` that opens the
+                    submenu. Combining them is the failure the brief calls "the
+                    single most common way this pattern breaks": on touch there is
+                    no hover, so a combined element always opens the submenu and
+                    `/en/journal` becomes unreachable on a phone.
+                  */}
+                  {journalNav && (
+                    <>
+                      <div aria-hidden="true" className="nb1-disc-divider" />
+                      <JournalNavItem
+                        node={journalNav}
+                        onNavigate={() => setDiscOpen(false)}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -926,14 +1086,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
         {navItems.map(({ link }, i) => {
           if (!link) return null
           const label = link.localizedLabel || link.label || ''
-          const rawM = link.url || ''
-          const isExternalM =
-            rawM.startsWith('http://') || rawM.startsWith('https://') || rawM.startsWith('#')
           const localeFromPathM = pathname.split('/')[1] || locale
-          const hrefM =
-            rawM && !isExternalM && !rawM.startsWith(`/${localeFromPathM}`)
-              ? `/${localeFromPathM}${rawM.startsWith('/') ? rawM : `/${rawM}`}`
-              : rawM || '#'
+          const hrefM = localizeNavHref(link.url || '', localeFromPathM)
           return (
             <a key={i} href={hrefM} onClick={() => setSheetOpen(false)}>
               {label}
@@ -947,14 +1101,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
           discoverNavItems.map(({ link }, i) => {
             if (!link) return null
             const label = link.localizedLabel || link.label || ''
-            const rawD = link.url || ''
-            const isExternalD =
-              rawD.startsWith('http://') || rawD.startsWith('https://') || rawD.startsWith('#')
             const localeFromPathD = pathname.split('/')[1] || locale
-            const hrefD =
-              rawD && !isExternalD && !rawD.startsWith(`/${localeFromPathD}`)
-                ? `/${localeFromPathD}${rawD.startsWith('/') ? rawD : `/${rawD}`}`
-                : rawD || '#'
+            const hrefD = localizeNavHref(link.url || '', localeFromPathD)
             return (
               <a
                 key={`disc-${i}`}
@@ -967,6 +1115,28 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
               </a>
             )
           })}
+
+        {/*
+          The Journal branch on mobile: FLATTENED, not a nested flyout.
+
+          Three hover panels on a 360px screen is not a design. Every link from
+          the desktop tree appears here as a sheet row, indented by depth so the
+          hierarchy is still readable, and every one is a plain anchor — so the
+          brief's "reachable on a phone" requirement holds for `/en/journal` and
+          for all ten pillars without a single disclosure control.
+        */}
+        {journalNav &&
+          flattenJournalNav(journalNav).map(({ node, depth }) => (
+            <a
+              className={depth > 0 ? `nb1-sheet-sub nb1-sheet-d${Math.min(depth, 2)}` : undefined}
+              href={node.href}
+              key={`jn-${node.href}-${depth}`}
+              onClick={() => setSheetOpen(false)}
+            >
+              {node.label}
+            </a>
+          ))}
+
         {loginText && loginHref && (
           <a href={loginHref} onClick={() => setSheetOpen(false)}>
             {loginText}
@@ -1096,4 +1266,108 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       </div>
     </>
   )
+}
+
+/**
+ * One row in the Journal branch, and its submenu if it has children.
+ *
+ * ## Two tap targets, always
+ *
+ * The label is an `<a href>`; the disclosure arrow is a sibling `<button>`. The
+ * brief is emphatic about this and it is worth restating: a single element that
+ * both navigates and discloses cannot do both on touch, where there is no hover.
+ * Tapping it opens the panel, every time, and the parent page becomes unreachable
+ * on a phone. That is how `/en/journal` disappears.
+ *
+ * ## Why the submenu is in the DOM even when closed
+ *
+ * §12 requires every nav link to be a real anchor in the HTML the server sends,
+ * and the brief's test is to disable JavaScript and confirm the links are still
+ * clickable. So the panels are always rendered and hidden with CSS — never
+ * conditionally mounted. Closed state is `visibility:hidden`, which keeps them out
+ * of the tab order and away from screen readers while leaving them in the markup
+ * for a crawler.
+ *
+ * The CSS opens a panel on `:hover` and `:focus-within` as well as on the
+ * `data-open` attribute this component sets. That is what makes it work with
+ * JavaScript off — and hover-to-open is what the brief specifies anyway ("the same
+ * interaction Microbiome already uses"). The button is then an enhancement for
+ * touch and for keyboards, not the only way in.
+ */
+function JournalNavItem({
+  node,
+  onNavigate,
+}: {
+  node: JournalNavNode
+  onNavigate: () => void
+}) {
+  const [open, setOpen] = React.useState(false)
+  const hasChildren = Boolean(node.children?.length)
+
+  return (
+    <div className="nb1-disc-sub" data-open={open ? 'true' : undefined}>
+      <div className="nb1-disc-row">
+        <a href={node.href} onClick={onNavigate}>
+          {node.label}
+        </a>
+
+        {hasChildren && (
+          <button
+            aria-expanded={open}
+            aria-label={`${node.label} — submenu`}
+            className="nb1-disc-arrow"
+            onClick={(event) => {
+              // Stop the click reaching the row's anchor or the outside-click
+              // handler that closes the whole Discover menu.
+              event.preventDefault()
+              event.stopPropagation()
+              setOpen((value) => !value)
+            }}
+            type="button"
+          >
+            <svg
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.4"
+              viewBox="0 0 24 24"
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {hasChildren && (
+        <div className="nb1-disc-panel" role="menu">
+          {node.children!.map((child) => (
+            <JournalNavItem key={child.href} node={child} onNavigate={onNavigate} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Depth-first flattening of the Journal tree, for the mobile sheet.
+ *
+ * The mobile menu is a vertical list of anchors, not a flyout — so the tree
+ * becomes rows carrying their depth, and indentation stands in for nesting. Every
+ * link survives the flattening, which is the point: nothing in the desktop menu
+ * should be unreachable on a phone.
+ *
+ * The parent's own link is emitted before its children, so "Journal" is tappable
+ * in its own right rather than only being a heading over its contents.
+ */
+function flattenJournalNav(
+  node: JournalNavNode,
+  depth = 0,
+): Array<{ node: JournalNavNode; depth: number }> {
+  return [
+    { node, depth },
+    ...(node.children ?? []).flatMap((child) => flattenJournalNav(child, depth + 1)),
+  ]
 }
