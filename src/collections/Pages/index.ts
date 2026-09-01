@@ -1,7 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import {
+  adminOrContentTrash,
+  adminOrEditor,
+  contentEditor,
+  enforceAgentDraftOperation,
+} from '../../access/roles'
 
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
@@ -109,13 +114,16 @@ import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
+  trash: true,
   // Publication status is locale-specific, so editors publish one locale at a time.
   disableBulkEdit: true,
   access: {
-    create: authenticated,
-    delete: authenticated,
+    admin: contentEditor,
+    create: contentEditor,
+    delete: adminOrContentTrash,
     read: authenticatedOrPublished,
-    update: authenticated,
+    readVersions: adminOrEditor,
+    update: contentEditor,
   },
   defaultPopulate: {
     title: true,
@@ -133,6 +141,7 @@ export const Pages: CollectionConfig<'pages'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
+    enableListViewSelectAPI: true,
     pagination: { defaultLimit: 5 },
 
     livePreview: {
@@ -428,7 +437,7 @@ export const Pages: CollectionConfig<'pages'> = {
   ],
 
   hooks: {
-    beforeOperation: [capturePagePublication],
+    beforeOperation: [enforceAgentDraftOperation, capturePagePublication],
     beforeValidate: [
       ({ data }) => {
         if (!data) return data

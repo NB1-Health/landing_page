@@ -1,14 +1,15 @@
 import type { CollectionConfig } from 'payload'
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { adminOnly, adminOrPublished } from '../../access/roles'
 
 export const Products: CollectionConfig<'products'> = {
   slug: 'products',
   access: {
-    create: authenticated,
-    update: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
+    admin: adminOnly,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
+    read: adminOrPublished,
+    readVersions: adminOnly,
   },
   admin: {
     useAsTitle: 'name',

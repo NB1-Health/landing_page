@@ -73,7 +73,7 @@ through", the bug is more likely in that other backend than in this repo.
 ```
 
 **Payload CMS**, if you haven't used it before, is a headless CMS that runs
-*inside* your Next.js app rather than as a separate hosted product — content
+_inside_ your Next.js app rather than as a separate hosted product — content
 types ("collections", e.g. Pages, Posts, Products) are defined in code
 (`src/collections/`), and Payload generates an admin UI and a REST/GraphQL
 API for them automatically. In this project the admin UI lives at `/cms/admin`.
@@ -119,18 +119,18 @@ for the full day-to-day workflow of changing the database schema locally.
 
 ### Common commands
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start the app in dev mode (hot reload) |
-| `npm run build` then `npm run start` | Build and run a production build locally |
-| `npm run migrate` | Apply any pending database migrations |
-| `npm run migrate:create -- --name my-change` | Generate a new migration after you change a collection/global |
-| `npm run migrate:status` | See which migrations have/haven't run |
-| `npm run db:sync-stg` | Overwrite your **local** DB with a copy of staging's data (useful to get realistic content to develop against) |
-| `npm run generate:types` | Regenerate TypeScript types (`src/payload-types.ts`) after changing a collection/global — do this whenever you edit `src/collections/` or `src/globals/` |
-| `npm run generate:importmap` | Regenerate Payload's admin panel component registry after adding/moving a custom admin component |
-| `npm run lint` / `npm run lint:fix` | Check / fix lint issues |
-| `npm test` | Run all tests (see [§9](#9-testing)) |
+| Command                                      | What it does                                                                                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                                | Start the app in dev mode (hot reload)                                                                                                                   |
+| `npm run build` then `npm run start`         | Build and run a production build locally                                                                                                                 |
+| `npm run migrate`                            | Apply any pending database migrations                                                                                                                    |
+| `npm run migrate:create -- --name my-change` | Generate a new migration after you change a collection/global                                                                                            |
+| `npm run migrate:status`                     | See which migrations have/haven't run                                                                                                                    |
+| `npm run db:sync-stg`                        | Overwrite your **local** DB with a copy of staging's data (useful to get realistic content to develop against)                                           |
+| `npm run generate:types`                     | Regenerate TypeScript types (`src/payload-types.ts`) after changing a collection/global — do this whenever you edit `src/collections/` or `src/globals/` |
+| `npm run generate:importmap`                 | Regenerate Payload's admin panel component registry after adding/moving a custom admin component                                                         |
+| `npm run lint` / `npm run lint:fix`          | Check / fix lint issues                                                                                                                                  |
+| `npm test`                                   | Run all tests (see [§9](#9-testing))                                                                                                                     |
 
 ### Optional: Docker for the app itself
 
@@ -183,53 +183,53 @@ copy from. Below is what each variable is for, grouped by what it configures.
 
 **Database & Payload core**
 
-| Variable | What it's for |
-|---|---|
-| `DATABASE_URL` / `DATABASE_URI` | Postgres connection string the app uses day-to-day |
-| `DATABASE_URL_DIRECT` | A connection that bypasses PgBouncer (a connection-pooling proxy sitting in front of the production database). Migrations may need this because they can hold locks that a pooled connection cannot sustain. Not needed locally. |
-| `PAYLOAD_SECRET` | Random secret Payload uses to sign login tokens. Generate with `openssl rand -hex 32`. |
-| `NEXT_PUBLIC_SERVER_URL` | This site's own public URL — used for building links, CORS, and image loading |
-| `CRON_SECRET` | Lets scheduled jobs (e.g. scheduled publish) authenticate without a logged-in user |
-| `PREVIEW_SECRET` | Signs target-bound draft-preview links. Use a random value of at least 32 characters. |
-| `PG_POOL_MAX` / `PG_POOL_MAX_BUILD` | Advanced: override how many DB connections the app opens. Rarely needed — see the comment in `payload.config.ts` if curious. |
+| Variable                            | What it's for                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL` / `DATABASE_URI`     | Postgres connection string the app uses day-to-day                                                                                                                                                                               |
+| `DATABASE_URL_DIRECT`               | A connection that bypasses PgBouncer (a connection-pooling proxy sitting in front of the production database). Migrations may need this because they can hold locks that a pooled connection cannot sustain. Not needed locally. |
+| `PAYLOAD_SECRET`                    | Random secret Payload uses to sign login tokens. Generate with `openssl rand -hex 32`.                                                                                                                                           |
+| `NEXT_PUBLIC_SERVER_URL`            | This site's own public URL — used for building links, CORS, and image loading                                                                                                                                                    |
+| `CRON_SECRET`                       | Lets scheduled jobs (e.g. scheduled publish) authenticate without a logged-in user                                                                                                                                               |
+| `PREVIEW_SECRET`                    | Signs target-bound draft-preview links. Use a random value of at least 32 characters.                                                                                                                                            |
+| `PG_POOL_MAX` / `PG_POOL_MAX_BUILD` | Advanced: override how many DB connections the app opens. Rarely needed — see the comment in `payload.config.ts` if curious.                                                                                                     |
 
 **Email**
 
-| Variable | What it's for |
-|---|---|
+| Variable                                                                    | What it's for                                                                                      |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | Outgoing email (e.g. account emails). Locally you can point these at a tool like Mailpit/Mailtrap. |
 
 **Checkout & payments**
 
-| Variable | What it's for |
-|---|---|
-| `NEXT_PUBLIC_BACKEND_URL` | Base URL of the external backend that actually owns subscriptions/payments. Checkout requests get forwarded here. |
+| Variable                             | What it's for                                                                                                          |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_BACKEND_URL`            | Base URL of the external backend that actually owns subscriptions/payments. Checkout requests get forwarded here.      |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe's publishable (safe-for-browser) key, used only to render the payment form — no payment logic runs in this repo |
 
 **Accounts**
 
-| Variable | What it's for |
-|---|---|
+| Variable                                                                                                            | What it's for                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_STORAGE_BUCKET`, `_MESSAGING_SENDER_ID`, `_APP_ID` | Firebase config for frontend user accounts (shares a Firebase project with another NB1 app, "frontend-web") |
 
 **Support chat**
 
-| Variable | What it's for |
-|---|---|
+| Variable                                                               | What it's for                               |
+| ---------------------------------------------------------------------- | ------------------------------------------- |
 | `NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN` / `NEXT_PUBLIC_CHATWOOT_BASE_URL` | Configures the Chatwoot support-chat widget |
 
 **Analytics & marketing tracking** (see [§8](#8-tracking--analytics) for how these are used)
 
-| Variable | What it's for |
-|---|---|
-| `NEXT_PUBLIC_GTM_ID` | Google Tag Manager / GA4 container ID |
-| `NEXT_PUBLIC_KLAVIYO_COMPANY_ID` | Klaviyo onsite company ID. Set to `WwW2Hy` only in production; leave blank or unset on staging/local so they cannot send browser events into production Klaviyo |
-| `NEXT_PUBLIC_META_PIXEL_ID` | Meta (Facebook) Pixel ID — used in the browser |
+| Variable                          | What it's for                                                                                                                                                              |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_GTM_ID`              | Google Tag Manager / GA4 container ID                                                                                                                                      |
+| `NEXT_PUBLIC_KLAVIYO_COMPANY_ID`  | Klaviyo onsite company ID. Set to `WwW2Hy` only in production; leave blank or unset on staging/local so they cannot send browser events into production Klaviyo            |
+| `NEXT_PUBLIC_META_PIXEL_ID`       | Meta (Facebook) Pixel ID — used in the browser                                                                                                                             |
 | `NEXT_PUBLIC_META_PURCHASE_OWNER` | Controls only the Meta Purchase CAPI owner: keep `landing` until the durable backend route is verified, then switch to `backend`; the browser Pixel always remains enabled |
-| `META_PIXEL_ID` | Same Pixel ID, used server-side |
-| `META_CAPI_ACCESS_TOKEN` | Access token for Meta's server-side Conversions API |
-| `META_GRAPH_API_VERSION` | Which version of Meta's Graph API to call |
-| `META_TEST_EVENT_CODE` | Marks server-side events as test events in Meta's dashboard — **should only ever be set outside production** |
+| `META_PIXEL_ID`                   | Same Pixel ID, used server-side                                                                                                                                            |
+| `META_CAPI_ACCESS_TOKEN`          | Access token for Meta's server-side Conversions API                                                                                                                        |
+| `META_GRAPH_API_VERSION`          | Which version of Meta's Graph API to call                                                                                                                                  |
+| `META_TEST_EVENT_CODE`            | Marks server-side events as test events in Meta's dashboard — **should only ever be set outside production**                                                               |
 
 The Klaviyo onsite loader is fail-closed: it is rendered only when
 `NEXT_PUBLIC_KLAVIYO_COMPANY_ID` is set.
@@ -369,7 +369,7 @@ landing block) — separate from the transactional/account email sent via SMTP.
   loaded — useful as a quick health check if leads seem to be silently
   failing.
 - `Footer/config.ts` has a CMS field ("Klaviyo Form (Payload submission)")
-  that lets editors attach a Payload form-builder form purely to *log*
+  that lets editors attach a Payload form-builder form purely to _log_
   Klaviyo submissions inside the CMS — it doesn't power the actual form.
 
 ### Chatwoot (support chat)

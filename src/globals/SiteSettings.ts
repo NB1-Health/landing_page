@@ -3,12 +3,14 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 
 import { appLocales } from '@/i18n/config'
 
+import { adminOnly } from '@/access/roles'
+
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: 'Site Settings',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: adminOnly,
   },
   hooks: {
     afterChange: [
