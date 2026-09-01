@@ -1,8 +1,14 @@
 import type { GlobalConfig } from 'payload'
 
+import { adminOnly } from '@/access/roles'
+
 export const Navigation: GlobalConfig = {
   slug: 'navigation',
   label: 'Global Navigation',
+  access: {
+    read: () => true,
+    update: adminOnly,
+  },
   fields: [
     {
       name: 'items',

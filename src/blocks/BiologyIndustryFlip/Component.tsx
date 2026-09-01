@@ -260,7 +260,11 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           color: rgba(18, 49, 77, 0.7);
         }
         .bif-cstat-more {
+          /* auto pins the label to the bottom of the face; the padding is a
+             floor, so when the copy fills the card and the auto margin collapses
+             to zero the label still cannot touch the text. */
           margin-top: auto;
+          padding-top: 10px;
           display: inline-flex;
           align-items: center;
           gap: 8px;

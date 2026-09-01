@@ -62,7 +62,7 @@ import { randomUUID } from 'crypto'
 
 function textNode(text: string, format = 0) {
   return {
-    type: 'text',
+    type: 'text' as const,
     version: 1,
     text,
     format,
@@ -72,7 +72,41 @@ function textNode(text: string, format = 0) {
   }
 }
 
-function paragraphNode(children: ReturnType<typeof textNode>[]) {
+type TextNode = ReturnType<typeof textNode>
+
+type LinkNode = {
+  type: 'link'
+  version: 3
+  direction: 'ltr'
+  format: ''
+  indent: 0
+  fields: {
+    linkType: 'custom'
+    newTab: boolean
+    url: string
+  }
+  children: TextNode[]
+}
+
+type InlineNode = TextNode | LinkNode
+
+function linkNode(url: string, children: TextNode[], newTab: boolean): LinkNode {
+  return {
+    type: 'link',
+    version: 3,
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    fields: {
+      linkType: 'custom',
+      newTab,
+      url,
+    },
+    children,
+  }
+}
+
+function paragraphNode(children: InlineNode[]) {
   return {
     type: 'paragraph',
     version: 1,
@@ -84,7 +118,7 @@ function paragraphNode(children: ReturnType<typeof textNode>[]) {
   }
 }
 
-function headingNode(tag: 'h1' | 'h2' | 'h3' | 'h4', children: ReturnType<typeof textNode>[]) {
+function headingNode(tag: 'h1' | 'h2' | 'h3' | 'h4', children: InlineNode[]) {
   return {
     type: 'heading',
     version: 1,
@@ -127,29 +161,59 @@ function richTextDoc(text: string) {
 // Inline HTML → Lexical text nodes
 // ---------------------------------------------------------------------------
 
-function parseInlineChildren(el: NHTMLElement): ReturnType<typeof textNode>[] {
-  const nodes: ReturnType<typeof textNode>[] = []
+function parseLinkUrl(url: string): string {
+  const normalized = url.trim()
+  const scheme = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase()
+
+  if (!normalized || /[\u0000-\u001f\u007f]/.test(normalized)) {
+    throw new Error('Links must have a valid URL.')
+  }
+
+  if (scheme && !['http', 'https', 'mailto', 'tel'].includes(scheme)) {
+    throw new Error(`Unsupported link protocol "${scheme}:".`)
+  }
+
+  return normalized
+}
+
+function parseInlineChildren(el: NHTMLElement, inheritedFormat = 0): InlineNode[] {
+  const nodes: InlineNode[] = []
 
   for (const child of el.childNodes) {
     if (child.nodeType === 3) {
       // plain text node
       const text = child.text
-      if (text.trim()) nodes.push(textNode(text))
+      if (text.trim()) nodes.push(textNode(text, inheritedFormat))
     } else if (child.nodeType === 1) {
       const el2 = child as NHTMLElement
       const tag = el2.tagName?.toLowerCase()
-      const text = el2.text.trim()
-      if (!text) continue
 
-      if (tag === 'strong' || tag === 'b') {
-        nodes.push(textNode(text, 1)) // 1 = bold
-      } else if (tag === 'em' || tag === 'i') {
-        nodes.push(textNode(text, 2)) // 2 = italic
-      } else if (tag === 'u') {
-        nodes.push(textNode(text, 8)) // 8 = underline
-      } else {
-        nodes.push(textNode(text))
+      if (tag === 'a') {
+        const children = parseInlineChildren(el2, inheritedFormat).flatMap((node) =>
+          node.type === 'link' ? node.children : [node],
+        )
+        if (!children.length) continue
+
+        const href = el2.getAttribute('href')
+        if (!href) {
+          nodes.push(...children)
+          continue
+        }
+
+        nodes.push(linkNode(parseLinkUrl(href), children, el2.getAttribute('target') === '_blank'))
+        continue
       }
+
+      const format =
+        tag === 'strong' || tag === 'b'
+          ? inheritedFormat | 1
+          : tag === 'em' || tag === 'i'
+            ? inheritedFormat | 2
+            : tag === 'u'
+              ? inheritedFormat | 8
+              : inheritedFormat
+
+      nodes.push(...parseInlineChildren(el2, format))
     }
   }
 
@@ -175,6 +239,14 @@ function parseKeyTakeaways(container: NHTMLElement) {
     if (leadIn || explanation) {
       items.push({ leadIn, explanation })
     }
+  }
+
+  if (
+    items.length < 3 ||
+    items.length > 5 ||
+    items.some(({ leadIn, explanation }) => !leadIn || !explanation)
+  ) {
+    throw new Error('Block "keyTakeaways" requires 3–5 items with a lead-in and explanation.')
   }
 
   return blockNode('keyTakeaways', { items })
@@ -212,6 +284,18 @@ function parseFAQ(container: NHTMLElement) {
     }
   }
 
+  if (
+    items.length < 3 ||
+    items.length > 6 ||
+    items.some(({ answer }) =>
+      answer.root.children.every((paragraph) =>
+        paragraph.children.every((child) => child.type !== 'text' || !child.text.trim()),
+      ),
+    )
+  ) {
+    throw new Error('Block "faq" requires 3–6 question and answer pairs.')
+  }
+
   return blockNode('faq', { items })
 }
 
@@ -219,7 +303,11 @@ function parseCTA(container: NHTMLElement) {
   const p = container.querySelector('p')
   const a = container.querySelector('a')
   const body = p?.text?.trim() ?? container.text.trim()
-  const buttonUrl = a?.getAttribute('href') ?? '/order'
+  const buttonUrl = parseLinkUrl(a?.getAttribute('href') ?? '/order')
+
+  if (!body) {
+    throw new Error('Block "cta" requires body text.')
+  }
 
   return blockNode('ctaBlock', { body, buttonUrl })
 }
@@ -241,6 +329,10 @@ function parseBulletList(container: NHTMLElement) {
     items.push({ leadIn, body })
   }
 
+  if (items.length < 2 || items.length > 10 || items.some(({ leadIn, body }) => !leadIn || !body)) {
+    throw new Error('Block "bulletList" requires 2–10 items with a lead-in and body.')
+  }
+
   return blockNode('bulletList', { sectionTitle, items })
 }
 
@@ -249,7 +341,9 @@ function parseDataTable(container: NHTMLElement) {
   const sectionTitle = h3?.text?.trim() || undefined
 
   const table = container.querySelector('table')
-  if (!table) return null
+  if (!table) {
+    throw new Error('Block "dataTable" requires a table.')
+  }
 
   const ths = table.querySelectorAll('thead tr th')
   const columnHeaders =
@@ -269,6 +363,16 @@ function parseDataTable(container: NHTMLElement) {
       cells: Array.from(tr.querySelectorAll('td')).map((td) => ({ value: td.text.trim() })),
     }))
     .filter((row) => row.cells.length > 0)
+
+  const expectedCells = columnHeaders.length || 2
+  if (
+    !rows.length ||
+    expectedCells > 6 ||
+    columnHeaders.some(({ label }) => !label) ||
+    rows.some(({ cells }) => cells.length !== expectedCells || cells.some(({ value }) => !value))
+  ) {
+    throw new Error('Block "dataTable" requires complete rows matching its 2–6 columns.')
+  }
 
   return blockNode('dataTable', { sectionTitle, variant, columnHeaders, rows })
 }
@@ -293,21 +397,91 @@ function htmlElementToLexicalNodes(el: NHTMLElement) {
     return [paragraphNode(children)]
   }
 
-  // For any other block element, treat its text as a plain paragraph
-  const text = el.text.trim()
-  if (!text) return []
-  return [paragraphNode([textNode(text)])]
+  // For any other block element, flatten its inline content into a paragraph.
+  const children = parseInlineChildren(el)
+  if (!children.length) return []
+  return [paragraphNode(children)]
 }
 
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
+const supportedBlockTypes = new Map<string, string>([
+  ['keytakeaways', 'keyTakeaways'],
+  ['faq', 'faq'],
+  ['cta', 'cta'],
+  ['bulletlist', 'bulletList'],
+  ['datatable', 'dataTable'],
+])
+
+function normalizeBlockType(type: string): string {
+  const supportedType = supportedBlockTypes.get(type.toLowerCase())
+
+  if (!supportedType) {
+    throw new Error(`Unsupported block marker "${type}".`)
+  }
+
+  return supportedType
+}
+
+function validateBlockMarkers(html: string): void {
+  let currentBlockType: string | null = null
+
+  for (const match of html.matchAll(/<!--([\s\S]*?)-->/g)) {
+    const marker = match[1]?.trim() ?? ''
+    const openMatch = marker.match(/^block:([a-z][\w-]*)$/i)
+    const isClose = /^\/block$/i.test(marker)
+
+    if (!openMatch && !isClose) {
+      if (/^\/?block\b/i.test(marker)) {
+        throw new Error(`Malformed block marker "${marker}".`)
+      }
+      continue
+    }
+
+    if (openMatch) {
+      const blockType = normalizeBlockType(openMatch[1]!)
+      if (currentBlockType) {
+        throw new Error(
+          `Block "${currentBlockType}" must be closed before opening block "${blockType}".`,
+        )
+      }
+      currentBlockType = blockType
+      continue
+    }
+
+    if (!currentBlockType) {
+      throw new Error('Found a closing block marker without an opening marker.')
+    }
+
+    currentBlockType = null
+  }
+
+  const finalCommentStart = html.lastIndexOf('<!--')
+  if (
+    finalCommentStart > html.lastIndexOf('-->') &&
+    /^\s*\/?block\b/i.test(html.slice(finalCommentStart + 4))
+  ) {
+    throw new Error('Found an unterminated block marker comment.')
+  }
+
+  if (currentBlockType) {
+    throw new Error(`Block "${currentBlockType}" is missing its closing marker.`)
+  }
+}
+
 /**
  * Parses `htmlContent` and returns a Lexical JSON document to be stored
  * in the Post `content` richText field.
  */
 export function parseHtmlToContent(html: string) {
+  if (!html.trim()) {
+    throw new Error('API HTML content cannot be empty.')
+  }
+
+  validateBlockMarkers(html)
+
   const lexicalChildren: ReturnType<
     typeof paragraphNode | typeof headingNode | typeof blockNode
   >[] = []
@@ -324,7 +498,7 @@ export function parseHtmlToContent(html: string) {
     const isClose = /<!--\s*\/block\s*-->/i.test(part)
 
     if (openMatch) {
-      currentBlockType = openMatch[1]!
+      currentBlockType = normalizeBlockType(openMatch[1]!)
       currentBlockHtml = ''
       continue
     }
@@ -371,13 +545,14 @@ export function parseHtmlToContent(html: string) {
       if (child.nodeType === 1) {
         const nodes = htmlElementToLexicalNodes(child as NHTMLElement)
         lexicalChildren.push(...nodes)
+      } else if (child.nodeType === 3 && child.text.trim()) {
+        lexicalChildren.push(paragraphNode([textNode(child.text)]))
       }
     }
   }
 
-  // Lexical requires at least one child in root
   if (lexicalChildren.length === 0) {
-    lexicalChildren.push(paragraphNode([textNode('')]))
+    throw new Error('API HTML content did not contain any usable content.')
   }
 
   return {

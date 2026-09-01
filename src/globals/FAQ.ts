@@ -1,11 +1,13 @@
 import type { GlobalConfig } from 'payload'
 
+import { adminOnly } from '@/access/roles'
+
 export const FAQ: GlobalConfig = {
   slug: 'faq',
   label: 'FAQ',
   access: {
     read: () => true,
-    update: ({ req }) => Boolean(req.user),
+    update: adminOnly,
   },
   fields: [
     {
