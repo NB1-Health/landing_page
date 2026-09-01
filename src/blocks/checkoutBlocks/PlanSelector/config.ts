@@ -104,7 +104,11 @@ export const PlanSelector: Block = {
           label: 'CTA text',
           localized: true,
           required: true,
-          admin: { placeholder: 'Start with Core' },
+          admin: {
+            placeholder: 'Start with Core',
+            description:
+              'Label only — the button draws its own arrow, so do not type one at the end or it will show twice.',
+          },
         },
         {
           name: 'ctaHref',

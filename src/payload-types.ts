@@ -352,6 +352,7 @@ export interface Page {
     | ReferralWidgetBlock
     | ReferInfoBlock
     | ReferFaqBlock
+    | CustomerReviewsBlock
   )[];
   meta?: {
     /**
@@ -4034,6 +4035,10 @@ export interface OrderStepHeroBlock {
     [k: string]: unknown;
   } | null;
   subtitle?: string | null;
+  /**
+   * Lead the seal row with the live Trustpilot score. The localized widget source is resolved from the page locale in code, the same way the homepage hero does it.
+   */
+  showTrustpilotRating?: boolean | null;
   showSeals?: boolean | null;
   seals?:
     | {
@@ -4295,6 +4300,9 @@ export interface PlanPivotBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   ctaText: string;
   ctaHref: string;
   id?: string | null;
@@ -4338,6 +4346,9 @@ export interface PlanSelectorBlock {
         minNote?: string | null;
         monthlyLinkText?: string | null;
         monthlyLinkHref?: string | null;
+        /**
+         * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+         */
         ctaText: string;
         ctaHref: string;
         id?: string | null;
@@ -5431,7 +5442,7 @@ export interface ProtocolLibraryBlock {
  */
 export interface ProtocolCredStripBlock {
   /**
-   * Up to 6, rendered as two interlocking rows of 3.
+   * Up to 7, rendered as two interlocking rows: the first holds 3, the second holds the rest. Seven gives a row of 3 above a row of 4.
    */
   faces?:
     | {
@@ -6928,6 +6939,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   coreCtaLabel?: string | null;
   coreCtaHref?: string | null;
   advBadge?: string | null;
@@ -6941,6 +6955,9 @@ export interface PlansSectionBlock {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Label only — the button draws its own arrow, so do not type one at the end or it will show twice.
+   */
   advCtaLabel?: string | null;
   advCtaHref?: string | null;
   guarantees?:
@@ -7385,6 +7402,67 @@ export interface ReferFaqBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'referFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CustomerReviewsBlock".
+ */
+export interface CustomerReviewsBlock {
+  /**
+   * Section heading, e.g. "Their own words." Renders as an <h2>.
+   */
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Add as many reviews as you need — the carousel scrolls horizontally and the progress bar adapts automatically. Every text field is per-locale; the photo is shared across locales.
+   */
+  reviews?:
+    | {
+        /**
+         * The short headline quote at the top of the card, e.g. "A smarter way to understand your gut health." Include the quotation marks if the design calls for them.
+         */
+        quote: string;
+        /**
+         * The full review. Clamped to two lines on the card; a "See more" toggle appears automatically when it is longer.
+         */
+        body?: string | null;
+        authorName: string;
+        /**
+         * Small uppercase line under the name, e.g. "NB1 customer".
+         */
+        authorMeta?: string | null;
+        /**
+         * Optional. When empty, the initials below are shown inside the avatar circle instead.
+         */
+        photo?: (number | null) | Media;
+        /**
+         * Fallback shown in the avatar when no photo is uploaded. Leave empty to derive it from the reviewer name.
+         */
+        initials?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  seeMoreLabel?: string | null;
+  seeLessLabel?: string | null;
+  prevAriaLabel?: string | null;
+  nextAriaLabel?: string | null;
+  railAriaLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'customerReviews';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -8003,6 +8081,7 @@ export interface PagesSelect<T extends boolean = true> {
         referralWidget?: T | ReferralWidgetBlockSelect<T>;
         referInfo?: T | ReferInfoBlockSelect<T>;
         referFaq?: T | ReferFaqBlockSelect<T>;
+        customerReviews?: T | CustomerReviewsBlockSelect<T>;
       };
   meta?:
     | T
@@ -9303,6 +9382,7 @@ export interface LegalStripBlockSelect<T extends boolean = true> {
 export interface OrderStepHeroBlockSelect<T extends boolean = true> {
   headline?: T;
   subtitle?: T;
+  showTrustpilotRating?: T;
   showSeals?: T;
   seals?:
     | T
@@ -10971,6 +11051,31 @@ export interface ReferFaqBlockSelect<T extends boolean = true> {
         answer?: T;
         id?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CustomerReviewsBlock_select".
+ */
+export interface CustomerReviewsBlockSelect<T extends boolean = true> {
+  heading?: T;
+  reviews?:
+    | T
+    | {
+        quote?: T;
+        body?: T;
+        authorName?: T;
+        authorMeta?: T;
+        photo?: T;
+        initials?: T;
+        id?: T;
+      };
+  seeMoreLabel?: T;
+  seeLessLabel?: T;
+  prevAriaLabel?: T;
+  nextAriaLabel?: T;
+  railAriaLabel?: T;
   id?: T;
   blockName?: T;
 }

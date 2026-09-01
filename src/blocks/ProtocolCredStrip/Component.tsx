@@ -34,7 +34,12 @@ export const ProtocolCredStripComponent: React.FC<ProtocolCredStripBlockType> = 
   useProtocolReveal(sectionRef, '[data-rv]')
 
   const faceList = (faces ?? []).filter((f) => imgUrl(f?.image))
-  const rows = [faceList.slice(0, 3), faceList.slice(3, 6)].filter((r) => r.length > 0)
+  // Top row is always 3; the bottom row takes whatever is left, so 7 faces read
+  // as a row of 3 above a row of 4. Unbounded slice so a doc that predates the
+  // current maxRows still renders every face rather than silently dropping some.
+  const rows = [faceList.slice(0, 3), faceList.slice(3)].filter((r) => r.length > 0)
+  // A bottom row longer than the top one flips the stagger -- see the CSS.
+  const hasWideBottom = rows.length === 2 && rows[1].length > rows[0].length
   const statList = stats ?? []
 
   return (
@@ -81,6 +86,16 @@ export const ProtocolCredStripComponent: React.FC<ProtocolCredStripBlockType> = 
         .pcs-faces .fr + .fr {
           margin-top: -9px;
           margin-left: 19px;
+        }
+        /* When the bottom row is the longer one, the wider row anchors left and
+           the top row is nudged half an avatar step (26px advance / 2) to the
+           right instead, so its first face sits in the gap between the bottom
+           row's first two rather than the bottom row overhanging to the right. */
+        .pcs-faces.is-wide-bottom .fr:first-child {
+          margin-left: 13px;
+        }
+        .pcs-faces.is-wide-bottom .fr + .fr {
+          margin-left: 0;
         }
         .pcs-faces img {
           width: 38px;
@@ -166,7 +181,7 @@ export const ProtocolCredStripComponent: React.FC<ProtocolCredStripBlockType> = 
       <div className="pr-wrap">
         <div className="pcs-in" data-rv="">
           {rows.length > 0 && (
-            <div className="pcs-faces">
+            <div className={`pcs-faces${hasWideBottom ? ' is-wide-bottom' : ''}`}>
               {rows.map((row, ri) => (
                 <div className="fr" key={ri}>
                   {row.map((f, fi) => (

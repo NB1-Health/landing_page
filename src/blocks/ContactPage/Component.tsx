@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { getDictionary } from '@/i18n/getDictionary'
 
 // Same backend base the checkout blocks use.
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apistg.nb1.com'
@@ -44,6 +45,7 @@ type Props = {
   calloutBody?: string | null
   calloutCtaLabel?: string | null
   calloutCtaHref?: string | null
+  locale?: string
 }
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -99,7 +101,9 @@ export const ContactPageComponent: React.FC<Props> = ({
   calloutBody,
   calloutCtaLabel,
   calloutCtaHref,
+  locale,
 }) => {
+  const dict = getDictionary(locale)
   const topicList = (topics ?? []).map((t) => t.label).filter(Boolean) as string[]
   // Per-field visibility (default on — null/undefined means show).
   const nameOn = showName !== false
@@ -288,7 +292,7 @@ export const ContactPageComponent: React.FC<Props> = ({
                 <label htmlFor="ct-msg">{messageLabel || 'Message'}</label>
                 <textarea
                   id="ct-msg"
-                  placeholder={messagePlaceholder || 'How can we help?'}
+                  placeholder={messagePlaceholder || dict.forms.contactMessagePlaceholder}
                   value={form.message}
                   onChange={set('message')}
                 />
@@ -300,7 +304,7 @@ export const ContactPageComponent: React.FC<Props> = ({
                 disabled={sending}
                 style={sending ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}
               >
-                {sending ? 'Sending…' : submitLabel || 'Send message'}
+                {sending ? dict.forms.contactSending : submitLabel || dict.forms.contactSubmit}
                 <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14" />
                   <path d="m13 6 6 6-6 6" />

@@ -4,6 +4,7 @@
  * instead of (or in addition to) the server-side API layer.
  */
 
+import { getDictionary } from '@/i18n/getDictionary'
 import { AMOUNT_TOKEN_RE, PRICE_TOKEN_RE, evalArithmetic, hasPriceToken, resolveExpr } from './priceExpr'
 
 export type CurrencyCode = 'EUR' | 'GBP' | 'AED' | 'CHF'
@@ -166,22 +167,13 @@ export function resolveTokensDeep<T>(
   return typeof value === 'string' ? (resolved as T) : JSON.parse(resolved)
 }
 
-const MONTH_LABELS: Record<string, Record<number, string>> = {
-  en: { 1: '1 month', 4: '4 months', 12: '12 months' },
-  de: { 1: '1 Monat', 4: '4 Monate', 12: '12 Monate' },
-  fr: { 1: '1 mois', 4: '4 mois', 12: '12 mois' },
-  nl: { 1: '1 maand', 4: '4 maanden', 12: '12 maanden' },
-}
-
+// These all delegate to getDictionary, which collapses regional locales onto
+// their base language (uk/uae→en, ch→de, be→nl). Keying a local lookup table
+// by the raw locale instead silently missed those and fell back to English
+// templates like `1 months` on /uk and /uae.
 export function formatMonthLabel(month: number, locale: string): string {
-  return MONTH_LABELS[locale]?.[month] ?? `${month} months`
-}
-
-const SAVINGS_DICT: Record<string, { prefix: string; suffix: string }> = {
-  en: { prefix: 'Save', suffix: '/ cycle' },
-  de: { prefix: '', suffix: 'pro Zyklus sparen' },
-  fr: { prefix: 'Économisez', suffix: '/ cycle' },
-  nl: { prefix: 'Bespaar', suffix: '/ cyclus' },
+  const dict = getDictionary(locale)
+  return dict.plans.months[month as 1 | 4 | 12] ?? `${month} months`
 }
 
 export function formatSavingsLabel(
@@ -190,23 +182,13 @@ export function formatSavingsLabel(
   locale: string,
 ): string | null {
   if (!savings || savings <= 0) return null
-  const dict = SAVINGS_DICT[locale] ?? SAVINGS_DICT.en
+  const dict = getDictionary(locale)
   const amount = formatPrice(savings, currency, locale)
-  return [dict.prefix, amount, dict.suffix].filter(Boolean).join(' ')
+  return [dict.plans.savingsPrefix, amount, dict.plans.savingsSuffix].filter(Boolean).join(' ')
 }
 
-export const BEST_VALUE_DICT: Record<string, string> = {
-  en: 'Best value',
-  de: 'Bester Wert',
-  fr: 'Meilleur rapport',
-  nl: 'Beste waarde',
-}
-
-export const PER_MONTH_DICT: Record<string, string> = {
-  en: '/mo',
-  de: '/Mon.',
-  fr: '/mois',
-  nl: '/mnd',
+export function getBestValueLabel(locale: string): string {
+  return getDictionary(locale).plans.bestValue
 }
 
 export function computeSavings(rate: number, baselineRate: number, month: number): number {

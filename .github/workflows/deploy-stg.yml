@@ -46,6 +46,9 @@ jobs:
           host: ${{ secrets.STG_HOST }}
           username: ${{ secrets.STG_USER }}
           key: ${{ secrets.STG_SSH_KEY }}
+          # deploy-stg.sh does `rm -rf node_modules && npm install` + a full Next.js build,
+          # which regularly runs past appleboy/ssh-action's 10m default and killed the deploy.
+          command_timeout: 30m
           script: |
             set -e
             cd /var/www/landing_page

@@ -17,8 +17,11 @@ export const ProtocolCredStripBlock: Block = {
       label: 'Faces',
       type: 'array',
       minRows: 1,
-      maxRows: 6,
-      admin: { description: 'Up to 6, rendered as two interlocking rows of 3.' },
+      maxRows: 7,
+      admin: {
+        description:
+          'Up to 7, rendered as two interlocking rows: the first holds 3, the second holds the rest. Seven gives a row of 3 above a row of 4.',
+      },
       fields: [
         { name: 'image', type: 'upload', relationTo: 'media', required: true },
         { name: 'name', type: 'text', required: true },

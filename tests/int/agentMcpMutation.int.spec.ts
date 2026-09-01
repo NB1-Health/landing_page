@@ -563,6 +563,53 @@ describe('agent MCP mutation (Postgres)', () => {
       ).rejects.toMatchObject({ status: 409 })
     }
 
+    const reviewPhoto = await upload('customer-review-reference')
+    const reviewsPage = await payload.create({
+      collection: 'pages',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        layout: [
+          {
+            blockType: 'customerReviews',
+            reviews: [
+              {
+                authorName: 'Media safety reviewer',
+                photo: reviewPhoto.id,
+                quote: 'Referenced review photo',
+              },
+            ],
+          },
+        ],
+        slug: `customer-review-media-${suffix}`,
+        title: 'Customer review Media reference guard',
+      } as never,
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    pageIDs.push(reviewsPage.id)
+    await expect(
+      payload.findByID({
+        collection: 'media',
+        id: reviewPhoto.id,
+        locale: 'en',
+        overrideAccess: true,
+        trash: true,
+      }),
+    ).resolves.toMatchObject({ agentTrashEligible: false })
+    await expect(
+      setContentTrashState({
+        action: 'trash',
+        collection: 'media',
+        expectedUpdatedAt: reviewPhoto.updatedAt as string,
+        id: reviewPhoto.id,
+        locale: 'en',
+        req,
+      }),
+    ).rejects.toMatchObject({ status: 409 })
+
     const unusedMedia = await upload('unused')
     const mediaLock = await payload.create({
       collection: 'payload-locked-documents',

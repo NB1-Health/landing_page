@@ -132,9 +132,14 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           grid-template-columns: repeat(3, 1fr);
           gap: 18px;
         }
+        /* Height follows the taller of the two faces rather than being fixed:
+           both faces share one grid cell (see .bif-cstat-face), so the longest
+           copy sets the card height instead of overflowing it. The old fixed
+           value survives as a floor so short cards keep the designed look. */
         .bif-cstat {
           position: relative;
-          height: 290px;
+          display: grid;
+          min-height: 290px;
           border: 0;
           background: none;
           padding: 0;
@@ -150,8 +155,10 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
           border-radius: 16px;
         }
         .bif-cstat-inner {
-          position: absolute;
-          inset: 0;
+          /* relative, not static: .bif-cstat-shell is positioned and comes first
+             in the DOM, so an unpositioned inner would paint underneath it. */
+          position: relative;
+          display: grid;
           transform-style: preserve-3d;
           transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
           will-change: transform;
@@ -195,8 +202,7 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
             inset 0 0 0 1px rgba(255, 255, 255, 0.36);
         }
         .bif-cstat-face {
-          position: absolute;
-          inset: 0;
+          grid-area: 1 / 1;
           -webkit-backface-visibility: hidden;
           backface-visibility: hidden;
           display: flex;
@@ -306,7 +312,7 @@ export const BiologyIndustryFlipComponent: React.FC<BiologyIndustryFlipBlockType
             margin-top: 42px;
           }
           .bif-cstat {
-            height: 224px;
+            min-height: 224px;
           }
         }
       `}</style>

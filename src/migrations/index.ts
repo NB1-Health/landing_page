@@ -149,6 +149,8 @@ import * as migration_20260819_120000_hero_trustpilot_toggle from './20260819_12
 import * as migration_20260827_102140_payload_agent_mcp_source from './20260827_102140_payload_agent_mcp_source'
 import * as migration_20260827_102410_payload_agent_mcp_bulk_tools from './20260827_102410_payload_agent_mcp_bulk_tools'
 import * as migration_20260827_175000_payload_agent_mcp_fk_restrict from './20260827_175000_payload_agent_mcp_fk_restrict'
+import * as migration_20260828_120000_customer_reviews_block from './20260828_120000_customer_reviews_block'
+import * as migration_20260828_140000_order_step_hero_trustpilot_toggle from './20260828_140000_order_step_hero_trustpilot_toggle'
 import * as migration_20260831_120000_add_editor_role from './20260831_120000_add_editor_role'
 import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility'
 
@@ -907,6 +909,16 @@ export const migrations = [
     up: migration_20260827_175000_payload_agent_mcp_fk_restrict.up,
     down: migration_20260827_175000_payload_agent_mcp_fk_restrict.down,
     name: '20260827_175000_payload_agent_mcp_fk_restrict',
+  },
+  {
+    up: migration_20260828_120000_customer_reviews_block.up,
+    down: migration_20260828_120000_customer_reviews_block.down,
+    name: '20260828_120000_customer_reviews_block',
+  },
+  {
+    up: migration_20260828_140000_order_step_hero_trustpilot_toggle.up,
+    down: migration_20260828_140000_order_step_hero_trustpilot_toggle.down,
+    name: '20260828_140000_order_step_hero_trustpilot_toggle',
   },
   {
     up: migration_20260831_120000_add_editor_role.up,
