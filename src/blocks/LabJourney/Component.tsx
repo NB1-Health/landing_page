@@ -109,6 +109,39 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
     let pinned = false
     let curCh = -1
 
+    // Fill length at which the spark sits exactly on each node's dot.
+    // .tl-fill::after is centred on the fill's bottom edge, so the fill has to
+    // span from its own top to the dot's centre. Measured from the DOM rather
+    // than hardcoded because the dot's size and offset vary by node kind
+    // (.big is 20px at a different top, chapter 1 nodes use tighter padding).
+    let stops: number[] = []
+    function measureStops() {
+      const fillTop = fill!.offsetTop
+      stops = nodes.map((n) => {
+        const dot = n.querySelector<HTMLElement>('.tl-dot')
+        const centre = dot
+          ? n.offsetTop + dot.offsetTop + dot.offsetHeight / 2
+          : n.offsetTop + n.offsetHeight / 2
+        return centre - fillTop
+      })
+      // Deliberately no stop past the last dot: the scroll ends with the spark
+      // parked on the final node, leaving the short tail of rail below it unlit,
+      // rather than drifting off into empty space at the bottom.
+    }
+
+    // Scroll is quantised to the dots rather than mapped continuously down the
+    // rail: each node owns an equal slice of the scroll, and the spark is put
+    // exactly on that node's dot for the whole slice. It is therefore always
+    // sitting on a dot, never between two. The travel between stops is done by
+    // a CSS height transition (see the .jxr.pinned .tl-fill rule) so the hop
+    // still reads as movement instead of a jump.
+    function stopIndexAt(p: number) {
+      let i = Math.floor(p * stops.length)
+      if (i < 0) i = 0
+      if (i >= stops.length) i = stops.length - 1
+      return i
+    }
+
     function layout() {
       pinned = MM.matches && !RM
       sec!.classList.toggle('pinned', pinned)
@@ -138,11 +171,21 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
         if (k > 1.35) k = 1.35
         k = Math.floor(k * 1000) / 1000
         tl!.style.transform = `scale(${k})`
-        track!.style.height = `${stageH + Math.round(stageH * 1.4)}px`
+        measureStops()
+        // Scroll budget is per node, not a flat multiple of the stage: with a
+        // fixed 1.4x the 12 stops here got ~105px each, about one wheel notch,
+        // so a single flick could jump two stops and the height transition
+        // would animate straight past the node in between. PER_NODE keeps each
+        // stop a comfortable scroll apart however many nodes the page has.
+        const PER_NODE = 170
+        const scrollLen = Math.max(Math.round(stageH * 1.4), stops.length * PER_NODE)
+        track!.style.height = `${stageH + scrollLen}px`
       } else {
         railVp!.style.height = ''
         track!.style.height = ''
         tl!.style.transform = ''
+        // The unpinned rail snaps to the dots as well, so it needs the stops too.
+        measureStops()
       }
     }
 
@@ -170,10 +213,14 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
         const denom = track!.offsetHeight - stage!.offsetHeight || 1
         let p = -track!.getBoundingClientRect().top / denom
         p = p < 0 ? 0 : p > 1 ? 1 : p
-        const revealY = p * (tl!.offsetHeight + 50)
+        const idx = stops.length ? stopIndexAt(p) : -1
+        const revealY = idx >= 0 ? stops[idx] : p * (tl!.offsetHeight + 50)
         fill!.style.height = `${Math.min(revealY, tl!.offsetHeight).toFixed(1)}px`
         for (let i = 0; i < nodes.length; i++) {
-          nodes[i].classList.toggle('lit', nodes[i].offsetTop + nodes[i].offsetHeight * 0.5 < revealY)
+          // Lit by index, so the pop fires on exactly the node the spark is on.
+          const at =
+            idx >= 0 ? i <= idx : nodes[i].offsetTop + nodes[i].offsetHeight * 0.5 < revealY
+          nodes[i].classList.toggle('lit', at)
         }
         for (let g = 0; g < groups.length; g++) {
           if (groups[g].offsetTop < revealY) act = g
@@ -182,13 +229,25 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
         const vh = window.innerHeight || document.documentElement.clientHeight
         const lineY = vh * 0.52
         const rTop = tl!.getBoundingClientRect().top
-        let fh = lineY - rTop
-        if (fh < 0) fh = 0
+        // Where the reading line falls inside the rail, then snapped back to the
+        // last dot it has passed — so the spark rests on a dot here too rather
+        // than wherever the line happens to sit. -1 means it has not reached the
+        // first dot yet, and the rail stays empty.
+        const linePos = lineY - rTop
+        let idx = -1
+        for (let i = 0; i < stops.length; i++) if (stops[i] <= linePos) idx = i
+        let fh = idx >= 0 ? stops[idx] : 0
+        if (!stops.length) {
+          fh = linePos
+          if (fh < 0) fh = 0
+        }
         if (fh > tl!.offsetHeight) fh = tl!.offsetHeight
         fill!.style.height = `${fh.toFixed(1)}px`
         for (let i = 0; i < nodes.length; i++) {
-          const r = nodes[i].getBoundingClientRect()
-          nodes[i].classList.toggle('lit', r.top + r.height * 0.5 < lineY)
+          const at = stops.length
+            ? i <= idx
+            : nodes[i].getBoundingClientRect().top + nodes[i].getBoundingClientRect().height * 0.5 < lineY
+          nodes[i].classList.toggle('lit', at)
         }
         for (let g = 0; g < groups.length; g++) {
           if (groups[g].getBoundingClientRect().top < lineY) act = g
@@ -337,7 +396,16 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
           position: sticky;
           top: 0;
           height: 100vh;
+          /* Clips the rail, which is taller than the stage. overflow cannot be
+             hidden on one axis and visible on the other, so it clips sideways
+             too -- and the aside's viz sits flush against this left edge, which
+             sliced the .pulse ring (inset:0 animating to scale(1.15), so ~10px
+             proud of the 130px box) flat on its left. The padding moves the clip
+             boundary out; the matching negative margin puts the content back
+             where it was, so nothing shifts. */
           overflow: hidden;
+          padding-left: 20px;
+          margin-left: -20px;
         }
 
         .jxr-aside {
@@ -571,7 +639,17 @@ export const LabJourneyComponent: React.FC<LabJourneyBlockType> = ({
           border-radius: 2px;
           background: linear-gradient(#8ecae6, #5bc0d8 45%, #2e86c1);
           box-shadow: 0 0 14px rgba(91, 192, 216, 0.5);
-          transition: background 0.5s ease;
+          /* The fill only ever targets a dot position, in both the pinned and
+             the unpinned rail, so this height transition is what renders the hop
+             from one dot to the next as movement rather than a jump. */
+          transition:
+            height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+            background 0.5s ease;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .tl-fill {
+            transition: none;
+          }
         }
         .tl-fill.warm {
           background: linear-gradient(#f2cf6b, #e8b53a 45%, #c7961f);
