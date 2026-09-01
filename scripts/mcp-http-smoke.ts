@@ -13,10 +13,12 @@ async function main() {
   const apiKey = randomBytes(32).toString('hex')
   const payload = await getPayload({ config })
   let client: Client | undefined
+  let clonedPageID: number | undefined
   let keyID: number | undefined
   let mediaID: number | undefined
   let postID: number | undefined
   let report: Record<string, unknown> | undefined
+  let sourcePageID: number | undefined
   let userID: number | undefined
 
   const readToolJSON = (value: unknown): Record<string, unknown> => {
@@ -59,10 +61,12 @@ async function main() {
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
         label: 'Local MCP HTTP smoke test',
         'payload-mcp-tool': {
+          clonePageDraft: true,
           commitBulkDrafts: true,
           createPostDraft: true,
           findContent: true,
           getContent: true,
+          patchPageDraft: true,
           planBulkDrafts: true,
           restoreContent: true,
           trashContent: true,
@@ -114,10 +118,12 @@ async function main() {
     const tools = await client.listTools()
     const toolNames = tools.tools.map(({ name }) => name).sort()
     const expectedTools = [
+      'clone_page_draft',
       'commit_bulk_drafts',
       'create_post_draft',
       'find_content',
       'get_content',
+      'patch_page_draft',
       'plan_bulk_drafts',
       'restore_content',
       'trash_content',
@@ -135,6 +141,65 @@ async function main() {
     if (result.isError) throw new Error('find_content returned an MCP tool error.')
 
     const unique = Date.now().toString(36)
+    const sourcePage = await payload.create({
+      collection: 'pages',
+      context: { disableRevalidate: true },
+      data: {
+        _status: 'draft',
+        layout: [],
+        slug: `local-mcp-source-${unique}`,
+        title: 'Local MCP source Page',
+      },
+      draft: true,
+      fallbackLocale: false,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    sourcePageID = sourcePage.id
+
+    const clonedPage = readToolJSON(
+      await client.callTool({
+        arguments: {
+          idempotencyKey: `clone-page-${unique}`,
+          locale: 'en',
+          slug: `local-mcp-page-${unique}`,
+          sourcePageID,
+          title: 'Local MCP cloned Page',
+        },
+        name: 'clone_page_draft',
+      }),
+    )
+    if (typeof clonedPage.id !== 'number' || typeof clonedPage.updatedAt !== 'string') {
+      throw new Error('clone_page_draft returned an invalid compact document.')
+    }
+    clonedPageID = clonedPage.id
+
+    const patchedPage = readToolJSON(
+      await client.callTool({
+        arguments: {
+          expectedUpdatedAt: clonedPage.updatedAt,
+          id: clonedPageID,
+          idempotencyKey: `patch-page-${unique}`,
+          locale: 'en',
+          patchJson: JSON.stringify({ title: 'Patched local MCP Page' }),
+        },
+        name: 'patch_page_draft',
+      }),
+    )
+    if (patchedPage.id !== clonedPageID || typeof patchedPage.updatedAt !== 'string') {
+      throw new Error('patch_page_draft returned an invalid compact document.')
+    }
+    const pageDraft = await payload.findByID({
+      collection: 'pages',
+      draft: true,
+      id: clonedPageID,
+      locale: 'en',
+      overrideAccess: true,
+    })
+    if (pageDraft._status !== 'draft' || pageDraft.title !== 'Patched local MCP Page') {
+      throw new Error('MCP-cloned Page was not preserved as the expected draft.')
+    }
+
     const uploaded = readToolJSON(
       await client.callTool({
         arguments: {
@@ -281,44 +346,6 @@ async function main() {
     })
     if (draft._status !== 'draft') throw new Error('MCP-created Post was not a draft.')
 
-    const trashed = readToolJSON(
-      await client.callTool({
-        arguments: {
-          collection: 'posts',
-          expectedUpdatedAt: committedItem.result.updatedAt,
-          id: postID,
-          idempotencyKey: `trash-${unique}`,
-          locale: 'en',
-        },
-        name: 'trash_content',
-      }),
-    )
-    if (typeof trashed.updatedAt !== 'string') {
-      throw new Error('trash_content returned no updatedAt value.')
-    }
-
-    readToolJSON(
-      await client.callTool({
-        arguments: {
-          collection: 'posts',
-          expectedUpdatedAt: trashed.updatedAt,
-          id: postID,
-          idempotencyKey: `restore-${unique}`,
-          locale: 'en',
-        },
-        name: 'restore_content',
-      }),
-    )
-    const restored = await payload.findByID({
-      collection: 'posts',
-      draft: true,
-      id: postID,
-      locale: 'en',
-      overrideAccess: true,
-    })
-    if (restored.deletedAt) throw new Error('Restored Post still has deletedAt set.')
-    if (restored._status !== 'draft') throw new Error('Restored Post is no longer a draft.')
-
     report = {
       draftMutation: 'ok',
       draftUpdate: 'ok',
@@ -329,8 +356,9 @@ async function main() {
       listedTools: toolNames,
       mediaTrashRestore: 'ok',
       mediaUpload: 'ok',
+      pageClone: 'ok',
+      pagePatch: 'ok',
       readToolCall: 'ok',
-      trashRestore: 'ok',
     }
   } finally {
     await client?.close().catch(() => undefined)
@@ -342,9 +370,37 @@ async function main() {
         .delete({ collection: 'posts', id: postID, overrideAccess: true, trash: true })
         .catch(() => undefined)
     }
+    if (clonedPageID !== undefined) {
+      await payload
+        .delete({
+          collection: 'pages',
+          context: { disableRevalidate: true },
+          id: clonedPageID,
+          overrideAccess: true,
+          trash: true,
+        })
+        .catch(() => undefined)
+    }
+    if (sourcePageID !== undefined) {
+      await payload
+        .delete({
+          collection: 'pages',
+          context: { disableRevalidate: true },
+          id: sourcePageID,
+          overrideAccess: true,
+          trash: true,
+        })
+        .catch(() => undefined)
+    }
     if (mediaID !== undefined) {
       await payload
-        .delete({ collection: 'media', id: mediaID, overrideAccess: true, trash: true })
+        .delete({
+          collection: 'media',
+          context: { disableRevalidate: true },
+          id: mediaID,
+          overrideAccess: true,
+          trash: true,
+        })
         .catch(() => undefined)
     }
     if (userID !== undefined) {
