@@ -1,0 +1,314 @@
+/**
+ * Italian UI strings.
+ *
+ * Placeholder: every value is currently the English copy from en.ts, so /it renders
+ * in English rather than falling back to another language. Keys are translated in
+ * place as the IT column of the translations workbook lands — this file is the
+ * translation target, not a fallback shim.
+ */
+export const it = {
+  header: {
+    language: 'Language',
+    currency: 'Currency',
+    apply: 'Apply',
+    onThisPage: 'On this page',
+  },
+  theCase: {
+    readMore: 'Read more',
+    back: 'Back',
+  },
+  gutFirst: {
+    revealsLabel: 'What your gut reveals',
+    yourGut: 'Your gut',
+  },
+  twoModels: {
+    theyLabel: 'Everyone else',
+  },
+  keyTakeaways: {
+    heading: 'Key Takeaways',
+  },
+  disclaimer: {
+    text: 'The insights provided by the NB1 Microbiome Test are for informational purposes only and do not substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider with any questions regarding a medical condition or before making changes to your diet or supplement routine.',
+  },
+  faq: {
+    heading: 'Frequently asked questions',
+  },
+  dataTable: {
+    glossary: {
+      termHeader: 'Term',
+      definitionHeader: 'What it means',
+    },
+  },
+  cta: {
+    heading: 'Elevate Your Biology',
+    buttonText: 'Order Your NB1 Microbiome Discovery Kit',
+  },
+  forms: {
+    thankYouRegistering: 'Thank you for registering!',
+    contactMessagePlaceholder: 'How can we help?',
+    contactSubmit: 'Send message',
+    contactSending: 'Sending…',
+  },
+  scienceBoard: {
+    viewBio: 'View bio',
+  },
+  plans: {
+    months: { 1: '1 month', 4: '4 months', 12: '12 months' } as Record<1 | 4 | 12, string>,
+    perMonth: '/mo',
+    savingsPrefix: 'Save',
+    savingsSuffix: '/ cycle',
+    bestValue: 'Best value',
+    compareShow: 'Compare Core & Advanced in full',
+    compareHide: 'Hide full comparison',
+    guaranteeBilledMonthly: 'Billed monthly.',
+    guaranteeNoUpfront: 'No upfront charge.',
+    guaranteePayNothing: 'Pay nothing until your formula is made.',
+  },
+  countries: {
+    Germany: 'Germany',
+    Austria: 'Austria',
+    Netherlands: 'Netherlands',
+    Belgium: 'Belgium',
+    France: 'France',
+    Luxembourg: 'Luxembourg',
+    Ireland: 'Ireland',
+    'United Kingdom': 'United Kingdom',
+    'United Arab Emirates': 'United Arab Emirates',
+    Switzerland: 'Switzerland',
+    Romania: 'Romania',
+  } as Record<string, string>,
+  promo: {
+    codes: {
+      WELCOME10: '10% off your first cycle',
+      NB1: '15% off your first cycle',
+      HYROX: '20% off your first cycle',
+      FREEMONTH: 'First month free',
+      FIRSTMONTHFREE: 'First month free',
+    } as Record<string, string>,
+    appliedTemplate: '✓ {code} applied.',
+    invalid: "That code isn't valid.",
+    // Localised versions of the free-text messages the checkout API returns for
+    // a discount code (both rejections and the success confirmation). The
+    // backend sends no machine code, so applyPromo maps its English message text
+    // to these keys. Add an entry here — in EVERY locale — for each backend
+    // message you want translated; anything unmapped falls back to the generic
+    // localised text for that branch.
+    messages: {
+      notFound: 'Discount code not found.',
+      valid: 'Discount code is valid.',
+      referralFirstMonthFree: '✓ First month free with your referral code.',
+    } as Record<string, string>,
+  },
+  checkout: {
+    hero: {
+      titlePrefix: 'Almost ',
+      titleAccent: 'there.',
+      subtitle:
+        'Your email, your address, how it ships, and payment, all here. Nothing is charged today.',
+    },
+    steps: {
+      email: 'Your email',
+      address: 'Where to send your kit',
+      shipping: 'Shipment options',
+      payment: 'Payment',
+    },
+    next: 'Next →',
+    edit: 'Edit',
+    required: 'Required.',
+    nameInvalid: 'Enter a valid name.',
+    email: {
+      label: 'Email',
+      placeholder: 'you@email.com',
+      hint: "We'll create your account and send kit tracking + results here. You'll set a password when your kit arrives.",
+      invalid: 'Enter a valid email address.',
+      typoSuggestion: 'Did you mean {domain}?',
+      useSuggestion: 'Use this',
+    },
+    address: {
+      firstName: 'First name',
+      lastName: 'Last name',
+      country: 'Country',
+      addressLabel: 'Address',
+      addressPlaceholder: 'Street and house number',
+      apt: 'Apartment, suite, etc.',
+      optional: '(optional)',
+      postalCode: 'Postal code',
+      city: 'City',
+      phone: 'Phone',
+      phoneNote: '(for delivery updates)',
+      phonePlaceholder: '+49 …',
+      phoneInvalid: 'Enter a valid phone number for the selected country.',
+    },
+    shipping: {
+      standardName: 'Standard',
+      standardSub: '3–5 working days · tracked',
+      standardPrice: 'Free',
+      expressName: 'Express',
+      expressSub: '1–2 working days · tracked',
+      expressPrice: '€9',
+    },
+    payment: {
+      applePay: 'Apple Pay',
+      googlePay: 'Pay',
+      orPayAnotherWay: 'or pay another way',
+      card: 'Card',
+      cardNumber: 'Card number',
+      cardNumberInvalid: 'Enter a valid card number.',
+      expiry: 'Expiry',
+      expiryFormat: 'MM / YY.',
+      cvc: 'CVC',
+      cvcDigits: '3–4 digits.',
+      nameOnCard: 'Name on card',
+      paypalNote:
+        "You'll be redirected to PayPal to approve your plan. Nothing is charged today — your first payment is taken only when your formula is manufactured.",
+      klarna: 'Klarna',
+      klarnaNote:
+        "Pay with Klarna on invoice or instant bank transfer. You'll approve in Klarna — your first charge is taken only at manufacture.",
+      sepa: 'SEPA Direct Debit',
+      iban: 'IBAN',
+      ibanPlaceholder: 'DE00 0000 0000 0000 0000 00',
+      ibanInvalid: 'Enter a valid IBAN.',
+      accountHolder: 'Account holder',
+      sepaConsent:
+        'By providing your IBAN you authorise NB1 and Stripe to debit your account by SEPA Direct Debit, beginning only when your formula is manufactured.',
+      billingSame: 'Billing address same as delivery',
+      streetNumber: 'Street & number',
+      billingIndividual: 'Individual',
+      billingCompany: 'Company',
+      companyName: 'Company name',
+      taxId: 'VAT / Tax ID',
+      registrationNumber: 'Registration number',
+    },
+    secured: 'Secured by Stripe',
+    promoUi: {
+      switchTemplate: 'Change to {plan} {duration} · {price}/mo',
+      excludeOneMonth: 'This code can only be used on 4 or 12-month plans.',
+      addCode: 'Add discount code',
+      changeCode: 'Change code',
+      removeCode: 'Remove',
+      placeholder: 'Discount code',
+      apply: 'Apply',
+      appliedSuffix: '{code} applied',
+      discount: 'Discount',
+      firstMonth: 'First month',
+    },
+    confirm: {
+      label: 'Confirm — {zeroPrice} due today',
+      paypal: 'Continue with PayPal →',
+      klarna: 'Continue with Klarna →',
+      processing: 'Processing…',
+      legalPrefix: 'By confirming you agree to our',
+      terms: 'Terms',
+      and: 'and',
+      privacyPolicy: 'Privacy Policy',
+      legalMid:
+        ', and consent to NB1 processing your biological sample. Your first charge is around two weeks after you return your sample, only once your formula enters manufacture. A one-time ',
+      feeBold: '€49 fee',
+      legalEnd: "applies only if your sample isn't returned within 4 weeks.",
+      accountExists: 'An account with this email already exists. Please sign in instead.',
+      accountError: 'Could not create your account. Please try again.',
+      checkDetails: 'Please check your details and try again.',
+      orderError: "We couldn't complete your order:",
+    },
+    whatsNext: {
+      heading: 'What happens next',
+      step1:
+        'Your kit ships, a two-minute gut sample, sealed in its bag and posted back in the box it came in.',
+      step2: 'We sequence it and our science team approves your formula.',
+      step3: 'First charge, then your one-of-one formula ships.',
+    },
+    summary: {
+      title: 'Your order',
+      plan: 'Plan',
+      duration: 'Duration',
+      billing: 'Billing',
+      billingMonthly: 'Billed monthly',
+      cancelAnytime: 'Cancel anytime',
+      shipping: 'Shipping',
+      monthly: 'Monthly',
+      editLink: 'Edit plan or duration',
+      dueToday: '{zeroPrice} due today',
+      note: 'Your first charge is around two weeks after you return your sample, only once your formula enters manufacture.',
+    },
+    done: {
+      heading: "You're in",
+      body: "Your kit's on its way. We won't charge you anything yet, your first payment only happens once your formula's being made.",
+      eyebrow: 'Order',
+      inboxTitle: 'Check your inbox',
+      inboxBody:
+        "We've sent your confirmation to {email}. Open it to set your password and access your dashboard.",
+      dashboard: 'Go to my dashboard →',
+      trackOrder: 'Track your order',
+      helpLink: 'Need help?',
+      failed: {
+        heading: "Payment didn't go through",
+        body: 'Something went wrong with your payment. No charge was made. Please try again or get in touch.',
+        retry: 'Try again →',
+        help: 'Need help?',
+      },
+      supportLine: 'or',
+      supportEmail: 'support@nb1.com',
+      chatUs: '💬 Chat with us',
+      survey: {
+        eyebrow: 'Help us grow',
+        question: 'How did you find NB1?',
+        sub: 'One tap, it helps us reach more people like you.',
+        thanks: 'Got it, thank you.',
+        thanksSub: 'That helps us reach more people like you.',
+        whichOne: 'Which one?',
+        whichSub: 'Optional — tap to be more precise.',
+        somethingElse: 'Something else',
+        placeholder: 'Tell us where…',
+        send: 'Send',
+        skip: 'Skip',
+      },
+      timeline: {
+        heading: 'What happens next',
+        step1: {
+          label: 'Today',
+          title: 'Order confirmed',
+          body: "Check your inbox, we've emailed your receipt and a link to set your password and follow your kit's tracking.",
+        },
+        step2: {
+          label: '~3 days',
+          title: 'Your kit arrives',
+          body: 'A two-minute gut sample, sealed in its bag and posted back in the box it came in, plus a short health questionnaire online.',
+        },
+        step3: {
+          label: 'Weeks 1–2',
+          title: 'We sequence your sample',
+          body: 'Read at species level, then our science team drafts your personalised formula from your data.',
+        },
+        step4: {
+          label: 'Week 3',
+          title: 'Formula approved · first charge',
+          badge: 'First charge',
+          body: 'Your formula is signed off and your first payment is taken, only now, once it enters manufacture. Never before.',
+        },
+        step5: {
+          label: 'Week 4',
+          title: 'Your formula ships',
+          body: 'Activate, Restore and Nourish, blister-packed for 30 days, travel-ready. Your first cycle begins.',
+        },
+      },
+      summary: {
+        heading: 'Order summary',
+        plan: 'Plan',
+        cycle: 'Cycle',
+        delivery: 'Delivery',
+        deliveryValue: 'Tracked · free',
+        monthly: 'Monthly',
+        dueToday: '€0 charged today',
+        chargeNote: 'First charge {when}.',
+        chargeWhen: 'when your formula goes into manufacture',
+      },
+    },
+    legal: {
+      privacy: 'Privacy',
+      terms: 'Terms',
+      imprint: 'Imprint',
+      gdpr: 'GDPR',
+      copyright: '© NB1 Health GmbH 2026',
+    },
+  },
+}

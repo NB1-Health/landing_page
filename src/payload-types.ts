@@ -125,8 +125,8 @@ export interface Config {
     | ('false' | 'none' | 'null')
     | false
     | null
-    | ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')
-    | ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')[];
+    | ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae')
+    | ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae')[];
   globals: {
     navigation: Navigation;
     'site-settings': SiteSetting;
@@ -137,7 +137,7 @@ export interface Config {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     faq: FaqSelect<false> | FaqSelect<true>;
   };
-  locale: 'en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae';
+  locale: 'en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -383,11 +383,11 @@ export interface Page {
       /**
        * Removes a published locale from this document's hreflang cluster and sitemap.
        */
-      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
+      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
       /**
        * Optional. Must remain a published, non-excluded locale. Defaults to English.
        */
-      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae') | null;
+      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae') | null;
     };
     /**
      * Optional. Defaults to Title Tag if empty.
@@ -749,11 +749,11 @@ export interface Post {
       /**
        * Removes a published locale from this document's hreflang cluster and sitemap.
        */
-      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
+      excludedLocales?: ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae')[] | null;
       /**
        * Optional. Must remain a published, non-excluded locale. Defaults to English.
        */
-      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'ch' | 'be' | 'uk' | 'uae') | null;
+      xDefaultLocale?: ('en' | 'de' | 'fr' | 'nl' | 'it' | 'ch' | 'be' | 'uk' | 'uae') | null;
     };
   };
   /**

@@ -446,7 +446,7 @@ export async function checkInternationalSEO({
   assert.deepEqual(
     [...homepageByPath.keys()].sort(),
     expectedHomepagePaths,
-    'Sitemaps must contain all eight localized homepages',
+    'Sitemaps must contain every localized homepage',
   )
 
   const homepages = [...homepageByPath.values()]
