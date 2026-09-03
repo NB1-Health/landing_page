@@ -10,8 +10,8 @@ import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
 import { buildLocalizedDocumentPath } from '@/Header/localizedDocument'
 
 describe('international SEO locale config', () => {
-  it('maps the eight URL prefixes to valid languages and market codes', () => {
-    expect(appLocales).toEqual(['en', 'de', 'fr', 'nl', 'ch', 'be', 'uk', 'uae'])
+  it('maps the nine URL prefixes to valid languages and market codes', () => {
+    expect(appLocales).toEqual(['en', 'de', 'fr', 'nl', 'it', 'ch', 'be', 'uk', 'uae'])
     expect(localeConfig).toEqual({
       en: {
         hreflangCodes: ['en'],
@@ -36,6 +36,12 @@ describe('international SEO locale config', () => {
         htmlLang: 'nl',
         label: 'Dutch (Netherlands)',
         urlPrefix: '/nl',
+      },
+      it: {
+        hreflangCodes: ['it-IT'],
+        htmlLang: 'it',
+        label: 'Italian (Italy)',
+        urlPrefix: '/it',
       },
       ch: {
         fallbackLocale: 'de',

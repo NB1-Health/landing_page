@@ -23,6 +23,12 @@
     "label": "Dutch (Netherlands)",
     "urlPrefix": "/nl"
   },
+  "it": {
+    "hreflangCodes": ["it-IT"],
+    "htmlLang": "it",
+    "label": "Italian (Italy)",
+    "urlPrefix": "/it"
+  },
   "ch": {
     "fallbackLocale": "de",
     "hreflangCodes": ["de-CH"],

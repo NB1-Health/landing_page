@@ -33,6 +33,7 @@ const LOCALE_DEFAULT_CURRENCY: Record<string, string> = {
   ch: 'CHF',
   fr: 'EUR',
   nl: 'EUR',
+  it: 'EUR',
   be: 'EUR',
   uk: 'GBP',
   uae: 'AED',

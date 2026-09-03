@@ -153,6 +153,7 @@ import * as migration_20260828_120000_customer_reviews_block from './20260828_12
 import * as migration_20260828_140000_order_step_hero_trustpilot_toggle from './20260828_140000_order_step_hero_trustpilot_toggle'
 import * as migration_20260831_120000_add_editor_role from './20260831_120000_add_editor_role'
 import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility'
+import * as migration_20260901_130000_add_locale_it from './20260901_130000_add_locale_it'
 
 export const migrations = [
   {
@@ -929,5 +930,10 @@ export const migrations = [
     up: migration_20260901_120000_agent_media_trash_eligibility.up,
     down: migration_20260901_120000_agent_media_trash_eligibility.down,
     name: '20260901_120000_agent_media_trash_eligibility',
+  },
+  {
+    up: migration_20260901_130000_add_locale_it.up,
+    down: migration_20260901_130000_add_locale_it.down,
+    name: '20260901_130000_add_locale_it',
   },
 ]
