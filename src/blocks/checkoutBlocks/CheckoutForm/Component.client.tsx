@@ -988,6 +988,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // the basket selection (price + summary re-derive from cycleKey) and clears the
   // stale promo state so the visitor can re-apply the now-eligible code.
   const switchCycle = (target: '4' | '12') => {
+    if (influencerOffer) setInfluencerOfferStatus('pending')
     storePlanSelection({ plan: planKey, cycle: target })
     setSelection((s) => ({ ...s, cycleKey: target }))
     setPromoMsg(null)

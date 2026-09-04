@@ -355,6 +355,64 @@ describe('checkout influencer offer', () => {
     ).not.toHaveProperty('ecommerce.coupon')
   })
 
+  it('keeps checkout gated while retrying an offer on an eligible plan', async () => {
+    window.sessionStorage.setItem(
+      'nb1_checkout_plan',
+      JSON.stringify({ plan: 'core', cycle: 'monthly' }),
+    )
+
+    let resolveRetry!: (value: Record<string, unknown>) => void
+    checkoutApi.checkoutPreview
+      .mockResolvedValueOnce(
+        validPreview({
+          plan_id: 'core-1',
+          plan_slug: 'NB1-CORE-1',
+          month: 1,
+          monthly_price: 109,
+          promo_discount: 0,
+          first_month_price: 109,
+          discount_code_valid: false,
+          discount_message: 'Discount code is not valid for one-month plans',
+          exclude_one_month: true,
+        }),
+      )
+      .mockImplementationOnce(() => {
+        expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(true)
+        return new Promise((resolve) => {
+          resolveRetry = resolve
+        })
+      })
+
+    await act(async () => {
+      root.render(<CheckoutFormClient locale="en" />)
+      await flushEffects()
+    })
+
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
+    const switchButton = container.querySelector<HTMLButtonElement>('.nb1-promo-switch-btn')
+    if (!switchButton) throw new Error('Eligible-plan switch missing')
+
+    await act(async () => {
+      switchButton.click()
+      await flushEffects()
+    })
+
+    expect(checkoutApi.checkoutPreview).toHaveBeenCalledTimes(2)
+    expect(checkoutApi.checkoutPreview.mock.calls[1][0]).toMatchObject({
+      plan_slug: 'NB1-CORE-4',
+      discount_code: '20OFF',
+    })
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(true)
+
+    await act(async () => {
+      resolveRetry(validPreview())
+      await flushEffects()
+    })
+
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
+    expect(container.textContent).toContain('Creator offer applied')
+  })
+
   it('blocks payment and aborts a stale preview when currency changes', async () => {
     let resolveStale!: (value: Record<string, unknown>) => void
     checkoutApi.checkoutPreview
