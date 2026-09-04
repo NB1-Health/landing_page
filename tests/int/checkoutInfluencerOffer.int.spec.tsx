@@ -10,7 +10,12 @@ const checkoutApi = vi.hoisted(() => ({
   checkoutConfirm: vi.fn(),
   checkoutPaymentIntent: vi.fn(),
   checkoutPreview: vi.fn(),
+  getPermittedCheckoutAttribution: vi.fn(() => ({})),
   trackLanguagePublic: vi.fn().mockResolvedValue(undefined),
+}))
+const stripeUi = vi.hoisted(() => ({
+  confirmCardSetup: vi.fn(),
+  getElement: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -20,13 +25,21 @@ vi.mock('next/navigation', () => ({
 }))
 vi.mock('next/link', () => ({ default: () => null }))
 vi.mock('@stripe/stripe-js', () => ({ loadStripe: () => Promise.resolve(null) }))
-vi.mock('@stripe/react-stripe-js', () => ({
-  CardElement: () => null,
-  Elements: ({ children }: { children: React.ReactNode }) => children,
-  ExpressCheckoutElement: () => null,
-  useElements: () => null,
-  useStripe: () => null,
-}))
+vi.mock('@stripe/react-stripe-js', async () => {
+  const { createElement } = await import('react')
+  return {
+    CardElement: ({ onChange }: { onChange: (event: { complete: boolean }) => void }) =>
+      createElement('button', {
+        type: 'button',
+        className: 'test-card-element',
+        onClick: () => onChange({ complete: true }),
+      }),
+    Elements: ({ children }: { children: React.ReactNode }) => children,
+    ExpressCheckoutElement: () => null,
+    useElements: () => ({ getElement: stripeUi.getElement }),
+    useStripe: () => ({ confirmCardSetup: stripeUi.confirmCardSetup }),
+  }
+})
 vi.mock('react-phone-number-input', () => ({
   default: () => null,
   isValidPhoneNumber: () => true,
@@ -55,6 +68,34 @@ function memoryStorage(): Storage {
     removeItem: (key) => void values.delete(key),
     setItem: (key, value) => void values.set(key, String(value)),
   }
+}
+
+function changeInput(input: HTMLInputElement, value: string): void {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function checkoutError(message: string, code: string): Error {
+  return Object.assign(new Error(message), { code, validation: false })
+}
+
+function storeReadyCheckoutForm(): void {
+  window.sessionStorage.setItem(
+    'nb1_checkout_form',
+    JSON.stringify({
+      email: 'buyer@example.com',
+      fn: 'Test',
+      ln: 'Buyer',
+      country: 'Germany',
+      a1: '1 Test Street',
+      zip: '10115',
+      city: 'Berlin',
+      phone: '+491701234567',
+      shipping: 'standard',
+      step: 4,
+      doneSteps: [1, 2, 3],
+    }),
+  )
 }
 
 function validPreview(overrides: Record<string, unknown> = {}) {
@@ -102,6 +143,10 @@ describe('checkout influencer offer', () => {
     clearCheckoutId()
     resetCheckoutTracking()
     checkoutApi.checkoutPreview.mockReset()
+    checkoutApi.checkoutPaymentIntent.mockReset()
+    checkoutApi.checkoutConfirm.mockReset()
+    stripeUi.confirmCardSetup.mockReset().mockResolvedValue({})
+    stripeUi.getElement.mockReset().mockReturnValue({})
     navigation.replace.mockReset()
 
     vi.stubGlobal(
@@ -243,17 +288,15 @@ describe('checkout influencer offer', () => {
   })
 
   it('keeps a valid creator offer when a manual replacement is invalid', async () => {
-    checkoutApi.checkoutPreview
-      .mockResolvedValueOnce(validPreview())
-      .mockResolvedValueOnce(
-        validPreview({
-          promo_discount: 0,
-          first_month_price: 99,
-          discount_code: 'TYPO',
-          discount_code_valid: false,
-          discount_message: 'Discount code not found',
-        }),
-      )
+    checkoutApi.checkoutPreview.mockResolvedValueOnce(validPreview()).mockResolvedValueOnce(
+      validPreview({
+        promo_discount: 0,
+        first_month_price: 99,
+        discount_code: 'TYPO',
+        discount_code_valid: false,
+        discount_message: 'Discount code not found',
+      }),
+    )
 
     await act(async () => {
       root.render(<CheckoutFormClient locale="en" />)
@@ -411,6 +454,121 @@ describe('checkout influencer offer', () => {
 
     expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
     expect(container.textContent).toContain('Creator offer applied')
+  })
+
+  it.each([
+    ['payment intent', 'payment_intent_failed'],
+    ['confirmation', 'confirm_failed'],
+  ])(
+    'clears a stale creator offer rejected during %s and retries without it',
+    async (stage, errorCode) => {
+      window.history.replaceState(null, '', '/de/order')
+      storeReadyCheckoutForm()
+      checkoutApi.checkoutPreview.mockResolvedValueOnce(validPreview())
+      const staleError = checkoutError('Discount code has expired', errorCode)
+      const stopRetry = checkoutError('Stop after capturing retry', 'payment_intent_failed')
+      const intent = { client_secret: 'seti_secret', setup_intent_id: 'seti_stale_offer' }
+
+      if (stage === 'payment intent') {
+        checkoutApi.checkoutPaymentIntent
+          .mockRejectedValueOnce(staleError)
+          .mockRejectedValueOnce(stopRetry)
+      } else {
+        checkoutApi.checkoutPaymentIntent
+          .mockResolvedValueOnce(intent)
+          .mockRejectedValueOnce(stopRetry)
+        checkoutApi.checkoutConfirm.mockRejectedValueOnce(staleError)
+      }
+
+      await act(async () => {
+        root.render(<CheckoutFormClient locale="de" />)
+        await flushEffects()
+        await flushEffects()
+      })
+      const cardName = container.querySelector<HTMLInputElement>('input[autocomplete="cc-name"]')
+      const cardElement = container.querySelector<HTMLButtonElement>('.test-card-element')
+      if (!cardName || !cardElement) throw new Error('Ready card form missing')
+      await act(async () => {
+        changeInput(cardName, 'Test Buyer')
+        cardElement.click()
+        await flushEffects()
+      })
+
+      expect(container.textContent).toContain('Creator-Angebot angewendet')
+      expect(container.querySelector<HTMLElement>('.nb1-sum-price-big')?.style.textDecoration).toBe(
+        'line-through',
+      )
+
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.click()
+        await flushEffects()
+        await flushEffects()
+      })
+
+      expect(checkoutApi.checkoutPaymentIntent.mock.calls[0][0]).toMatchObject({
+        discount_code: '20OFF',
+      })
+      expect(container.textContent).not.toContain('Creator-Angebot angewendet')
+      expect(container.textContent).not.toContain('Discount code has expired')
+      expect(container.querySelector('.nb1-creator-offer-alert')?.textContent).toContain(
+        'Dieser Code ist ungültig.',
+      )
+      expect(container.querySelector<HTMLElement>('.nb1-sum-price-big')?.style.textDecoration).toBe(
+        '',
+      )
+      expect(window.sessionStorage.getItem('nb1_influencer_offer')).toBeNull()
+      expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
+
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.click()
+        await flushEffects()
+      })
+
+      expect(checkoutApi.checkoutPaymentIntent.mock.calls[1][0]).toMatchObject({
+        discount_code: null,
+      })
+    },
+  )
+
+  it('ignores manual Enter while creator validation is pending', async () => {
+    let resolveCreator!: (value: Record<string, unknown>) => void
+    checkoutApi.checkoutPreview.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCreator = resolve
+        }),
+    )
+
+    await act(async () => {
+      root.render(<CheckoutFormClient locale="en" />)
+      await flushEffects()
+    })
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(true)
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.nb1-sum-promo-toggle')?.click()
+      await flushEffects()
+    })
+    const input = container.querySelector<HTMLInputElement>('.nb1-sum .nb1-promo-input')
+    if (!input) throw new Error('Promo input missing')
+    await act(async () => {
+      changeInput(input, 'TYPO')
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushEffects()
+      await flushEffects()
+    })
+
+    expect((checkoutApi.checkoutPreview.mock.calls[0][1] as AbortSignal).aborted).toBe(false)
+    expect(checkoutApi.checkoutPreview).toHaveBeenCalledTimes(1)
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(true)
+
+    await act(async () => {
+      resolveCreator(validPreview())
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Creator offer applied')
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
   })
 
   it('blocks payment and aborts a stale preview when currency changes', async () => {

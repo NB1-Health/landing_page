@@ -108,6 +108,16 @@ function translateDiscountMessage(
   return (key && messages?.[key]) || fallback
 }
 
+function isDiscountCheckoutRejection(error: unknown): boolean {
+  const code = (error as { code?: unknown })?.code
+  const message = (error as { message?: unknown })?.message
+  return (
+    (code === 'payment_intent_failed' || code === 'confirm_failed') &&
+    typeof message === 'string' &&
+    /\b(?:discount|referral) code\b/i.test(message)
+  )
+}
+
 /* ─── Data ──────────────────────────────────────────────────────────── */
 
 // Numeric EUR fallback rates, used only if the live /subscriptions/plans fetch
@@ -830,8 +840,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         // Backend 422s carry raw English Pydantic text in err.message — show the
         // localized generic message instead (ClickUp 86cb3cftj).
         const validation = Boolean((err as { validation?: boolean })?.validation)
+        const offerRejected = rejectStaleInfluencerOffer(err)
         setAccountErr(
-          validation ? t.confirm.checkDetails : (err as Error).message || t.confirm.accountError,
+          offerRejected
+            ? dict.promo.invalid
+            : validation
+              ? t.confirm.checkDetails
+              : (err as Error).message || t.confirm.accountError,
         )
         setAccountStatus('error')
       }
@@ -949,6 +964,33 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     influencerOfferResolving ||
     promoLoading ||
     Boolean(promoApplied && lastPromoPreviewKeyRef.current !== promoContextKey(promoApplied))
+
+  function rejectStaleInfluencerOffer(error: unknown): boolean {
+    const activeCode =
+      promoSource === 'influencer'
+        ? promoApplied
+        : isProviderConfirmationReturn
+          ? readCheckoutRedirectContext()?.coupon
+          : null
+    const creatorCode = influencerOffer?.code ?? readInfluencerOffer()?.code
+    if (!activeCode || activeCode !== creatorCode || !isDiscountCheckoutRejection(error)) {
+      return false
+    }
+
+    promoAbortRef.current?.abort()
+    clearInfluencerOffer()
+    consumeCheckoutRedirectContext()
+    setInfluencerOffer(null)
+    setInfluencerOfferStatus('settled')
+    setPromoApplied(null)
+    setPromoSource(null)
+    setPromoPreview(null)
+    setPromoMsg({ text: dict.promo.invalid, ok: false })
+    setCreatorOfferFailure(dict.promo.invalid)
+    lastPromoPreviewKeyRef.current = ''
+    autoOfferAttemptKeyRef.current = ''
+    return true
+  }
 
   function persistCurrentCheckoutRedirectContext() {
     const redirectMonthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
@@ -1491,7 +1533,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
-      if (code === 'auth/email-already-in-use') {
+      if (rejectStaleInfluencerOffer(err)) {
+        setAccountErr(dict.promo.invalid)
+      } else if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
       } else if ((err as { validation?: boolean })?.validation) {
         // Backend 422: err.message is raw English Pydantic text — never show it.
@@ -1637,7 +1681,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
-      if (code === 'auth/email-already-in-use') {
+      if (rejectStaleInfluencerOffer(err)) {
+        setAccountErr(dict.promo.invalid)
+      } else if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
       } else if ((err as { validation?: boolean })?.validation) {
         // Backend 422: err.message is raw English Pydantic text — never show it.
@@ -1655,19 +1701,24 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (checkoutOfferResolving) throw new Error(t.confirm.processing)
     const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
     const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
-    const intent = await checkoutPaymentIntent({
-      plan_slug: planSlug,
-      currency,
-      shipping_option: shipping,
-      discount_code: promoApplied ?? null,
-      customer_email: email,
-      customer_name: `${fn} ${ln}`.trim() || null,
-      customer_phone: phone || null,
-      idempotency_key: idempotencyKeyRef.current || undefined,
-      payment_method_type: null,
-    })
-    persistCurrentCheckoutRedirectContext()
-    return intent
+    try {
+      const intent = await checkoutPaymentIntent({
+        plan_slug: planSlug,
+        currency,
+        shipping_option: shipping,
+        discount_code: promoApplied ?? null,
+        customer_email: email,
+        customer_name: `${fn} ${ln}`.trim() || null,
+        customer_phone: phone || null,
+        idempotency_key: idempotencyKeyRef.current || undefined,
+        payment_method_type: null,
+      })
+      persistCurrentCheckoutRedirectContext()
+      return intent
+    } catch (err) {
+      if (rejectStaleInfluencerOffer(err)) throw new Error(dict.promo.invalid)
+      throw err
+    }
   }
 
   async function applyPromo(
@@ -1675,6 +1726,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     source: PromoSource = 'manual',
     trackEvent = true,
   ) {
+    if (source === 'manual' && promoLoading) return
     const code = rawCode.trim().toUpperCase()
     if (!code) return
     const previousPromo = promoApplied
