@@ -353,6 +353,11 @@ export interface Page {
     | ReferInfoBlock
     | ReferFaqBlock
     | CustomerReviewsBlock
+    | HelpHeroBlock
+    | HelpNavBlock
+    | HelpStepsBlock
+    | HelpFaqBlock
+    | HelpCtaBlock
   )[];
   meta?: {
     /**
@@ -7466,6 +7471,275 @@ export interface CustomerReviewsBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpHeroBlock".
+ */
+export interface HelpHeroBlock {
+  /**
+   * Link to a sibling article. Leave the link text empty to hide the whole row.
+   */
+  alsoRead?: {
+    tag?: string | null;
+    label?: string | null;
+    /**
+     * Site-relative, e.g. /help/how-to-use-your-blood-kit.
+     */
+    url?: string | null;
+  };
+  /**
+   * Optional small teal label above the title, e.g. "Kit instructions".
+   */
+  eyebrow?: string | null;
+  heading: string;
+  /**
+   * One sentence. What the reader is about to do, and roughly how long it takes.
+   */
+  dek?: string | null;
+  /**
+   * Optional. Use this OR the intro photo on the Steps block, not both — a labelled product photo above step 1 usually does the job on its own.
+   */
+  image?: (number | null) | Media;
+  imageCaption?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpNavBlock".
+ */
+export interface HelpNavBlock {
+  /**
+   * Heading above the contents list. Also its accessible name.
+   */
+  label?: string | null;
+  /**
+   * The rail stays hidden unless the page has at least this many step headings — a one-step article does not need a contents list.
+   */
+  minHeadings?: number | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpNav';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpStepsBlock".
+ */
+export interface HelpStepsBlock {
+  /**
+   * Keep this on when the page has a "Help: On-page Nav" block — it indents the body so the rail sits in the left gutter. Turn it off for a full-width article with no rail.
+   */
+  reserveTocSpace?: boolean | null;
+  /**
+   * Optional unnumbered photo above step 1 — the "what's in the box" shot. When a labelled product photo already lists the parts, you do not also need a checklist.
+   */
+  introImage?: (number | null) | Media;
+  introImageCaption?: string | null;
+  /**
+   * Optional. One short paragraph before step 1.
+   */
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Numbered automatically in order. Write plainly, second person, short sentences. Bold the one or two words per line that matter most — a quantity, a warning, a required action — not whole sentences.
+   */
+  steps: {
+    title: string;
+    /**
+     * Optional. Anchor id for this step, used by the contents rail and by links pointing at it. Defaults to a slug of the title. Not localized — keep links stable across locales.
+     */
+    anchor?: string | null;
+    /**
+     * Paragraphs, numbered or bulleted lists (Tab indents a nested list), links, and Heading 4 for a sub-heading like "Are you based in the EU?".
+     */
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    /**
+     * The small boxed sample + action link. Leave the value empty to hide it.
+     */
+    code?: {
+      label?: string | null;
+      /**
+       * e.g. 181723699XXXX. Not localized — it is a literal sample.
+       */
+      value?: string | null;
+      linkLabel?: string | null;
+      /**
+       * Site-relative, e.g. /login.
+       */
+      linkUrl?: string | null;
+    };
+    /**
+     * Optional. Shown under the step body.
+     */
+    media?: (number | null) | Media;
+    mediaCaption?: string | null;
+    /**
+     * Shown in a grey 16:9 box while the photo is still missing, e.g. "Collection flow diagram". Leave empty to render nothing until there is an image.
+     */
+    mediaPlaceholder?: string | null;
+    /**
+     * Rendered under the step body, in order. Use sparingly.
+     */
+    notes?:
+      | {
+          variant?: ('info' | 'quiet') | null;
+          /**
+           * Optional. A short line, e.g. "No rush on the same day".
+           */
+          title?: string | null;
+          body?: {
+            root: {
+              type: string;
+              children: {
+                type: any;
+                version: number;
+                [k: string]: unknown;
+              }[];
+              direction: ('ltr' | 'rtl') | null;
+              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+              indent: number;
+              version: number;
+            };
+            [k: string]: unknown;
+          } | null;
+          id?: string | null;
+        }[]
+      | null;
+    id?: string | null;
+  }[];
+  outro?: {
+    /**
+     * e.g. "…And you're done!". Leave empty to hide.
+     */
+    doneText?: string | null;
+    /**
+     * Optional last line, e.g. a pointer to the sibling kit article.
+     */
+    note?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpSteps';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpFaqBlock".
+ */
+export interface HelpFaqBlock {
+  /**
+   * Keep this matched to the same setting on the Steps block above, so the two body columns line up.
+   */
+  reserveTocSpace?: boolean | null;
+  title?: string | null;
+  /**
+   * Anchor id for the heading, used by the contents rail. Not localized — keep links stable across locales.
+   */
+  anchor?: string | null;
+  /**
+   * Keep each answer to one short paragraph.
+   */
+  items: {
+    question: string;
+    /**
+     * One paragraph. Links are supported (e.g. "get in touch").
+     */
+    answer: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpCtaBlock".
+ */
+export interface HelpCtaBlock {
+  heading: string;
+  body?: string | null;
+  /**
+   * Optional small line under the body, e.g. a link to the Help centre.
+   */
+  fine?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  ctaLabel?: string | null;
+  /**
+   * Site-relative, e.g. /contact.
+   */
+  ctaUrl?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpCta';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
@@ -8082,6 +8356,11 @@ export interface PagesSelect<T extends boolean = true> {
         referInfo?: T | ReferInfoBlockSelect<T>;
         referFaq?: T | ReferFaqBlockSelect<T>;
         customerReviews?: T | CustomerReviewsBlockSelect<T>;
+        helpHero?: T | HelpHeroBlockSelect<T>;
+        helpNav?: T | HelpNavBlockSelect<T>;
+        helpSteps?: T | HelpStepsBlockSelect<T>;
+        helpFaq?: T | HelpFaqBlockSelect<T>;
+        helpCta?: T | HelpCtaBlockSelect<T>;
       };
   meta?:
     | T
@@ -11076,6 +11355,112 @@ export interface CustomerReviewsBlockSelect<T extends boolean = true> {
   prevAriaLabel?: T;
   nextAriaLabel?: T;
   railAriaLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpHeroBlock_select".
+ */
+export interface HelpHeroBlockSelect<T extends boolean = true> {
+  alsoRead?:
+    | T
+    | {
+        tag?: T;
+        label?: T;
+        url?: T;
+      };
+  eyebrow?: T;
+  heading?: T;
+  dek?: T;
+  image?: T;
+  imageCaption?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpNavBlock_select".
+ */
+export interface HelpNavBlockSelect<T extends boolean = true> {
+  label?: T;
+  minHeadings?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpStepsBlock_select".
+ */
+export interface HelpStepsBlockSelect<T extends boolean = true> {
+  reserveTocSpace?: T;
+  introImage?: T;
+  introImageCaption?: T;
+  intro?: T;
+  steps?:
+    | T
+    | {
+        title?: T;
+        anchor?: T;
+        body?: T;
+        code?:
+          | T
+          | {
+              label?: T;
+              value?: T;
+              linkLabel?: T;
+              linkUrl?: T;
+            };
+        media?: T;
+        mediaCaption?: T;
+        mediaPlaceholder?: T;
+        notes?:
+          | T
+          | {
+              variant?: T;
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  outro?:
+    | T
+    | {
+        doneText?: T;
+        note?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpFaqBlock_select".
+ */
+export interface HelpFaqBlockSelect<T extends boolean = true> {
+  reserveTocSpace?: T;
+  title?: T;
+  anchor?: T;
+  items?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpCtaBlock_select".
+ */
+export interface HelpCtaBlockSelect<T extends boolean = true> {
+  heading?: T;
+  body?: T;
+  fine?: T;
+  ctaLabel?: T;
+  ctaUrl?: T;
   id?: T;
   blockName?: T;
 }
