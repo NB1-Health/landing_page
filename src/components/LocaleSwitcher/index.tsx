@@ -6,7 +6,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
 // Languages shown in the switcher (never exposes ch/be/uk/uae directly)
-const LANGUAGES = ['en', 'de', 'fr', 'nl'] as const
+const LANGUAGES = ['en', 'de', 'fr', 'nl', 'it'] as const
 type Language = (typeof LANGUAGES)[number]
 
 const LANGUAGE_LABELS: Record<Language, string> = {
@@ -14,6 +14,7 @@ const LANGUAGE_LABELS: Record<Language, string> = {
   de: 'Deutsch',
   fr: 'Français',
   nl: 'Nederlands',
+  it: 'Italiano',
 }
 
 // Currencies available per language
@@ -22,6 +23,7 @@ const LANGUAGE_CURRENCIES: Record<Language, string[]> = {
   de: ['EUR', 'CHF'],
   fr: ['EUR'],
   nl: ['EUR'],
+  it: ['EUR'],
 }
 
 // Map (language, currency) → locale path segment
@@ -37,6 +39,7 @@ function resolveLocale(lang: Language, currency: string, geoCountry: string): st
     return 'de'
   }
   if (lang === 'fr') return 'fr'
+  if (lang === 'it') return 'it'
   if (lang === 'nl') {
     if (geoCountry === 'BE') return 'be'
     if (geoCountry === 'NL') return 'nl'
