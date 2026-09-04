@@ -181,6 +181,9 @@ export const en = {
       placeholder: 'Discount code',
       apply: 'Apply',
       appliedSuffix: '{code} applied',
+      creatorApplied: 'Creator offer applied',
+      offerUnavailable:
+        "We couldn't save this offer in your browser. Please enable site storage and try again.",
       discount: 'Discount',
       firstMonth: 'First month',
     },

@@ -175,6 +175,9 @@ export const fr = {
       placeholder: 'Code de réduction',
       apply: 'Appliquer',
       appliedSuffix: '{code} appliqué',
+      creatorApplied: 'Offre du créateur appliquée',
+      offerUnavailable:
+        'Nous n’avons pas pu enregistrer cette offre dans votre navigateur. Activez le stockage du site et réessayez.',
       discount: 'Remise',
       firstMonth: 'Mois offert',
     },

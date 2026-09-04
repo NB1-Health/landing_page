@@ -66,6 +66,19 @@ jobs:
           npm run test:int -- --run
           tests/int/localizedStatusTransition.int.spec.ts
 
+      - name: Run influencer landing and checkout regressions
+        run: >-
+          npm run test:int -- --run
+          tests/int/influencerLandingPage.int.spec.ts
+          tests/int/influencerCta.int.spec.tsx
+          tests/int/influencerVideo.int.spec.tsx
+          tests/int/influencerOffer.int.spec.ts
+          tests/int/checkoutPreviewApi.int.spec.ts
+          tests/int/checkoutInfluencerOffer.int.spec.tsx
+          tests/int/checkoutFormKlaviyo.int.spec.tsx
+          tests/int/pluginCollectionAccess.int.spec.ts
+          tests/int/previewPath.int.spec.ts
+
       - name: Type-check
         run: npx tsc --noEmit
 

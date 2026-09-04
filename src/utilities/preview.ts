@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { isSafePageSlug } from '@/utilities/pagePublication'
 
-export const previewCollections = ['pages', 'posts'] as const
+export const previewCollections = ['pages', 'posts', 'influencer-landing-pages'] as const
 export type PreviewCollection = (typeof previewCollections)[number]
 
 export function isPreviewCollection(value: unknown): value is PreviewCollection {
@@ -33,7 +33,9 @@ export function getPreviewTarget({
       ? locale === 'en' && (slug === 'home' || slug === 'home-page')
         ? `/${locale}`
         : `/${locale}/${slug}`
-      : `/${locale}/posts/${slug}`
+      : collection === 'posts'
+        ? `/${locale}/posts/${slug}`
+        : `/${locale}/influencers/${slug}`
 
   return { collection, locale, path, slug }
 }

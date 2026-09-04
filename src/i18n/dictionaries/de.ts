@@ -177,6 +177,9 @@ export const de = {
       placeholder: 'Rabattcode',
       apply: 'Anwenden',
       appliedSuffix: '{code} angewendet',
+      creatorApplied: 'Creator-Angebot angewendet',
+      offerUnavailable:
+        'Wir konnten dieses Angebot in deinem Browser nicht speichern. Bitte aktiviere den Website-Speicher und versuche es erneut.',
       discount: 'Rabatt',
       firstMonth: 'Erster Monat',
     },

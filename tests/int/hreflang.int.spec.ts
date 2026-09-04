@@ -222,5 +222,8 @@ describe('international SEO locale config', () => {
     expect(buildLocalizedDocumentPath('de', 'startseite', 'home')).toBe('/de')
     expect(buildLocalizedDocumentPath('de', 'unsere-plane', 'page')).toBe('/de/unsere-plane')
     expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/posts/artikel')
+    expect(buildLocalizedDocumentPath('de', 'creator', 'influencer')).toBe(
+      '/de/influencers/creator',
+    )
   })
 })

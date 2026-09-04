@@ -1,6 +1,7 @@
 import type { CommercialIdentity } from './commercialIdentity'
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL
+export const CHECKOUT_PREVIEW_TIMEOUT_MS = 8000
 
 export type CheckoutPaymentIntentIn = {
   plan_slug: string
@@ -25,6 +26,34 @@ export type CheckoutPaymentIntentOut = {
   shipping_option: string
   discount_code: string | null
   discount_code_valid: boolean
+}
+
+export type CheckoutPreviewIn = {
+  plan_id?: string
+  plan_slug?: string
+  currency?: string
+  shipping_option?: string
+  discount_code?: string | null
+  lang?: string | null
+}
+
+export type CheckoutPreviewOut = {
+  plan_id: string
+  plan_slug: string
+  title: string
+  month: number
+  currency: string
+  monthly_price: number
+  shipping_option: string
+  shipping_price: number
+  promo_discount: number
+  first_month_price: number
+  due_today: number
+  discount_code: string | null
+  discount_code_valid: boolean | null
+  discount_message: string | null
+  discount_message_custom: string | null
+  exclude_one_month: boolean
 }
 
 export type PublicShippingAddressIn = {
@@ -64,23 +93,29 @@ export type CheckoutConfirmIn = {
   billing_address: BillingAddressIn
   idempotency_key?: string | null
   checkout_id: string
-  attribution?: Partial<Record<
-    | 'utm_source'
-    | 'utm_medium'
-    | 'utm_campaign'
-    | 'utm_content'
-    | 'utm_term'
-    | 'gclid'
-    | 'gbraid'
-    | 'wbraid'
-    | 'fbclid',
-    string
-  >>
+  attribution?: Partial<
+    Record<
+      | 'utm_source'
+      | 'utm_medium'
+      | 'utm_campaign'
+      | 'utm_content'
+      | 'utm_term'
+      | 'gclid'
+      | 'gbraid'
+      | 'wbraid'
+      | 'fbclid',
+      string
+    >
+  >
   tracking_context: CommercialIdentity
 }
 
 const UTM_ATTRIBUTION_KEYS = [
-  'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
 ] as const
 const ADVERTISING_ATTRIBUTION_KEYS = ['gclid', 'gbraid', 'wbraid', 'fbclid'] as const
 const ATTRIBUTION_STORAGE_KEY = 'nb1_checkout_attribution'
@@ -130,12 +165,8 @@ export function captureCheckoutAttribution(): void {
   const params = new URLSearchParams(window.location.search)
   const stored = readStoredAttribution()
   const consentResolved = window.__nb1ConsentResolved === true
-  const advertisingConsent =
-    consentResolved && window.__nb1Consent?.targeted_advertising === true
-  const storedAdvertising = permittedAttribution(
-    (key) => stored[key],
-    ADVERTISING_ATTRIBUTION_KEYS,
-  )
+  const advertisingConsent = consentResolved && window.__nb1Consent?.targeted_advertising === true
+  const storedAdvertising = permittedAttribution((key) => stored[key], ADVERTISING_ATTRIBUTION_KEYS)
   storeAttribution({
     ...permittedAttribution((key) => stored[key], UTM_ATTRIBUTION_KEYS),
     ...permittedAttribution((key) => params.get(key), UTM_ATTRIBUTION_KEYS),
@@ -154,8 +185,7 @@ export function getPermittedCheckoutAttribution(): CheckoutConfirmIn['attributio
   captureCheckoutAttribution()
   const stored = readStoredAttribution()
   const advertisingConsent =
-    window.__nb1ConsentResolved === true &&
-    window.__nb1Consent?.targeted_advertising === true
+    window.__nb1ConsentResolved === true && window.__nb1Consent?.targeted_advertising === true
   return {
     ...permittedAttribution((key) => stored[key], UTM_ATTRIBUTION_KEYS),
     ...(advertisingConsent
@@ -238,6 +268,39 @@ function toCheckoutError(detail: unknown, fallback: string, code: string): Check
   return Object.assign(new Error(message), { code, validation })
 }
 
+export async function checkoutPreview(
+  params: CheckoutPreviewIn,
+  signal?: AbortSignal,
+): Promise<CheckoutPreviewOut> {
+  const requestController = new AbortController()
+  const abortFromCaller = () => requestController.abort()
+  if (signal?.aborted) abortFromCaller()
+  else signal?.addEventListener('abort', abortFromCaller, { once: true })
+
+  const timeout = window.setTimeout(() => {
+    const error = new Error('Discount validation timed out')
+    error.name = 'TimeoutError'
+    requestController.abort(error)
+  }, CHECKOUT_PREVIEW_TIMEOUT_MS)
+
+  try {
+    const res = await fetch(`${BACKEND}/subscriptions/public/checkout/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(params),
+      signal: requestController.signal,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw toCheckoutError(err?.detail, 'Discount validation failed', 'preview_failed')
+    }
+    return res.json()
+  } finally {
+    window.clearTimeout(timeout)
+    signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
 export async function checkoutPaymentIntent(
   params: CheckoutPaymentIntentIn,
 ): Promise<CheckoutPaymentIntentOut> {
@@ -253,9 +316,7 @@ export async function checkoutPaymentIntent(
   return res.json()
 }
 
-export async function checkoutConfirm(
-  params: CheckoutConfirmIn,
-): Promise<CheckoutConfirmOut> {
+export async function checkoutConfirm(params: CheckoutConfirmIn): Promise<CheckoutConfirmOut> {
   const res = await fetch(`${BACKEND}/subscriptions/public/checkout/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', accept: 'application/json' },

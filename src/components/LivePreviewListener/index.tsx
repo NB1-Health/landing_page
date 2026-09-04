@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import React, { useCallback, useEffect, useRef } from 'react'
 
 type LivePreviewListenerProps = {
-  collection: 'pages' | 'posts'
+  collection: 'pages' | 'posts' | 'influencer-landing-pages'
   documentId: number | string
   locale: string
   updatedAt: string

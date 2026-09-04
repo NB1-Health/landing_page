@@ -194,6 +194,9 @@ export const it = {
       placeholder: 'Codice sconto',
       apply: 'Applica',
       appliedSuffix: '{code} applicato',
+      creatorApplied: 'Offerta del creator applicata',
+      offerUnavailable:
+        'Non è stato possibile salvare questa offerta nel browser. Abilita l’archiviazione del sito e riprova.',
       discount: 'Sconto',
       firstMonth: 'Primo mese',
     },
@@ -218,8 +221,9 @@ export const it = {
     whatsNext: {
       heading: 'Cosa succede dopo',
       step1:
-        'Ti spediamo il kit: un campione intestinale da raccogliere in due minuti, sigillato nell\'apposita bustina e rispedito nella sua scatola originale.',
-      step2: 'Lo analizziamo tramite sequenziamento e il nostro team scientifico valida la tua formula.',
+        "Ti spediamo il kit: un campione intestinale da raccogliere in due minuti, sigillato nell'apposita bustina e rispedito nella sua scatola originale.",
+      step2:
+        'Lo analizziamo tramite sequenziamento e il nostro team scientifico valida la tua formula.',
       step3: 'Scatta il primo addebito, dopodiché la tua formula esclusiva viene spedita.',
     },
     summary: {
