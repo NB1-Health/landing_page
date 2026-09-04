@@ -7495,7 +7495,7 @@ export interface HelpHeroBlock {
    */
   dek?: string | null;
   /**
-   * Optional. Use this OR the intro photo on the Steps block, not both — a labelled product photo above step 1 usually does the job on its own.
+   * Optional, and set per locale — a photo with text baked into it needs its own version per language. Use this OR the intro photo on the Steps block, not both: a labelled product photo above step 1 usually does the job on its own.
    */
   image?: (number | null) | Media;
   imageCaption?: string | null;
@@ -7530,7 +7530,7 @@ export interface HelpStepsBlock {
    */
   reserveTocSpace?: boolean | null;
   /**
-   * Optional unnumbered photo above step 1 — the "what's in the box" shot. When a labelled product photo already lists the parts, you do not also need a checklist.
+   * Optional unnumbered photo above step 1 — the "what's in the box" shot. Set per locale, since this one has labels baked into the image. When a labelled product photo already lists the parts, you do not also need a checklist.
    */
   introImage?: (number | null) | Media;
   introImageCaption?: string | null;
@@ -7595,7 +7595,7 @@ export interface HelpStepsBlock {
       linkUrl?: string | null;
     };
     /**
-     * Optional. Shown under the step body.
+     * Optional. Shown under the step body. Set per locale — a diagram with words in it needs a translated version.
      */
     media?: (number | null) | Media;
     mediaCaption?: string | null;

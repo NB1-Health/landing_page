@@ -155,6 +155,7 @@ import * as migration_20260831_120000_add_editor_role from './20260831_120000_ad
 import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility';
 import * as migration_20260901_130000_add_locale_it from './20260901_130000_add_locale_it';
 import * as migration_20260904_120000_help_article_blocks from './20260904_120000_help_article_blocks';
+import * as migration_20260904_140000_help_localize_images from './20260904_140000_help_localize_images';
 
 export const migrations = [
   {
@@ -941,5 +942,10 @@ export const migrations = [
     up: migration_20260904_120000_help_article_blocks.up,
     down: migration_20260904_120000_help_article_blocks.down,
     name: '20260904_120000_help_article_blocks',
+  },
+  {
+    up: migration_20260904_140000_help_localize_images.up,
+    down: migration_20260904_140000_help_localize_images.down,
+    name: '20260904_140000_help_localize_images',
   },
 ];

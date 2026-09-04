@@ -30,9 +30,10 @@ export const HelpStepsBlock: Block = {
       label: 'Intro photo',
       type: 'upload',
       relationTo: 'media',
+      localized: true,
       admin: {
         description:
-          'Optional unnumbered photo above step 1 — the "what\'s in the box" shot. When a labelled product photo already lists the parts, you do not also need a checklist.',
+          'Optional unnumbered photo above step 1 — the "what\'s in the box" shot. Set per locale, since this one has labels baked into the image. When a labelled product photo already lists the parts, you do not also need a checklist.',
       },
     },
     { name: 'introImageCaption', type: 'text', localized: true },
@@ -108,7 +109,11 @@ export const HelpStepsBlock: Block = {
           label: 'Step photo',
           type: 'upload',
           relationTo: 'media',
-          admin: { description: 'Optional. Shown under the step body.' },
+          localized: true,
+          admin: {
+            description:
+              'Optional. Shown under the step body. Set per locale — a diagram with words in it needs a translated version.',
+          },
         },
         { name: 'mediaCaption', type: 'text', localized: true },
         {

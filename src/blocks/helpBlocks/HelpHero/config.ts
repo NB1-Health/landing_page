@@ -51,9 +51,10 @@ export const HelpHeroBlock: Block = {
       label: 'Hero image',
       type: 'upload',
       relationTo: 'media',
+      localized: true,
       admin: {
         description:
-          'Optional. Use this OR the intro photo on the Steps block, not both — a labelled product photo above step 1 usually does the job on its own.',
+          'Optional, and set per locale — a photo with text baked into it needs its own version per language. Use this OR the intro photo on the Steps block, not both: a labelled product photo above step 1 usually does the job on its own.',
       },
     },
     { name: 'imageCaption', type: 'text', localized: true },

@@ -61,11 +61,41 @@ Carried over from the mockup's own instructions, worth keeping:
 - If a page needs a real design treatment, that's a design request, not a
   change to these blocks.
 
+## Seeding the example article
+
+`npm run seed:help-stool-kit` creates (or updates) the English
+"How to use your stool testing kit" page from the original mockup —
+`scripts/seed-help-stool-kit.ts`, with the two photos in
+`scripts/seed-assets/`. It is idempotent (media matched by filename, page by
+slug) and saves the page as a **draft**.
+
+It doubles as the worked example of the content model: look there for how a
+step body, a code chip, a callout and an FAQ answer are actually shaped.
+
+One gotcha it documents: a `linkType: 'custom'` URL inside rich text is
+rendered verbatim, so it has to carry its own `/en` prefix. Plain URL fields
+(`ctaUrl`, `code.linkUrl`) are the opposite — the components localize those, so
+store them unprefixed.
+
 ## Schema
 
 Tables: `hnv`, `hhr`, `hst` (+ `hst_st` steps, `hst_st_nt` callouts), `hfq`
 (+ `hfq_qs` questions), `hct`, each with `_locales` and `_v` variants. Created
 by `src/migrations/20260904_120000_help_article_blocks.ts`.
+
+Every text field is localized, and so are the three image fields —
+`helpHero.image`, `helpSteps.introImage` and `helpSteps.steps[].media`
+(`20260904_140000_help_localize_images.ts`). Those photos carry baked-in
+labels ("WASH HANDS", "Kit box"), so a locale that hasn't had its own version
+uploaded shows no image rather than an English one. The step photo falls back
+to the grey placeholder box if "Photo placeholder text" is filled in, which
+makes a missing translation visible instead of silent.
+
+Worth knowing when localizing an upload field here: the column moves from the
+block table into its `_locales` sibling, the FK is renamed onto the locales
+table (`hhr_locales_image_id_media_id_fk`), but the **index keeps its
+base-table-prefixed name** (`hhr_image_idx`) and just moves. That asymmetry is
+Payload's, not ours — `pages.meta.image` is the precedent in this schema.
 
 Two things caught us out here, both worth remembering for the next block:
 
