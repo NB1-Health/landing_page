@@ -249,10 +249,26 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
   it('keeps Post publication state independent for each locale', async () => {
     const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
     const slug = `post-publication-test-${suffix}`
+    // `subtitle` and `excerpt` are LOCALIZED and gated by `requiredOnPublish`, so
+    // each locale needs its own value — publishing `de` validates the German
+    // subtitle, not the English one. `primaryCategory` and `authors` are gated
+    // too but are NOT localized, so they are set once on create below.
     const localized = {
-      en: { title: 'Post publication test EN' },
-      de: { title: 'Post publication test DE' },
-      fr: { title: 'Post publication test FR' },
+      en: {
+        title: 'Post publication test EN',
+        subtitle: 'Standfirst EN',
+        excerpt: 'Excerpt EN',
+      },
+      de: {
+        title: 'Post publication test DE',
+        subtitle: 'Standfirst DE',
+        excerpt: 'Excerpt DE',
+      },
+      fr: {
+        title: 'Post publication test FR',
+        subtitle: 'Standfirst FR',
+        excerpt: 'Excerpt FR',
+      },
     } as const
     const locales = Object.keys(localized) as (keyof typeof localized)[]
     const richText = {
@@ -285,6 +301,8 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
       },
     }
     let postID: number | undefined
+    let authorID: number | undefined
+    let categoryID: number | undefined
 
     const publish = async (locale: keyof typeof localized): Promise<void> => {
       await payload.update({
@@ -298,6 +316,8 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
         data: {
           _status: 'published',
           title: localized[locale].title,
+          subtitle: localized[locale].subtitle,
+          excerpt: localized[locale].excerpt,
           intro: richText,
           content: richText,
         },
@@ -331,6 +351,19 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
     }
 
     try {
+      const author = await payload.create({
+        collection: 'authors',
+        data: { name: `Publication Test Author ${suffix}`, slug: `pub-test-author-${suffix}` },
+        overrideAccess: true,
+      })
+      authorID = author.id
+      const category = await payload.create({
+        collection: 'categories',
+        data: { slug: `pub-test-category-${suffix}`, title: `Publication Test Category ${suffix}` },
+        overrideAccess: true,
+      })
+      categoryID = category.id
+
       const post = await payload.create({
         collection: 'posts',
         locale: 'en',
@@ -348,6 +381,11 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
             title: 'Post publication test',
             description: 'A disposable localized publication integration test.',
           },
+          // Top level, NOT inside `meta`. `primaryCategory` renders under the Meta
+          // TAB, but that tab has no `name`, so Payload keeps its data flat — the
+          // "Meta >" in the validation error is the tab label, not the data path.
+          primaryCategory: categoryID,
+          authors: [authorID],
           source: 'manual',
         },
       })
@@ -391,6 +429,16 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
           overrideAccess: true,
           context: { disableRevalidate: true },
         })
+      }
+      if (authorID !== undefined) {
+        await payload
+          .delete({ collection: 'authors', id: authorID, overrideAccess: true })
+          .catch(() => undefined)
+      }
+      if (categoryID !== undefined) {
+        await payload
+          .delete({ collection: 'categories', id: categoryID, overrideAccess: true })
+          .catch(() => undefined)
       }
     }
   }, 600_000)
