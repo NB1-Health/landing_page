@@ -55,6 +55,24 @@ export const InfluencerLandingPages: CollectionConfig = {
     },
     costomSlugField({ from: 'internalTitle' }),
     {
+      name: 'template',
+      type: 'relationship',
+      relationTo: 'influencer-templates',
+      admin: {
+        description:
+          'Shared content template. Leave blank to use the published default template. Shared edits update all linked pages.',
+      },
+    },
+    {
+      name: 'offerFinePrint',
+      type: 'textarea',
+      localized: true,
+      admin: {
+        description:
+          'Optional creator-specific terms, replacing the template terms. Copy must match this discount’s actual eligibility and value.',
+      },
+    },
+    {
       name: 'discountCode',
       type: 'text',
       required: true,

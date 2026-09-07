@@ -4,6 +4,7 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import React, { useEffect, useRef, useState } from 'react'
 
 import RichText from '@/components/RichText'
+import { InfluencerCta } from '@/app/(frontend)/[locale]/influencers/[slug]/InfluencerCta'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 import { getDictionary } from '@/i18n/getDictionary'
 import {
@@ -91,7 +92,17 @@ type GuaranteeItem = {
   body?: string | null
 }
 
+export type InfluencerPlanOffer = {
+  code: string
+  sourceSlug: string
+  errorLabel: string
+  orderHref: string
+  coreHref: string
+  advancedHref: string
+}
+
 export type YpPlansBlockType = {
+  influencerOffer?: InfluencerPlanOffer
   blockType?: 'ypPlans'
   backgroundColor?: BgColorPreset | null
   backgroundColorCustom?: string | null
@@ -130,6 +141,7 @@ const GUARANTEE_ICONS: Record<string, React.ReactNode> = {
 }
 
 export const YpPlansClient: React.FC<YpPlansBlockType> = ({
+  influencerOffer,
   backgroundColor,
   backgroundColorCustom,
   backgroundType,
@@ -152,6 +164,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
   const [compareOpen, setCompareOpen] = useState(false)
   const [planCards, setPlanCards] = useState<PlanCard[]>(planCardsProp ?? [])
   const [comparison, setComparison] = useState<Comparison | null | undefined>(comparisonProp)
+  const priceMonths = influencerOffer ? 4 : 1
 
   useEffect(() => {
     function applyPrices(
@@ -166,7 +179,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       setPlanCards(
         (planCardsProp ?? []).map((card) => {
           const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:1`] : undefined
+          const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
           return {
             ...card,
             price: rate != null ? formatPrice(rate, currency, locale) : card.price,
@@ -180,7 +193,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       if (resolvedComparison) {
         const resolvedCards = resolvedComparison.cards?.map((card: CompareCard) => {
           const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:1`] : undefined
+          const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
           return {
             ...card,
             price: rate != null ? formatPrice(rate, currency, locale) : card.price,
@@ -207,7 +220,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
     window.addEventListener('nb1:currencychange', onCurrencyChange)
     return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  }, [locale, planCardsProp, comparisonProp, priceMonths])
 
   const isImageMode = backgroundType === 'image'
   const isDark = isImageMode || isDarkPreset(backgroundColor)
@@ -1153,13 +1166,14 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                       {card.pricePeriod && <span> {card.pricePeriod}</span>}
                     </div>
                   )}
-                  {/* {card.monthly ? (
-                    <div className="pc-monthly">{card.monthly}</div>
-                  ) : (
-                    <div className="pc-monthly pc-ghost" aria-hidden="true">
-                      &nbsp;
-                    </div>
-                  )} */}
+                  {influencerOffer &&
+                    (card.monthly && !card.monthly.includes('{{') ? (
+                      <div className="pc-monthly">{card.monthly}</div>
+                    ) : (
+                      <div className="pc-monthly pc-ghost" aria-hidden="true">
+                        &nbsp;
+                      </div>
+                    ))}
                   {card.commit && <p className="pc-commit">{card.commit}</p>}
                   {card.listLabel && <div className="pc-lbl">{card.listLabel}</div>}
                   {card.listItems && card.listItems.length > 0 && (
@@ -1172,23 +1186,37 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                       ))}
                     </ul>
                   )}
-                  {card.ctaLabel && (
-                    <a
-                      href={card.ctaUrl || '#'}
-                      className={[
-                        'btn',
-                        card.ctaStyle === 'cta' ? 'btn-cta' : 'btn-out',
-                        'btn-block',
-                      ].join(' ')}
-                      style={
-                        card.ctaStyle === 'cta'
-                          ? { backgroundColor: 'rgb(198, 255, 91)' }
-                          : undefined
-                      }
-                    >
-                      {card.ctaLabel}
-                    </a>
-                  )}
+                  {card.ctaLabel &&
+                    (influencerOffer ? (
+                      <InfluencerCta
+                        {...influencerOffer}
+                        className={`il-plan-cta${card.ctaStyle === 'cta' ? '' : ' il-plan-outline'}`}
+                        href={
+                          card.planFamily === 'advanced'
+                            ? influencerOffer.advancedHref
+                            : card.planFamily === 'core'
+                              ? influencerOffer.coreHref
+                              : influencerOffer.orderHref
+                        }
+                        label={card.ctaLabel}
+                      />
+                    ) : (
+                      <a
+                        href={card.ctaUrl || '#'}
+                        className={[
+                          'btn',
+                          card.ctaStyle === 'cta' ? 'btn-cta' : 'btn-out',
+                          'btn-block',
+                        ].join(' ')}
+                        style={
+                          card.ctaStyle === 'cta'
+                            ? { backgroundColor: 'rgb(198, 255, 91)' }
+                            : undefined
+                        }
+                      >
+                        {card.ctaLabel}
+                      </a>
+                    ))}
                 </article>
               ))}
             </div>
@@ -1319,21 +1347,35 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
                         key={ci}
                         className={['ccell center', card.highlight ? 'adv' : ''].join(' ')}
                       >
-                        {card.ctaLabel && (
-                          <a
-                            href={card.ctaUrl || '#'}
-                            className={['cbtn', card.ctaStyle === 'lime' ? 'lime' : 'out'].join(
-                              ' ',
-                            )}
-                            style={
-                              card.ctaStyle === 'lime'
-                                ? { backgroundColor: 'rgb(198, 255, 91)' }
-                                : undefined
-                            }
-                          >
-                            {card.ctaLabel}
-                          </a>
-                        )}
+                        {card.ctaLabel &&
+                          (influencerOffer ? (
+                            <InfluencerCta
+                              {...influencerOffer}
+                              className={`il-plan-cta${card.ctaStyle === 'lime' ? '' : ' il-plan-outline'}`}
+                              href={
+                                card.planFamily === 'advanced'
+                                  ? influencerOffer.advancedHref
+                                  : card.planFamily === 'core'
+                                    ? influencerOffer.coreHref
+                                    : influencerOffer.orderHref
+                              }
+                              label={card.ctaLabel}
+                            />
+                          ) : (
+                            <a
+                              href={card.ctaUrl || '#'}
+                              className={['cbtn', card.ctaStyle === 'lime' ? 'lime' : 'out'].join(
+                                ' ',
+                              )}
+                              style={
+                                card.ctaStyle === 'lime'
+                                  ? { backgroundColor: 'rgb(198, 255, 91)' }
+                                  : undefined
+                              }
+                            >
+                              {card.ctaLabel}
+                            </a>
+                          ))}
                       </div>
                     ))}
                   </div>

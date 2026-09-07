@@ -31,7 +31,7 @@ describe('InfluencerCta', () => {
         <InfluencerCta
           code="20OFF"
           errorLabel="Offer unavailable"
-          href="/en/your-plan"
+          href="/en/order"
           label="Claim offer"
           sourceSlug="creator-name"
         />,
@@ -47,7 +47,10 @@ describe('InfluencerCta', () => {
       code: '20OFF',
       sourceSlug: 'creator-name',
     })
-    expect(navigation.push).toHaveBeenCalledWith('/en/your-plan')
+    expect(navigation.push).toHaveBeenCalledWith('/en/order')
+    expect(storeInfluencerOffer.mock.invocationCallOrder[0]).toBeLessThan(
+      navigation.push.mock.invocationCallOrder[0],
+    )
 
     act(() => root.unmount())
     container.remove()
@@ -63,7 +66,7 @@ describe('InfluencerCta', () => {
         <InfluencerCta
           code="20OFF"
           errorLabel="Offer unavailable"
-          href="/en/your-plan"
+          href="/en/order"
           label="Claim offer"
           sourceSlug="creator-name"
         />,

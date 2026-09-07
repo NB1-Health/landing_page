@@ -91,6 +91,7 @@ describe('plugin-generated collection access', () => {
       'disclaimers',
       'hubs',
       'influencer-landing-pages',
+      'influencer-templates',
       'lexicon-categories',
       'lexicon-terms',
       'media',

@@ -1,6 +1,7 @@
 import React from 'react'
 import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import { YpPlansClient } from './Component.client'
+import type { InfluencerPlanOffer } from './Component.client'
 
 type BgColorPreset = 'cream' | 'paper' | 'off' | 'navy' | 'navyDeep' | 'teal' | 'custom'
 type BgType = 'color' | 'image'
@@ -60,6 +61,7 @@ type GuaranteeItem = {
 }
 
 export type YpPlansBlockType = {
+  influencerOffer?: InfluencerPlanOffer
   blockType?: 'ypPlans'
   backgroundColor?: BgColorPreset | null
   backgroundColorCustom?: string | null

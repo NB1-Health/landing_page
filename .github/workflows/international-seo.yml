@@ -71,6 +71,9 @@ jobs:
           npm run test:int -- --run
           tests/int/influencerLandingPage.int.spec.ts
           tests/int/influencerCta.int.spec.tsx
+          tests/int/influencerCtaRoute.int.spec.tsx
+          tests/int/influencerPlanCta.int.spec.tsx
+          tests/int/influencerTemplate.int.spec.ts
           tests/int/influencerVideo.int.spec.tsx
           tests/int/influencerOffer.int.spec.ts
           tests/int/checkoutPreviewApi.int.spec.ts

@@ -15,6 +15,10 @@ package-lock.json
 # Payload default media upload directory
 # public/media/
 
+# Local CMS reference imports and visual QA; source assets are imported into Payload, not Git.
+public/media/influencer-reference-*
+outputs/influencer-design/
+
 public/robots.txt
 public/sitemap*.xml
 

@@ -37,6 +37,7 @@ import { FAQ } from './globals/FAQ'
 import { defaultLocale, payloadLocales } from './i18n/config'
 import { AgentOperations } from './collections/AgentOperations'
 import { InfluencerLandingPages } from './collections/InfluencerLandingPages'
+import { InfluencerTemplates } from './collections/InfluencerTemplates'
 import { adminOnly, adminOrEditor, isAdmin, isEditor } from './access/roles'
 
 const filename = fileURLToPath(import.meta.url)
@@ -138,6 +139,7 @@ export default buildConfig({
     Pages,
     Posts,
     InfluencerLandingPages,
+    InfluencerTemplates,
     Media,
     // origin/main hides the operational collections from non-admins in the
     // admin UI. Kept as-is.
