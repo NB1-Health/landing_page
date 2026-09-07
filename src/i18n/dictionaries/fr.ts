@@ -102,6 +102,8 @@ export const fr = {
   },
   plans: {
     months: { 1: '1 mois', 4: '4 mois', 12: '12 mois' } as Record<1 | 4 | 12, string>,
+    orWord: 'ou', // conjunction in the "4 or 12 months" tab subtitle
+
     perMonth: '/mois',
     savingsPrefix: 'Économise',
     savingsSuffix: '/ cycle',
