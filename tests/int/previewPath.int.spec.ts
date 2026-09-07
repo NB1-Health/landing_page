@@ -54,6 +54,16 @@ describe('generated preview URL', () => {
     expect(later).toBe(first)
   })
 
+  it('targets the namespaced influencer route', () => {
+    const target = getPreviewTarget({
+      collection: 'influencer-landing-pages',
+      locale: 'fr',
+      slug: 'creator-name',
+    })
+
+    expect(target?.path).toBe('/fr/influencers/creator-name')
+  })
+
   it('fails closed with a weak secret or unsafe slug', () => {
     vi.stubEnv('PREVIEW_SECRET', 'too-short')
     expect(

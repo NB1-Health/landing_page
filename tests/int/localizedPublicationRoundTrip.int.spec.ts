@@ -394,4 +394,112 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
       }
     }
   }, 600_000)
+
+  it('creates, publishes, and publicly reads an influencer landing page', async () => {
+    const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+    const slug = `influencer-publication-test-${suffix}`
+    const image = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    )
+    let pageID: number | undefined
+    let mediaID: number | undefined
+
+    const findPublicPage = () =>
+      payload.find({
+        collection: 'influencer-landing-pages',
+        locale: 'en',
+        fallbackLocale: false,
+        draft: false,
+        depth: 1,
+        overrideAccess: false,
+        pagination: false,
+        where: { slug: { equals: slug } },
+      })
+
+    try {
+      const media = await payload.create({
+        collection: 'media',
+        locale: 'en',
+        draft: false,
+        depth: 0,
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+        data: { agentTrashEligible: false, alt: 'Disposable influencer publication test image' },
+        file: {
+          data: image,
+          mimetype: 'image/png',
+          name: `${slug}.png`,
+          size: image.length,
+        },
+      })
+      mediaID = media.id
+
+      const page = await payload.create({
+        collection: 'influencer-landing-pages',
+        locale: 'en',
+        draft: true,
+        depth: 0,
+        overrideAccess: true,
+        data: {
+          _status: 'draft',
+          internalTitle: 'Influencer publication round trip',
+          slug,
+          discountCode: ' 20off ',
+          influencerName: 'Test Creator',
+          heroHeadline: 'A healthier baseline, chosen by {name}',
+          heroCopy: 'Disposable integration-test copy.',
+          giftQuote: '{name} has a creator offer for you',
+          testimonial: 'A disposable testimonial.',
+          testimonialAttribution: 'Test Creator',
+          offerHeadline: 'Start with {name}',
+          offerCopy: 'A disposable offer.',
+          ctaLabel: 'Claim offer',
+          primaryImage: mediaID,
+        },
+      })
+      pageID = page.id
+
+      await expect(findPublicPage()).resolves.toMatchObject({ totalDocs: 0, docs: [] })
+
+      await payload.update({
+        collection: 'influencer-landing-pages',
+        id: pageID,
+        locale: 'en',
+        publishSpecificLocale: 'en',
+        depth: 0,
+        overrideAccess: true,
+        data: { _status: 'published' },
+      })
+
+      const published = await findPublicPage()
+      expect(published.docs).toHaveLength(1)
+      expect(published.docs[0]).toMatchObject({
+        id: pageID,
+        _status: 'published',
+        slug,
+        discountCode: '20OFF',
+        influencerName: 'Test Creator',
+        primaryImage: { id: mediaID },
+      })
+    } finally {
+      if (pageID !== undefined) {
+        await payload.delete({
+          collection: 'influencer-landing-pages',
+          id: pageID,
+          overrideAccess: true,
+          trash: false,
+        })
+      }
+      if (mediaID !== undefined) {
+        await payload.delete({
+          collection: 'media',
+          id: mediaID,
+          overrideAccess: true,
+          context: { disableRevalidate: true },
+          trash: false,
+        })
+      }
+    }
+  }, 600_000)
 })

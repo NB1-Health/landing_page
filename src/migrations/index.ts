@@ -171,6 +171,7 @@ import * as migration_20260828_140000_order_step_hero_trustpilot_toggle from './
 import * as migration_20260831_120000_add_editor_role from './20260831_120000_add_editor_role'
 import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility'
 import * as migration_20260901_130000_add_locale_it from './20260901_130000_add_locale_it'
+import * as migration_20260904_084947_influencer_landing_pages from './20260904_084947_influencer_landing_pages'
 import * as migration_20260904_120000_help_article_blocks from './20260904_120000_help_article_blocks'
 import * as migration_20260904_140000_help_localize_images from './20260904_140000_help_localize_images'
 
@@ -1041,6 +1042,11 @@ export const migrations = [
     name: '20260901_130000_add_locale_it',
   },
   {
+    up: migration_20260904_084947_influencer_landing_pages.up,
+    down: migration_20260904_084947_influencer_landing_pages.down,
+    name: '20260904_084947_influencer_landing_pages',
+  },
+  {
     up: migration_20260904_120000_help_article_blocks.up,
     down: migration_20260904_120000_help_article_blocks.down,
     name: '20260904_120000_help_article_blocks',
@@ -1050,4 +1056,4 @@ export const migrations = [
     down: migration_20260904_140000_help_localize_images.down,
     name: '20260904_140000_help_localize_images',
   },
-];
+]

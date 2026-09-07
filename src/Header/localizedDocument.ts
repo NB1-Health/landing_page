@@ -10,8 +10,10 @@ import type { PublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailabili
  * lookup. Every Journal route already computes exactly this map for its hreflang
  * cluster, so the switcher reuses that rather than deriving it a second way and
  * risking the two disagreeing.
+ *
+ * `'influencer'` is origin/main's, and is an ordinary single-slug route.
  */
-export type LocalizedDocumentRoute = 'home' | 'page' | 'post' | 'absolute'
+export type LocalizedDocumentRoute = 'home' | 'page' | 'post' | 'absolute' | 'influencer'
 
 export type LocalizedDocument = {
   route: LocalizedDocumentRoute
@@ -36,7 +38,9 @@ export function buildLocalizedDocumentPath(
   if (route === 'absolute') return slug
   if (route === 'home') return `/${locale}`
   // Posts are served under /journal (JOURNAL_INTEGRATION_PLAN.md, Phase 2).
+  // origin/main still had /posts here; the old paths 301 from middleware.
   if (route === 'post') return `/${locale}/journal/${slug}`
+  if (route === 'influencer') return `/${locale}/influencers/${slug}`
   return `/${locale}/${slug}`
 }
 

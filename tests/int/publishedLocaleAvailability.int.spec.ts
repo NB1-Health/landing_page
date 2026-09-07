@@ -53,6 +53,32 @@ describe('published locale availability', () => {
     ).resolves.toEqual({ en: 'gut-health-basics' })
   })
 
+  it('uses a shared influencer slug and exact localized creator content', async () => {
+    const req = {
+      locale: 'en',
+      payload: {
+        findByID: vi.fn().mockResolvedValue({
+          _status: { de: 'draft', en: 'published', fr: 'published' },
+          slug: 'creator-name',
+          influencerName: { en: 'Creator Name' },
+        }),
+      },
+    }
+
+    await expect(
+      resolvePublishedLocaleSlugs({
+        collection: 'influencer-landing-pages',
+        id: 9,
+        req,
+      } as never),
+    ).resolves.toEqual({ en: 'creator-name' })
+    expect(req.payload.findByID).toHaveBeenCalledWith(
+      expect.objectContaining({
+        select: { _status: true, influencerName: true, slug: true },
+      }),
+    )
+  })
+
   it('supports server routes that have a Payload instance instead of a request', async () => {
     const user = { id: 3 }
     const payload = {

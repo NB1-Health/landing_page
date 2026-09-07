@@ -236,5 +236,9 @@ describe('international SEO locale config', () => {
     // The language switcher builds these, so a stale prefix here would send every
     // cross-locale click on an article through a redirect.
     expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).not.toContain('/posts/')
+    // origin/main's influencer route, unaffected by the move.
+    expect(buildLocalizedDocumentPath('de', 'creator', 'influencer')).toBe(
+      '/de/influencers/creator',
+    )
   })
 })

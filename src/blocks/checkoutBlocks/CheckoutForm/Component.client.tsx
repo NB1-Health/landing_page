@@ -16,6 +16,7 @@ import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
 import { createFirebaseAccount } from '@/lib/createAccount'
 import {
+  checkoutPreview,
   checkoutPaymentIntent,
   checkoutConfirm,
   trackLanguagePublic,
@@ -60,6 +61,11 @@ import {
   storePlanSelection,
   type PlanSelection,
 } from '@/lib/plans/selectionStore'
+import {
+  clearInfluencerOffer,
+  readInfluencerOffer,
+  type InfluencerOffer,
+} from '@/lib/influencerOffer'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
 const BACKEND_OWNS_META_PURCHASE = process.env.NEXT_PUBLIC_META_PURCHASE_OWNER === 'backend'
@@ -78,7 +84,11 @@ const DISCOUNT_MESSAGE_BY_TEXT: Record<string, string> = {
 }
 
 function normalizeDiscountMessage(text: string): string {
-  return text.toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[.!]+$/, '')
+    .trim()
 }
 
 /**
@@ -96,6 +106,16 @@ function translateDiscountMessage(
   const key = text ? DISCOUNT_MESSAGE_BY_TEXT[normalizeDiscountMessage(text)] : undefined
   const messages = dict.promo.messages as Record<string, string> | undefined
   return (key && messages?.[key]) || fallback
+}
+
+function isDiscountCheckoutRejection(error: unknown): boolean {
+  const code = (error as { code?: unknown })?.code
+  const message = (error as { message?: unknown })?.message
+  return (
+    (code === 'payment_intent_failed' || code === 'confirm_failed') &&
+    typeof message === 'string' &&
+    /\b(?:discount|referral) code\b/i.test(message)
+  )
 }
 
 /* ─── Data ──────────────────────────────────────────────────────────── */
@@ -143,6 +163,8 @@ const UAE_ALLOWED_CITIES = ['Dubai', 'Abu Dhabi']
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
 type PayMethod = 'card' | 'paypal' | 'klarna' | 'sepa'
+type PromoSource = 'manual' | 'influencer'
+type InfluencerOfferStatus = 'checking' | 'pending' | 'applying' | 'settled'
 
 type Props = { backHref?: string | null; locale?: string }
 
@@ -219,7 +241,9 @@ function ExpressLinkRow({
     <ExpressCheckoutElement
       onReady={({ availablePaymentMethods }) => onReadyChange(!!availablePaymentMethods)}
       onConfirm={onConfirm}
-      options={{ paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' } }}
+      options={{
+        paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
+      }}
     />
   )
 }
@@ -242,6 +266,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     return 'en'
   })()
   const searchParams = useSearchParams()
+  const redirectStatus = searchParams?.get('redirect_status')
+  const isProviderConfirmationReturn =
+    redirectStatus === 'succeeded' || redirectStatus === 'pending'
   const router = useRouter()
   const pathname = usePathname()
 
@@ -580,7 +607,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       // Normalize the emirate to our two serviceable spellings; anything else stays blank so the
       // customer picks a serviceable one from the restricted dropdown.
       const key = cityName.toLowerCase().replace(/[\s\-_]/g, '')
-      setCity(key.includes('dubai') ? 'Dubai' : (key.includes('abudhabi') || key.includes('abuzaby')) ? 'Abu Dhabi' : '')
+      setCity(
+        key.includes('dubai')
+          ? 'Dubai'
+          : key.includes('abudhabi') || key.includes('abuzaby')
+            ? 'Abu Dhabi'
+            : '',
+      )
     } else if (cityName) {
       setCity(cityName)
     }
@@ -641,7 +674,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   /* ── Klarna/PayPal redirect return handler ── */
   useEffect(() => {
-    const redirectStatus = searchParams?.get('redirect_status')
     // After a SetupIntent redirect (Klarna/PayPal) Stripe appends setup_intent[_client_secret],
     // NOT payment_intent[_client_secret].
     const setupIntentParam = searchParams?.get('setup_intent')
@@ -802,13 +834,19 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           customerId: redirectConfirmation.user_id,
         })
         setAccountStatus('sent')
+        clearInfluencerOffer()
         setConfirmed(true)
       } catch (err) {
         // Backend 422s carry raw English Pydantic text in err.message — show the
         // localized generic message instead (ClickUp 86cb3cftj).
         const validation = Boolean((err as { validation?: boolean })?.validation)
+        const offerRejected = rejectStaleInfluencerOffer(err)
         setAccountErr(
-          validation ? t.confirm.checkDetails : (err as Error).message || t.confirm.accountError,
+          offerRejected
+            ? dict.promo.invalid
+            : validation
+              ? t.confirm.checkDetails
+              : (err as Error).message || t.confirm.accountError,
         )
         setAccountStatus('error')
       }
@@ -828,10 +866,38 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
   }, [])
 
+  const [influencerOffer, setInfluencerOffer] = useState<InfluencerOffer | null>(null)
+  const [influencerOfferStatus, setInfluencerOfferStatus] =
+    useState<InfluencerOfferStatus>('checking')
+  const influencerOfferResolving =
+    influencerOfferStatus === 'checking' ||
+    influencerOfferStatus === 'pending' ||
+    influencerOfferStatus === 'applying'
+
+  useEffect(() => {
+    // The returning SetupIntent already owns its server-side code and the redirect context owns
+    // its analytics copy. Do not start a second preview that can settle after confirmation. Keep
+    // the handoff until confirmation succeeds so a transient return-path failure can be retried.
+    if (isProviderConfirmationReturn) {
+      setInfluencerOfferStatus('settled')
+      return
+    }
+    const offer = readInfluencerOffer()
+    setInfluencerOffer(offer)
+    setInfluencerOfferStatus(offer ? 'pending' : 'settled')
+  }, [isProviderConfirmationReturn])
+
   /* ── begin_checkout on mount ── */
   const beganCheckoutRef = useRef(false)
   useEffect(() => {
-    if (!hasValidSelection || !currencyResolved || beganCheckoutRef.current) return
+    if (
+      isProviderConfirmationReturn ||
+      !hasValidSelection ||
+      !currencyResolved ||
+      influencerOfferResolving ||
+      beganCheckoutRef.current
+    )
+      return
     beganCheckoutRef.current = true
     const checkoutId = getOrCreateCheckoutId()
     const bcId = getOrCreateOccurrenceId(`${checkoutId}:begin_checkout`)
@@ -840,6 +906,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       event_id: bcId,
       checkout_id: checkoutId,
       entry_reason: searchParams?.get('redirect_status') ? 'provider_return' : 'initial_entry',
+      ...(promoApplied && influencerOffer
+        ? { offer_source: 'influencer', influencer_slug: influencerOffer.sourceSlug }
+        : {}),
       ecommerce: {
         currency,
         value: rateNum,
@@ -861,9 +930,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         ],
       },
     })
-    // Fire once after the selected order and client currency are resolved.
+    // Fire once after the selected order, currency and any creator offer are resolved.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currencyResolved, hasValidSelection])
+  }, [currencyResolved, hasValidSelection, influencerOfferResolving, isProviderConfirmationReturn])
 
   /* promo */
   const [promoInput, setPromoInput] = useState('')
@@ -873,6 +942,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     ok: boolean
     offerSwitch?: boolean
   } | null>(null)
+  const [creatorOfferFailure, setCreatorOfferFailure] = useState<string | null>(null)
   const [promoOpenForm, setPromoOpenForm] = useState(false)
   const [promoOpenSidebar, setPromoOpenSidebar] = useState(false)
   const [promoPreview, setPromoPreview] = useState<{
@@ -882,6 +952,45 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     shipping_price: number
   } | null>(null)
   const [promoLoading, setPromoLoading] = useState(false)
+  const [promoSource, setPromoSource] = useState<PromoSource | null>(null)
+  const promoAbortRef = useRef<AbortController | null>(null)
+  const lastPromoPreviewKeyRef = useRef('')
+  const autoOfferAttemptKeyRef = useRef('')
+  const trackedVoucherRef = useRef(new Set<string>())
+
+  const promoContextKey = (code: string) =>
+    [code, planKey, cycleKey, currency, shipping, uiLanguage].join(':')
+  const checkoutOfferResolving =
+    influencerOfferResolving ||
+    promoLoading ||
+    Boolean(promoApplied && lastPromoPreviewKeyRef.current !== promoContextKey(promoApplied))
+
+  function rejectStaleInfluencerOffer(error: unknown): boolean {
+    const activeCode =
+      promoSource === 'influencer'
+        ? promoApplied
+        : isProviderConfirmationReturn
+          ? readCheckoutRedirectContext()?.coupon
+          : null
+    const creatorCode = influencerOffer?.code ?? readInfluencerOffer()?.code
+    if (!activeCode || activeCode !== creatorCode || !isDiscountCheckoutRejection(error)) {
+      return false
+    }
+
+    promoAbortRef.current?.abort()
+    clearInfluencerOffer()
+    consumeCheckoutRedirectContext()
+    setInfluencerOffer(null)
+    setInfluencerOfferStatus('settled')
+    setPromoApplied(null)
+    setPromoSource(null)
+    setPromoPreview(null)
+    setPromoMsg({ text: dict.promo.invalid, ok: false })
+    setCreatorOfferFailure(dict.promo.invalid)
+    lastPromoPreviewKeyRef.current = ''
+    autoOfferAttemptKeyRef.current = ''
+    return true
+  }
 
   function persistCurrentCheckoutRedirectContext() {
     const redirectMonthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
@@ -921,6 +1030,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // the basket selection (price + summary re-derive from cycleKey) and clears the
   // stale promo state so the visitor can re-apply the now-eligible code.
   const switchCycle = (target: '4' | '12') => {
+    if (influencerOffer) setInfluencerOfferStatus('pending')
     storePlanSelection({ plan: planKey, cycle: target })
     setSelection((s) => ({ ...s, cycleKey: target }))
     setPromoMsg(null)
@@ -954,42 +1064,17 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       </div>
     ) : null
 
-  /* ── Re-fetch preview when shipping or currency changes while promo applied ── */
+  /* Revalidate an applied code whenever its pricing context changes. */
   useEffect(() => {
     if (!promoApplied) return
-    const planId = planIds[planKey]?.[cycleKey]
-    if (!planId) return
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apistg.nb1.com'
-    fetch(`${backend}/subscriptions/public/checkout/preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan_id: planId,
-        currency,
-        shipping_option: shipping,
-        discount_code: promoApplied,
-        // Not read by this handler, which only refreshes prices. Sent so both /preview
-        // request bodies stay identical and nobody has to work out why one has a field the
-        // other does not.
-        lang: uiLanguage,
-      }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.discount_code_valid) {
-          setPromoPreview({
-            promo_discount: data.promo_discount,
-            first_month_price: data.first_month_price,
-            monthly_price: data.monthly_price,
-            shipping_price: data.shipping_price,
-          })
-        }
-      })
-      .catch(() => {
-        /* ignore */
-      })
+    const key = promoContextKey(promoApplied)
+    if (lastPromoPreviewKeyRef.current === key) return
+    if (promoSource === 'influencer') autoOfferAttemptKeyRef.current = key
+    void applyPromo(promoApplied, promoSource ?? 'manual', false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shipping, currency])
+  }, [promoApplied, promoSource, planKey, cycleKey, shipping, currency, uiLanguage])
+
+  useEffect(() => () => promoAbortRef.current?.abort(), [])
 
   /* ── helpers ── */
   function markDone(n: number) {
@@ -1239,6 +1324,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   }
 
   async function nextPayment() {
+    if (checkoutOfferResolving) return
     // Re-validates EVERY step from state before touching Stripe/backend — a UI
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
@@ -1447,7 +1533,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
-      if (code === 'auth/email-already-in-use') {
+      if (rejectStaleInfluencerOffer(err)) {
+        setAccountErr(dict.promo.invalid)
+      } else if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
       } else if ((err as { validation?: boolean })?.validation) {
         // Backend 422: err.message is raw English Pydantic text — never show it.
@@ -1588,11 +1676,14 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         customerId: confirmation.user_id,
       })
       setAccountStatus('sent')
+      clearInfluencerOffer()
       setConfirmed(true)
     } catch (err: unknown) {
       setAccountStatus('error')
       const code = (err as { code?: string })?.code
-      if (code === 'auth/email-already-in-use') {
+      if (rejectStaleInfluencerOffer(err)) {
+        setAccountErr(dict.promo.invalid)
+      } else if (code === 'auth/email-already-in-use') {
         setAccountErr(t.confirm.accountExists)
       } else if ((err as { validation?: boolean })?.validation) {
         // Backend 422: err.message is raw English Pydantic text — never show it.
@@ -1607,65 +1698,96 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   // Create the SetupIntent (card+link) for the Express Checkout / Link flow —
   // same shape as the card flow, payment_method_type=null (card+link).
   async function createExpressIntent() {
+    if (checkoutOfferResolving) throw new Error(t.confirm.processing)
     const monthNum = cycleKey === 'monthly' ? 1 : Number(cycleKey)
     const planSlug = `NB1-${planKey.toUpperCase()}-${monthNum}`
-    const intent = await checkoutPaymentIntent({
-      plan_slug: planSlug,
-      currency,
-      shipping_option: shipping,
-      discount_code: promoApplied ?? null,
-      customer_email: email,
-      customer_name: `${fn} ${ln}`.trim() || null,
-      customer_phone: phone || null,
-      idempotency_key: idempotencyKeyRef.current || undefined,
-      payment_method_type: null,
-    })
-    persistCurrentCheckoutRedirectContext()
-    return intent
+    try {
+      const intent = await checkoutPaymentIntent({
+        plan_slug: planSlug,
+        currency,
+        shipping_option: shipping,
+        discount_code: promoApplied ?? null,
+        customer_email: email,
+        customer_name: `${fn} ${ln}`.trim() || null,
+        customer_phone: phone || null,
+        idempotency_key: idempotencyKeyRef.current || undefined,
+        payment_method_type: null,
+      })
+      persistCurrentCheckoutRedirectContext()
+      return intent
+    } catch (err) {
+      if (rejectStaleInfluencerOffer(err)) throw new Error(dict.promo.invalid)
+      throw err
+    }
   }
 
-  async function applyPromo() {
-    const code = promoInput.trim().toUpperCase()
+  async function applyPromo(
+    rawCode: string = promoInput,
+    source: PromoSource = 'manual',
+    trackEvent = true,
+  ) {
+    if (source === 'manual' && promoLoading) return
+    const code = rawCode.trim().toUpperCase()
     if (!code) return
-    const planId = planIds[planKey]?.[cycleKey]
-    if (!planId) {
-      setPromoMsg({ text: dict.promo.invalid, ok: false })
-      return
-    }
+    const previousPromo = promoApplied
+    const preservePreviousPromo = source === 'manual' && trackEvent && Boolean(previousPromo)
+    if (source === 'manual' && trackEvent) setCreatorOfferFailure(null)
+
+    const contextKey = promoContextKey(code)
+    lastPromoPreviewKeyRef.current = contextKey
+    promoAbortRef.current?.abort()
+    const controller = new AbortController()
+    promoAbortRef.current = controller
     setPromoLoading(true)
-    setPromoMsg(null)
+    if (source === 'influencer') {
+      setInfluencerOfferStatus('applying')
+      setCreatorOfferFailure(null)
+    }
+    if (trackEvent) setPromoMsg(null)
     try {
-      const backend = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apistg.nb1.com'
-      const res = await fetch(`${backend}/subscriptions/public/checkout/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan_id: planId,
+      const month = cycleKey === 'monthly' ? 1 : Number(cycleKey)
+      const data = await checkoutPreview(
+        {
+          plan_slug: `NB1-${planKey.toUpperCase()}-${month}`,
           currency,
           shipping_option: shipping,
           discount_code: code,
-          // Picks the code's per-language success message. uiLanguage already collapses the
-          // 8 page locales to the 4 the backend knows (ch->de, be->nl, uk/uae->en); do not
-          // write a second mapping here.
           lang: uiLanguage,
-        }),
-      })
-      const data = await res.json()
+        },
+        controller.signal,
+      )
+      if (controller.signal.aborted) return
       if (data.discount_code_valid) {
+        if (source === 'manual' && trackEvent) {
+          clearInfluencerOffer()
+          setInfluencerOffer(null)
+          setInfluencerOfferStatus('settled')
+          autoOfferAttemptKeyRef.current = ''
+        }
+        setCreatorOfferFailure(null)
         setPromoApplied(code)
-        const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, {
-          planTitle: planLabel,
-          discount: data.promo_discount,
-        })
-        pushEvent('add_voucher', {
-          event_id: mintEventId(),
-          ecommerce: {
-            coupon: code,
-            currency,
-            value: rateNum,
-            items: [voucherItem],
-          },
-        })
+        setPromoSource(source)
+        const voucherKey = `${source}:${code}`
+        if (trackEvent && !trackedVoucherRef.current.has(voucherKey)) {
+          trackedVoucherRef.current.add(voucherKey)
+          const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, {
+            planTitle: planLabel,
+            discount: data.promo_discount,
+          })
+          pushEvent('add_voucher', {
+            event_id: mintEventId(),
+            voucher_source: source,
+            ...(source === 'influencer' && influencerOffer
+              ? { influencer_slug: influencerOffer.sourceSlug }
+              : {}),
+            ecommerce: {
+              coupon: code,
+              currency,
+              value: rateNum,
+              items: [voucherItem],
+            },
+          })
+        }
         setPromoPreview({
           promo_discount: data.promo_discount,
           first_month_price: data.first_month_price,
@@ -1686,14 +1808,23 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setPromoMsg({
           text:
             custom ||
-            translateDiscountMessage(
-              data.discount_message,
-              dict,
-              dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
-            ),
+            (source === 'influencer'
+              ? t.promoUi.creatorApplied
+              : translateDiscountMessage(
+                  data.discount_message,
+                  dict,
+                  dict.promo.appliedTemplate.replace('{code}', code).replace('{desc}', ''),
+                )),
           ok: true,
         })
       } else {
+        if (preservePreviousPromo && previousPromo) {
+          lastPromoPreviewKeyRef.current = promoContextKey(previousPromo)
+        } else {
+          setPromoApplied(null)
+          setPromoSource(null)
+          setPromoPreview(null)
+        }
         // `exclude_one_month` marks a code that EXISTS but is restricted to
         // longer plans. On the monthly plan that's the case where we show the
         // targeted message + the 4/12 switch buttons; anything else stays a
@@ -1703,9 +1834,49 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           ? t.promoUi.excludeOneMonth
           : translateDiscountMessage(data.discount_message, dict, dict.promo.invalid)
         setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
+        if (source === 'influencer') setCreatorOfferFailure(errMsg)
+        const errorKey = `error:${source}:${contextKey}`
+        if (!trackedVoucherRef.current.has(errorKey)) {
+          trackedVoucherRef.current.add(errorKey)
+          const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
+          pushEvent('add_voucher_error', {
+            event_id: mintEventId(),
+            voucher_source: source,
+            ...(source === 'influencer' && influencerOffer
+              ? { influencer_slug: influencerOffer.sourceSlug }
+              : {}),
+            error: errMsg,
+            ecommerce: {
+              coupon: code,
+              currency,
+              value: rateNum,
+              items: [voucherItem],
+            },
+          })
+        }
+      }
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return
+      if (preservePreviousPromo && previousPromo) {
+        lastPromoPreviewKeyRef.current = promoContextKey(previousPromo)
+      } else {
+        setPromoApplied(null)
+        setPromoSource(null)
+        setPromoPreview(null)
+      }
+      const errMsg = (err as Error)?.message || dict.promo.invalid
+      setPromoMsg({ text: dict.promo.invalid, ok: false })
+      if (source === 'influencer') setCreatorOfferFailure(dict.promo.invalid)
+      const errorKey = `error:${source}:${contextKey}`
+      if (!trackedVoucherRef.current.has(errorKey)) {
+        trackedVoucherRef.current.add(errorKey)
         const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
         pushEvent('add_voucher_error', {
           event_id: mintEventId(),
+          voucher_source: source,
+          ...(source === 'influencer' && influencerOffer
+            ? { influencer_slug: influencerOffer.sourceSlug }
+            : {}),
           error: errMsg,
           ecommerce: {
             coupon: code,
@@ -1715,29 +1886,47 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           },
         })
       }
-    } catch (err) {
-      const errMsg = (err as Error)?.message || dict.promo.invalid
-      setPromoMsg({ text: dict.promo.invalid, ok: false })
-      const voucherItem = buildNb1Item(planKey, cycleKey, rateNum, { planTitle: planLabel })
-      pushEvent('add_voucher_error', {
-        event_id: mintEventId(),
-        error: errMsg,
-        ecommerce: {
-          coupon: code,
-          currency,
-          value: rateNum,
-          items: [voucherItem],
-        },
-      })
     } finally {
-      setPromoLoading(false)
+      if (promoAbortRef.current === controller) {
+        promoAbortRef.current = null
+        setPromoLoading(false)
+        if (source === 'influencer') setInfluencerOfferStatus('settled')
+      }
     }
   }
 
+  useEffect(() => {
+    if (!influencerOffer || !hasValidSelection || !currencyResolved) return
+    if (promoSource === 'influencer' && promoApplied === influencerOffer.code) return
+
+    const key = promoContextKey(influencerOffer.code)
+    if (autoOfferAttemptKeyRef.current === key) return
+    autoOfferAttemptKeyRef.current = key
+    void applyPromo(influencerOffer.code, 'influencer')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    influencerOffer,
+    hasValidSelection,
+    currencyResolved,
+    planKey,
+    cycleKey,
+    shipping,
+    currency,
+    uiLanguage,
+    promoApplied,
+    promoSource,
+  ])
+
   function removePromo() {
+    promoAbortRef.current?.abort()
+    clearInfluencerOffer()
+    setInfluencerOffer(null)
+    setInfluencerOfferStatus('settled')
     setPromoApplied(null)
+    setPromoSource(null)
     setPromoInput('')
     setPromoMsg(null)
+    setCreatorOfferFailure(null)
     setPromoPreview(null)
   }
 
@@ -3060,7 +3249,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   paymentMethodTypes: ['card', 'link'],
                   appearance: {
                     theme: 'stripe',
-                    variables: { colorPrimary: '#12314d', borderRadius: '11px', fontFamily: 'Inter, sans-serif' },
+                    variables: {
+                      colorPrimary: '#12314d',
+                      borderRadius: '11px',
+                      fontFamily: 'Inter, sans-serif',
+                    },
                   },
                 }}
               >
@@ -3068,7 +3261,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   onReadyChange={setExpressReady}
                   validate={() => validateBeforePay(true)}
                   beginSubmit={() => {
-                    if (submittingRef.current) return false
+                    if (checkoutOfferResolving || submittingRef.current) return false
                     submittingRef.current = true
                     setAccountStatus('sending')
                     setAccountErr('')
@@ -3176,9 +3369,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                             }}
                           />
                         </div>
-                        {payErr.cardNumber && (
-                          <span className="nb1-err">{payErr.cardNumber}</span>
-                        )}
+                        {payErr.cardNumber && <span className="nb1-err">{payErr.cardNumber}</span>}
                       </div>
                     </div>
                   </div>
@@ -3186,42 +3377,42 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
                 {/* PayPal temporarily disabled: it cannot be charged off-session for recurring billing. */}
                 {false && (
-                <div className={`nb1-pm-row${payMethod === 'paypal' ? ' active' : ''}`}>
-                  <button
-                    type="button"
-                    className="nb1-pm-hd"
-                    onClick={() => setPayMethod('paypal')}
-                  >
-                    <div className="nb1-pm-radio">
-                      <div className="nb1-pm-radio-dot" />
+                  <div className={`nb1-pm-row${payMethod === 'paypal' ? ' active' : ''}`}>
+                    <button
+                      type="button"
+                      className="nb1-pm-hd"
+                      onClick={() => setPayMethod('paypal')}
+                    >
+                      <div className="nb1-pm-radio">
+                        <div className="nb1-pm-radio-dot" />
+                      </div>
+                      <span style={{ color: '#003087', fontWeight: 700 }}>Pay</span>
+                      <span style={{ color: '#009cde', fontWeight: 700 }}>Pal</span>
+                    </button>
+                    <div className="nb1-pm-body">
+                      <p className="nb1-pm-note">{t.payment.paypalNote}</p>
                     </div>
-                    <span style={{ color: '#003087', fontWeight: 700 }}>Pay</span>
-                    <span style={{ color: '#009cde', fontWeight: 700 }}>Pal</span>
-                  </button>
-                  <div className="nb1-pm-body">
-                    <p className="nb1-pm-note">{t.payment.paypalNote}</p>
                   </div>
-                </div>
                 )}
 
                 {/* Klarna: off-session recurring via Stripe Billing. Shown only where Klarna actually
                     works (selected country + currency is a Klarna market) — see lib/klarnaMarkets. */}
                 {isKlarnaAvailable(COUNTRY_CODES[country], currency) && (
-                <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
-                  <button
-                    type="button"
-                    className="nb1-pm-hd"
-                    onClick={() => setPayMethod('klarna')}
-                  >
-                    <div className="nb1-pm-radio">
-                      <div className="nb1-pm-radio-dot" />
+                  <div className={`nb1-pm-row${payMethod === 'klarna' ? ' active' : ''}`}>
+                    <button
+                      type="button"
+                      className="nb1-pm-hd"
+                      onClick={() => setPayMethod('klarna')}
+                    >
+                      <div className="nb1-pm-radio">
+                        <div className="nb1-pm-radio-dot" />
+                      </div>
+                      {t.payment.klarna} <span className="nb1-klarna-badge">Klarna</span>
+                    </button>
+                    <div className="nb1-pm-body">
+                      <p className="nb1-pm-note">{t.payment.klarnaNote}</p>
                     </div>
-                    {t.payment.klarna} <span className="nb1-klarna-badge">Klarna</span>
-                  </button>
-                  <div className="nb1-pm-body">
-                    <p className="nb1-pm-note">{t.payment.klarnaNote}</p>
                   </div>
-                </div>
                 )}
 
                 {/* SEPA */}
@@ -3514,12 +3705,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       {promoLoading ? '…' : t.promoUi.apply}
                     </button>
                   </div>
-                  {promoMsg && (
+                  {promoMsg && !creatorOfferFailure && (
                     <div className={`nb1-promo-msg${promoMsg.ok ? ' ok' : ' err'}`}>
                       {promoMsg.text}
                     </div>
                   )}
-                  {renderPlanSwitch()}
+                  {!creatorOfferFailure && renderPlanSwitch()}
                   {promoApplied && (
                     <button
                       type="button"
@@ -3540,6 +3731,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               )}
 
               {/* Confirm */}
+              {creatorOfferFailure && (
+                <div className="nb1-promo-msg err nb1-creator-offer-alert" role="alert">
+                  {creatorOfferFailure}
+                  {renderPlanSwitch()}
+                </div>
+              )}
               {/* Stays clickable while the form is incomplete on purpose: the
                   click runs validateBeforePay, which opens the first invalid
                   section and shows what's missing. Only disabled while sending. */}
@@ -3547,12 +3744,16 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 type="button"
                 className="nb1-confirm-btn"
                 onClick={() => nextPayment()}
-                disabled={accountStatus === 'sending'}
+                disabled={accountStatus === 'sending' || checkoutOfferResolving}
                 style={
-                  accountStatus === 'sending' ? { opacity: 0.65, cursor: 'not-allowed' } : undefined
+                  accountStatus === 'sending' || checkoutOfferResolving
+                    ? { opacity: 0.65, cursor: 'not-allowed' }
+                    : undefined
                 }
               >
-                {accountStatus === 'sending' ? t.confirm.processing : confirmLabel}
+                {accountStatus === 'sending' || checkoutOfferResolving
+                  ? t.confirm.processing
+                  : confirmLabel}
               </button>
               {/* Order errors render BELOW the button, boxed and prefixed, so they read
                   as the outcome of Confirm and never as feedback on the discount-code
@@ -3563,7 +3764,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 </div>
               )}
               <p className="nb1-confirm-legal">
-                {t.confirm.legalPrefix} <a href={`/${locale || 'en'}/terms-conditions`}>{t.confirm.terms}</a> {t.confirm.and}{' '}
+                {t.confirm.legalPrefix}{' '}
+                <a href={`/${locale || 'en'}/terms-conditions`}>{t.confirm.terms}</a>{' '}
+                {t.confirm.and}{' '}
                 <a href={`/${locale || 'en'}/privacy-policy`}>{t.confirm.privacyPolicy}</a>
                 {t.confirm.legalMid}
                 <strong>{t.confirm.feeBold}</strong> {t.confirm.legalEnd}
@@ -3653,7 +3856,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               onClick={() => setPromoOpenSidebar((o) => !o)}
             >
               {promoApplied
-                ? t.promoUi.appliedSuffix.replace('{code}', promoApplied)
+                ? promoSource === 'influencer'
+                  ? t.promoUi.creatorApplied
+                  : t.promoUi.appliedSuffix.replace('{code}', promoApplied)
                 : t.promoUi.addCode}
             </button>
             {promoOpenSidebar && (
@@ -3668,16 +3873,21 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       if (e.key === 'Enter') void applyPromo()
                     }}
                   />
-                  <button type="button" className="nb1-promo-apply" onClick={applyPromo}>
-                    {t.promoUi.apply}
+                  <button
+                    type="button"
+                    className="nb1-promo-apply"
+                    onClick={() => void applyPromo()}
+                    disabled={promoLoading}
+                  >
+                    {promoLoading ? '…' : t.promoUi.apply}
                   </button>
                 </div>
-                {promoMsg && (
+                {promoMsg && !creatorOfferFailure && (
                   <div className={`nb1-promo-msg${promoMsg.ok ? ' ok' : ' err'}`}>
                     {promoMsg.text}
                   </div>
                 )}
-                {renderPlanSwitch()}
+                {!creatorOfferFailure && renderPlanSwitch()}
               </div>
             )}
 

@@ -8,12 +8,14 @@ export type PublicationCollection =
   | 'pillars'
   | 'scientific-articles'
   | 'lexicon-terms'
+  | 'influencer-landing-pages'
 export type PublishedLocaleSlugs = Partial<Record<AppLocale, string>>
 
 type PublicationDocument = {
   _status?: unknown
   slug?: unknown
   title?: unknown
+  influencerName?: unknown
 }
 
 type ResolvePublishedLocaleSlugsArgs = {
@@ -72,6 +74,13 @@ const HAS_LOCALIZED_SLUG: Record<PublicationCollection, boolean> = {
   // describes, and it fails silently.
   'scientific-articles': true,
   'lexicon-terms': true,
+  // FALSE, and checked rather than assumed: `InfluencerLandingPages` calls
+  // `costomSlugField({ from: 'internalTitle' })` with no `localized` argument,
+  // and that helper defaults to `localized = false`. So the slug is a scalar.
+  // Marking it `true` would read the scalar as a locale map and hand every locale
+  // `undefined` — "published nowhere" — which silently disables revalidation, the
+  // exact failure the note above describes.
+  'influencer-landing-pages': false,
 }
 
 function readExactSlug(
@@ -114,7 +123,11 @@ export async function resolvePublishedLocaleSlugs(
       overrideAccess: request.user ? false : true,
       ...(req ? { req } : {}),
       ...(request.user ? { user: request.user } : {}),
-      select: { _status: true, slug: true, title: true },
+      select: {
+        _status: true,
+        slug: true,
+        ...(collection === 'influencer-landing-pages' ? { influencerName: true } : { title: true }),
+      },
     })) as PublicationDocument | null
 
     if (!doc) return {}
@@ -124,7 +137,10 @@ export async function resolvePublishedLocaleSlugs(
     for (const locale of appLocales) {
       const status = readExactLocalizedValue(doc._status, locale)
       const slug = readExactSlug(collection, doc.slug, locale)
-      const title = readExactLocalizedValue(doc.title, locale)
+      const title = readExactLocalizedValue(
+        collection === 'influencer-landing-pages' ? doc.influencerName : doc.title,
+        locale,
+      )
 
       if (
         status === 'published' &&

@@ -49,8 +49,8 @@ async function visibleCollectionSlugs(role: string): Promise<string[]> {
 }
 
 describe('plugin-generated collection access', () => {
-  it('shows editors only the three content areas they manage', async () => {
-    for (const slug of ['pages', 'posts', 'media']) {
+  it('shows editors only the content areas they manage', async () => {
+    for (const slug of ['pages', 'posts', 'media', 'influencer-landing-pages']) {
       expect(isHiddenForRole(collections.get(slug), 'editor')).toBe(false)
     }
 
@@ -78,18 +78,19 @@ describe('plugin-generated collection access', () => {
       expect(await can(slug, 'read', 'editor')).toBe(true)
     }
 
-    // Editors see the Journal collections as well as the original three. The
-    // `hideCollectionFromNonAdmins` wrapper is deliberately NOT applied to them
-    // in payload.config.ts: it is for operational config (products, headers,
-    // footers, categories), and an editor who cannot see Hubs, Pillars or
-    // LexiconTerms cannot do the job the Journal exists for. Hiding is admin-UI
-    // visibility, not access control — the `can(...)` assertions above still
-    // govern who may read and write.
+    // Editors see the Journal collections, origin/main's influencer pages, and the
+    // original three. `hideCollectionFromNonAdmins` is deliberately NOT applied to
+    // the Journal collections in payload.config.ts: it is for operational config
+    // (products, headers, footers, categories), and an editor who cannot see Hubs,
+    // Pillars or LexiconTerms cannot do the job the Journal exists for. Hiding is
+    // admin-UI visibility, not access control — the `can(...)` assertions above
+    // still govern who may read and write.
     expect(await visibleCollectionSlugs('editor')).toEqual([
       'article-categories',
       'conversion-blocks',
       'disclaimers',
       'hubs',
+      'influencer-landing-pages',
       'lexicon-categories',
       'lexicon-terms',
       'media',
