@@ -80,6 +80,7 @@ describe('plugin-generated collection access', () => {
 
     expect(await visibleCollectionSlugs('editor')).toEqual([
       'influencer-landing-pages',
+      'influencer-templates',
       'media',
       'pages',
       'posts',

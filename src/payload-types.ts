@@ -71,6 +71,7 @@ export interface Config {
     pages: Page;
     posts: Post;
     'influencer-landing-pages': InfluencerLandingPage;
+    'influencer-templates': InfluencerTemplate;
     media: Media;
     categories: Category;
     users: User;
@@ -100,6 +101,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     'influencer-landing-pages': InfluencerLandingPagesSelect<false> | InfluencerLandingPagesSelect<true>;
+    'influencer-templates': InfluencerTemplatesSelect<false> | InfluencerTemplatesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -7755,6 +7757,14 @@ export interface InfluencerLandingPage {
    */
   slug: string;
   /**
+   * Shared content template. Leave blank to use the published default template. Shared edits update all linked pages.
+   */
+  template?: (number | null) | InfluencerTemplate;
+  /**
+   * Optional creator-specific terms, replacing the template terms. Copy must match this discount’s actual eligibility and value.
+   */
+  offerFinePrint?: string | null;
+  /**
    * The canonical discount-code string. Eligibility and discount details remain owned by the checkout API.
    */
   discountCode: string;
@@ -7788,6 +7798,68 @@ export interface InfluencerLandingPage {
   updatedAt: string;
   createdAt: string;
   deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Shared layout content for influencer pages. Preview changes through a linked influencer page before publishing. Prices come from the checkout catalogue; do not enter fixed prices or unverified claims.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "influencer-templates".
+ */
+export interface InfluencerTemplate {
+  id: number;
+  title: string;
+  /**
+   * Use "default" for the template used by existing pages without an explicit selection.
+   */
+  key: string;
+  logo?: (number | null) | Media;
+  timelineHeading?: string | null;
+  timelineAccent?: string | null;
+  /**
+   * Up to four milestones. Use {name} for the creator name. Keep shared wording valid for every linked discount; per-creator offer details belong on the influencer record.
+   */
+  timeline?:
+    | {
+        when: string;
+        title: string;
+        description?: string | null;
+        gift?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  scienceHeading?: string | null;
+  scienceCopy?: string | null;
+  scientists?:
+    | {
+        name: string;
+        portrait: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Shared outcomes and plans. On influencer pages, ALL plan CTAs automatically preserve the offer and use localized checkout routes; configured CTA URLs are ignored.
+   */
+  sections?: (OutcomesBlock | YpPlansBlock)[] | null;
+  offerBackground?: (number | null) | Media;
+  /**
+   * For example: Gift from {name}. No discount amount is inferred.
+   */
+  offerBadge?: string | null;
+  /**
+   * Shared offer/kit terms. Ensure these match the current checkout policy.
+   */
+  offerFinePrint?: string | null;
+  footerLinks?:
+    | {
+        label: string;
+        page: number | Page;
+        id?: string | null;
+      }[]
+    | null;
+  footerCopy?: string | null;
+  updatedAt: string;
+  createdAt: string;
   _status?: ('draft' | 'published') | null;
 }
 /**
@@ -8174,6 +8246,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'influencer-landing-pages';
         value: number | InfluencerLandingPage;
+      } | null)
+    | ({
+        relationTo: 'influencer-templates';
+        value: number | InfluencerTemplate;
       } | null)
     | ({
         relationTo: 'media';
@@ -11586,6 +11662,8 @@ export interface PostsSelect<T extends boolean = true> {
 export interface InfluencerLandingPagesSelect<T extends boolean = true> {
   internalTitle?: T;
   slug?: T;
+  template?: T;
+  offerFinePrint?: T;
   discountCode?: T;
   influencerName?: T;
   handle?: T;
@@ -11602,6 +11680,55 @@ export interface InfluencerLandingPagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   deletedAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "influencer-templates_select".
+ */
+export interface InfluencerTemplatesSelect<T extends boolean = true> {
+  title?: T;
+  key?: T;
+  logo?: T;
+  timelineHeading?: T;
+  timelineAccent?: T;
+  timeline?:
+    | T
+    | {
+        when?: T;
+        title?: T;
+        description?: T;
+        gift?: T;
+        id?: T;
+      };
+  scienceHeading?: T;
+  scienceCopy?: T;
+  scientists?:
+    | T
+    | {
+        name?: T;
+        portrait?: T;
+        id?: T;
+      };
+  sections?:
+    | T
+    | {
+        outcomes?: T | OutcomesBlockSelect<T>;
+        ypPlans?: T | YpPlansBlockSelect<T>;
+      };
+  offerBackground?: T;
+  offerBadge?: T;
+  offerFinePrint?: T;
+  footerLinks?:
+    | T
+    | {
+        label?: T;
+        page?: T;
+        id?: T;
+      };
+  footerCopy?: T;
+  updatedAt?: T;
+  createdAt?: T;
   _status?: T;
 }
 /**

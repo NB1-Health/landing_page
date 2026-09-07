@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 type Props = {
+  className?: string
   code: string
   errorLabel: string
   href: string
@@ -12,7 +13,14 @@ type Props = {
   sourceSlug: string
 }
 
-export function InfluencerCta({ code, errorLabel, href, label, sourceSlug }: Props) {
+export function InfluencerCta({
+  className = '',
+  code,
+  errorLabel,
+  href,
+  label,
+  sourceSlug,
+}: Props) {
   const router = useRouter()
   const [error, setError] = useState(false)
 
@@ -27,14 +35,14 @@ export function InfluencerCta({ code, errorLabel, href, label, sourceSlug }: Pro
   return (
     <>
       <button
-        className="inline-flex min-h-12 items-center justify-center rounded-full bg-[#a3e635] px-7 py-3 text-center text-base font-semibold text-[#0e2740] transition hover:bg-[#b8ef5b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        className={`influencer-cta inline-flex min-h-12 items-center justify-center rounded-full bg-[#c6ff5b] px-7 py-3 text-center text-base font-semibold text-[#0e2740] transition hover:bg-[#aaea42] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0a8fb0] ${className}`}
         onClick={followOffer}
         type="button"
       >
         {label}
       </button>
       {error ? (
-        <p className="mx-auto mt-3 max-w-md text-sm text-white/80" role="alert">
+        <p className="mx-auto mt-3 max-w-md text-sm" role="alert">
           {errorLabel}
         </p>
       ) : null}
