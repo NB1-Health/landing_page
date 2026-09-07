@@ -35,3 +35,13 @@ PROJECT_INDEX.md
 # Staging nginx Basic Auth password file (server-only secret; also covered by PR #127)
 .htpasswd-staging
 .htpasswd-staging.*
+
+# Paste-ready JSON-LD dumps from scripts/dump-jsonld.mjs. Generated on demand for
+# the Rich Results Test and validator.schema.org; never committed.
+jsonld/
+
+# Holding pen for files staged for deletion. This session cannot delete files on
+# the machine directly — `rm` is refused — so anything to be removed is moved here
+# instead and deleted by hand. It is a local artefact of that workaround, never a
+# thing to commit.
+_to_delete/

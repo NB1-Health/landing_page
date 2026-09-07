@@ -325,4 +325,100 @@ export const it = {
       copyright: '© NB1 Health GmbH 2026',
     },
   },
+  footer: {
+    explore: 'Esplora',
+    getStarted: 'Inizia',
+    content: 'Contenuti',
+    journal: 'Journal',
+  },
+  evidence: {
+    claim: 'Affermazione',
+    strength: "Solidità dell'evidenza",
+    note: 'Note',
+    levels: {
+      '1': 'Molto limitata',
+      '2': 'Limitata',
+      '3': 'Non uniforme',
+      '4': 'Buona',
+      '5': 'Solida',
+    },
+  },
+  research: {
+    source: 'Studio originale',
+    doi: 'Vedi lo studio',
+    sections: {
+      background: 'Contesto',
+      studyDesign: 'Disegno dello studio',
+      keyFindings: 'Risultati principali',
+      mechanism: 'Meccanismo',
+      clinicalImplications: 'Rilevanza clinica',
+      limitations: 'Limiti e domande aperte',
+      inPlainLanguage: 'In parole semplici',
+    },
+  },
+  lexicon: {
+    sections: {
+      inSimpleTerms: 'In parole semplici',
+      scientificBackground: 'Contesto scientifico',
+      roleInGutHealth: 'Ruolo nella salute del microbioma intestinale',
+    },
+    alsoKnownAs: 'Noto anche come',
+    reviewedFor: 'Revisionato scientificamente da',
+    relatedTerms: 'Termini correlati',
+    readMore: 'Continua a leggere',
+    filterLabel: 'Filtra i termini',
+    // `{terms}` is substituted with a count phrase, so the verb leads and the
+    // placeholder follows — same shape as the German ('{terms} filtern').
+    filterPlaceholder: 'Filtra {terms}, ad es. butirrato',
+    searchLabel: 'Cerca nel glossario',
+    searchPlaceholder: 'Cerca tra {terms}, ad es. butirrato',
+    // Italian pluralises like English — one/other — but BOTH forms still carry
+    // `{count}`, because `Intl.PluralRules` picks the form and the number has to
+    // survive either choice.
+    countOne: '{count} termine',
+    countAll: '{count} termini',
+    countFiltered: '{shown} di {total} termini',
+    searching: 'Ricerca in corso…',
+    resultsCapped: 'Mostrati i primi {shown} di {total} risultati. Continua a digitare per restringere.',
+    noMatch: 'Nessun termine corrisponde a questo filtro.',
+    jumpToLetter: 'Vai alla lettera',
+    backToTop: "Torna all'inizio",
+    browseByCategory: 'Sfoglia per categoria',
+    allTerms: 'Tutti i termini A–Z',
+  },
+  journal: {
+    heroTitle: "L'intestino, spiegato.",
+    heroLede:
+      'Contenuti basati sulle evidenze su microbioma, nutrizione e la scienza dietro una formula creata per te. Scritti e revisionati dal team NB1.',
+    allTopics: 'Tutti',
+    readArticle: "Leggi l'articolo",
+    minRead: 'min di lettura',
+    featuredLabel: 'In evidenza',
+    empty: 'Ancora nessun articolo in questo argomento.',
+    imagePlaceholder: 'Immagine',
+    references: 'Riferimenti',
+    keepReading: 'Continua a leggere',
+    by: 'Di',
+    reviewedBy: 'Revisionato da',
+    breadcrumbHome: 'Home',
+    // Left as 'Journal', matching de/fr/nl. It names the section, and the URL
+    // segment is /journal in every locale — a translated label over an
+    // untranslated path reads like a broken link.
+    breadcrumbJournal: 'Journal',
+    navOverview: 'Panoramica',
+    breadcrumbPage: 'Pagina',
+    complianceLabel: 'Una nota sulle affermazioni:',
+    ctaHeading: "Creata dalla tua biologia, non da un'ipotesi.",
+    ctaBody: 'NB1 analizza il tuo intestino e crea una formula pensata solo per te.',
+    ctaLabel: 'Scopri come funziona',
+    // Unlocalized route, same as every other locale.
+    ctaPath: '/your-plan',
+    exploreHubs: 'Esplora per argomento',
+    relatedTopics: 'Argomenti correlati',
+    lastReviewed: 'Ultima revisione',
+    aboutAuthor: "Sull'autore",
+    profile: 'Leggi il profilo completo',
+    relatedResearch: 'Ricerche correlate',
+    relatedReading: 'Letture correlate',
+  },
 }

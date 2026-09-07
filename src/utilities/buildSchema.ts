@@ -1,5 +1,8 @@
 import type { Post } from '@/payload-types'
 
+import type { PublisherSchema } from '@/utilities/publisherSchema'
+import type { BreadcrumbRung } from '@/utilities/journalTrail'
+
 /**
  * Generic shape for walking serialized Lexical content. The generated `Post.content`
  * children only expose `type`/`version`, so we describe the extra fields we read.
@@ -33,6 +36,14 @@ function mediaURL(media: Post['heroImage']): string | null | undefined {
   return media && typeof media === 'object' ? media.url : undefined
 }
 
+/**
+ * `/{locale}/authors/[slug]` is described on the Authors collection but has never
+ * been built. A `Person.url` that 404s is a worse signal than omitting an
+ * optional property, so the link is suppressed until the route exists — flip
+ * this when it does.
+ */
+const AUTHOR_ROUTE_EXISTS: boolean = false
+
 function buildAuthors(post: Post, siteURL: string, locale: string) {
   const authors = post.populatedAuthors ?? undefined
 
@@ -48,7 +59,9 @@ function buildAuthors(post: Post, siteURL: string, locale: string) {
   const toPerson = (a: { name: string; slug?: string }) => ({
     '@type': 'Person',
     name: a.name,
-    ...(a.slug ? { url: `${siteURL}/${locale}/authors/${a.slug}` } : {}),
+    ...(AUTHOR_ROUTE_EXISTS && a.slug
+      ? { url: `${siteURL}/${locale}/authors/${a.slug}` }
+      : {}),
   })
 
   return clean.length === 1 ? toPerson(clean[0]) : clean.map(toPerson)
@@ -124,19 +137,62 @@ function extractComparisonProducts(post: Post) {
   return products
 }
 
+/**
+ * Serialise a breadcrumb trail as `BreadcrumbList`.
+ *
+ * Takes the SAME `BreadcrumbRung[]` the visible `<Breadcrumb>` renders, built by
+ * `buildJournalTrail`. That is deliberate: SEO-007 §5 requires the markup and the
+ * rendered trail to agree character for character and calls any mismatch a P1
+ * defect, and the reliable way to guarantee that is one array feeding both,
+ * rather than two functions that happen to agree today.
+ *
+ * Every rung carries `item`, including the last. A self-referencing final item is
+ * valid and is what the approved previews emit; the *visible* final rung is still
+ * plain text with `aria-current`, which is a separate concern.
+ *
+ * Position 2 is always Journal — the hierarchy SEO-007 exists to declare, given
+ * the URLs are flat and carry no `/journal/` segment for a crawler to read.
+ */
+export function buildBreadcrumbSchema({
+  siteURL,
+  rungs,
+}: {
+  siteURL: string
+  rungs: BreadcrumbRung[]
+}) {
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: rungs.map((rung, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: rung.name,
+      item: new URL(rung.path, siteURL).toString(),
+    })),
+  }
+}
+
 export function buildPostSchema({
   post,
   siteURL,
   locale,
+  breadcrumb,
+  publisher,
 }: {
   post: Post
   siteURL: string
   locale: string
+  /** The rendered trail. Omit to leave BreadcrumbList out of the graph. */
+  breadcrumb?: BreadcrumbRung[]
+  /** From Site Settings' Organization JSON-LD. Falls back to the legal name. */
+  publisher?: PublisherSchema
 }) {
   if (!post) return null
 
   const slug = typeof post.slug === 'string' ? post.slug : ''
-  const url = `${siteURL}/${locale}/posts/${encodeURIComponent(slug)}`
+  // Posts are served under /journal. This previously emitted /posts, so the
+  // JSON-LD `url` and `mainEntityOfPage` pointed at a 301 while the canonical
+  // said /journal — a direct contradiction in the structured data.
+  const url = `${siteURL}/${locale}/journal/${encodeURIComponent(slug)}`
 
   const schemaMarkup = post.schemaMarkup as SchemaMarkup | undefined
 
@@ -154,6 +210,15 @@ export function buildPostSchema({
   const dateModified = post.updatedAt || undefined
 
   const author = buildAuthors(post, siteURL, locale)
+
+  // Google's Article guidance asks for publisher.logo, and the approved
+  // template's JSON-LD stub includes it. Both were previously absent.
+  const publisherLogo = absoluteURL(siteURL, publisher?.logoUrl)
+  const publisherSchema = {
+    '@type': 'Organization',
+    name: publisher?.name || 'NB1 Health GmbH',
+    ...(publisherLogo ? { logo: { '@type': 'ImageObject', url: publisherLogo } } : {}),
+  }
 
   // ✅ Auto FAQ from FAQAccordion blocks
   const blockFaq = extractFaqAccordionItems(post)
@@ -218,7 +283,7 @@ export function buildPostSchema({
       ...(datePublished ? { datePublished } : {}),
       ...(dateModified ? { dateModified } : {}),
       ...(author ? { author } : {}),
-      publisher: { '@type': 'Organization', name: 'NB1 Health GmbH' },
+      publisher: publisherSchema,
     }
   } else if (schemaType === 'MedicalWebPage') {
     const med = schemaMarkup?.medical || {}
@@ -236,16 +301,22 @@ export function buildPostSchema({
         ? { about: { '@type': med.aboutType || 'MedicalCondition', name: med.aboutName } }
         : {}),
       ...(med?.medicalSpecialty ? { medicalSpecialty: med.medicalSpecialty } : {}),
-      publisher: { '@type': 'Organization', name: 'NB1 Health GmbH' },
+      publisher: publisherSchema,
     }
   } else if (schemaType === 'FAQPage') {
     main = faqSchema
   }
 
   // ✅ Merge everything with @graph (best practice when multiple schemas exist)
-  const graph = [main, schemaType !== 'FAQPage' ? faqSchema : null, comparisonSchema].filter(
-    Boolean,
-  )
+  const breadcrumbSchema =
+    breadcrumb && breadcrumb.length ? buildBreadcrumbSchema({ siteURL, rungs: breadcrumb }) : null
+
+  const graph = [
+    main,
+    breadcrumbSchema,
+    schemaType !== 'FAQPage' ? faqSchema : null,
+    comparisonSchema,
+  ].filter(Boolean)
   if (!graph.length) return null
 
   return { '@context': 'https://schema.org', '@graph': graph }

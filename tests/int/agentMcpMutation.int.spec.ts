@@ -23,6 +23,10 @@ describe('agent MCP mutation (Postgres)', () => {
   const mediaIDs: number[] = []
   const pageIDs: number[] = []
   const postIDs: number[] = []
+  // Posts require an author and a primary category before they can be published
+  // (`requiredOnPublish`), so this suite seeds one of each.
+  const authorIDs: number[] = []
+  const categoryIDs: number[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
@@ -85,6 +89,14 @@ describe('agent MCP mutation (Postgres)', () => {
           id,
           overrideAccess: true,
         })
+        .catch(() => undefined)
+    }
+    for (const id of authorIDs) {
+      await payload.delete({ collection: 'authors', id, overrideAccess: true }).catch(() => undefined)
+    }
+    for (const id of categoryIDs) {
+      await payload
+        .delete({ collection: 'categories', id, overrideAccess: true })
         .catch(() => undefined)
     }
     for (const id of pageIDs) {
@@ -435,6 +447,19 @@ describe('agent MCP mutation (Postgres)', () => {
 
     const directMedia = await upload('direct-reference')
     const richTextMedia = await upload('rich-text-reference')
+    const fixtureAuthor = await payload.create({
+      collection: 'authors',
+      data: { name: `Fixture Author ${suffix}`, slug: `fixture-author-${suffix}` },
+      overrideAccess: true,
+    })
+    authorIDs.push(fixtureAuthor.id as number)
+    const fixtureCategory = await payload.create({
+      collection: 'categories',
+      data: { slug: `fixture-category-${suffix}`, title: `Fixture Category ${suffix}` },
+      overrideAccess: true,
+    })
+    categoryIDs.push(fixtureCategory.id as number)
+
     const referencedPost = await payload.create({
       collection: 'posts',
       context: { disableRevalidate: true },
@@ -468,6 +493,23 @@ describe('agent MCP mutation (Postgres)', () => {
         },
         slug: `referenced-media-${suffix}`,
         source: 'manual',
+        // `requiredOnPublish` gates standfirst, excerpt, primary category and
+        // author at PUBLISH time; drafts still save freely. This fixture
+        // publishes, so it has to satisfy all four. They are inert here — the
+        // subject is still Media reference protection.
+        //
+        // `source: 'api'` would have exempted it, but that path runs
+        // `parseApiContent`, which requires `htmlContent` and REPARSES it into
+        // `content` — overwriting the rich text whose Media reference is the
+        // whole point of this test.
+        subtitle: 'Standfirst for the referenced-media guard fixture.',
+        excerpt: 'Excerpt for the referenced-media guard fixture.',
+        authors: [fixtureAuthor.id],
+        // Top level, NOT under `meta`. `primaryCategory` lives in a tab with no
+        // `name`, and Payload keeps unnamed-tab data flat — the "Meta >" in the
+        // validation error is the tab's LABEL, not the data path. Nested under
+        // `meta` it is silently discarded.
+        primaryCategory: fixtureCategory.id,
         title: 'Referenced Media guard',
       } as never,
       draft: true,

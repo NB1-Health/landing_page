@@ -18,7 +18,6 @@ import type {
   KeyTakeawaysBlock as KeyTakeawaysBlockProps,
   FAQBlock as FAQBlockProps,
   DataTableBlock as DataTableBlockProps,
-  CtaBlock as CtaBlockProps,
   BulletListBlock as BulletListBlockProps,
 } from '@/payload-types'
 
@@ -42,6 +41,17 @@ import { FAQBlockComponent } from '@/blocks/FAQ/Component'
 import { DataTableBlockComponent } from '@/blocks/DataTable/Component'
 import { CtaBlockComponent } from '@/blocks/CTA/Component'
 import { BulletListBlockComponent } from '@/blocks/BulletList/Component'
+import { ComplianceNoteComponent } from '@/blocks/ComplianceNote/Component'
+
+// Pillar body components — designer brief §5. Typed off `node.fields` rather
+// than the generated interfaces, like `complianceNote` above, so adding them
+// does not require regenerating payload-types before the project compiles.
+import { EvidenceTableComponent } from '@/blocks/EvidenceTable/Component'
+import { StepFlowComponent } from '@/blocks/StepFlow/Component'
+import { HighlightCalloutComponent } from '@/blocks/HighlightCallout/Component'
+import { PullQuoteComponent } from '@/blocks/PullQuote/Component'
+
+import { getDictionary } from '@/i18n/getDictionary'
 
 type NodeTypes = DefaultNodeTypes | SerializedBlockNode
 
@@ -93,6 +103,7 @@ export function createJSXConverter({
 } = {}): JSXConvertersFunction<NodeTypes> {
   const safeLocale = locale || 'en'
   const prefix = `/${safeLocale}`
+  const dict = getDictionary(safeLocale)
 
   const internalDocToHref = ({ linkNode }: { linkNode: SerializedLinkNode }) => {
     const doc = linkNode.fields?.doc
@@ -110,7 +121,8 @@ export function createJSXConverter({
           : undefined
 
     if (!slug) return prefix
-    return relationTo === 'posts' ? `${prefix}/posts/${slug}` : `${prefix}/${slug}`
+    // Posts are served under /journal (see JOURNAL_INTEGRATION_PLAN.md, Phase 2).
+    return relationTo === 'posts' ? `${prefix}/journal/${slug}` : `${prefix}/${slug}`
   }
 
   return ({ defaultConverters }) => ({
@@ -216,12 +228,65 @@ export function createJSXConverter({
         <DataTableBlockComponent {...node.fields} locale={safeLocale} />
       ),
 
-      ctaBlock: ({ node }: { node: SerializedBlockNode<CtaBlockProps> }) => (
-        <CtaBlockComponent {...node.fields} locale={safeLocale} />
+      ctaBlock: ({ node }: { node: SerializedBlockNode }) => (
+        <CtaBlockComponent
+          conversionBlock={node.fields?.conversionBlock}
+          body={node.fields?.body}
+          buttonUrl={node.fields?.buttonUrl}
+          locale={safeLocale}
+        />
       ),
 
       bulletList: ({ node }: { node: SerializedBlockNode<BulletListBlockProps> }) => (
         <BulletListBlockComponent {...node.fields} locale={safeLocale} />
+      ),
+
+      complianceNote: ({ node }: { node: SerializedBlockNode }) => (
+        <ComplianceNoteComponent
+          disclaimer={node.fields?.disclaimer}
+          text={node.fields?.text}
+          label={dict.journal.complianceLabel}
+          fallback={dict.disclaimer.text}
+        />
+      ),
+
+      evidenceTable: ({ node }: { node: SerializedBlockNode }) => (
+        <EvidenceTableComponent
+          sectionTitle={node.fields?.sectionTitle}
+          rows={Array.isArray(node.fields?.rows) ? node.fields.rows : []}
+          caption={node.fields?.caption}
+          // The stored value is a level, not a phrase, so the wording is
+          // resolved here and translates with the page.
+          labels={{
+            claim: dict.evidence.claim,
+            strength: dict.evidence.strength,
+            note: dict.evidence.note,
+            levels: dict.evidence.levels,
+          }}
+        />
+      ),
+
+      stepFlow: ({ node }: { node: SerializedBlockNode }) => (
+        <StepFlowComponent
+          sectionTitle={node.fields?.sectionTitle}
+          steps={Array.isArray(node.fields?.steps) ? node.fields.steps : []}
+        />
+      ),
+
+      highlightCallout: ({ node }: { node: SerializedBlockNode }) => (
+        <HighlightCalloutComponent
+          title={node.fields?.title}
+          body={node.fields?.body}
+          tone={node.fields?.tone}
+        />
+      ),
+
+      pullQuote: ({ node }: { node: SerializedBlockNode }) => (
+        <PullQuoteComponent
+          quote={node.fields?.quote}
+          attribution={node.fields?.attribution}
+          duplicatesBody={node.fields?.duplicatesBody}
+        />
       ),
     },
   })
