@@ -110,6 +110,11 @@ import { ReferralWidgetBlock } from '@/blocks/ReferralWidget/config'
 import { ReferInfoBlock } from '@/blocks/ReferInfo/config'
 import { ReferFaqBlock } from '@/blocks/ReferFaq/config'
 import { CustomerReviewsBlock } from '@/blocks/CustomerReviews/config'
+import { HelpNavBlock } from '@/blocks/helpBlocks/HelpNav/config'
+import { HelpHeroBlock } from '@/blocks/helpBlocks/HelpHero/config'
+import { HelpStepsBlock } from '@/blocks/helpBlocks/HelpSteps/config'
+import { HelpFaqBlock } from '@/blocks/helpBlocks/HelpFaq/config'
+import { HelpCtaBlock } from '@/blocks/helpBlocks/HelpCta/config'
 import { seoOverridesField } from '@/fields/seoOverrides'
 
 export const Pages: CollectionConfig<'pages'> = {
@@ -319,6 +324,12 @@ export const Pages: CollectionConfig<'pages'> = {
                 ReferInfoBlock,
                 ReferFaqBlock,
                 CustomerReviewsBlock,
+                // Help / FAQ article kit — use these five together, in order.
+                HelpHeroBlock,
+                HelpNavBlock,
+                HelpStepsBlock,
+                HelpFaqBlock,
+                HelpCtaBlock,
               ],
               required: true,
               admin: { initCollapsed: true },

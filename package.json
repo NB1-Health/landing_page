@@ -23,6 +23,7 @@
     "migrate:reset": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:reset",
     "postinstall": "patch-package && node scripts/patch-payload-block-ui.mjs",
     "seo:check": "node scripts/check-international-seo.mjs",
+    "seed:help-stool-kit": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-help-stool-kit.ts",
     "ii": "cross-env NODE_OPTIONS=--no-deprecation npm install",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
     "lint:fix": "cross-env NODE_OPTIONS=--no-deprecation next lint --fix",
