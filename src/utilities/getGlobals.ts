@@ -9,7 +9,21 @@ import { isAppLocale, type AppLocale } from '@/i18n/config'
 
 type PayloadLocale = AppLocale | 'all'
 
-async function getGlobal(slug: Global, depth = 0, locale?: string) {
+/**
+ * Generic over the slug so the return type is the specific global, not a union
+ * of every global on the site.
+ *
+ * Without this, `getCachedGlobal('site-settings')` resolved to
+ * `SiteSetting | Navigation | Faq`, and reading any field that only exists on
+ * one of them was a type error even though the slug is a literal at every call
+ * site. `payload.findGlobal` is not itself generic over the slug here, so the
+ * assertion below is the one place that knowledge lives.
+ */
+async function getGlobal<T extends Global>(
+  slug: T,
+  depth = 0,
+  locale?: string,
+): Promise<Config['globals'][T]> {
   const payload = await getPayload({ config: configPromise })
 
   const safeLocale: PayloadLocale | undefined = locale
@@ -24,10 +38,10 @@ async function getGlobal(slug: Global, depth = 0, locale?: string) {
     locale: safeLocale,
   })
 
-  return global
+  return global as Config['globals'][T]
 }
 
-export const getCachedGlobal = (slug: Global, depth = 0, locale?: string) =>
+export const getCachedGlobal = <T extends Global>(slug: T, depth = 0, locale?: string) =>
   unstable_cache(
     async () => getGlobal(slug, depth, locale),
     [slug, String(depth), locale || 'default'],

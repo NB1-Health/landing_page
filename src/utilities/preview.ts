@@ -34,7 +34,9 @@ export function getPreviewTarget({
         ? `/${locale}`
         : `/${locale}/${slug}`
       : collection === 'posts'
-        ? `/${locale}/posts/${slug}`
+        ? // /journal, not /posts — Phase 2 of the Journal integration. A preview
+          // link to the old path would 301 and drop the draft token.
+          `/${locale}/journal/${slug}`
         : `/${locale}/influencers/${slug}`
 
   return { collection, locale, path, slug }

@@ -7,8 +7,15 @@ import React, { Fragment } from 'react'
 import type { Post } from '@/payload-types'
 
 import { Media } from '@/components/Media'
+import { defaultLocale, isAppLocale } from '@/i18n/config'
+import { useParams } from 'next/navigation'
 
 export type CardPostData = Pick<Post, 'slug' | 'categories' | 'meta' | 'title'>
+
+/** URL segment each collection is served under, keyed by collection slug. */
+const COLLECTION_BASE_PATH = {
+  posts: '/journal',
+} as const
 
 export const Card: React.FC<{
   alignItems?: 'center'
@@ -19,6 +26,7 @@ export const Card: React.FC<{
   title?: string
 }> = (props) => {
   const { card, link } = useClickableCard({})
+  const params = useParams()
   const { className, doc, relationTo, showCategories, title: titleFromProps } = props
 
   const { slug, categories, meta, title } = doc || {}
@@ -27,7 +35,14 @@ export const Card: React.FC<{
   const hasCategories = categories && Array.isArray(categories) && categories.length > 0
   const titleToUse = titleFromProps || title
   const sanitizedDescription = description?.replace(/\s/g, ' ') // replace non-breaking space with white space
-  const href = `/${relationTo}/${slug}`
+
+  // The href was `/${relationTo}/${slug}` — which both used the collection slug
+  // as the URL segment (posts are served under /journal) and omitted the locale
+  // prefix required by the `[locale]` route group.
+  const localeParam = Array.isArray(params?.locale) ? params.locale[0] : params?.locale
+  const locale = isAppLocale(String(localeParam)) ? String(localeParam) : defaultLocale
+  const basePath = relationTo ? COLLECTION_BASE_PATH[relationTo] : ''
+  const href = `/${locale}${basePath}/${slug}`
 
   return (
     <article

@@ -1,4 +1,6 @@
 import { getCachedHeader } from '@/utilities/getHeaderFooter'
+import { getCachedJournalNav } from '@/utilities/journalNav'
+import { isAppLocale } from '@/i18n/config'
 import React, { Suspense } from 'react'
 
 import type { Media } from '@/payload-types'
@@ -99,6 +101,20 @@ export async function Header({ locale, id, localizedDocument }: Props) {
   // returning visitor had a non-EUR currency saved.
   const initialCurrency = await getServerCurrency(locale)
 
+  // The Journal branch of the Discover menu. Fetched here rather than in the
+  // client component because it is CMS data — generated from hub and pillar
+  // slugs — and every link in it has to be a real `<a href>` in the HTML the
+  // server sends, which §12 requires and the JS-off test checks.
+  //
+  // Returns null in a locale with no hub slugs, which is how `fr`/`nl`/`be`
+  // correctly get four Discover items instead of five.
+  //
+  // `Props.locale` is `string` — the Header is rendered from several layouts and
+  // widening it would ripple into every caller — so it is narrowed here. An
+  // unrecognised locale gets no Journal branch rather than a guessed one, which
+  // is the same answer a locale with no hub slugs gets.
+  const journalNav = isAppLocale(locale) ? await getCachedJournalNav(locale)() : null
+
   if (!data) return null
 
   return (
@@ -124,6 +140,7 @@ export async function Header({ locale, id, localizedDocument }: Props) {
         discoverNavItems={(data?.discoverNavItems ?? []).map((item) => ({
           link: resolveNavLink(item.link ?? null, locale),
         }))}
+        journalNav={journalNav}
         variants={data?.variants ?? []}
         sectionNavEnabled={data?.sectionNavEnabled ?? false}
         sectionNavItems={(data?.sectionNavItems ?? []).map((item) => ({

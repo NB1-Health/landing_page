@@ -1,0 +1,518 @@
+/* ============================================================================
+   NB1 Journal — index / hub page
+   ----------------------------------------------------------------------------
+   Port of the `.lib-*` rules from the approved `Journal.html` template.
+
+   Renamed `lib-*` -> `jr-*` and every bare utility class (`.ph`, `.t-science`,
+   `.featured`) scoped under a `jr-` parent, so nothing here can leak into the
+   rest of the app. Requires journal-tokens.css.
+
+     import '@/styles/journal-tokens.css'
+     import '@/styles/journal-index.css'
+
+   Class map (template -> here):
+     .lib-hero        -> .jr-hero
+     .lib-hero-in     -> .jr-hero__inner
+     .lib-body        -> .jr-body
+     .lib-filter      -> .jr-filter
+     .lib-chip        -> .jr-chip           (.is-active replaces .active)
+     .lib-feat        -> .jr-feat
+     .lib-feat-body   -> .jr-feat__body
+     .lib-grid        -> .jr-grid
+     .lib-card        -> .jr-card
+     .lib-thumb       -> .jr-thumb          (.jr-thumb--science etc.)
+     .lib-card-body   -> .jr-card__body
+     .lib-cat         -> .jr-cat
+     .lib-readtime    -> .jr-readtime
+     .lib-readmore    -> .jr-readmore
+     .lib-empty       -> .jr-empty
+     .ph              -> .jr-ph
+   ========================================================================= */
+
+/* The template set these on `body`. Scoped to a page wrapper instead so it
+   cannot override globals.css or any other route. */
+.jr-page {
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  font-family: var(--jr-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------- hero ---- */
+
+.jr-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--jr-panel);
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 80% at 88% -10%, rgba(10, 143, 176, 0.13) 0%, transparent 56%),
+    radial-gradient(54% 72% at -4% 110%, rgba(120, 162, 196, 0.1) 0%, transparent 58%);
+}
+
+.jr-hero__inner {
+  position: relative;
+  z-index: 2;
+  max-width: var(--jr-maxw);
+  margin: 0 auto;
+  padding: 64px 40px 48px;
+}
+
+.jr-hero__inner h1 {
+  margin: 0;
+  max-width: 16ch;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.jr-hero__inner p {
+  margin: 20px 0 0;
+  max-width: 600px;
+  font-size: clamp(16px, 1.8vw, 19px);
+  line-height: 1.55;
+  color: var(--jr-ink-70);
+  text-wrap: pretty;
+}
+
+/* -------------------------------------------------------------- layout ---- */
+
+.jr-body {
+  max-width: var(--jr-maxw);
+  margin: 0 auto;
+  padding: 40px 40px 96px;
+}
+
+/* -------------------------------------------------------- topic filter ---- */
+
+.jr-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 40px;
+}
+
+.jr-chip {
+  padding: 9px 17px;
+  font-family: var(--jr-font);
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--jr-ink-70);
+  background: var(--jr-paper);
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.jr-chip:hover {
+  color: var(--jr-ink);
+  border-color: var(--jr-ink-40);
+}
+
+.jr-chip.is-active {
+  color: var(--jr-paper);
+  background: var(--jr-ink);
+  border-color: var(--jr-ink);
+}
+
+/* ------------------------------------------------------------ featured ---- */
+
+.jr-feat {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 0;
+  margin-bottom: 48px;
+  overflow: hidden;
+  background: var(--jr-paper);
+  border: 1px solid var(--jr-line);
+  border-radius: 20px;
+  box-shadow: var(--jr-shadow-feat);
+  text-decoration: none;
+  color: inherit;
+}
+
+.jr-feat .jr-thumb {
+  min-height: 340px;
+  aspect-ratio: auto;
+}
+
+.jr-feat__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 42px;
+}
+
+.jr-feat__body h2 {
+  margin: 14px 0 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.jr-feat__body p {
+  margin: 14px 0 0;
+  font-size: 15.5px;
+  line-height: 1.62;
+  color: var(--jr-ink-70);
+}
+
+.jr-feat__body .jr-readmore {
+  margin-top: 22px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--jr-teal);
+}
+
+/* ---------------------------------------------------------------- grid ---- */
+
+.jr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.jr-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--jr-paper);
+  border: 1px solid var(--jr-line-2);
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.16s,
+    box-shadow 0.16s,
+    border-color 0.16s;
+}
+
+.jr-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--jr-line);
+  box-shadow: var(--jr-shadow-card);
+}
+
+/* Cover image slot. Doubles as the gradient fallback when a post has no
+   cover image — pick the modifier from the primary category slug. */
+.jr-thumb {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--jr-navy-deep), #14507a);
+}
+
+.jr-thumb--science {
+  background: linear-gradient(135deg, #0e2740, #0a8fb0);
+}
+.jr-thumb--nutrition {
+  background: linear-gradient(135deg, #1f5a4c, #2c8c6a);
+}
+.jr-thumb--protocols {
+  background: linear-gradient(135deg, #3a2f6b, #5b6bc0);
+}
+.jr-thumb--stories {
+  background: linear-gradient(135deg, #6b3a2f, #c08a5b);
+}
+.jr-thumb--gut-health {
+  background: linear-gradient(135deg, #0e2740, #14507a);
+}
+
+/* next/image fills the slot; the gradient stays visible behind a missing image */
+.jr-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jr-thumb .jr-ph {
+  position: relative;
+  z-index: 1;
+  font-family: var(--jr-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--jr-w-70);
+}
+
+.jr-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 20px 22px 24px;
+}
+
+.jr-cat {
+  font-family: var(--jr-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-teal);
+}
+
+.jr-card__body h3 {
+  margin: 10px 0 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 18.5px;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  color: var(--jr-ink);
+}
+
+.jr-card__body p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--jr-ink-70);
+}
+
+.jr-readtime {
+  margin-top: auto;
+  padding-top: 16px;
+  font-size: 12.5px;
+  color: var(--jr-ink-45);
+}
+
+.jr-empty {
+  padding: 50px 0;
+  font-size: 15px;
+  text-align: center;
+  color: var(--jr-ink-45);
+}
+
+/* --------------------------------------------------------- responsive ---- */
+
+@media (max-width: 880px) {
+  .jr-hero__inner {
+    padding: 48px 26px 38px;
+  }
+  .jr-body {
+    padding: 32px 26px 70px;
+  }
+  .jr-feat {
+    grid-template-columns: 1fr;
+  }
+  .jr-feat .jr-thumb {
+    min-height: 200px;
+    aspect-ratio: 16 / 9;
+  }
+  .jr-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .jr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------ hub strip ---- */
+
+/*
+ * Journal index → the three hubs (SEO-007 §11.1). Sits between the hero and the
+ * topic filter: above the fold on desktop, and before the article grid so the
+ * links are early in the document rather than buried under twelve cards.
+ */
+.jr-hubs {
+  margin-bottom: 36px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-hubs__title {
+  margin: 0 0 14px;
+  font-family: var(--jr-font);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--jr-ink-70);
+}
+
+.jr-hubs__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * Visually a pill, like .jr-chip — but an anchor, and never given .jr-chip
+ * itself. The chips are deliberately hrefless filters (SEO-007 §10) and these
+ * are deliberately links; sharing a class would invite one to be restyled or
+ * re-scripted as the other.
+ */
+.jr-hubs__link {
+  display: inline-block;
+  padding: 9px 17px;
+  font-family: var(--jr-font);
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--jr-ink);
+  text-decoration: none;
+  background: var(--jr-paper);
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.jr-hubs__link:hover {
+  color: var(--jr-teal);
+  border-color: var(--jr-ink-40);
+}
+
+@media (max-width: 560px) {
+  .jr-hubs {
+    margin-bottom: 28px;
+  }
+}
+
+/* ------------------------------------------------- lexicon filter bar ---- */
+
+/*
+ * Visually hidden but available to assistive technology. The clip-rect technique
+ * rather than `display:none` or `visibility:hidden`, both of which remove the
+ * element from the accessibility tree along with the screen — which would make
+ * the filter input an unlabelled text box.
+ */
+.jr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Sticky, because at 436 entries the reader is 30 screens from the top by the
+ * time they decide to filter. `top: 0` and an opaque background: a translucent
+ * bar over scrolling text is unreadable at exactly the moment it matters.
+ */
+.jr-filterbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: 0 0 8px;
+  padding: 14px 0 12px;
+  background: var(--jr-paper);
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-filterbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.jr-filterbar__field {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: var(--jr-off);
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+}
+
+.jr-filterbar__field input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--jr-font);
+  font-size: 14.5px;
+  color: var(--jr-ink);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.jr-filterbar__field input::placeholder {
+  color: var(--jr-ink-45);
+}
+
+/* Focus lands on the pill, not the borderless input inside it — otherwise
+   keyboard focus is invisible. */
+.jr-filterbar__field:focus-within {
+  border-color: var(--jr-teal);
+  box-shadow: 0 0 0 3px var(--jr-teal-tint);
+}
+
+.jr-filterbar__count {
+  font-family: var(--jr-mono);
+  font-size: 12px;
+  color: var(--jr-ink-55);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------- related terms row ---- */
+
+/*
+ * Five links in a row, not five cards. On 2,400 pages the difference is a screen
+ * of height each.
+ */
+.jr-xlinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-xlinks a {
+  display: inline-block;
+  padding: 7px 14px;
+  font-size: 13.5px;
+  color: var(--jr-ink);
+  text-decoration: none;
+  background: var(--jr-paper);
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.jr-xlinks a:hover {
+  color: var(--jr-teal);
+  border-color: var(--jr-ink-40);
+}
+
+.jr-xlinks em {
+  font-style: italic;
+}
