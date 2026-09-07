@@ -1,21 +1,22 @@
 /**
  * Italian UI strings.
  *
- * Translated from the IT column of "NB1 Website - Final IT.xlsx" (matched on the
- * English source text). 101 of 197 keys are translated; 6 are identical in Italian
- * (Email, CVC, IBAN, GDPR, ©-line, Privacy).
+ * Translated from the IT columns of "NB1 Website - Final IT.xlsx" and the
+ * follow-up "NB1 Website Missing Strings - IT locale - Final.xlsx", matched on
+ * the English source text. 175 of 201 keys are translated.
  *
- * The remaining keys are still the English copy from en.ts — either absent from the
- * workbook, or present only inside a longer combined row that the code splits across
- * several keys (e.g. "Phone (for delivery updates)" is one workbook row but two keys
- * here). Those need a human split rather than a guess. /it renders English for them.
+ * The 26 values still equal to English are intentional: 12 are the same word in
+ * Italian (Email, CVC, IBAN, GDPR, Klarna, Privacy, Standard, Express, Austria,
+ * Romania, the copyright line, the support address), 11 are keys nothing in the
+ * codebase reads, and 3 were deliberately left (an example IBAN, the express
+ * price, and the referral promo message).
  */
 export const it = {
   header: {
     language: 'Lingua',
     currency: 'Valuta',
     apply: 'Applica',
-    onThisPage: 'On this page',
+    onThisPage: 'In questa pagina',
   },
   theCase: {
     readMore: 'Scopri di più',
@@ -29,29 +30,29 @@ export const it = {
     theyLabel: 'Tutti gli altri',
   },
   keyTakeaways: {
-    heading: 'Key Takeaways',
+    heading: 'Punti chiave',
   },
   disclaimer: {
-    text: 'The insights provided by the NB1 Microbiome Test are for informational purposes only and do not substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified healthcare provider with any questions regarding a medical condition or before making changes to your diet or supplement routine.',
+    text: 'Le informazioni del NB1 Microbiome Test sono solo a scopo informativo e non sostituiscono il parere, la diagnosi o il trattamento di un professionista sanitario. In caso di dubbi su una condizione di salute, o prima di modificare la dieta o l’assunzione di integratori, chiedi sempre consiglio a un professionista sanitario qualificato.',
   },
   faq: {
-    heading: 'Frequently asked questions',
+    heading: 'Domande frequenti',
   },
   dataTable: {
     glossary: {
-      termHeader: 'Term',
-      definitionHeader: 'What it means',
+      termHeader: 'Termine',
+      definitionHeader: 'Significato',
     },
   },
   cta: {
-    heading: 'Elevate Your Biology',
-    buttonText: 'Order Your NB1 Microbiome Discovery Kit',
+    heading: 'Potenzia la tua biologia',
+    buttonText: 'Ordina il tuo kit NB1 Microbiome Discovery',
   },
   forms: {
-    thankYouRegistering: 'Thank you for registering!',
-    contactMessagePlaceholder: 'How can we help?',
-    contactSubmit: 'Send message',
-    contactSending: 'Sending…',
+    thankYouRegistering: 'Grazie per la registrazione!',
+    contactMessagePlaceholder: 'Come possiamo aiutarti?',
+    contactSubmit: 'Invia messaggio',
+    contactSending: 'Invio in corso…',
   },
   scienceBoard: {
     viewBio: 'Vedi profilo',
@@ -59,26 +60,26 @@ export const it = {
   plans: {
     months: { 1: '1 month', 4: '4 months', 12: '12 months' } as Record<1 | 4 | 12, string>,
     perMonth: '/mese',
-    savingsPrefix: 'Save',
-    savingsSuffix: '/ cycle',
+    savingsPrefix: 'Risparmia',
+    savingsSuffix: '/ ciclo',
     bestValue: 'Più conveniente',
     compareShow: 'Confronta Core e Advanced nel dettaglio',
     compareHide: 'Nascondi confronto completo',
-    guaranteeBilledMonthly: 'Billed monthly.',
+    guaranteeBilledMonthly: 'Fatturazione mensile.',
     guaranteeNoUpfront: 'Nessun pagamento anticipato.',
     guaranteePayNothing: 'Non paghi nulla finché la tua formula non è pronta.',
   },
   countries: {
-    Germany: 'Germany',
+    Germany: 'Germania',
     Austria: 'Austria',
-    Netherlands: 'Netherlands',
-    Belgium: 'Belgium',
-    France: 'France',
-    Luxembourg: 'Luxembourg',
-    Ireland: 'Ireland',
-    'United Kingdom': 'United Kingdom',
-    'United Arab Emirates': 'United Arab Emirates',
-    Switzerland: 'Switzerland',
+    Netherlands: 'Paesi Bassi',
+    Belgium: 'Belgio',
+    France: 'Francia',
+    Luxembourg: 'Lussemburgo',
+    Ireland: 'Irlanda',
+    'United Kingdom': 'Regno Unito',
+    'United Arab Emirates': 'Emirati Arabi Uniti',
+    Switzerland: 'Svizzera',
     Romania: 'Romania',
   } as Record<string, string>,
   promo: {
@@ -89,7 +90,7 @@ export const it = {
       FREEMONTH: 'First month free',
       FIRSTMONTHFREE: 'First month free',
     } as Record<string, string>,
-    appliedTemplate: '✓ {code} applied.',
+    appliedTemplate: '✓ {code} applicato.',
     invalid: "That code isn't valid.",
     // Localised versions of the free-text messages the checkout API returns for
     // a discount code (both rejections and the success confirmation). The
@@ -98,17 +99,17 @@ export const it = {
     // message you want translated; anything unmapped falls back to the generic
     // localised text for that branch.
     messages: {
-      notFound: 'Discount code not found.',
-      valid: 'Discount code is valid.',
+      notFound: 'Codice sconto non trovato.',
+      valid: 'Il codice sconto è valido.',
       referralFirstMonthFree: '✓ First month free with your referral code.',
     } as Record<string, string>,
   },
   checkout: {
     hero: {
-      titlePrefix: 'Almost ',
-      titleAccent: 'there.',
+      titlePrefix: 'Ci siamo ',
+      titleAccent: 'quasi.',
       subtitle:
-        'Your email, your address, how it ships, and payment, all here. Nothing is charged today.',
+        'La tua email, il tuo indirizzo, i dettagli di spedizione e il metodo di pagamento: inserisci tutto qui. Oggi non ti verrà addebitato nulla.',
     },
     steps: {
       email: 'La tua email',
@@ -119,14 +120,14 @@ export const it = {
     next: 'Avanti →',
     edit: 'Modifica',
     required: 'Obbligatorio.',
-    nameInvalid: 'Enter a valid name.',
+    nameInvalid: 'Inserisci un nome valido.',
     email: {
       label: 'Email',
       placeholder: 'tu@email.com',
       hint: "We'll create your account and send kit tracking + results here. You'll set a password when your kit arrives.",
       invalid: 'Inserisci un indirizzo email valido.',
-      typoSuggestion: 'Did you mean {domain}?',
-      useSuggestion: 'Use this',
+      typoSuggestion: 'Intendevi {domain}?',
+      useSuggestion: 'Usa questo',
     },
     address: {
       firstName: 'Nome',
@@ -134,19 +135,19 @@ export const it = {
       country: 'Paese',
       addressLabel: 'Indirizzo',
       addressPlaceholder: 'Via e numero civico',
-      apt: 'Apartment, suite, etc.',
-      optional: '(optional)',
+      apt: 'Appartamento, interno, ecc.',
+      optional: '(facoltativo)',
       postalCode: 'CAP',
       city: 'Città',
-      phone: 'Phone',
-      phoneNote: '(for delivery updates)',
+      phone: 'Telefono',
+      phoneNote: '(per aggiornamenti sulla consegna)',
       phonePlaceholder: '+39 …',
-      phoneInvalid: 'Enter a valid phone number for the selected country.',
+      phoneInvalid: 'Inserisci un numero di telefono valido per il Paese selezionato.',
     },
     shipping: {
       standardName: 'Standard',
-      standardSub: '3–5 working days · tracked',
-      standardPrice: 'Free',
+      standardSub: '3-5 giorni lavorativi · con tracciamento',
+      standardPrice: 'Gratis',
       expressName: 'Express',
       expressSub: '1–2 working days · tracked',
       expressPrice: '€9',
@@ -168,56 +169,56 @@ export const it = {
       klarna: 'Klarna',
       klarnaNote:
         "Pay with Klarna on invoice or instant bank transfer. You'll approve in Klarna — your first charge is taken only at manufacture.",
-      sepa: 'SEPA Direct Debit',
+      sepa: 'Addebito diretto SEPA',
       iban: 'IBAN',
       ibanPlaceholder: 'DE00 0000 0000 0000 0000 00',
       ibanInvalid: 'Inserisci un IBAN valido.',
       accountHolder: 'Intestatario del conto',
       sepaConsent:
-        'By providing your IBAN you authorise NB1 and Stripe to debit your account by SEPA Direct Debit, beginning only when your formula is manufactured.',
+        'Fornendo il tuo IBAN, autorizzi NB1 e Stripe a inviare disposizioni alla tua banca per addebitare il tuo conto tramite addebito diretto SEPA, a partire solo da quando la tua formula viene prodotta.',
       billingSame: 'Indirizzo di fatturazione uguale a quello di consegna',
       streetNumber: 'Via e numero',
-      billingIndividual: 'Individual',
-      billingCompany: 'Company',
-      companyName: 'Company name',
-      taxId: 'VAT / Tax ID',
-      registrationNumber: 'Registration number',
+      billingIndividual: 'Privato',
+      billingCompany: 'Azienda',
+      companyName: 'Ragione sociale',
+      taxId: 'Partita IVA / Codice fiscale',
+      registrationNumber: 'Numero di registrazione',
     },
     secured: 'Protetto da Stripe',
     promoUi: {
-      switchTemplate: 'Change to {plan} {duration} · {price}/mo',
-      excludeOneMonth: 'This code can only be used on 4 or 12-month plans.',
+      switchTemplate: 'Passa a {plan} {duration} · {price}/mese',
+      excludeOneMonth: 'Questo codice è valido solo per gli abbonamenti di 4 o 12 mesi.',
       addCode: 'Aggiungi codice sconto',
       changeCode: 'Cambia codice',
       removeCode: 'Rimuovi',
-      placeholder: 'Discount code',
+      placeholder: 'Codice sconto',
       apply: 'Applica',
-      appliedSuffix: '{code} applied',
+      appliedSuffix: '{code} applicato',
       discount: 'Sconto',
-      firstMonth: 'First month',
+      firstMonth: 'Primo mese',
     },
     confirm: {
-      label: 'Confirm — {zeroPrice} due today',
+      label: 'Conferma: {zeroPrice} da pagare oggi',
       paypal: 'Continua con PayPal →',
       klarna: 'Continua con Klarna →',
-      processing: 'Processing…',
-      legalPrefix: 'By confirming you agree to our',
+      processing: 'Elaborazione…',
+      legalPrefix: 'Confermando, accetti le nostre',
       terms: 'Condizioni generali',
-      and: 'and',
-      privacyPolicy: 'Privacy Policy',
+      and: 'e',
+      privacyPolicy: 'Informativa sulla privacy',
       legalMid:
-        ', and consent to NB1 processing your biological sample. Your first charge is around two weeks after you return your sample, only once your formula enters manufacture. A one-time ',
-      feeBold: '€49 fee',
+        ', e acconsenti al trattamento del tuo campione biologico da parte di NB1. Il primo addebito avverrà circa due settimane dopo la restituzione del campione, solo quando la tua formula entra in produzione. Una tariffa una tantum di',
+      feeBold: 'Costo di 49 €',
       legalEnd: "applies only if your sample isn't returned within 4 weeks.",
-      accountExists: 'An account with this email already exists. Please sign in instead.',
-      accountError: 'Could not create your account. Please try again.',
-      checkDetails: 'Please check your details and try again.',
+      accountExists: 'Esiste già un account con questa email. Accedi.',
+      accountError: 'Non siamo riusciti a creare il tuo account. Riprova.',
+      checkDetails: 'Controlla i dati e riprova.',
       orderError: "We couldn't complete your order:",
     },
     whatsNext: {
       heading: 'Cosa succede dopo',
       step1:
-        'Your kit ships, a two-minute gut sample, sealed in its bag and posted back in the box it came in.',
+        'Ti spediamo il kit: un campione intestinale da raccogliere in due minuti, sigillato nell\'apposita bustina e rispedito nella sua scatola originale.',
       step2: 'Lo analizziamo tramite sequenziamento e il nostro team scientifico valida la tua formula.',
       step3: 'Scatta il primo addebito, dopodiché la tua formula esclusiva viene spedita.',
     },
@@ -226,13 +227,13 @@ export const it = {
       plan: 'Piano',
       duration: 'Durata',
       billing: 'Fatturazione',
-      billingMonthly: 'Billed monthly',
+      billingMonthly: 'Fatturazione mensile',
       cancelAnytime: 'Disdici quando vuoi',
-      shipping: 'Shipping',
+      shipping: 'Spedizione',
       monthly: 'Mensile',
       editLink: 'Modifica piano o durata',
-      dueToday: '{zeroPrice} due today',
-      note: 'Your first charge is around two weeks after you return your sample, only once your formula enters manufacture.',
+      dueToday: '{zeroPrice} da pagare oggi',
+      note: 'Il primo addebito avverrà circa due settimane dopo la restituzione del campione, solo quando la tua formula entra in produzione.',
     },
     done: {
       heading: "You're in",
@@ -246,11 +247,11 @@ export const it = {
       helpLink: 'Serve aiuto?',
       failed: {
         heading: "Payment didn't go through",
-        body: 'Something went wrong with your payment. No charge was made. Please try again or get in touch.',
-        retry: 'Try again →',
+        body: 'C’è stato un problema con il pagamento. Non ti abbiamo addebitato nulla. Riprova o contattaci.',
+        retry: 'Riprova →',
         help: 'Serve aiuto?',
       },
-      supportLine: 'or',
+      supportLine: 'o',
       supportEmail: 'support@nb1.com',
       chatUs: '💬 Chatta con noi',
       survey: {
@@ -261,7 +262,7 @@ export const it = {
         thanksSub: 'Questo ci aiuta a raggiungere più persone come te.',
         whichOne: 'Quale?',
         whichSub: 'Facoltativo — tocca per essere più preciso.',
-        somethingElse: 'Something else',
+        somethingElse: 'Qualcos’altro',
         placeholder: 'Dicci dove…',
         send: 'Invia',
         skip: 'Salta',
@@ -300,11 +301,11 @@ export const it = {
         plan: 'Piano',
         cycle: 'Ciclo',
         delivery: 'Consegna',
-        deliveryValue: 'Tracked · free',
+        deliveryValue: 'Tracciato · gratuito',
         monthly: 'Mensile',
         dueToday: '€0 addebitati oggi',
-        chargeNote: 'First charge {when}.',
-        chargeWhen: 'when your formula goes into manufacture',
+        chargeNote: 'Primo addebito {when}.',
+        chargeWhen: 'quando la tua formula entra in fase di produzione',
       },
     },
     legal: {

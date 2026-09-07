@@ -104,6 +104,7 @@ const DEFAULT_LANGS: Array<[string, string]> = [
   ['de', 'Deutsch'],
   ['fr', 'Français'],
   ['nl', 'Dutch'],
+  ['it', 'Italiano'],
 ]
 const DEFAULT_CURRENCIES: Array<[string, string, string]> = [
   ['EUR', '€', 'Euro'],
