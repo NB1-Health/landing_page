@@ -318,6 +318,13 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
           title: localized[locale].title,
           subtitle: localized[locale].subtitle,
           excerpt: localized[locale].excerpt,
+          // `slug` is LOCALIZED (migration 20260825_135859) and
+          // `costomSlugField`'s beforeValidate falls back to the TITLE when the
+          // slug for that locale is empty. Without this, publishing `de` with a
+          // German title generated `post-publication-test-de` and the assertion
+          // below — which expects one shared slug across locales, matching what
+          // the migration produces for pre-existing posts — failed.
+          slug,
           intro: richText,
           content: richText,
         },
