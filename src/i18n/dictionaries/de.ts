@@ -46,6 +46,8 @@ export const de = {
   },
   plans: {
     months: { 1: '1 Monat', 4: '4 Monate', 12: '12 Monate' } as Record<1 | 4 | 12, string>,
+    orWord: 'oder', // conjunction in the "4 or 12 months" tab subtitle
+
     perMonth: '/Mon.',
     // German phrasing puts the amount first: "120 € pro Zyklus sparen" —
     // so savingsPrefix is empty and savingsSuffix carries the whole tail.

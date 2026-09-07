@@ -58,7 +58,9 @@ export const it = {
     viewBio: 'Vedi profilo',
   },
   plans: {
-    months: { 1: '1 month', 4: '4 months', 12: '12 months' } as Record<1 | 4 | 12, string>,
+    months: { 1: '1 mese', 4: '4 mesi', 12: '12 mesi' } as Record<1 | 4 | 12, string>,
+    orWord: 'o', // conjunction in the "4 or 12 months" tab subtitle
+
     perMonth: '/mese',
     savingsPrefix: 'Risparmia',
     savingsSuffix: '/ ciclo',
@@ -91,7 +93,7 @@ export const it = {
       FIRSTMONTHFREE: 'First month free',
     } as Record<string, string>,
     appliedTemplate: '✓ {code} applicato.',
-    invalid: "That code isn't valid.",
+    invalid: 'Questo codice non è valido.',
     // Localised versions of the free-text messages the checkout API returns for
     // a discount code (both rejections and the success confirmation). The
     // backend sends no machine code, so applyPromo maps its English message text
@@ -124,7 +126,8 @@ export const it = {
     email: {
       label: 'Email',
       placeholder: 'tu@email.com',
-      hint: "We'll create your account and send kit tracking + results here. You'll set a password when your kit arrives.",
+      hint:
+        'Creeremo il tuo account e invieremo a questo indirizzo il tracking del kit e i tuoi risultati. Potrai impostare una password non appena riceverai il kit.',
       invalid: 'Inserisci un indirizzo email valido.',
       typoSuggestion: 'Intendevi {domain}?',
       useSuggestion: 'Usa questo',
@@ -165,7 +168,7 @@ export const it = {
       cvcDigits: '3–4 digits.',
       nameOnCard: 'Nome sulla carta',
       paypalNote:
-        "You'll be redirected to PayPal to approve your plan. Nothing is charged today — your first payment is taken only when your formula is manufactured.",
+        'Verrai reindirizzato a PayPal per approvare il piano. Oggi non paghi nulla: il tuo primo addebito avverrà esclusivamente quando la tua formula entrerà in produzione.',
       klarna: 'Klarna',
       klarnaNote:
         "Pay with Klarna on invoice or instant bank transfer. You'll approve in Klarna — your first charge is taken only at manufacture.",
@@ -236,8 +239,9 @@ export const it = {
       note: 'Il primo addebito avverrà circa due settimane dopo la restituzione del campione, solo quando la tua formula entra in produzione.',
     },
     done: {
-      heading: "You're in",
-      body: "Your kit's on its way. We won't charge you anything yet, your first payment only happens once your formula's being made.",
+      heading: 'Ci sei',
+      body:
+        'Il tuo kit è in viaggio. Per il momento non ti addebiteremo nulla; il primo pagamento avverrà solo quando la tua formula entrerà in produzione.',
       eyebrow: 'Order',
       inboxTitle: 'Controlla la posta',
       inboxBody:
@@ -272,7 +276,8 @@ export const it = {
         step1: {
           label: 'Oggi',
           title: 'Ordine confermato',
-          body: "Check your inbox, we've emailed your receipt and a link to set your password and follow your kit's tracking.",
+          body:
+          'Controlla la posta: ti abbiamo inviato la ricevuta e un link per impostare la tua password e tracciare la spedizione del kit.',
         },
         step2: {
           label: '~3 giorni',

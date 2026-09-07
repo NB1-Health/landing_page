@@ -46,6 +46,8 @@ export const nl = {
   },
   plans: {
     months: { 1: '1 maand', 4: '4 maanden', 12: '12 maanden' } as Record<1 | 4 | 12, string>,
+    orWord: 'of', // conjunction in the "4 or 12 months" tab subtitle
+
     perMonth: '/mnd',
     savingsPrefix: 'Bespaar',
     savingsSuffix: '/ cyclus',
