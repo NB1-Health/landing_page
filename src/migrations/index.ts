@@ -170,6 +170,9 @@ import * as migration_20260828_120000_customer_reviews_block from './20260828_12
 import * as migration_20260828_140000_order_step_hero_trustpilot_toggle from './20260828_140000_order_step_hero_trustpilot_toggle'
 import * as migration_20260831_120000_add_editor_role from './20260831_120000_add_editor_role'
 import * as migration_20260901_120000_agent_media_trash_eligibility from './20260901_120000_agent_media_trash_eligibility'
+import * as migration_20260901_130000_add_locale_it from './20260901_130000_add_locale_it'
+import * as migration_20260904_120000_help_article_blocks from './20260904_120000_help_article_blocks'
+import * as migration_20260904_140000_help_localize_images from './20260904_140000_help_localize_images'
 
 export const migrations = [
   {
@@ -1032,4 +1035,19 @@ export const migrations = [
     down: migration_20260901_120000_agent_media_trash_eligibility.down,
     name: '20260901_120000_agent_media_trash_eligibility',
   },
-]
+  {
+    up: migration_20260901_130000_add_locale_it.up,
+    down: migration_20260901_130000_add_locale_it.down,
+    name: '20260901_130000_add_locale_it',
+  },
+  {
+    up: migration_20260904_120000_help_article_blocks.up,
+    down: migration_20260904_120000_help_article_blocks.down,
+    name: '20260904_120000_help_article_blocks',
+  },
+  {
+    up: migration_20260904_140000_help_localize_images.up,
+    down: migration_20260904_140000_help_localize_images.down,
+    name: '20260904_140000_help_localize_images',
+  },
+];

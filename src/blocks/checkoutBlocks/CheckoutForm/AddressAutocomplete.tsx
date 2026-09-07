@@ -52,6 +52,7 @@ export default function AddressAutocomplete({
     if (lang.startsWith('de')) return 'de'
     if (lang.startsWith('fr')) return 'fr'
     if (lang.startsWith('nl')) return 'nl'
+    if (lang.startsWith('it')) return 'it'
     return 'en'
   }, [language])
 

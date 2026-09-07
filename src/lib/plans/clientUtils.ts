@@ -83,7 +83,7 @@ export function getClientCurrency(locale: string): CurrencyCode {
 }
 
 export function formatPrice(amount: number, currency: CurrencyCode, locale: string): string {
-  const intlLocale = locale === 'de' ? 'de-DE' : locale === 'fr' ? 'fr-FR' : locale === 'nl' ? 'nl-NL' : 'en-IE'
+  const intlLocale = locale === 'de' ? 'de-DE' : locale === 'fr' ? 'fr-FR' : locale === 'nl' ? 'nl-NL' : locale === 'it' ? 'it-IT' : 'en-IE'
   try {
     return new Intl.NumberFormat(intlLocale, {
       style: 'currency',

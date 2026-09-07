@@ -36,6 +36,13 @@
     "label": "Dutch (Netherlands)",
     "urlPrefix": "/nl"
   },
+  "it": {
+    "hreflangCodes": ["it-IT"],
+    "lexiconBrowseSegment": "argomenti",
+    "htmlLang": "it",
+    "label": "Italian (Italy)",
+    "urlPrefix": "/it"
+  },
   "ch": {
     "fallbackLocale": "de",
     "hreflangCodes": [

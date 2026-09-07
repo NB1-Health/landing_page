@@ -238,6 +238,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (l === 'de' || l === 'ch') return 'de'
     if (l === 'fr') return 'fr'
     if (l === 'nl' || l === 'be') return 'nl'
+    if (l === 'it') return 'it'
     return 'en'
   })()
   const searchParams = useSearchParams()
@@ -344,7 +345,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
    * only when present (e.g. €99, but €88.50 for a promo first-month price).
    */
   const fmt = (n: number) => {
-    const intlLocale = (locale || 'en') === 'de' ? 'de-DE' : 'en-IE'
+    const intlLocale =
+      (locale || 'en') === 'de' ? 'de-DE' : (locale || 'en') === 'it' ? 'it-IT' : 'en-IE'
     try {
       return new Intl.NumberFormat(intlLocale, {
         style: 'currency',

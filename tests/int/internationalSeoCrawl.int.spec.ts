@@ -67,6 +67,7 @@ Sitemap: https://nb1.com/sitemap.xml`),
       de: 'de',
       en: 'en',
       fr: 'fr',
+      it: 'it',
       nl: 'nl',
       uae: 'en',
       uk: 'en',
@@ -79,6 +80,7 @@ Sitemap: https://nb1.com/sitemap.xml`),
       'en-AE': 'uae',
       'en-GB': 'uk',
       'fr-FR': 'fr',
+      'it-IT': 'it',
       'nl-BE': 'be',
       'nl-NL': 'nl',
     }
@@ -168,7 +170,7 @@ Sitemap: https://nb1.com/sitemap.xml`),
         password: 'password',
         username: 'reviewer',
       }),
-    ).resolves.toEqual({ checkedPages: 18, sitemapPages: 18 })
+    ).resolves.toEqual({ checkedPages: 20, sitemapPages: 20 })
     expect(
       requests.every(({ authorization }) => authorization === 'Basic cmV2aWV3ZXI6cGFzc3dvcmQ='),
     ).toBe(true)
@@ -223,7 +225,7 @@ Sitemap: ${origin}/sitemap.xml`
         deploymentEnvironment: 'production',
         fetchImpl,
       }),
-    ).resolves.toEqual({ checkedPages: 18, sitemapPages: 18 })
+    ).resolves.toEqual({ checkedPages: 20, sitemapPages: 20 })
 
     xRobotsTag = 'googlebot: noindex, nofollow'
     await expect(

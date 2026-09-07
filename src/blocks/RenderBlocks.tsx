@@ -109,6 +109,11 @@ import { ReferralWidgetComponent } from './ReferralWidget/Component'
 import { ReferInfoComponent } from './ReferInfo/Component'
 import { ReferFaqComponent } from './ReferFaq/Component'
 import { CustomerReviewsComponent } from './CustomerReviews/Component'
+import { HelpNavComponent } from './helpBlocks/HelpNav/Component'
+import { HelpHeroComponent } from './helpBlocks/HelpHero/Component'
+import { HelpStepsComponent } from './helpBlocks/HelpSteps/Component'
+import { HelpFaqComponent } from './helpBlocks/HelpFaq/Component'
+import { HelpCtaComponent } from './helpBlocks/HelpCta/Component'
 
 const blockComponents: Record<string, React.FC<any>> = {
   content: ContentBlock,
@@ -217,6 +222,11 @@ const blockComponents: Record<string, React.FC<any>> = {
   referInfo: ReferInfoComponent,
   referFaq: ReferFaqComponent,
   customerReviews: CustomerReviewsComponent,
+  helpNav: HelpNavComponent,
+  helpHero: HelpHeroComponent,
+  helpSteps: HelpStepsComponent,
+  helpFaq: HelpFaqComponent,
+  helpCta: HelpCtaComponent,
 }
 
 export const RenderBlocks: React.FC<{

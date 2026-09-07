@@ -25,6 +25,7 @@ export const LANG_CURRENCIES: Record<string, CurrencyCode[]> = {
   de: ['EUR', 'CHF'],
   fr: ['EUR', 'CHF'],
   nl: ['EUR'],
+  it: ['EUR'],
   ch: ['CHF'],
   be: ['EUR'],
   uk: ['GBP'],
@@ -38,6 +39,7 @@ const LOCALE_DEFAULT_CURRENCY: Record<string, CurrencyCode> = {
   ch: 'CHF',
   fr: 'EUR',
   nl: 'EUR',
+  it: 'EUR',
   be: 'EUR',
   uk: 'GBP',
   uae: 'AED',
@@ -77,7 +79,7 @@ export async function getServerCurrency(locale: string): Promise<CurrencyCode> {
  * existing EUR copy (e.g. "AED 379", not "AED 379.00").
  */
 export function formatPrice(amount: number, currency: CurrencyCode, locale: string): string {
-  const intlLocale = locale === 'de' ? 'de-DE' : 'en-IE'
+  const intlLocale = locale === 'de' ? 'de-DE' : locale === 'it' ? 'it-IT' : 'en-IE'
   try {
     return new Intl.NumberFormat(intlLocale, {
       style: 'currency',

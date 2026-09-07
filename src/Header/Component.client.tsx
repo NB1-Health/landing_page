@@ -133,6 +133,7 @@ const DEFAULT_LANGS: Array<[string, string]> = [
   ['de', 'Deutsch'],
   ['fr', 'Français'],
   ['nl', 'Dutch'],
+  ['it', 'Italiano'],
 ]
 const DEFAULT_CURRENCIES: Array<[string, string, string]> = [
   ['EUR', '€', 'Euro'],
@@ -145,6 +146,7 @@ const DEFAULT_LANG_CURRENCIES: Record<string, string[]> = {
   de: ['EUR', 'CHF'],
   fr: ['EUR', 'CHF'],
   nl: ['EUR'],
+  it: ['EUR'],
 }
 
 // Fixed default currency per locale — overrides cookie when the cookie value isn't valid for that locale
@@ -154,6 +156,7 @@ const LOCALE_DEFAULT_CURRENCY: Record<string, string> = {
   uae: 'AED',
   be: 'EUR',
   nl: 'EUR',
+  it: 'EUR',
   fr: 'EUR',
   de: 'EUR',
   en: 'GBP',
@@ -165,6 +168,7 @@ const LOCALE_ALLOWED_CURRENCIES: Record<string, string[]> = {
   de: ['EUR', 'CHF'],
   fr: ['EUR', 'CHF'],
   nl: ['EUR'],
+  it: ['EUR'],
   ch: ['CHF'],
   be: ['EUR'],
   uk: ['GBP'],
@@ -482,6 +486,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       return 'de'
     }
     if (lang === 'fr') return 'fr'
+    if (lang === 'it') return 'it'
     if (lang === 'nl') {
       // Resolve nl vs be via geo country cookie; if neither, fall back to nl
       const country = (() => {
