@@ -91,7 +91,8 @@ export const nl = {
     hero: {
       titlePrefix: 'Bijna ',
       titleAccent: 'klaar.',
-      subtitle: 'Vul hier je gegevens in en kies de verzend- en betaalmethode. Vandaag betaal je nog niets.',
+      subtitle:
+        'Vul hier je gegevens in en kies de verzend- en betaalmethode. Vandaag betaal je nog niets.',
     },
     steps: {
       email: 'Jouw e-mail',
@@ -146,15 +147,18 @@ export const nl = {
       cvc: 'CVC',
       cvcDigits: '3–4 cijfers.',
       nameOnCard: 'Naam op de kaart',
-      paypalNote: 'Je wordt naar PayPal doorgestuurd om je abonnement goed te keuren. Vandaag betaal je nog niets, de eerste kosten worden pas in rekening gebracht als je formule in productie gaat.',
+      paypalNote:
+        'Je wordt naar PayPal doorgestuurd om je abonnement goed te keuren. Vandaag betaal je nog niets, de eerste kosten worden pas in rekening gebracht als je formule in productie gaat.',
       klarna: 'Klarna',
-      klarnaNote: 'Betaal met Klarna: achteraf op factuur of direct via bankoverschrijving. Je keurt de betaling goed in Klarna; het bedrag wordt pas afgeschreven bij productie.',
+      klarnaNote:
+        'Betaal met Klarna: achteraf op factuur of direct via bankoverschrijving. Je keurt de betaling goed in Klarna; het bedrag wordt pas afgeschreven bij productie.',
       sepa: 'SEPA-incasso',
       iban: 'IBAN',
       ibanPlaceholder: 'NL00 BANK 0000 0000 00',
       ibanInvalid: 'Voer een geldige IBAN in.',
       accountHolder: 'Rekeninghouder',
-      sepaConsent: 'Door je IBAN op te geven, machtig je NB1 en Stripe om je bank opdracht te geven het bedrag via SEPA-incasso van je rekening af te schrijven, pas vanaf het moment dat je formule wordt geproduceerd.',
+      sepaConsent:
+        'Door je IBAN op te geven, machtig je NB1 en Stripe om je bank opdracht te geven het bedrag via SEPA-incasso van je rekening af te schrijven, pas vanaf het moment dat je formule wordt geproduceerd.',
       billingSame: 'Factuuradres gelijk aan bezorgadres',
       streetNumber: 'Straat & nummer',
       billingIndividual: 'Particulier',
@@ -173,6 +177,9 @@ export const nl = {
       placeholder: 'Kortingscode',
       apply: 'Toepassen',
       appliedSuffix: '{code} toegepast',
+      creatorApplied: 'Creator-aanbieding toegepast',
+      offerUnavailable:
+        'We konden deze aanbieding niet in je browser opslaan. Schakel siteopslag in en probeer het opnieuw.',
       discount: 'Korting',
       firstMonth: 'Gratis maand',
     },
@@ -185,9 +192,11 @@ export const nl = {
       terms: 'Algemene voorwaarden',
       and: 'en ons',
       privacyPolicy: 'Privacybeleid',
-      legalMid: ', en stem je ermee in dat NB1 je biologische monster en gezondheidsgegevens verwerkt om je formule samen te stellen. Je eerste betaling vindt pas plaats op het moment dat je formule in productie gaat, ongeveer twee weken nadat je je monster hebt teruggestuurd. Je betaalt eenmalig een bedrag van ',
+      legalMid:
+        ', en stem je ermee in dat NB1 je biologische monster en gezondheidsgegevens verwerkt om je formule samen te stellen. Je eerste betaling vindt pas plaats op het moment dat je formule in productie gaat, ongeveer twee weken nadat je je monster hebt teruggestuurd. Je betaalt eenmalig een bedrag van ',
       feeBold: '€49',
-      legalEnd: ' wanneer je het monster niet binnen 4 weken terugstuurt. NB1 is voor volwassenen vanaf 18 jaar.',
+      legalEnd:
+        ' wanneer je het monster niet binnen 4 weken terugstuurt. NB1 is voor volwassenen vanaf 18 jaar.',
       accountExists: 'Er bestaat al een account met dit e-mailadres. Meld je aan.',
       accountError: 'Je account kon niet worden aangemaakt. Probeer het opnieuw.',
       checkDetails: 'Controleer je gegevens en probeer het opnieuw.',
@@ -195,7 +204,8 @@ export const nl = {
     },
     whatsNext: {
       heading: 'De volgende stappen',
-      step1: 'Jouw kit wordt verzonden (een darmtest van twee minuten) en stuur je, afgesloten in het zakje, eenvoudig terug in het originele doosje.',
+      step1:
+        'Jouw kit wordt verzonden (een darmtest van twee minuten) en stuur je, afgesloten in het zakje, eenvoudig terug in het originele doosje.',
       step2: 'Wij analyseren de sample en ons science team keurt je formule goed.',
       step3: 'Eerste betaling, daarna worden jouw unieke supplementen verzonden.',
     },
@@ -218,7 +228,8 @@ export const nl = {
       body: 'Je kit is onderweg. Je betaalt nu nog niets, je eerste betaling vindt pas plaats zodra je formule in productie gaat.',
       eyebrow: 'Bestelling',
       inboxTitle: 'Bekijk je inbox',
-      inboxBody: 'We hebben je bevestiging naar {email} gestuurd. Open deze om je wachtwoord in te stellen en je dashboard te openen, zo hoef je nu nog geen wachtwoord te onthouden.',
+      inboxBody:
+        'We hebben je bevestiging naar {email} gestuurd. Open deze om je wachtwoord in te stellen en je dashboard te openen, zo hoef je nu nog geen wachtwoord te onthouden.',
       dashboard: 'Naar mijn dashboard →',
       trackOrder: 'Bestelling volgen',
       helpLink: 'Hulp nodig?',
@@ -246,11 +257,32 @@ export const nl = {
       },
       timeline: {
         heading: 'De volgende stappen',
-        step1: { label: 'Vandaag', title: 'Bestelling bevestigd', body: 'Bekijk je inbox, we hebben je een aankoopbewijs en een link gestuurd om je wachtwoord in te stellen en de verzendstatus van je kit te volgen.' },
-        step2: { label: '~3 dagen', title: 'Jouw kit komt aan', body: 'Een darmtest van twee minuten, om afgesloten in het zakje terug te sturen in het originele doosje, plus een korte online gezondheidsvragenlijst.' },
-        step3: { label: 'Week 1–2', title: 'Wij analyseren je sample', body: 'Geanalyseerd op soortniveau, waarna ons science team jouw gepersonaliseerde formule samenstelt op basis van jouw data.' },
-        step4: { label: 'Week 3', title: 'Formule goedgekeurd · eerste betaling', badge: 'Eerste betaling', body: 'Je formule is goedgekeurd en pas op dit moment (wanneer deze in productie gaat) wordt de eerste betaling afgeschreven. Nooit eerder.' },
-        step5: { label: 'Week 4', title: 'Jouw formule wordt verzonden', body: 'Activate, Restore en Nourish, in blister voor 30 dagen, klaar voor onderweg. Jouw eerste cyclus begint.' },
+        step1: {
+          label: 'Vandaag',
+          title: 'Bestelling bevestigd',
+          body: 'Bekijk je inbox, we hebben je een aankoopbewijs en een link gestuurd om je wachtwoord in te stellen en de verzendstatus van je kit te volgen.',
+        },
+        step2: {
+          label: '~3 dagen',
+          title: 'Jouw kit komt aan',
+          body: 'Een darmtest van twee minuten, om afgesloten in het zakje terug te sturen in het originele doosje, plus een korte online gezondheidsvragenlijst.',
+        },
+        step3: {
+          label: 'Week 1–2',
+          title: 'Wij analyseren je sample',
+          body: 'Geanalyseerd op soortniveau, waarna ons science team jouw gepersonaliseerde formule samenstelt op basis van jouw data.',
+        },
+        step4: {
+          label: 'Week 3',
+          title: 'Formule goedgekeurd · eerste betaling',
+          badge: 'Eerste betaling',
+          body: 'Je formule is goedgekeurd en pas op dit moment (wanneer deze in productie gaat) wordt de eerste betaling afgeschreven. Nooit eerder.',
+        },
+        step5: {
+          label: 'Week 4',
+          title: 'Jouw formule wordt verzonden',
+          body: 'Activate, Restore en Nourish, in blister voor 30 dagen, klaar voor onderweg. Jouw eerste cyclus begint.',
+        },
       },
       summary: {
         heading: 'Besteloverzicht',

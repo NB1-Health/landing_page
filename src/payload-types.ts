@@ -70,6 +70,7 @@ export interface Config {
   collections: {
     pages: Page;
     posts: Post;
+    'influencer-landing-pages': InfluencerLandingPage;
     media: Media;
     categories: Category;
     users: User;
@@ -98,6 +99,7 @@ export interface Config {
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    'influencer-landing-pages': InfluencerLandingPagesSelect<false> | InfluencerLandingPagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -7740,6 +7742,56 @@ export interface HelpCtaBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "influencer-landing-pages".
+ */
+export interface InfluencerLandingPage {
+  id: number;
+  /**
+   * Internal label only. It is not shown on the public page.
+   */
+  internalTitle: string;
+  /**
+   * Auto-formatted: lowercase + hyphens only. Max 70 characters.
+   */
+  slug: string;
+  /**
+   * The canonical discount-code string. Eligibility and discount details remain owned by the checkout API.
+   */
+  discountCode: string;
+  influencerName: string;
+  /**
+   * Optional social handle, including @ when wanted.
+   */
+  handle?: string | null;
+  /**
+   * Main headline. Use {name} to insert the influencer name.
+   */
+  heroHeadline: string;
+  heroCopy: string;
+  /**
+   * Short offer badge. Use {name} to insert the influencer name.
+   */
+  giftQuote: string;
+  testimonial: string;
+  testimonialAttribution: string;
+  /**
+   * Final offer heading. Use {name} to insert the influencer name.
+   */
+  offerHeadline: string;
+  offerCopy: string;
+  ctaLabel: string;
+  primaryImage: number | Media;
+  /**
+   * Optional YouTube or Vimeo URL. The public page loads the privacy-reduced embed only after a visitor clicks play.
+   */
+  videoUrl?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  deletedAt?: string | null;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
@@ -8118,6 +8170,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'influencer-landing-pages';
+        value: number | InfluencerLandingPage;
       } | null)
     | ({
         relationTo: 'media';
@@ -11525,6 +11581,31 @@ export interface PostsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "influencer-landing-pages_select".
+ */
+export interface InfluencerLandingPagesSelect<T extends boolean = true> {
+  internalTitle?: T;
+  slug?: T;
+  discountCode?: T;
+  influencerName?: T;
+  handle?: T;
+  heroHeadline?: T;
+  heroCopy?: T;
+  giftQuote?: T;
+  testimonial?: T;
+  testimonialAttribution?: T;
+  offerHeadline?: T;
+  offerCopy?: T;
+  ctaLabel?: T;
+  primaryImage?: T;
+  videoUrl?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  deletedAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
@@ -12302,6 +12383,10 @@ export interface TaskSchedulePublish {
       | ({
           relationTo: 'posts';
           value: number | Post;
+        } | null)
+      | ({
+          relationTo: 'influencer-landing-pages';
+          value: number | InfluencerLandingPage;
         } | null);
     global?: string | null;
     user?: (number | null) | User;

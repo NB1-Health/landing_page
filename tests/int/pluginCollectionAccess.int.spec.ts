@@ -49,8 +49,8 @@ async function visibleCollectionSlugs(role: string): Promise<string[]> {
 }
 
 describe('plugin-generated collection access', () => {
-  it('shows editors only the three content areas they manage', async () => {
-    for (const slug of ['pages', 'posts', 'media']) {
+  it('shows editors only the content areas they manage', async () => {
+    for (const slug of ['pages', 'posts', 'media', 'influencer-landing-pages']) {
       expect(isHiddenForRole(collections.get(slug), 'editor')).toBe(false)
     }
 
@@ -78,7 +78,12 @@ describe('plugin-generated collection access', () => {
       expect(await can(slug, 'read', 'editor')).toBe(true)
     }
 
-    expect(await visibleCollectionSlugs('editor')).toEqual(['media', 'pages', 'posts'])
+    expect(await visibleCollectionSlugs('editor')).toEqual([
+      'influencer-landing-pages',
+      'media',
+      'pages',
+      'posts',
+    ])
   })
 
   it.each(['redirects', 'forms', 'search'])('%s remains publicly readable', async (slug) => {

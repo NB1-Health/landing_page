@@ -2,13 +2,14 @@ import type { Payload, PayloadRequest } from 'payload'
 
 import { appLocales, defaultLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 
-export type PublicationCollection = 'pages' | 'posts'
+export type PublicationCollection = 'pages' | 'posts' | 'influencer-landing-pages'
 export type PublishedLocaleSlugs = Partial<Record<AppLocale, string>>
 
 type PublicationDocument = {
   _status?: unknown
   slug?: unknown
   title?: unknown
+  influencerName?: unknown
 }
 
 type ResolvePublishedLocaleSlugsArgs = {
@@ -78,7 +79,11 @@ export async function resolvePublishedLocaleSlugs(
       overrideAccess: request.user ? false : true,
       ...(req ? { req } : {}),
       ...(request.user ? { user: request.user } : {}),
-      select: { _status: true, slug: true, title: true },
+      select: {
+        _status: true,
+        slug: true,
+        ...(collection === 'influencer-landing-pages' ? { influencerName: true } : { title: true }),
+      },
     })) as PublicationDocument | null
 
     if (!doc) return {}
@@ -88,7 +93,10 @@ export async function resolvePublishedLocaleSlugs(
     for (const locale of appLocales) {
       const status = readExactLocalizedValue(doc._status, locale)
       const slug = readExactSlug(collection, doc.slug, locale)
-      const title = readExactLocalizedValue(doc.title, locale)
+      const title = readExactLocalizedValue(
+        collection === 'influencer-landing-pages' ? doc.influencerName : doc.title,
+        locale,
+      )
 
       if (
         status === 'published' &&
