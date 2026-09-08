@@ -133,6 +133,34 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 308)
   }
 
+  // The Journal has moved twice: /posts → /library (the original content brief)
+  // → /journal (TICKET-SEO-007 §8, which treats the name/canonical mismatch as
+  // a launch blocker and requires that no reference to /library survives).
+  // Both old bases redirect straight to /journal — one hop each, never a chain.
+  //
+  // Handled here rather than in next.config.js `redirects` because middleware
+  // runs first, so the rule cannot be shadowed by the locale-redirect logic
+  // further down. Matches the existing /{locale}/cms and /{locale}/login
+  // compatibility branches above.
+  //
+  // Catches both `/{locale}/posts/...` (one hop) and the locale-less
+  // `/posts/...` (redirects to `/journal/...`, which the locale branch below
+  // then sends on to `/{locale}/journal/...`).
+  //
+  // Note `/{locale}/posts-sitemap.xml` deliberately does NOT match — the
+  // trailing group requires a `/`, and that sitemap URL stays as-is.
+  const legacyJournalMatch = pathname.match(
+    new RegExp(`^(/(?:${localePattern}))?/(?:posts|library)(/.*)?$`),
+  )
+  if (legacyJournalMatch) {
+    const localePrefix = legacyJournalMatch[1] || ''
+    const rest = legacyJournalMatch[2] || ''
+    const url = req.nextUrl.clone()
+    url.pathname = `${localePrefix}/journal${rest}`
+    url.search = search
+    return NextResponse.redirect(url, 301)
+  }
+
   if (pathname === '/robots.txt' || pathname === '/sitemap.xml') {
     return NextResponse.next()
   }
@@ -141,9 +169,20 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const isLocalizedSitemap = new RegExp(
-    `^/(${localePattern})/(sitemap|pages-sitemap|posts-sitemap)\\.xml$`,
-  ).test(pathname)
+  // Per-locale sitemap children skip the extension bypass below, so they still
+  // get locale normalization. Matched by SUFFIX rather than named one by one:
+  // the list was `sitemap`, `pages` and `posts`, and this branch adds `hubs`,
+  // `pillars`, `lexicon`, `lexicon-categories` and `research` — five routes that
+  // would otherwise take a different path through the middleware than the three
+  // beside them, silently, with nothing to notice it.
+  //
+  // Anchored to a REAL locale prefix, which is origin/main's contribution: an
+  // arbitrary `/anything/x-sitemap.xml` must not claim the bypass. The optional
+  // `[a-z-]+-` group keeps the bare `/{locale}/sitemap.xml` index matching too —
+  // this branch's suffix-only pattern had silently dropped it.
+  const isLocalizedSitemap = new RegExp(`^/(${localePattern})/([a-z-]+-)?sitemap\\.xml$`).test(
+    pathname,
+  )
 
   // Sitemaps are public, locale-explicit documents. Do not attach visitor
   // currency/country cookies, otherwise shared caches correctly refuse to cache them.

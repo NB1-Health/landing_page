@@ -34,6 +34,7 @@ vi.mock('@/lib/checkoutApi', () => ({
   checkoutConfirm: vi.fn(),
   checkoutConfirmProxy: vi.fn(),
   checkoutPaymentIntent: vi.fn(),
+  checkoutPreview: vi.fn(),
   trackLanguagePublic: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('@/lib/meta/browser', () => ({

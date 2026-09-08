@@ -249,10 +249,26 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
   it('keeps Post publication state independent for each locale', async () => {
     const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
     const slug = `post-publication-test-${suffix}`
+    // `subtitle` and `excerpt` are LOCALIZED and gated by `requiredOnPublish`, so
+    // each locale needs its own value — publishing `de` validates the German
+    // subtitle, not the English one. `primaryCategory` and `authors` are gated
+    // too but are NOT localized, so they are set once on create below.
     const localized = {
-      en: { title: 'Post publication test EN' },
-      de: { title: 'Post publication test DE' },
-      fr: { title: 'Post publication test FR' },
+      en: {
+        title: 'Post publication test EN',
+        subtitle: 'Standfirst EN',
+        excerpt: 'Excerpt EN',
+      },
+      de: {
+        title: 'Post publication test DE',
+        subtitle: 'Standfirst DE',
+        excerpt: 'Excerpt DE',
+      },
+      fr: {
+        title: 'Post publication test FR',
+        subtitle: 'Standfirst FR',
+        excerpt: 'Excerpt FR',
+      },
     } as const
     const locales = Object.keys(localized) as (keyof typeof localized)[]
     const richText = {
@@ -285,6 +301,8 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
       },
     }
     let postID: number | undefined
+    let authorID: number | undefined
+    let categoryID: number | undefined
 
     const publish = async (locale: keyof typeof localized): Promise<void> => {
       await payload.update({
@@ -298,6 +316,15 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
         data: {
           _status: 'published',
           title: localized[locale].title,
+          subtitle: localized[locale].subtitle,
+          excerpt: localized[locale].excerpt,
+          // `slug` is LOCALIZED (migration 20260825_135859) and
+          // `costomSlugField`'s beforeValidate falls back to the TITLE when the
+          // slug for that locale is empty. Without this, publishing `de` with a
+          // German title generated `post-publication-test-de` and the assertion
+          // below — which expects one shared slug across locales, matching what
+          // the migration produces for pre-existing posts — failed.
+          slug,
           intro: richText,
           content: richText,
         },
@@ -331,6 +358,19 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
     }
 
     try {
+      const author = await payload.create({
+        collection: 'authors',
+        data: { name: `Publication Test Author ${suffix}`, slug: `pub-test-author-${suffix}` },
+        overrideAccess: true,
+      })
+      authorID = author.id
+      const category = await payload.create({
+        collection: 'categories',
+        data: { slug: `pub-test-category-${suffix}`, title: `Publication Test Category ${suffix}` },
+        overrideAccess: true,
+      })
+      categoryID = category.id
+
       const post = await payload.create({
         collection: 'posts',
         locale: 'en',
@@ -348,6 +388,11 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
             title: 'Post publication test',
             description: 'A disposable localized publication integration test.',
           },
+          // Top level, NOT inside `meta`. `primaryCategory` renders under the Meta
+          // TAB, but that tab has no `name`, so Payload keeps its data flat — the
+          // "Meta >" in the validation error is the tab label, not the data path.
+          primaryCategory: categoryID,
+          authors: [authorID],
           source: 'manual',
         },
       })
@@ -390,6 +435,124 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
           id: postID,
           overrideAccess: true,
           context: { disableRevalidate: true },
+        })
+      }
+      if (authorID !== undefined) {
+        await payload
+          .delete({ collection: 'authors', id: authorID, overrideAccess: true })
+          .catch(() => undefined)
+      }
+      if (categoryID !== undefined) {
+        await payload
+          .delete({ collection: 'categories', id: categoryID, overrideAccess: true })
+          .catch(() => undefined)
+      }
+    }
+  }, 600_000)
+
+  it('creates, publishes, and publicly reads an influencer landing page', async () => {
+    const suffix = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}`
+    const slug = `influencer-publication-test-${suffix}`
+    const image = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    )
+    let pageID: number | undefined
+    let mediaID: number | undefined
+
+    const findPublicPage = () =>
+      payload.find({
+        collection: 'influencer-landing-pages',
+        locale: 'en',
+        fallbackLocale: false,
+        draft: false,
+        depth: 1,
+        overrideAccess: false,
+        pagination: false,
+        where: { slug: { equals: slug } },
+      })
+
+    try {
+      const media = await payload.create({
+        collection: 'media',
+        locale: 'en',
+        draft: false,
+        depth: 0,
+        overrideAccess: true,
+        context: { disableRevalidate: true },
+        data: { agentTrashEligible: false, alt: 'Disposable influencer publication test image' },
+        file: {
+          data: image,
+          mimetype: 'image/png',
+          name: `${slug}.png`,
+          size: image.length,
+        },
+      })
+      mediaID = media.id
+
+      const page = await payload.create({
+        collection: 'influencer-landing-pages',
+        locale: 'en',
+        draft: true,
+        depth: 0,
+        overrideAccess: true,
+        data: {
+          _status: 'draft',
+          internalTitle: 'Influencer publication round trip',
+          slug,
+          discountCode: ' 20off ',
+          influencerName: 'Test Creator',
+          heroHeadline: 'A healthier baseline, chosen by {name}',
+          heroCopy: 'Disposable integration-test copy.',
+          giftQuote: '{name} has a creator offer for you',
+          testimonial: 'A disposable testimonial.',
+          testimonialAttribution: 'Test Creator',
+          offerHeadline: 'Start with {name}',
+          offerCopy: 'A disposable offer.',
+          ctaLabel: 'Claim offer',
+          primaryImage: mediaID,
+        },
+      })
+      pageID = page.id
+
+      await expect(findPublicPage()).resolves.toMatchObject({ totalDocs: 0, docs: [] })
+
+      await payload.update({
+        collection: 'influencer-landing-pages',
+        id: pageID,
+        locale: 'en',
+        publishSpecificLocale: 'en',
+        depth: 0,
+        overrideAccess: true,
+        data: { _status: 'published' },
+      })
+
+      const published = await findPublicPage()
+      expect(published.docs).toHaveLength(1)
+      expect(published.docs[0]).toMatchObject({
+        id: pageID,
+        _status: 'published',
+        slug,
+        discountCode: '20OFF',
+        influencerName: 'Test Creator',
+        primaryImage: { id: mediaID },
+      })
+    } finally {
+      if (pageID !== undefined) {
+        await payload.delete({
+          collection: 'influencer-landing-pages',
+          id: pageID,
+          overrideAccess: true,
+          trash: false,
+        })
+      }
+      if (mediaID !== undefined) {
+        await payload.delete({
+          collection: 'media',
+          id: mediaID,
+          overrideAccess: true,
+          context: { disableRevalidate: true },
+          trash: false,
         })
       }
     }

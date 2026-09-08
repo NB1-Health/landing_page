@@ -17,28 +17,33 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en'],
         htmlLang: 'en',
         label: 'English (EU / Rest of World)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/en',
       },
       de: {
         hreflangCodes: ['de-DE', 'de-AT'],
         htmlLang: 'de',
         label: 'German (Germany & Austria)',
+        lexiconBrowseSegment: 'themen',
         urlPrefix: '/de',
       },
       fr: {
         hreflangCodes: ['fr-FR'],
         htmlLang: 'fr',
         label: 'French (France)',
+        lexiconBrowseSegment: 'sujets',
         urlPrefix: '/fr',
       },
       nl: {
         hreflangCodes: ['nl-NL'],
         htmlLang: 'nl',
         label: 'Dutch (Netherlands)',
+        lexiconBrowseSegment: 'onderwerpen',
         urlPrefix: '/nl',
       },
       it: {
         hreflangCodes: ['it-IT'],
+        lexiconBrowseSegment: 'argomenti',
         htmlLang: 'it',
         label: 'Italian (Italy)',
         urlPrefix: '/it',
@@ -48,6 +53,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['de-CH'],
         htmlLang: 'de',
         label: 'German (Switzerland)',
+        lexiconBrowseSegment: 'themen',
         urlPrefix: '/ch',
       },
       be: {
@@ -55,6 +61,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['nl-BE'],
         htmlLang: 'nl',
         label: 'Dutch (Belgium)',
+        lexiconBrowseSegment: 'onderwerpen',
         urlPrefix: '/be',
       },
       uk: {
@@ -62,6 +69,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en-GB'],
         htmlLang: 'en',
         label: 'English (United Kingdom)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/uk',
       },
       uae: {
@@ -69,6 +77,7 @@ describe('international SEO locale config', () => {
         hreflangCodes: ['en-AE'],
         htmlLang: 'en',
         label: 'English (UAE)',
+        lexiconBrowseSegment: 'topics',
         urlPrefix: '/uae',
       },
     })
@@ -221,6 +230,15 @@ describe('international SEO locale config', () => {
   it('builds localized home, page, and post paths without path indexes', () => {
     expect(buildLocalizedDocumentPath('de', 'startseite', 'home')).toBe('/de')
     expect(buildLocalizedDocumentPath('de', 'unsere-plane', 'page')).toBe('/de/unsere-plane')
-    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/posts/artikel')
+    // Posts moved from /posts to /journal in Phase 2 of the Journal integration
+    // (JOURNAL_INTEGRATION_PLAN.md); the old paths 301 from middleware.
+    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).toBe('/de/journal/artikel')
+    // The language switcher builds these, so a stale prefix here would send every
+    // cross-locale click on an article through a redirect.
+    expect(buildLocalizedDocumentPath('de', 'artikel', 'post')).not.toContain('/posts/')
+    // origin/main's influencer route, unaffected by the move.
+    expect(buildLocalizedDocumentPath('de', 'creator', 'influencer')).toBe(
+      '/de/influencers/creator',
+    )
   })
 })

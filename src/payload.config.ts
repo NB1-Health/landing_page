@@ -18,6 +18,14 @@ import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Footers } from './Footer/config'
 import { Headers } from './Header/config'
+import { Hubs } from './collections/Hubs'
+import { Pillars } from './collections/Pillars'
+import { ConversionBlocks } from './collections/ConversionBlocks'
+import { Disclaimers } from './collections/Disclaimers'
+import { ScientificArticles } from './collections/ScientificArticles'
+import { ArticleCategories } from './collections/ArticleCategories'
+import { LexiconCategories } from './collections/LexiconCategories'
+import { LexiconTerms } from './collections/LexiconTerms'
 import { plugins } from './plugins'
 import { defaultLexical } from '@/fields/defaultLexical'
 import { getServerSideURL } from './utilities/getURL'
@@ -28,6 +36,8 @@ import { Authors } from './collections/Authors'
 import { FAQ } from './globals/FAQ'
 import { defaultLocale, payloadLocales } from './i18n/config'
 import { AgentOperations } from './collections/AgentOperations'
+import { InfluencerLandingPages } from './collections/InfluencerLandingPages'
+import { InfluencerTemplates } from './collections/InfluencerTemplates'
 import { adminOnly, adminOrEditor, isAdmin, isEditor } from './access/roles'
 
 const filename = fileURLToPath(import.meta.url)
@@ -128,7 +138,11 @@ export default buildConfig({
   collections: [
     Pages,
     Posts,
+    InfluencerLandingPages,
+    InfluencerTemplates,
     Media,
+    // origin/main hides the operational collections from non-admins in the
+    // admin UI. Kept as-is.
     hideCollectionFromNonAdmins(Categories),
     Users,
     hideCollectionFromNonAdmins(Products),
@@ -136,6 +150,20 @@ export default buildConfig({
     hideCollectionFromNonAdmins(Headers),
     hideCollectionFromNonAdmins(Footers),
     AgentOperations,
+    // The Journal collections are deliberately NOT wrapped. They are editorial
+    // content — an editor who cannot see Hubs, Pillars or LexiconTerms cannot do
+    // the job the Journal exists for. The wrapper is for operational config
+    // (products, headers, footers), not for the things editors write.
+    Hubs,
+    Pillars,
+    // Keyed content library (SEO-007 P5). Referenced by the ComplianceNote and
+    // CtaBlock lexical blocks rather than each document holding its own copy.
+    Disclaimers,
+    ConversionBlocks,
+    ArticleCategories,
+    ScientificArticles,
+    LexiconCategories,
+    LexiconTerms,
   ],
   cors: [getServerSideURL()].filter(Boolean),
   folders: {

@@ -1,56 +1,41 @@
-'use client'
-
-import React, { useState } from 'react'
+import React from 'react'
 import type { FAQBlock as FAQBlockProps } from '@/payload-types'
-import type {
-  SerializedEditorState,
-  SerializedLexicalNode,
-} from '@payloadcms/richtext-lexical/lexical'
 
 import RichText from '@/components/RichText'
 import { getDictionary } from '@/i18n/getDictionary'
-import '@/styles/article-template.css'
 
 type Props = FAQBlockProps & {
   locale?: string
 }
 
-type RichTextValue = SerializedEditorState<SerializedLexicalNode> | null | undefined
-
+/**
+ * FAQ inside an article body, as plain question-and-answer prose.
+ *
+ * This was a client-side accordion rendering `{isOpen && <answer>}`, which meant
+ * every answer except the first was **absent from the HTML entirely** — not
+ * hidden, not rendered. On a search-acquisition surface that is a real loss: the
+ * answers are exactly the text worth indexing, and FAQ content is prime
+ * featured-snippet material.
+ *
+ * Flattening it also drops the `'use client'` boundary and lets the article's own
+ * `.jr-prose` rules do the styling, instead of `.art-card` / `.art-faq__*` from
+ * article-template.css — a visual system the approved template does not use. The
+ * template specifies no accordion, so nothing is lost by not having one.
+ */
 export const FAQBlockComponent: React.FC<Props> = ({ items, locale }) => {
   const dict = getDictionary(locale)
-  const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   if (!items?.length) return null
 
-  const toggle = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index)
-  }
-
   return (
-    <section className="art-card">
-      <h2 className="art-heading">{dict.faq.heading}</h2>
-
-      <div>
-        {items.map((item, index) => {
-          const isOpen = openIndex === index
-
-          return (
-            <div key={index} className="art-faq__item">
-              <button onClick={() => toggle(index)} className="art-faq__question">
-                <span>{item.question}</span>
-                <i className={`art-faq__icon${isOpen ? ' art-faq__icon--open' : ''}`}>+</i>
-              </button>
-
-              {isOpen && (
-                <div className="art-faq__answer [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul:first-child]:mt-0 [&_ul:last-child]:mb-0 [&_ol:first-child]:mt-0 [&_ol:last-child]:mb-0">
-                  <RichText data={item.answer} enableGutter={false} enableProse={false} />
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+    <section>
+      <h3>{dict.faq.heading}</h3>
+      {items.map((item, index) => (
+        <React.Fragment key={index}>
+          <h4>{item.question}</h4>
+          <RichText data={item.answer} enableGutter={false} enableProse={false} locale={locale} />
+        </React.Fragment>
+      ))}
     </section>
   )
 }

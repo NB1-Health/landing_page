@@ -58,7 +58,9 @@ export const it = {
     viewBio: 'Vedi profilo',
   },
   plans: {
-    months: { 1: '1 month', 4: '4 months', 12: '12 months' } as Record<1 | 4 | 12, string>,
+    months: { 1: '1 mese', 4: '4 mesi', 12: '12 mesi' } as Record<1 | 4 | 12, string>,
+    orWord: 'o', // conjunction in the "4 or 12 months" tab subtitle
+
     perMonth: '/mese',
     savingsPrefix: 'Risparmia',
     savingsSuffix: '/ ciclo',
@@ -91,7 +93,7 @@ export const it = {
       FIRSTMONTHFREE: 'First month free',
     } as Record<string, string>,
     appliedTemplate: '✓ {code} applicato.',
-    invalid: "That code isn't valid.",
+    invalid: 'Questo codice non è valido.',
     // Localised versions of the free-text messages the checkout API returns for
     // a discount code (both rejections and the success confirmation). The
     // backend sends no machine code, so applyPromo maps its English message text
@@ -124,7 +126,8 @@ export const it = {
     email: {
       label: 'Email',
       placeholder: 'tu@email.com',
-      hint: "We'll create your account and send kit tracking + results here. You'll set a password when your kit arrives.",
+      hint:
+        'Creeremo il tuo account e invieremo a questo indirizzo il tracking del kit e i tuoi risultati. Potrai impostare una password non appena riceverai il kit.',
       invalid: 'Inserisci un indirizzo email valido.',
       typoSuggestion: 'Intendevi {domain}?',
       useSuggestion: 'Usa questo',
@@ -165,7 +168,7 @@ export const it = {
       cvcDigits: '3–4 digits.',
       nameOnCard: 'Nome sulla carta',
       paypalNote:
-        "You'll be redirected to PayPal to approve your plan. Nothing is charged today — your first payment is taken only when your formula is manufactured.",
+        'Verrai reindirizzato a PayPal per approvare il piano. Oggi non paghi nulla: il tuo primo addebito avverrà esclusivamente quando la tua formula entrerà in produzione.',
       klarna: 'Klarna',
       klarnaNote:
         "Pay with Klarna on invoice or instant bank transfer. You'll approve in Klarna — your first charge is taken only at manufacture.",
@@ -194,6 +197,9 @@ export const it = {
       placeholder: 'Codice sconto',
       apply: 'Applica',
       appliedSuffix: '{code} applicato',
+      creatorApplied: 'Offerta del creator applicata',
+      offerUnavailable:
+        'Non è stato possibile salvare questa offerta nel browser. Abilita l’archiviazione del sito e riprova.',
       discount: 'Sconto',
       firstMonth: 'Primo mese',
     },
@@ -218,8 +224,9 @@ export const it = {
     whatsNext: {
       heading: 'Cosa succede dopo',
       step1:
-        'Ti spediamo il kit: un campione intestinale da raccogliere in due minuti, sigillato nell\'apposita bustina e rispedito nella sua scatola originale.',
-      step2: 'Lo analizziamo tramite sequenziamento e il nostro team scientifico valida la tua formula.',
+        "Ti spediamo il kit: un campione intestinale da raccogliere in due minuti, sigillato nell'apposita bustina e rispedito nella sua scatola originale.",
+      step2:
+        'Lo analizziamo tramite sequenziamento e il nostro team scientifico valida la tua formula.',
       step3: 'Scatta il primo addebito, dopodiché la tua formula esclusiva viene spedita.',
     },
     summary: {
@@ -236,8 +243,9 @@ export const it = {
       note: 'Il primo addebito avverrà circa due settimane dopo la restituzione del campione, solo quando la tua formula entra in produzione.',
     },
     done: {
-      heading: "You're in",
-      body: "Your kit's on its way. We won't charge you anything yet, your first payment only happens once your formula's being made.",
+      heading: 'Ci sei',
+      body:
+        'Il tuo kit è in viaggio. Per il momento non ti addebiteremo nulla; il primo pagamento avverrà solo quando la tua formula entrerà in produzione.',
       eyebrow: 'Order',
       inboxTitle: 'Controlla la posta',
       inboxBody:
@@ -272,7 +280,8 @@ export const it = {
         step1: {
           label: 'Oggi',
           title: 'Ordine confermato',
-          body: "Check your inbox, we've emailed your receipt and a link to set your password and follow your kit's tracking.",
+          body:
+          'Controlla la posta: ti abbiamo inviato la ricevuta e un link per impostare la tua password e tracciare la spedizione del kit.',
         },
         step2: {
           label: '~3 giorni',
@@ -315,5 +324,101 @@ export const it = {
       gdpr: 'GDPR',
       copyright: '© NB1 Health GmbH 2026',
     },
+  },
+  footer: {
+    explore: 'Esplora',
+    getStarted: 'Inizia',
+    content: 'Contenuti',
+    journal: 'Journal',
+  },
+  evidence: {
+    claim: 'Affermazione',
+    strength: "Solidità dell'evidenza",
+    note: 'Note',
+    levels: {
+      '1': 'Molto limitata',
+      '2': 'Limitata',
+      '3': 'Non uniforme',
+      '4': 'Buona',
+      '5': 'Solida',
+    },
+  },
+  research: {
+    source: 'Studio originale',
+    doi: 'Vedi lo studio',
+    sections: {
+      background: 'Contesto',
+      studyDesign: 'Disegno dello studio',
+      keyFindings: 'Risultati principali',
+      mechanism: 'Meccanismo',
+      clinicalImplications: 'Rilevanza clinica',
+      limitations: 'Limiti e domande aperte',
+      inPlainLanguage: 'In parole semplici',
+    },
+  },
+  lexicon: {
+    sections: {
+      inSimpleTerms: 'In parole semplici',
+      scientificBackground: 'Contesto scientifico',
+      roleInGutHealth: 'Ruolo nella salute del microbioma intestinale',
+    },
+    alsoKnownAs: 'Noto anche come',
+    reviewedFor: 'Revisionato scientificamente da',
+    relatedTerms: 'Termini correlati',
+    readMore: 'Continua a leggere',
+    filterLabel: 'Filtra i termini',
+    // `{terms}` is substituted with a count phrase, so the verb leads and the
+    // placeholder follows — same shape as the German ('{terms} filtern').
+    filterPlaceholder: 'Filtra {terms}, ad es. butirrato',
+    searchLabel: 'Cerca nel glossario',
+    searchPlaceholder: 'Cerca tra {terms}, ad es. butirrato',
+    // Italian pluralises like English — one/other — but BOTH forms still carry
+    // `{count}`, because `Intl.PluralRules` picks the form and the number has to
+    // survive either choice.
+    countOne: '{count} termine',
+    countAll: '{count} termini',
+    countFiltered: '{shown} di {total} termini',
+    searching: 'Ricerca in corso…',
+    resultsCapped: 'Mostrati i primi {shown} di {total} risultati. Continua a digitare per restringere.',
+    noMatch: 'Nessun termine corrisponde a questo filtro.',
+    jumpToLetter: 'Vai alla lettera',
+    backToTop: "Torna all'inizio",
+    browseByCategory: 'Sfoglia per categoria',
+    allTerms: 'Tutti i termini A–Z',
+  },
+  journal: {
+    heroTitle: "L'intestino, spiegato.",
+    heroLede:
+      'Contenuti basati sulle evidenze su microbioma, nutrizione e la scienza dietro una formula creata per te. Scritti e revisionati dal team NB1.',
+    allTopics: 'Tutti',
+    readArticle: "Leggi l'articolo",
+    minRead: 'min di lettura',
+    featuredLabel: 'In evidenza',
+    empty: 'Ancora nessun articolo in questo argomento.',
+    imagePlaceholder: 'Immagine',
+    references: 'Riferimenti',
+    keepReading: 'Continua a leggere',
+    by: 'Di',
+    reviewedBy: 'Revisionato da',
+    breadcrumbHome: 'Home',
+    // Left as 'Journal', matching de/fr/nl. It names the section, and the URL
+    // segment is /journal in every locale — a translated label over an
+    // untranslated path reads like a broken link.
+    breadcrumbJournal: 'Journal',
+    navOverview: 'Panoramica',
+    breadcrumbPage: 'Pagina',
+    complianceLabel: 'Una nota sulle affermazioni:',
+    ctaHeading: "Creata dalla tua biologia, non da un'ipotesi.",
+    ctaBody: 'NB1 analizza il tuo intestino e crea una formula pensata solo per te.',
+    ctaLabel: 'Scopri come funziona',
+    // Unlocalized route, same as every other locale.
+    ctaPath: '/your-plan',
+    exploreHubs: 'Esplora per argomento',
+    relatedTopics: 'Argomenti correlati',
+    lastReviewed: 'Ultima revisione',
+    aboutAuthor: "Sull'autore",
+    profile: 'Leggi il profilo completo',
+    relatedResearch: 'Ricerche correlate',
+    relatedReading: 'Letture correlate',
   },
 }

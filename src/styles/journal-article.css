@@ -1,0 +1,1806 @@
+/* ============================================================================
+   NB1 Journal — article page
+   ----------------------------------------------------------------------------
+   Port of the `.art-*` rules from the approved `Library Article (template).html`.
+
+   IMPORTANT — why everything is renamed:
+   `src/styles/article-template.css` ALREADY owns the `.art-*` namespace with
+   different semantics. The worst offender is `.art-body`: there it is a text
+   style (font-size/colour on a paragraph), here it was the prose *column
+   container*. Importing the template CSS as-is would silently restyle every
+   existing block that uses article-template.css. So this file uses `jr-*`
+   throughout and never touches `.art-*`.
+
+     import '@/styles/journal-tokens.css'
+     import '@/styles/journal-article.css'
+
+   Class map (template -> here):
+     .art-shell     -> .jr-article        .art-key       -> .jr-key
+     .art-crumb     -> .jr-crumb          .art-note      -> .jr-note
+     .art-head      -> .jr-head           .art-foot      -> .jr-foot
+     .art-cat       -> .jr-cat            .art-refs      -> .jr-refs
+     .art-dek       -> .jr-dek            .art-author    -> .jr-author
+     .art-byline    -> .jr-byline         .art-related   -> .jr-related
+     .art-fig       -> .jr-fig            .art-rel-grid  -> .jr-rel-grid
+     .art-wrap      -> .jr-wrap           .art-rel       -> .jr-rel
+     .art-toc       -> .jr-toc            .art-cta       -> .jr-cta
+     .art-body      -> .jr-prose   <-- the collision
+     .lead .sep .dot .lbl .av .nm .ro .bd .c .ph  ->  .jr-* equivalents
+
+   Prose selectors are scoped under `.jr-prose` so the RichText converter output
+   needs no extra classes on individual elements.
+   ========================================================================= */
+
+.jr-article {
+  max-width: var(--jr-maxw);
+  margin: 0 auto;
+  padding: 0 40px;
+  background: var(--jr-paper);
+  color: var(--jr-ink);
+  font-family: var(--jr-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------- breadcrumb ---- */
+
+.jr-crumb {
+  padding: 26px 0 0;
+  font-size: 12.5px;
+  color: var(--jr-ink-45);
+}
+
+.jr-crumb a {
+  color: var(--jr-ink-55);
+  text-decoration: none;
+}
+
+.jr-crumb a:hover {
+  color: var(--jr-teal);
+}
+
+.jr-crumb .jr-sep {
+  margin: 0 8px;
+  color: var(--jr-ink-40);
+}
+
+/* ---------------------------------------------------------------- head ---- */
+
+.jr-head {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 30px 0 0;
+}
+
+.jr-cat {
+  font-family: var(--jr-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--jr-teal);
+}
+
+.jr-head h1 {
+  margin: 14px 0 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: clamp(32px, 4.4vw, 50px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: var(--jr-ink);
+  text-wrap: balance;
+}
+
+.jr-dek {
+  margin: 18px 0 0;
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.5;
+  color: var(--jr-ink-70);
+  text-wrap: pretty;
+}
+
+.jr-byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 26px 0 0;
+  padding: 18px 0;
+  border-top: 1px solid var(--jr-line);
+  border-bottom: 1px solid var(--jr-line);
+  font-size: 13.5px;
+  color: var(--jr-ink-70);
+}
+
+.jr-byline b {
+  color: var(--jr-ink);
+  font-weight: 600;
+}
+
+.jr-byline .jr-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--jr-ink-40);
+}
+
+/* --------------------------------------------------------- hero figure ---- */
+
+.jr-fig {
+  max-width: 1000px;
+  margin: 34px auto 0;
+}
+
+.jr-fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 8;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.jr-fig .jr-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 8;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--jr-navy-deep), var(--jr-teal));
+  font-family: var(--jr-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-w-70);
+}
+
+.jr-fig figcaption,
+.jr-prose figcaption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  text-align: center;
+  color: var(--jr-ink-45);
+}
+
+/* --------------------------------------------- body layout: TOC + prose ---- */
+
+.jr-wrap {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 56px;
+  align-items: start;
+  max-width: 1000px;
+  margin: 48px auto 0;
+}
+
+.jr-toc {
+  position: sticky;
+  top: 92px;
+}
+
+.jr-toc .jr-lbl {
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--jr-ink-40);
+}
+
+.jr-toc a {
+  display: block;
+  padding: 6px 0 6px 13px;
+  border-left: 2px solid var(--jr-line);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--jr-ink-55);
+  text-decoration: none;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.jr-toc a:hover,
+.jr-toc a.is-active {
+  color: var(--jr-teal);
+  border-left-color: var(--jr-teal);
+}
+
+/* --------------------------------------------------------------- prose ---- */
+
+.jr-prose {
+  min-width: 0;
+  max-width: 680px;
+}
+
+/* Lead paragraph. `.jr-lead` is used both directly on a <p> and as a wrapper
+   around the `intro` rich-text field, whose paragraphs should all read as lead
+   copy — hence the descendant selector alongside the element one. */
+.jr-prose .jr-lead,
+.jr-prose .jr-lead p {
+  margin: 0 0 26px;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--jr-ink);
+}
+
+.jr-prose .jr-lead p:last-child {
+  margin-bottom: 26px;
+}
+
+.jr-prose h2 {
+  margin: 46px 0 14px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--jr-ink);
+  scroll-margin-top: 90px;
+}
+
+.jr-prose h3 {
+  margin: 30px 0 10px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--jr-ink);
+  scroll-margin-top: 90px;
+}
+
+.jr-prose p {
+  margin: 0 0 18px;
+  font-size: 16.5px;
+  line-height: 1.75;
+  color: var(--jr-ink-80);
+}
+
+/* h4 is the question level inside the FAQ block. The template only specifies
+   h2/h3, so this continues the same scale one step down rather than inventing a
+   new one. */
+.jr-prose h4 {
+  margin: 24px 0 8px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 16.5px;
+  letter-spacing: -0.01em;
+  color: var(--jr-ink);
+}
+
+.jr-prose a {
+  color: var(--jr-teal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.jr-prose ul,
+.jr-prose ol {
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+
+.jr-prose ul {
+  list-style: disc;
+}
+
+.jr-prose ol {
+  list-style: decimal;
+}
+
+.jr-prose li {
+  margin: 0 0 8px;
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--jr-ink-80);
+}
+
+.jr-prose blockquote {
+  margin: 30px 0;
+  padding: 6px 0 6px 24px;
+  border-left: 3px solid var(--jr-teal);
+  font-family: var(--jr-display);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--jr-ink);
+}
+
+.jr-prose figure {
+  margin: 30px 0;
+}
+
+.jr-prose figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.jr-prose figure .jr-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  background: var(--jr-panel-2);
+  border: 1px solid var(--jr-line);
+  font-family: var(--jr-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-ink-45);
+}
+
+.jr-prose table {
+  width: 100%;
+  margin: 24px 0;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.jr-prose th {
+  padding: 0 12px 10px 0;
+  border-bottom: 1px solid var(--jr-line);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--jr-ink-45);
+}
+
+.jr-prose td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid var(--jr-line);
+  color: var(--jr-ink-70);
+}
+
+/* Wide tables scroll inside their own container rather than pushing the page
+   sideways. The prose column is 680px; a comparison table is often wider. */
+.jr-table-wrap {
+  margin: 24px 0;
+  overflow-x: auto;
+}
+
+.jr-table-wrap table {
+  margin: 0;
+}
+
+/* Highlighted comparison column / glossary term. Uses the existing teal tint
+   rather than a new accent. */
+.jr-prose .jr-cell--accent {
+  background: var(--jr-teal-tint);
+  padding-left: 12px;
+}
+
+.jr-prose caption,
+.jr-table-caption {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--jr-ink-45);
+}
+
+/* ------------------------------------------------------------ callouts ---- */
+
+/* Key takeaways — the brief's `.art-key` */
+.jr-key {
+  margin: 30px 0;
+  padding: 22px 24px;
+  background: var(--jr-teal-tint);
+  border: 1px solid var(--jr-teal-border);
+  border-radius: 14px;
+}
+
+.jr-key h4 {
+  margin: 0 0 10px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-key ul {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.jr-key li {
+  margin: 0 0 6px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Compliance note — the brief's `.art-note` */
+.jr-note {
+  margin: 30px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--jr-line);
+  border-bottom: 1px solid var(--jr-line);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--jr-ink-55);
+}
+
+.jr-note b {
+  color: var(--jr-ink);
+}
+
+/* ----------------------------------------- references / author / footer ---- */
+
+.jr-foot {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.jr-refs {
+  margin: 56px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--jr-line);
+}
+
+.jr-refs h2 {
+  margin: 0 0 12px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--jr-ink);
+}
+
+.jr-refs ol {
+  padding-left: 20px;
+  list-style: decimal;
+}
+
+.jr-refs li {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--jr-ink-55);
+}
+
+.jr-author {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 34px 0 0;
+  padding: 22px;
+  background: var(--jr-panel);
+  border: 1px solid var(--jr-line);
+  border-radius: 14px;
+}
+
+.jr-author .jr-av {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--jr-ink);
+}
+
+.jr-author .jr-av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jr-author .jr-nm {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--jr-ink);
+}
+
+.jr-author .jr-ro {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--jr-ink-55);
+}
+
+/* ------------------------------------------------------------- related ---- */
+
+.jr-related {
+  max-width: 1000px;
+  margin: 64px auto 0;
+}
+
+.jr-related h2 {
+  margin: 0 0 20px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.jr-rel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+.jr-rel {
+  overflow: hidden;
+  border: 1px solid var(--jr-line-2);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.jr-rel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 38px -30px rgba(18, 49, 77, 0.5);
+}
+
+.jr-rel .jr-ph {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--jr-navy-deep), #14507a);
+}
+
+.jr-rel .jr-ph img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jr-rel .jr-bd {
+  padding: 16px 18px 20px;
+}
+
+.jr-rel .jr-c {
+  font-family: var(--jr-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-teal);
+}
+
+.jr-rel h3 {
+  margin: 8px 0 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--jr-ink);
+}
+
+/* ----------------------------------------------------------------- cta ---- */
+
+.jr-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px 40px;
+  max-width: 1000px;
+  margin: 56px auto 90px;
+  padding: 40px;
+  background: var(--jr-navy-deep);
+  border-radius: 20px;
+  color: #fff;
+}
+
+/* A paragraph, not a heading. Rule 2 of the designer brief: a marketing line
+   must never read as part of the article's structure — and as an <h2> inside
+   the body it was also being picked up by the contents rail, which the pillar
+   preview calls out in a comment for exactly this reason. Styled like a heading,
+   marked up as what it is. */
+.jr-cta__title {
+  margin: 0 0 6px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+.jr-cta p {
+  margin: 0;
+  max-width: 440px;
+  font-size: 15px;
+  color: var(--jr-w-70);
+}
+
+/*
+ * `flex: 0 1 auto`, not `flex: none`.
+ *
+ * `none` is `0 0 auto` — the button is forbidden to shrink. With a label as long
+ * as "Order Your NB1 Microbiome Discovery Kit" that is wider than the card on a
+ * phone, and since it cannot shrink it simply overflowed the rounded corner.
+ * Allowing it to shrink, and capping it at the container width, keeps it inside
+ * whatever the label says.
+ */
+.jr-cta a {
+  flex: 0 1 auto;
+  max-width: 100%;
+  text-align: center;
+  padding: 14px 26px;
+  background: var(--jr-lime);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--jr-on-lime);
+  text-decoration: none;
+}
+
+.jr-cta a:hover {
+  background: var(--jr-lime-d);
+}
+
+/* Fine print, from a Disclaimers record rather than typed into the CTA. */
+.jr-cta__fine {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--jr-w-70);
+  opacity: 0.62;
+}
+
+/* Inline CTA placed mid-article by an editor. Same palette as the closing panel
+   so it reads as one system, but lighter — two identical full-weight panels on
+   one page looks like a mistake. */
+.jr-cta--inline {
+  max-width: 680px;
+  margin: 34px 0;
+  padding: 26px 28px;
+  border-radius: 16px;
+  gap: 16px 28px;
+}
+
+.jr-cta--inline .jr-cta__title {
+  font-size: 19px;
+}
+
+.jr-cta--inline p {
+  font-size: 14.5px;
+}
+
+.jr-cta--inline a {
+  padding: 11px 20px;
+  font-size: 14px;
+}
+
+/* --------------------------------------------------------- responsive ---- */
+
+@media (max-width: 880px) {
+  .jr-article {
+    padding: 0 26px;
+  }
+  .jr-wrap {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .jr-toc {
+    display: none;
+  }
+  .jr-rel-grid {
+    grid-template-columns: 1fr;
+  }
+  .jr-cta {
+    margin: 48px 26px 70px;
+    padding: 30px;
+  }
+
+  /* Full width on a phone. A shrink-to-fit button with a long label either
+     overflows or wraps into a ragged two-line pill; a full-width one is the
+     conventional treatment and cannot overflow whatever the label grows to. */
+  .jr-cta a {
+    width: 100%;
+  }
+}
+
+/* ── FAQ accordion (pillar pages only) ─────────────────────────────────────────
+   The single exception the designer brief's Rule 3 allows: "no tabs, no read
+   more hiding the opening paragraph, no accordions around core text. One
+   exception: the FAQ block on pillar pages may be an accordion."
+
+   Built on <details>/<summary> rather than a client component, for two reasons.
+   Every answer is in the served HTML whether or not it is open, which is the
+   whole point on a search-acquisition surface — the Journal's old FAQ block
+   rendered `{isOpen && answer}` and shipped only the first answer. And it works
+   with JavaScript disabled, so nothing here depends on hydration. */
+.jr-faq {
+  margin: 46px 0 0;
+}
+
+.jr-faq > h2 {
+  margin: 0 0 16px;
+}
+
+.jr-faq details {
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-faq details:first-of-type {
+  border-top: 1px solid var(--jr-line);
+}
+
+.jr-faq summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--jr-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+/* The default disclosure triangle differs between browsers and sits at the
+   wrong optical position next to a two-line question; a drawn marker keeps the
+   row consistent. */
+.jr-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.jr-faq summary::after {
+  content: '';
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  border-right: 1.5px solid var(--jr-ink-45);
+  border-bottom: 1.5px solid var(--jr-ink-45);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.jr-faq details[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.jr-faq summary:hover {
+  color: var(--jr-teal);
+}
+
+.jr-faq details > p {
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--jr-ink-80);
+}
+
+/* ------------------------------------------- pillar body blocks (§5) ---- */
+
+/* Evidence table — the comparison table with the 5-dot strength rating. */
+.jr-ev {
+  margin: 30px 0;
+}
+
+.jr-ev__title,
+.jr-steps__title {
+  margin: 0 0 12px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-ev th[scope='row'] {
+  font-weight: 550;
+  color: var(--jr-ink);
+  text-align: left;
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-ev__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
+.jr-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.jr-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  /* An outline, not a lighter fill: at 8px a tint against white is close to
+     invisible, and the count is the whole point of the control. */
+  border: 1px solid var(--jr-ink-40);
+}
+
+.jr-dot--on {
+  background: var(--jr-teal);
+  border-color: var(--jr-teal);
+}
+
+.jr-ev__level {
+  font-size: 12.5px;
+  color: var(--jr-ink-55);
+}
+
+/* Step flow */
+.jr-steps {
+  margin: 30px 0;
+}
+
+.jr-steps__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: jr-step;
+}
+
+.jr-step {
+  position: relative;
+  counter-increment: jr-step;
+  padding: 0 0 20px 46px;
+}
+
+/* The number comes from the list, never from typed text — so reordering steps
+   in the admin renumbers them and a screen reader counts them only once. */
+.jr-step::before {
+  content: counter(jr-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  font-family: var(--jr-mono);
+  font-size: 13px;
+  color: var(--jr-teal);
+  background: var(--jr-teal-tint);
+  border: 1px solid var(--jr-teal-border);
+  border-radius: 50%;
+}
+
+/* The connecting rule, stopping at the last step. */
+.jr-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 34px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--jr-line);
+}
+
+.jr-step__title {
+  margin: 4px 0 6px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--jr-ink);
+}
+
+.jr-step__body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--jr-ink-70);
+}
+
+/* Highlight callout */
+.jr-call {
+  margin: 30px 0;
+  padding: 18px 22px;
+  background: var(--jr-teal-tint);
+  border-left: 3px solid var(--jr-teal);
+  border-radius: 0 12px 12px 0;
+}
+
+/* Amber is used nowhere else, which is the point: teal stays signal, lime stays
+   conversion (designer brief, Rule 2), and caution needs to not read as either. */
+.jr-call--caution {
+  background: rgba(196, 132, 10, 0.08);
+  border-left-color: #c4840a;
+}
+
+.jr-call__title {
+  margin: 0 0 6px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-call__body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--jr-ink-80);
+}
+
+/* Pull quote */
+.jr-pull {
+  margin: 36px 0;
+  padding: 0 0 0 22px;
+  border-left: 2px solid var(--jr-teal);
+}
+
+.jr-pull__quote {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: var(--jr-display);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--jr-ink);
+}
+
+.jr-pull__cite {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--jr-ink-55);
+}
+
+.jr-pull__cite cite {
+  font-style: normal;
+}
+
+@media (max-width: 640px) {
+  .jr-pull__quote {
+    font-size: 19px;
+  }
+
+  .jr-step {
+    padding-left: 40px;
+  }
+}
+
+/* ------------------------------------------------------ related topics ---- */
+
+/* Slot 11 — the sibling strip at the foot of a pillar. Sits inside the article
+   but outside `.jr-foot`'s 680px prose column: three cards need the full width. */
+.jr-rel {
+  max-width: var(--jr-maxw);
+  margin: 64px auto 0;
+  padding-top: 40px;
+  border-top: 1px solid var(--jr-line);
+}
+
+.jr-rel__title {
+  margin: 0 0 22px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--jr-ink);
+}
+
+.jr-rel__grid {
+  display: grid;
+  /* Three fixed columns, matching the preview. Not auto-fit: the lexicon term's
+     strip has only two cards, and auto-fit would stretch them to half the page
+     each while every other strip on the site shows them at a third. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+
+/* ---- the card itself ---- */
+
+.jr-relcard {
+  display: block;
+  text-decoration: none;
+}
+
+.jr-relcard .jr-thumb {
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.jr-relcard__bd {
+  padding-top: 10px;
+}
+
+.jr-relcard__cat {
+  font-family: var(--jr-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-teal);
+}
+
+.jr-relcard__h {
+  margin: 8px 0 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--jr-ink);
+  transition: color 0.15s;
+}
+
+.jr-relcard:hover .jr-relcard__h {
+  color: var(--jr-teal);
+}
+
+/* Journal and year, on a research card. Absent on a topic card, which is why it
+   is a rendered-when-present line rather than a card variant. */
+.jr-relcard__meta {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--jr-ink-55);
+}
+
+@media (max-width: 900px) {
+  .jr-rel__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .jr-rel__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .jr-rel {
+    margin-top: 48px;
+  }
+}
+
+/* --------------------------------------------- scientific articles (P7) ---- */
+
+/*
+ * "In Plain Language" — section seven, in a tinted panel. It is in the contents
+ * rail like the other six; the panel marks a change of register, not a change of
+ * status. Tinted rather than bordered so it does not read as a callout.
+ */
+.jr-plain {
+  margin: 0 0 36px;
+  padding: 24px 26px;
+  background: var(--jr-panel);
+  border-radius: 16px;
+}
+
+.jr-plain h2 {
+  /* Matches the preview: still a section heading, one step down in size rather
+     than restyled into a label. Rule 1 of the designer brief — a section title
+     must look like a section title wherever it sits. */
+  margin: 0 0 12px;
+  font-size: 21px;
+}
+
+/* Slot 6 — the opening paragraph. Larger than body, no heading above it. */
+.jr-lead p {
+  font-size: 18.5px;
+  line-height: 1.65;
+  color: var(--jr-ink-80);
+}
+
+.jr-plain p:last-child {
+  margin-bottom: 0;
+}
+
+/* The source study citation, above the reference list. */
+.jr-source {
+  margin: 56px 0 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--jr-line);
+}
+
+.jr-source h2 {
+  margin: 0 0 10px;
+  font-family: var(--jr-font);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--jr-ink-55);
+}
+
+.jr-source p {
+  margin: 0 0 8px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--jr-ink-80);
+}
+
+.jr-source em {
+  color: var(--jr-ink-55);
+  font-style: italic;
+}
+
+.jr-source a {
+  font-size: 13.5px;
+  color: var(--jr-teal);
+  text-decoration: none;
+}
+
+.jr-source a:hover {
+  text-decoration: underline;
+}
+
+/* ------------------------------------------- disclaimer treatments (§4) ---- */
+
+/*
+ * Standard weight — every lexicon term, every article. A titled section rather
+ * than the quiet inline rule, because at ~400 characters it is a block of text
+ * rather than an aside.
+ */
+.jr-disclaimer {
+  margin: 40px 0 0;
+}
+
+.jr-disclaimer h2 {
+  margin: 0;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-disclaimer p {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  border-left: 2px solid var(--jr-line);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--jr-ink-55);
+}
+
+/*
+ * Health notice — condition lexicon terms only. Around 540 characters, more than
+ * twice the quiet note, so it gets a heading to break it up. Deliberately not
+ * red or boxed: it is a standing caveat on every condition term, and an alarm
+ * treatment repeated across ~340 pages stops being read.
+ */
+.jr-notice {
+  margin: 22px 0 0;
+}
+
+.jr-notice h3 {
+  margin: 0 0 6px;
+  font-family: var(--jr-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-notice p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--jr-ink-55);
+}
+
+/* --------------------------------------------------- byline / author box ---- */
+
+/*
+ * Role and affiliation, after the name. Separate spans with their own separator
+ * rather than a joined string, so a long German job title wraps at a sensible
+ * point instead of breaking mid-phrase.
+ */
+.jr-byline__role::before {
+  content: ' · ';
+  color: var(--jr-ink-40);
+}
+
+.jr-author__body {
+  flex: 1;
+}
+
+/*
+ * "About the author" — an h2 so it is a real section heading (Rule 1), styled as
+ * a small label. Rule 1 forbids the reverse: a section title must not become a
+ * caption. A heading styled quietly is fine.
+ */
+.jr-author__label {
+  margin: 0 0 8px;
+  font-family: var(--jr-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--jr-ink-45);
+}
+
+.jr-author__bio {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--jr-ink-70);
+}
+
+.jr-author__link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--jr-teal);
+  text-decoration: none;
+}
+
+.jr-author__link:hover {
+  text-decoration: underline;
+}
+
+/* Top-aligned: the box now carries a heading, a role line and a bio, and centring
+   that against a 52px avatar leaves the name floating mid-block. */
+.jr-author {
+  align-items: flex-start;
+}
+
+/* Up to four links in a row — the author's own page plus three profiles. Wraps
+   rather than truncating: German labels run longer and nothing fixed-width may
+   contain text (designer brief §9). */
+.jr-author__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+/* ------------------------------------------------ title scale by length ---- */
+
+/*
+ * The default `.jr-head h1` clamps to 50px, which is right for a 43–71 character
+ * pillar title. A 122-character study title sets to four or five lines at that
+ * size — the preview does exactly that, and the brief calls it out.
+ *
+ * Two smaller steps, chosen server-side from the title's length (see
+ * `titleScale.ts`). Character-count buckets rather than measuring after paint:
+ * measuring would resize the title visibly on load, and the resize would land on
+ * the largest element on the page.
+ */
+.jr-head--medium h1 {
+  font-size: clamp(30px, 3.6vw, 40px);
+  line-height: 1.1;
+}
+
+.jr-head--long h1 {
+  font-size: clamp(27px, 3vw, 34px);
+  line-height: 1.14;
+  /* At this length the tighter default tracking closes up the counters. */
+  letter-spacing: -0.02em;
+}
+
+/*
+ * Species names are italic inside titles — designer brief §6. The title style
+ * therefore cannot be all-caps or heavily letter-spaced, or the italics stop
+ * reading as italics. Stated here so a later restyle has the reason in front of
+ * it rather than discovering it from a designer.
+ */
+.jr-head h1 em,
+.jr-head h1 i {
+  font-style: italic;
+}
+
+/* --------------------------------------------------------- lexicon term ---- */
+
+/* Single column — no contents rail on a three-section, 800-word page. */
+.jr-wrap--solo {
+  grid-template-columns: 1fr;
+}
+
+/* "Also known as" — optional, and most terms have none, so the design is drawn
+   for its absence first. */
+.jr-aka {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--jr-ink-55);
+}
+
+.jr-aka span {
+  font-family: var(--jr-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--jr-ink-45);
+}
+
+/*
+ * The definition sentence — the most important element on the page.
+ *
+ * Larger than body, and separated from the first section by a rule, so it reads
+ * as a standalone statement rather than as the opening line of a paragraph. It is
+ * the sentence that gets quoted when the page is cited elsewhere.
+ */
+.jr-def {
+  margin: 0 0 32px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--jr-line);
+  font-family: var(--jr-display);
+  font-weight: 450;
+  font-size: clamp(19px, 2.2vw, 23px);
+  line-height: 1.45;
+  color: var(--jr-ink);
+  text-wrap: pretty;
+}
+
+/*
+ * The reviewer line, on condition terms. Italic and quiet: it is a credential
+ * statement, not a byline, and it sits below the legal notices where a reader
+ * checking who stands behind the page will look for it.
+ */
+.jr-reviewline {
+  margin: 22px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--jr-ink-55);
+}
+
+/* ==========================================================================
+   Lexicon browse pages — the category term list, its filter and its rail.
+   ========================================================================== */
+
+/*
+ * A browse page is wider than an article and has no contents rail. The article
+ * measure exists to keep prose readable; a list of 436 names does not benefit
+ * from a 660px column, it just wastes the right half of the screen.
+ *
+ * `.jr-head` and `.jr-foot` are article classes: 760px and 680px, both centred in
+ * the 1180px container. Reused here they indented the title, the intro, the
+ * back-to-top link and the disclaimer by ~240px while the switcher, filter, rail
+ * and term list ran full width — three different left edges on one page. The list
+ * is the page, so the list sets the margin and everything else lines up with it.
+ */
+.jr-browse .jr-head,
+.jr-browse .jr-foot {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Prose still wants a measure even when its container does not. */
+.jr-browse .jr-dek {
+  max-width: 62ch;
+}
+
+.jr-browse .jr-foot > * {
+  max-width: 62ch;
+}
+
+/*
+ * The trail needs space beneath it here. `.jr-crumb` carries top padding only,
+ * which works on an article because `.jr-head` supplies its own top margin — on
+ * this template the h1 follows immediately and the two collide.
+ */
+.jr-browse .jr-crumb {
+  padding-bottom: 14px;
+}
+
+/* Visually hidden but reachable. Used for the filter's own label — the
+   placeholder is not a label, and a field with no label is unusable by anyone
+   navigating by form control. */
+.jr-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * The category switcher. A row of pills, wrapping — with ten to thirteen
+ * categories and German labels running up to 20% longer, a single line is not a
+ * layout that survives translation.
+ */
+.jr-switcher {
+  margin: 0 0 26px;
+}
+
+.jr-switcher ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-switcher a,
+.jr-switcher span {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none;
+  color: var(--jr-ink-70);
+}
+
+.jr-switcher a:hover {
+  border-color: var(--jr-teal-border);
+  color: var(--jr-teal);
+}
+
+/* The current category. Filled rather than outlined, and not a link. */
+.jr-switcher span[aria-current='page'] {
+  background: var(--jr-navy);
+  border-color: var(--jr-navy);
+  color: #fff;
+}
+
+/*
+ * The filter bar. Sticky, because the whole point of a filter on a 436-row page
+ * is that it stays reachable while you scroll the results it produced.
+ *
+ * `position: sticky` and not `fixed`: fixed would leave the page scrolling
+ * underneath a bar that no longer belongs to it, and would need a body offset
+ * that breaks the moment the bar wraps to two lines.
+ */
+.jr-filterbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 14px 0 12px;
+  margin: 0 0 8px;
+  background: var(--jr-paper);
+  border-bottom: 1px solid var(--jr-line);
+}
+
+.jr-filterbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.jr-filterbar__field {
+  flex: 1 1 240px;
+}
+
+.jr-filterbar__field input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-pill);
+  background: var(--jr-paper);
+  font-family: var(--jr-font);
+  font-size: 15px;
+  color: var(--jr-ink);
+}
+
+.jr-filterbar__field input:focus-visible {
+  outline: 2px solid var(--jr-teal);
+  outline-offset: 1px;
+  border-color: var(--jr-teal);
+}
+
+.jr-filterbar__count {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--jr-ink-55);
+}
+
+/*
+ * The alphabet rail. All 26 letters always, whether or not anything starts with
+ * them — the brief's "inert, not hidden". A rail that dropped its empty rungs
+ * would change width and position between one category and the next, so the
+ * reader could never learn where to aim.
+ */
+.jr-rail {
+  margin: 10px 0 0;
+}
+
+.jr-rail ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-rail a,
+.jr-rail span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 6px;
+  font-family: var(--jr-mono);
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--jr-ink-70);
+}
+
+.jr-rail a:hover {
+  background: var(--jr-teal-tint);
+  color: var(--jr-teal);
+}
+
+/* Inert: a letter with nothing behind it, or one the filter has emptied. Faded
+   but still occupying its slot, and not focusable — a keyboard user should not
+   have to tab through eight dead rungs to reach the list. */
+.jr-rail span[aria-disabled='true'] {
+  color: var(--jr-ink-40);
+}
+
+/* ── the list ─────────────────────────────────────────────────────────────── */
+
+.jr-termlist {
+  margin: 0;
+}
+
+/* Belt and braces on `hidden`. The filter toggles the attribute, and a CSS
+   reset that sets `display` on these elements would otherwise beat it. */
+.jr-termlist [hidden],
+.jr-termlist__empty[hidden] {
+  display: none !important;
+}
+
+/*
+ * Sticky letter headings, under the filter bar rather than over it — hence the
+ * lower z-index and the `top` offset. Two sticky layers on one page only works
+ * if they agree about which is on top.
+ */
+.jr-termlist__letter {
+  position: sticky;
+  top: 58px;
+  z-index: 10;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 0 6px;
+  background: var(--jr-paper);
+  border-bottom: 1px solid var(--jr-line-2);
+  font-family: var(--jr-display);
+  font-size: 20px;
+  font-weight: 550;
+  color: var(--jr-ink);
+}
+
+.jr-termlist__letter-count {
+  font-family: var(--jr-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--jr-ink-45);
+}
+
+/* Genus sub-heading, only where a letter earned one. Not sticky: two sticky
+   levels is a header that eats a third of a phone screen. */
+.jr-termlist__genus {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 22px 0 4px;
+  font-family: var(--jr-display);
+  font-size: 15px;
+  font-weight: 550;
+  color: var(--jr-ink-80);
+}
+
+.jr-termlist__rows {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-termlist__rows > li {
+  border-bottom: 1px solid var(--jr-line-2);
+}
+
+.jr-termlist__rows a {
+  display: block;
+  padding: 11px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.jr-termlist__rows a:hover .jr-termlist__name {
+  color: var(--jr-teal);
+}
+
+.jr-termlist__name {
+  display: block;
+  font-family: var(--jr-display);
+  font-size: 15.5px;
+  font-weight: 550;
+  line-height: 1.35;
+  color: var(--jr-ink);
+}
+
+/*
+ * The definition, on every row. It is what the filter matches against, so it has
+ * to be visible — text that is matched but not shown makes the results look
+ * arbitrary. Clamped to two lines: the sentence is written to stand alone, but a
+ * long one must not push the next name off the screen.
+ */
+.jr-termlist__def {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--jr-ink-55);
+}
+
+.jr-termlist__empty {
+  margin: 28px 0;
+  padding: 22px;
+  border: 1px dashed var(--jr-line);
+  border-radius: var(--jr-r-card);
+  text-align: center;
+  font-size: 14px;
+  color: var(--jr-ink-55);
+}
+
+.jr-backtotop {
+  margin: 26px 0 0;
+  font-size: 13px;
+}
+
+.jr-backtotop a {
+  color: var(--jr-teal);
+}
+
+/*
+ * At narrow widths the rail is the first thing to go — 27 tappable 26px targets
+ * do not fit a 360px screen, and the filter is the primary control anyway. The
+ * letter headings stay, so scrolling still tells you where you are.
+ */
+@media (max-width: 560px) {
+  .jr-rail {
+    display: none;
+  }
+
+  .jr-termlist__letter {
+    top: 52px;
+  }
+}
+
+/* Sticky headings and a jump rail both depend on scrolling being predictable.
+   Honour the OS setting rather than smooth-scrolling everyone. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.jr-termlist) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* The sticky filter bar would otherwise cover the heading a rail link jumps to. */
+.jr-termlist [id^='letter-'] {
+  scroll-margin-top: 72px;
+}
+
+/* ==========================================================================
+   Lexicon index — the category grid and the cross-category search.
+   ========================================================================== */
+
+.jr-lexindex__total {
+  margin: 10px 0 0;
+  font-family: var(--jr-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--jr-ink-55);
+}
+
+.jr-lexsearch {
+  max-width: 520px;
+  margin: 0 0 28px;
+}
+
+.jr-lexsearch__count {
+  margin: 14px 0 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--jr-ink-55);
+}
+
+/* The cap notice. Quiet but present — a reader who cannot see their term needs
+   to know to keep typing rather than conclude the term is missing. */
+.jr-lexsearch__capped {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--jr-line-2);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--jr-ink-55);
+}
+
+/* Results reuse the category page's row styling. One list of terms should not
+   look like two different things depending on which page produced it. */
+.jr-lexsearch .jr-termlist__rows {
+  margin: 0;
+}
+
+.jr-lexsearch .jr-termlist__rows > li {
+  border-bottom: 1px solid var(--jr-line-2);
+}
+
+.jr-lexindex[hidden] {
+  display: none !important;
+}
+
+/*
+ * The category grid. `auto-fit` with a floor rather than a fixed column count:
+ * there are ten categories today and the brief says around thirteen, so any
+ * hardcoded number is a layout that breaks on the next editorial decision.
+ */
+.jr-lexindex__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-lexindex__grid a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 20px;
+  border: 1px solid var(--jr-line);
+  border-radius: var(--jr-r-card);
+  background: var(--jr-paper);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.jr-lexindex__grid a:hover {
+  border-color: var(--jr-teal-border);
+}
+
+.jr-lexindex__name {
+  font-family: var(--jr-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--jr-ink);
+}
+
+/*
+ * The count. Tabular figures, because the whole point is that a reader can
+ * compare 19 against 436 down a column of cards and see where the depth is.
+ */
+.jr-lexindex__count {
+  font-family: var(--jr-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--jr-teal);
+}
+
+.jr-lexindex__intro {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--jr-ink-70);
+}
+
+/* Example terms, pushed to the foot of the card so they line up across a row
+   whatever length the intro above them ran to. */
+.jr-lexindex__examples {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--jr-line-2);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--jr-ink-45);
+}

@@ -2,6 +2,9 @@ import { getCachedFooter } from '@/utilities/getHeaderFooter'
 import React, { Suspense } from 'react'
 
 import type { Media } from '@/payload-types'
+import { isAppLocale, type AppLocale } from '@/i18n/config'
+import { getDictionary } from '@/i18n/getDictionary'
+import { getCachedHubLinks } from '@/utilities/hubQueries'
 import { FooterClient } from './FooterClient'
 
 type Props = {
@@ -30,9 +33,33 @@ type FooterData = {
 }
 
 export async function Footer({ locale, id }: Props) {
-  const footerData = (await getCachedFooter(id, locale)()) as FooterData | null
+  const appLocale: AppLocale = isAppLocale(locale) ? locale : 'en'
+  const dict = getDictionary(appLocale)
 
+  // SEO-007 §11.0: direct, always-rendered links to Journal and the three hubs,
+  // in every locale, with no interaction required to reveal them. This is the
+  // compensation for the Journal sitting two hovers deep in the nav, and until
+  // now nothing on the site linked to a hub at all — they were reachable only
+  // from their own pillar breadcrumbs and the sitemap.
+  //
+  // Fetched here rather than inside FooterClient because the links have to be in
+  // the server-rendered HTML. They still are: FooterClient is a client component
+  // but Next SSRs it, so the anchors ship in the initial response.
+  const [footerRaw, hubLinks] = await Promise.all([
+    getCachedFooter(id, locale)(),
+    getCachedHubLinks(appLocale)(),
+  ])
+
+  const footerData = footerRaw as FooterData | null
   if (!footerData) return null
+
+  // Journal first, then the hubs in their fixed order. The Journal is not a Hubs
+  // record — it has its own route — so it is prepended here rather than seeded
+  // into the collection.
+  const contentLinks = [
+    { label: dict.footer.journal, url: `/${appLocale}/journal` },
+    ...hubLinks.map((hub) => ({ label: hub.title, url: hub.path })),
+  ]
 
   const rawForm = footerData?.form
   const formObj = typeof rawForm === 'object' && rawForm !== null ? rawForm : null
@@ -56,6 +83,12 @@ export async function Footer({ locale, id }: Props) {
         instagramUrl={footerData?.instagramUrl ?? null}
         exploreLinks={(footerData?.exploreLinks ?? []).map((l) => ({ label: l.label ?? null, url: l.url ?? null }))}
         getStartedLinks={(footerData?.getStartedLinks ?? []).map((l) => ({ label: l.label ?? null, url: l.url ?? null }))}
+        contentLinks={contentLinks}
+        headings={{
+          explore: dict.footer.explore,
+          getStarted: dict.footer.getStarted,
+          content: dict.footer.content,
+        }}
         legalLinks={(footerData?.legalLinks ?? []).map((l) => ({ label: l.label ?? null, url: l.url ?? null }))}
         formID={formID != null ? String(formID) : undefined}
         confirmationType={confirmationType}

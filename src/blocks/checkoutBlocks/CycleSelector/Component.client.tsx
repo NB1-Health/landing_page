@@ -205,9 +205,10 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const flexTier = activeTiers[0]
   const commitTiers = activeTiers.slice(1)
   // Localized "4 or 12 months": the trailing unit uses the already-localized
-  // month label ("12 Monate"/"12 mois"/…) and the conjunction is per-locale, so
-  // this isn't stuck in English like the old `${month} or ${month} months`.
-  const orWord = ({ de: 'oder', fr: 'ou', nl: 'of' } as Record<string, string>)[locale] ?? 'or'
+  // month label ("12 Monate"/"12 mesi"/…) and the conjunction comes from the
+  // dictionary, so region locales resolve to their language (ch -> de, be -> nl)
+  // instead of falling through to English as the old raw-locale lookup did.
+  const orWord = dict.plans.orWord
   const commitSubLabel =
     commitTiers.length === 2
       ? `${commitTiers[0].month} ${orWord} ${commitTiers[1].months}`
@@ -653,7 +654,7 @@ export const CycleSelectorClient: React.FC<Props> = ({
                 onClick={selectFlex}
               >
                 <span className="nb1-cs-tab-m">{flexTabLabel}</span>
-                <span className="nb1-cs-tab-s">{flexTier?.months ?? '1 month'}</span>
+                <span className="nb1-cs-tab-s">{flexTier?.months ?? dict.plans.months[1]}</span>
               </button>
               <button
                 type="button"
