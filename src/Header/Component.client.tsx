@@ -436,8 +436,8 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       const cookieCur = match ? decodeURIComponent(match[1]) : ''
       const resolved = cookieCur && allowed?.includes(cookieCur) ? cookieCur : localDefault || 'EUR'
       if (resolved !== curCur) setCurCur(resolved)
-      // Always write back so the next locale page sees the correct currency in the cookie
-      if (resolved !== cookieCur) {
+      // Repair an existing preference, but do not create a cookie for a default.
+      if (cookieCur && resolved !== cookieCur) {
         document.cookie = `nb1_currency=${resolved}; path=/; max-age=31536000; samesite=lax`
       }
     } catch {
@@ -496,7 +496,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
           return ''
         }
       })()
-      if (country === 'BE') return 'be'
+      if (country === 'BE' || curLocale === 'be') return 'be'
       return 'nl'
     }
     return 'en'
