@@ -2,6 +2,7 @@ import { getCachedHeader } from '@/utilities/getHeaderFooter'
 import { getCachedJournalNav } from '@/utilities/journalNav'
 import { isAppLocale } from '@/i18n/config'
 import React, { Suspense } from 'react'
+import { connection } from 'next/server'
 
 import type { Media } from '@/payload-types'
 import { resolveCurrency } from '@/utilities/currency'
@@ -92,6 +93,8 @@ type Props = {
 }
 
 export async function Header({ locale, id, localizedDocument }: Props) {
+  // Keep query-aware navigation in the initial HTML without reading visitor cookies.
+  await connection()
   const data = (await getCachedHeader(id, locale)()) as HeaderData | null
   // A locale default keeps shared HTML independent of visitor cookies.
   const initialCurrency = resolveCurrency(undefined, locale)
