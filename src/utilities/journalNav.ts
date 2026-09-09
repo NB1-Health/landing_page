@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { getCachedHubLinks } from "@/utilities/hubQueries";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { AppLocale } from "@/i18n/config";
+import { isJournalEnabled } from "@/utilities/journalEnabled";
 
 /**
  * The Journal branch of the Discover menu, generated from the CMS.
@@ -222,14 +223,27 @@ async function fetchJournalNav(
  * shape or the derivation changes, not just when the data does.
  */
 export const getCachedJournalNav = (locale: AppLocale) =>
-  unstable_cache(
-    async () => fetchJournalNav(locale),
-    ["journal-nav-v2", locale],
-    {
-      tags: ["hubs", "pillars", `journal-nav-${locale}`],
-      // TTL as well as tags — a pillar published by a script cannot bust a tag, and
-      // without this the nav would keep the old set indefinitely. See the note in
-      // `lexiconQueries`.
-      revalidate: 3600,
-    },
-  );
+  // The switch is checked OUTSIDE the cache, and it has to be.
+  //
+  // `getCachedHubLinks` is already gated, so `fetchJournalNav` would return null
+  // on its own — but it never runs. This wrapper caches the whole tree under
+  // `journal-nav-v2`, and a warm entry short-circuits before the inner call. No
+  // tag covers "the code that built this value changed", so the menu kept
+  // rendering the Journal branch it had built before the switch existed.
+  //
+  // Same failure as the `navLabel` change that shipped and did not appear: see
+  // the `-v2` note below. Checking out here means a warm entry is not consulted
+  // at all when the Journal is off.
+  !isJournalEnabled()
+    ? async () => null
+    : unstable_cache(
+        async () => fetchJournalNav(locale),
+        ["journal-nav-v2", locale],
+        {
+          tags: ["hubs", "pillars", `journal-nav-${locale}`],
+          // TTL as well as tags — a pillar published by a script cannot bust a tag, and
+          // without this the nav would keep the old set indefinitely. See the note in
+          // `lexiconQueries`.
+          revalidate: 3600,
+        },
+      );

@@ -3,6 +3,7 @@ import { getPayload, type Payload, type Where } from 'payload'
 import { unstable_cache } from 'next/cache'
 
 import { appLocales, type AppLocale } from '@/i18n/config'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 export type HubKey = 'microbiome' | 'research' | 'lexicon'
 
@@ -122,17 +123,26 @@ async function fetchHub(locale: AppLocale, where: Where): Promise<Hub | null> {
  * which is what makes it cheap to ask on every page request.
  */
 export const getCachedHubBySlug = (locale: AppLocale, slug: string) =>
-  unstable_cache(async () => fetchHub(locale, { slug: { equals: slug } }), ['hub', locale, slug], {
-    tags: ['hubs', `hub_slug_${locale}_${slug}`],
-  })
+  // The check sits OUTSIDE `unstable_cache` on purpose: inside, the answer would
+  // be cached, and flipping JOURNAL_ENABLED would need a tag bust to take effect.
+  // Out here, a restart is enough — which is all an env change gets anyway.
+  isJournalEnabled()
+    ? unstable_cache(
+        async () => fetchHub(locale, { slug: { equals: slug } }),
+        ['hub', locale, slug],
+        { tags: ['hubs', `hub_slug_${locale}_${slug}`] },
+      )
+    : async () => null
 
 /** Cached lookup by the stable `key`, for code that wants "the Research hub". */
 export const getCachedHubByKey = (locale: AppLocale, key: HubKey) =>
-  unstable_cache(
-    async () => fetchHub(locale, { key: { equals: key } }),
-    ['hub-key', locale, key],
-    { tags: ['hubs', `hub_key_${key}`] },
-  )
+  isJournalEnabled()
+    ? unstable_cache(
+        async () => fetchHub(locale, { key: { equals: key } }),
+        ['hub-key', locale, key],
+        { tags: ['hubs', `hub_key_${key}`] },
+      )
+    : async () => null
 
 /** Just enough of a hub to render a link to it. */
 export type HubLink = {
@@ -198,6 +208,11 @@ async function fetchHubLinks(locale: AppLocale): Promise<HubLink[]> {
  * every footer on the site without a hook of its own.
  */
 export const getCachedHubLinks = (locale: AppLocale) =>
-  unstable_cache(async () => fetchHubLinks(locale), ['hub-links', locale], {
-    tags: ['hubs', `hub-links-${locale}`],
-  })
+  // Empty, not null. Every caller already treats "no hubs in this locale" as a
+  // reason to render nothing — `buildJournalNavTree` returns null, `HubStrip`
+  // returns null, the footer column shortens — so this needs no new branches.
+  isJournalEnabled()
+    ? unstable_cache(async () => fetchHubLinks(locale), ['hub-links', locale], {
+        tags: ['hubs', `hub-links-${locale}`],
+      })
+    : async () => []

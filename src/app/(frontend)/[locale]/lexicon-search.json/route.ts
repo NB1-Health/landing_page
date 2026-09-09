@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { getCachedHubByKey } from '@/utilities/hubQueries'
 import { getCachedSearchIndex } from '@/utilities/lexiconQueries'
 import { isAppLocale } from '@/i18n/config'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 /**
  * The lexicon's search index, as JSON: `/en/lexicon-search.json`.
@@ -41,6 +42,10 @@ export async function GET(
   { params }: { params: Promise<{ locale: string }> },
 ) {
   const { locale: localeParam } = await params
+  // Switched off with the rest of the Journal. This one matters more than it
+  // looks: it is the only Journal URL a browser fetches on its own, so leaving it
+  // answering would advertise a section that has no pages.
+  if (!isJournalEnabled()) return new Response('Not found', { status: 404 })
   if (!isAppLocale(localeParam)) return new Response('Not found', { status: 404 })
   const locale = localeParam
 

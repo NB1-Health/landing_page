@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { appLocales, defaultLocale } from '@/i18n/config'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 import { canCacheMarketingRequest } from '@/utilities/marketingCache'
 
 const GEO_LOCALES: Record<string, string> = {
@@ -88,7 +89,10 @@ export async function middleware(req: NextRequest) {
   const legacyJournalMatch = pathname.match(
     new RegExp(`^(/(?:${localePattern}))?/(?:posts|library)(/.*)?$`),
   )
-  if (legacyJournalMatch) {
+  // Only redirect while the Journal exists. Sending /posts to a 404 would be a
+  // pointless hop and would make a disabled Journal look broken rather than
+  // absent.
+  if (legacyJournalMatch && isJournalEnabled()) {
     const localePrefix = legacyJournalMatch[1] || ''
     const rest = legacyJournalMatch[2] || ''
     const url = req.nextUrl.clone()

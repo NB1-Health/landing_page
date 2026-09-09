@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 
 import { isAppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 /**
  * The Microbiome pillars.
@@ -25,6 +26,7 @@ import { getServerSideURL } from '@/utilities/getURL'
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params
+  if (!isJournalEnabled()) return new Response('Not found', { status: 404 })
   if (!isAppLocale(localeParam)) return new Response('Not found', { status: 404 })
   const locale = localeParam
 
