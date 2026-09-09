@@ -4,6 +4,7 @@
  * instead of (or in addition to) the server-side API layer.
  */
 
+import { resolveCurrency } from '@/utilities/currency'
 import { getDictionary } from '@/i18n/getDictionary'
 import { AMOUNT_TOKEN_RE, PRICE_TOKEN_RE, evalArithmetic, hasPriceToken, resolveExpr } from './priceExpr'
 
@@ -41,45 +42,39 @@ export function extractBullets(
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apistg.nb1.com'
 
-export async function fetchPlansClient(): Promise<RawPlanClient[]> {
-  const r = await fetch(`${BACKEND_URL}/subscriptions/plans?preferred_first=false`)
-  if (!r.ok) throw new Error(`plans fetch failed: ${r.status}`)
-  return r.json()
+let plansRequest: Promise<RawPlanClient[]> | undefined
+let plansExpireAt = 0
+
+/** Share one short-lived request across the page's price components. Failures can retry. */
+export function fetchPlansClient(): Promise<RawPlanClient[]> {
+  if (!plansRequest || Date.now() >= plansExpireAt) {
+    plansExpireAt = Infinity
+    plansRequest = fetch(`${BACKEND_URL}/subscriptions/plans?preferred_first=false`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`plans fetch failed: ${response.status}`)
+        const plans = await response.json() as RawPlanClient[]
+        plansExpireAt = Date.now() + 60_000
+        return plans
+      })
+      .catch((error) => {
+        plansRequest = undefined
+        plansExpireAt = 0
+        throw error
+      })
+  }
+  return plansRequest
 }
 
-const LANG_CURRENCIES: Record<string, CurrencyCode[]> = {
-  en: ['EUR', 'GBP', 'AED', 'CHF'],
-  de: ['EUR', 'CHF'],
-  fr: ['EUR', 'CHF'],
-  nl: ['EUR'],
-  ch: ['CHF'],
-  be: ['EUR'],
-  uk: ['GBP'],
-  uae: ['AED'],
-}
-
-const LOCALE_DEFAULT_CURRENCY: Record<string, CurrencyCode> = {
-  en: 'GBP', de: 'EUR', fr: 'EUR', nl: 'EUR',
-  ch: 'CHF', uk: 'GBP', uae: 'AED', be: 'EUR',
-}
-
-/**
- * SSR-safe default currency for a locale — never reads the cookie, so it is
- * identical on the server and on the client's first render. Use this to seed
- * currency state; switch to the cookie-aware `getClientCurrency` inside an
- * effect once mounted, to avoid a hydration mismatch.
- */
+/** Locale-only seed shared by the server and the first browser render. */
 export function getDefaultCurrency(locale: string): CurrencyCode {
-  return LOCALE_DEFAULT_CURRENCY[locale] ?? 'EUR'
+  return resolveCurrency(undefined, locale)
 }
 
 export function getClientCurrency(locale: string): CurrencyCode {
-  if (typeof document === 'undefined') return LOCALE_DEFAULT_CURRENCY[locale] ?? 'EUR'
-  const cookie = document.cookie.match(/nb1_currency=([^;]+)/)?.[1] as CurrencyCode | undefined
-  const valid = LANG_CURRENCIES[locale] ?? (['EUR', 'GBP', 'AED', 'CHF'] as CurrencyCode[])
-  const result = cookie && valid.includes(cookie) ? cookie : (LOCALE_DEFAULT_CURRENCY[locale] ?? 'EUR')
-  console.log('[getClientCurrency]', { locale, cookie, valid, result })
-  return result
+  const raw = typeof document === 'undefined'
+    ? undefined
+    : document.cookie.match(/(?:^|;\s*)nb1_currency=([^;]*)/)?.[1]
+  return resolveCurrency(raw, locale)
 }
 
 export function formatPrice(amount: number, currency: CurrencyCode, locale: string): string {

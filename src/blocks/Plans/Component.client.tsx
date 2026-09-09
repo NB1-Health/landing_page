@@ -118,23 +118,32 @@ export const PlansClient: React.FC<Props> = (props) => {
   }
 
   useEffect(() => {
+    let active = true
+    setCoreMonthly(rawCoreMonthly)
+    setCoreCommit(rawCoreCommit)
+    setAdvCommit(rawAdvCommit)
+    setCompareRowsJson(rawCompareRowsJson)
+
     const currency = getClientCurrency(locale)
     currencyRef.current = currency
     fetchPlansClient()
-      .then((plans) => applyPlans(currency, plans))
+      .then((plans) => { if (active && currency === getClientCurrency(locale)) applyPlans(currency, plans) })
       .catch(() => {})
 
     const onCurrencyChange = (e: Event) => {
       const cur = (e as CustomEvent<string>).detail as ReturnType<typeof getClientCurrency>
       currencyRef.current = cur
       fetchPlansClient()
-        .then((plans) => applyPlans(cur, plans))
+        .then((plans) => { if (active && cur === getClientCurrency(locale)) applyPlans(cur, plans) })
         .catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  }, [locale, rawCoreMonthly, rawCoreCommit, rawAdvCommit, rawCompareRowsJson])
   const [compareOpen, setCompareOpen] = useState(false)
 
   useEffect(() => {

@@ -117,9 +117,14 @@ export const PlanSelectorClient: React.FC<Props> = ({
   }, [])
 
   useEffect(() => {
+    let active = true
+    setPlans(plansProp ?? [])
+    setComparisonRows(comparisonRowsProp)
+
     if (!plansProp?.length) return
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, apiPlans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+      if (!active || currency !== getClientCurrency(locale)) return
       const rateMap = buildRateMap(apiPlans, currency)
       rateMapRef.current = rateMap
       currencyRef.current = currency
@@ -154,9 +159,12 @@ export const PlanSelectorClient: React.FC<Props> = ({
       fetchPlansClient().then((apiPlans) => applyPrices(cur, apiPlans)).catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  }, [locale, plansProp, comparisonRowsProp])
 
   if (!plans?.length) return null
 

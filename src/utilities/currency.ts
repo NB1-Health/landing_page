@@ -7,7 +7,6 @@
  * language — kept in sync with DEFAULT_CURRENCIES / DEFAULT_LANG_CURRENCIES
  * there. If you add/remove a currency, update both places.
  */
-import { cookies } from 'next/headers'
 
 export const CURRENCY_COOKIE = 'nb1_currency'
 
@@ -57,18 +56,6 @@ export function resolveCurrency(value: string | undefined | null, locale: string
   const allowed = LANG_CURRENCIES[locale] ?? CURRENCIES.map(([code]) => code)
   if (value && isCurrencyCode(value) && allowed.includes(value)) return value
   return localDefault
-}
-
-/**
- * Server-side read of the visitor's selected currency (set via cookie by the
- * header's currency switcher — see applyCur() in Header/Component.client.tsx).
- * Falls back to EUR (or the locale's first allowed currency) when no cookie
- * is present yet, e.g. on a visitor's very first request.
- */
-export async function getServerCurrency(locale: string): Promise<CurrencyCode> {
-  const store = await cookies()
-  const raw = store.get(CURRENCY_COOKIE)?.value
-  return resolveCurrency(raw, locale)
 }
 
 /**

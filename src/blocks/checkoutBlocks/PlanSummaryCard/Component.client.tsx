@@ -55,6 +55,10 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
   const [bullets, setBullets] = useState<Bullet[]>(bulletsProp ?? [])
 
   useEffect(() => {
+    let active = true
+    setSecondaryCtaText(rawSecondaryCtaText)
+    setBullets(bulletsProp ?? [])
+
     const family = planVariant === 'advanced' ? 'advanced' : 'core'
     // 'monthly' is the 1-month standard's cycle key everywhere downstream;
     // map it (and a null/blank config) to the month=1 rate. Never fall back to
@@ -62,6 +66,7 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
     const month = cycleMonth === 'monthly' ? 1 : Number(cycleMonth) || 1
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+      if (!active || currency !== getClientCurrency(locale)) return
       const rateMap = buildRateMap(plans, currency)
       const rate = rateMap[`${family}:${month}`]
       if (rate != null) {
@@ -82,9 +87,12 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
       fetchPlansClient().then((plans) => applyPrices(cur, plans)).catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planVariant, cycleMonth, locale])
+  }, [planVariant, cycleMonth, locale, rawSecondaryCtaText, bulletsProp])
 
   return (
     <div ref={ref} className={`nb1-psc-sec${revealed ? ' nb1-in' : ''}`}>

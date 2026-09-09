@@ -86,7 +86,13 @@ export const YpBuyBoxClient: React.FC<YpBuyBoxBlockType> = ({
   const [buyNote, setBuyNote] = useState<string | null | undefined>(rawBuyNote)
 
   useEffect(() => {
+    let active = true
+    setOptions(optionsProp ?? [])
+    setSub(rawSub)
+    setBuyNote(rawBuyNote)
+
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+      if (!active || currency !== getClientCurrency(locale)) return
       const rateMap = buildRateMap(plans, currency)
       setOptions(
         (optionsProp ?? []).map((opt) => {
@@ -112,9 +118,12 @@ export const YpBuyBoxClient: React.FC<YpBuyBoxBlockType> = ({
       fetchPlansClient().then((plans) => applyPrices(cur, plans)).catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  }, [locale, optionsProp, rawSub, rawBuyNote])
 
   const isImageMode = backgroundType === 'image'
   const bgImg = imgUrl(backgroundImage)
