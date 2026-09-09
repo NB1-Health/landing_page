@@ -157,3 +157,9 @@ export async function getPlan(
   const cycles = await getPlanCycles(family, currency)
   return cycles.find((p) => p.month === month) ?? null
 }
+
+/** Public rates for cacheable HTML and browser price-token rendering. */
+export async function getPublicPlanPrices() {
+  const plans = await fetchAllPlans()
+  return plans.map(({ title, month, is_preferred, prices }) => ({ title, month, is_preferred, prices }))
+}

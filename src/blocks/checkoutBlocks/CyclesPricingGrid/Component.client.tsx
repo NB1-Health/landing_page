@@ -113,10 +113,17 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
   const [monthlyNote2, setMonthlyNote2] = useState<string | null | undefined>(rawMonthlyNote2)
 
   useEffect(() => {
+    let active = true
+    setRows(rowsProp ?? [])
+    setRows2(rows2Prop ?? [])
+    setMonthlyNote(rawMonthlyNote)
+    setMonthlyNote2(rawMonthlyNote2)
+
     if (!planFamily) return
     const bestValueLabel = getBestValueLabel(locale)
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+      if (!active || currency !== getClientCurrency(locale)) return
       const rateMap = buildRateMap(plans, currency)
       setRows(computeRows(planFamily!, plans, rateMap, currency, locale, bestValueLabel))
       if (showSecondPlan && planFamily2) {
@@ -134,9 +141,12 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
       fetchPlansClient().then((plans) => applyPrices(cur, plans)).catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planFamily, planFamily2, locale])
+  }, [planFamily, planFamily2, showSecondPlan, locale, rawMonthlyNote, rawMonthlyNote2, rowsProp, rows2Prop])
 
   return (
     <section ref={ref} className={`nb1-cpg-sec${revealed ? ' nb1-in' : ''}`}>

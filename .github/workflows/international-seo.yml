@@ -86,6 +86,8 @@ jobs:
         run: >-
           npm run test:int -- --run
           tests/int/marketingCache.int.spec.ts
+          tests/int/clientCurrencyRendering.int.spec.tsx
+          tests/int/clientPlanRequests.int.spec.ts
           tests/int/headerCurrencyCookies.int.spec.tsx
           tests/int/runtimeBoundaries.int.spec.ts
 
