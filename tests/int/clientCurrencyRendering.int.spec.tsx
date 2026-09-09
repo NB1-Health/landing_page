@@ -3,6 +3,7 @@ import { createRoot, hydrateRoot, type Root } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PriceTokensProvider, usePriceTokens } from '@/lib/plans/PriceTokensProvider'
+import { LocaleSwitcher } from '@/components/LocaleSwitcher'
 import { RenderHero } from '@/heros/RenderHero'
 import { YpFaqComponent } from '@/blocks/yourPlanBlocks/Faq/Component'
 import { YpStickyBuyComponent } from '@/blocks/yourPlanBlocks/StickyBuy/Component'
@@ -90,6 +91,7 @@ function Content() {
   const plans = usePriceTokens(rawPlans)
   return (
     <>
+      <LocaleSwitcher locale="en" />
       <RenderHero type="lowImpact" richText={richText('Hero {{(price:core:1-price:core:4)*4}}')} />
       <YpFaqComponent {...faq} />
       <YpStickyBuyComponent {...sticky} />

@@ -421,21 +421,26 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   // On mount, sync curCur from cookie — but validate it against the current locale.
   // If the cookie currency isn't allowed for this locale, use the locale's default.
   useEffect(() => {
-    try {
-      const currentLocale = pathname.split('/')[1] || 'en'
-      const allowed = LOCALE_ALLOWED_CURRENCIES[currentLocale]
-      const localDefault = LOCALE_DEFAULT_CURRENCY[currentLocale]
-      const match = document.cookie.match(/(?:^|; )nb1_currency=([^;]*)/)
-      const cookieCur = match ? decodeURIComponent(match[1]) : ''
-      const resolved = cookieCur && allowed?.includes(cookieCur) ? cookieCur : localDefault || 'EUR'
-      if (resolved !== curCur) setCurCur(resolved)
-      // Repair an existing preference, but do not create a cookie for a default.
-      if (cookieCur && resolved !== cookieCur) {
-        document.cookie = `nb1_currency=${resolved}; path=/; max-age=31536000; samesite=lax`
+    const syncCurrency = () => {
+      try {
+        const currentLocale = pathname.split('/')[1] || 'en'
+        const allowed = LOCALE_ALLOWED_CURRENCIES[currentLocale]
+        const localDefault = LOCALE_DEFAULT_CURRENCY[currentLocale]
+        const match = document.cookie.match(/(?:^|; )nb1_currency=([^;]*)/)
+        const cookieCur = match ? decodeURIComponent(match[1]) : ''
+        const resolved = cookieCur && allowed?.includes(cookieCur) ? cookieCur : localDefault || 'EUR'
+        setCurCur(resolved)
+        // Repair an existing preference, but do not create a cookie for a default.
+        if (cookieCur && resolved !== cookieCur) {
+          document.cookie = `nb1_currency=${resolved}; path=/; max-age=31536000; samesite=lax`
+        }
+      } catch {
+        /* noop */
       }
-    } catch {
-      /* noop */
     }
+    syncCurrency()
+    window.addEventListener('nb1:currencychange', syncCurrency)
+    return () => window.removeEventListener('nb1:currencychange', syncCurrency)
   }, [pathname])
   // Pending selections — only committed when Apply is clicked.
   // Initialised to match current applied values; reset again whenever the menu opens.
