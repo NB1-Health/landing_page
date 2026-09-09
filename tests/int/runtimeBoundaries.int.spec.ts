@@ -39,7 +39,7 @@ describe('runtime boundaries', () => {
     },
   )
 
-  it('still initializes currency on normal localized pages', async () => {
+  it('uses the locale default without setting cookies on localized pages', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => Response.json({ docs: [] })),
@@ -51,7 +51,7 @@ describe('runtime boundaries', () => {
       }),
     )
 
-    expect(response.headers.get('set-cookie')).toContain('nb1_currency=GBP')
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 
   it('does not dispatch browser events after an SSR plan-selection write', () => {
