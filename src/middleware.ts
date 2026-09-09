@@ -1,49 +1,28 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { appLocales, defaultLocale } from '@/i18n/config'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { canCacheMarketingRequest } from '@/utilities/marketingCache'
 
-// Maps ISO 3166-1 alpha-2 country codes → { locale, currency }
-// Countries not listed fall back to defaultLocale + EUR
-const GEO_MAP: Record<string, { locale: string; currency: string }> = {
-  CH: { locale: 'ch', currency: 'CHF' }, // Switzerland
-  DE: { locale: 'de', currency: 'EUR' }, // Germany
-  AT: { locale: 'de', currency: 'EUR' }, // Austria
-  FR: { locale: 'fr', currency: 'EUR' }, // France
-  BE: { locale: 'be', currency: 'EUR' }, // Belgium
-  NL: { locale: 'nl', currency: 'EUR' }, // Netherlands
-  GB: { locale: 'uk', currency: 'GBP' }, // United Kingdom
-  AE: { locale: 'uae', currency: 'AED' }, // UAE
+const GEO_LOCALES: Record<string, string> = {
+  CH: 'ch',
+  DE: 'de',
+  AT: 'de',
+  FR: 'fr',
+  BE: 'be',
+  NL: 'nl',
+  GB: 'uk',
+  AE: 'uae',
 }
-
 const LOCALE_COOKIE = 'nb1_locale'
-const CURRENCY_COOKIE = 'nb1_currency'
-const COUNTRY_COOKIE = 'nb1_country'
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
-// Default currency for the RESOLVED locale (path segment), used instead of
-// GEO_MAP's country-derived currency once we know which locale the visitor
-// is actually landing on — otherwise e.g. a German visitor (country DE)
-// directly opening /en/... would get DE's EUR default instead of en's own
-// default, since GEO_MAP only maps country -> locale/currency as a pair.
-// Keep in sync with LOCALE_DEFAULT_CURRENCY in src/utilities/currency.ts and
-// src/Header/Component.client.tsx.
-const LOCALE_DEFAULT_CURRENCY: Record<string, string> = {
-  en: 'GBP',
-  de: 'EUR',
-  ch: 'CHF',
-  fr: 'EUR',
-  nl: 'EUR',
-  it: 'EUR',
-  be: 'EUR',
-  uk: 'GBP',
-  uae: 'AED',
-}
-
-function geoLocale(req: NextRequest): { locale: string; currency: string; country: string } {
-  // Vercel sets this header automatically; falls back to empty string locally
-  const country = req.headers.get('x-vercel-ip-country') ?? ''
-  const result = GEO_MAP[country] ?? { locale: defaultLocale, currency: 'EUR' }
-  return { ...result, country }
+function geoLocale(req: NextRequest): string {
+  const country = (
+    req.headers.get('cf-ipcountry') ??
+    req.headers.get('x-vercel-ip-country') ??
+    ''
+  ).toUpperCase()
+  return GEO_LOCALES[country] ?? defaultLocale
 }
 
 const ROOT_NON_LOCALIZED_ROUTES = ['/login'] as const
@@ -58,54 +37,12 @@ function isLocalePath(pathname: string) {
   return appLocales.some((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
 }
 
-function normalizeSiteURL(raw: string) {
-  if (!raw) return 'http://localhost:3000'
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw
-  return `https://${raw}`
-}
-
 function normalizePathname(pathname: string) {
   return pathname
     .toLowerCase()
     .replace(/_/g, '-')
     .replace(/\/{2,}/g, '/')
     .replace(/-{2,}/g, '-')
-}
-
-async function lookupRedirect(siteURL: string, fromPath: string) {
-  if (!siteURL) return null
-
-  const url =
-    `${siteURL}/cms/api/redirects` +
-    `?where[from][equals]=${encodeURIComponent(fromPath)}` +
-    `&limit=1&depth=0`
-
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 1500)
-
-  try {
-    const res = await fetch(url, {
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: { accept: 'application/json' },
-    })
-
-    if (!res.ok) return null
-
-    const data = await res.json()
-    const doc = data?.docs?.[0]
-    if (!doc) return null
-
-    const to = typeof doc.to === 'string' ? doc.to : doc.to?.url
-    if (!to) return null
-
-    const code = doc.type === '302' ? 302 : 308
-    return { to, code }
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timeout)
-  }
 }
 
 export async function middleware(req: NextRequest) {
@@ -152,7 +89,10 @@ export async function middleware(req: NextRequest) {
   const legacyJournalMatch = pathname.match(
     new RegExp(`^(/(?:${localePattern}))?/(?:posts|library)(/.*)?$`),
   )
-  if (legacyJournalMatch) {
+  // Only redirect while the Journal exists. Sending /posts to a 404 would be a
+  // pointless hop and would make a disabled Journal look broken rather than
+  // absent.
+  if (legacyJournalMatch && isJournalEnabled()) {
     const localePrefix = legacyJournalMatch[1] || ''
     const rest = legacyJournalMatch[2] || ''
     const url = req.nextUrl.clone()
@@ -200,38 +140,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 301)
   }
 
-  const siteURLRaw =
-    process.env.NEXT_PUBLIC_SERVER_URL || process.env.VERCEL_PROJECT_PRODUCTION_URL || ''
-
-  const siteURL = normalizeSiteURL(siteURLRaw)
-
-  if (siteURLRaw) {
-    const hit = await lookupRedirect(siteURL, normalizedPath)
-
-    if (hit) {
-      const dest = new URL(hit.to, siteURL)
-
-      if (!dest.search) dest.search = search
-
-      if (dest.pathname !== normalizedPath) {
-        return NextResponse.redirect(dest, hit.code)
-      }
-    }
-  }
-
-  const { locale: geoLoc, currency: geoCurrency, country: geoCountry } = geoLocale(req)
+  // CMS redirects are resolved by PayloadRedirects through the tagged Next data
+  // cache. Fetching our own REST endpoint here added a failing request per hit.
+  const geoLoc = geoLocale(req)
 
   if (isLocalePath(normalizedPath)) {
     const res = NextResponse.next()
-    const pathLocale = normalizedPath.split('/')[1] ?? defaultLocale
-    // Set geo cookies even on direct locale-path hits so the switcher can read them
-    if (!req.cookies.get(COUNTRY_COOKIE) && geoCountry) {
-      res.cookies.set(COUNTRY_COOKIE, geoCountry, { path: '/', maxAge: COOKIE_MAX_AGE, sameSite: 'lax' })
-    }
-    if (!req.cookies.get(CURRENCY_COOKIE)) {
-      const localeCurrency = LOCALE_DEFAULT_CURRENCY[pathLocale] ?? geoCurrency
-      res.cookies.set(CURRENCY_COOKIE, localeCurrency, { path: '/', maxAge: COOKIE_MAX_AGE, sameSite: 'lax' })
-    }
+    // Next's header rules see the original Flight headers; middleware does not.
+    // Never grant caching here, or a stripped RSC request could become public.
+    if (!canCacheMarketingRequest(req)) res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store')
+    // The URL supplies the default currency. Only an explicit switcher choice
+    // needs a cookie; country/currency Set-Cookie would prevent shared caching.
     return res
   }
 
@@ -243,14 +162,8 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   url.pathname = `/${targetLocale}${normalizedPath}`
   const res = NextResponse.redirect(url, 307)
-
-  if (!req.cookies.get(CURRENCY_COOKIE)) {
-    const localeCurrency = LOCALE_DEFAULT_CURRENCY[targetLocale] ?? geoCurrency
-    res.cookies.set(CURRENCY_COOKIE, localeCurrency, { path: '/', maxAge: COOKIE_MAX_AGE, sameSite: 'lax' })
-  }
-  if (!req.cookies.get(COUNTRY_COOKIE) && geoCountry) {
-    res.cookies.set(COUNTRY_COOKIE, geoCountry, { path: '/', maxAge: COOKIE_MAX_AGE, sameSite: 'lax' })
-  }
+  res.headers.set('Cache-Control', 'private, no-store')
+  res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store')
 
   return res
 }

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
+import { getClientCurrency, getDefaultCurrency } from '@/lib/plans/clientUtils'
 import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
 
 // Languages shown in the switcher (never exposes ch/be/uk/uae directly)
@@ -19,9 +20,9 @@ const LANGUAGE_LABELS: Record<Language, string> = {
 
 // Currencies available per language
 const LANGUAGE_CURRENCIES: Record<Language, string[]> = {
-  en: ['EUR', 'GBP', 'AED'],
+  en: ['EUR', 'GBP', 'AED', 'CHF'],
   de: ['EUR', 'CHF'],
-  fr: ['EUR'],
+  fr: ['EUR', 'CHF'],
   nl: ['EUR'],
   it: ['EUR'],
 }
@@ -43,7 +44,7 @@ function resolveLocale(lang: Language, currency: string, geoCountry: string): st
   if (lang === 'nl') {
     if (geoCountry === 'BE') return 'be'
     if (geoCountry === 'NL') return 'nl'
-    return 'en' // neither NL nor BE → default to English
+    return 'nl'
   }
   return 'en'
 }
@@ -62,7 +63,11 @@ function localeToLanguage(locale: string): Language {
 function getCookie(name: string): string {
   if (typeof document === 'undefined') return ''
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
-  return match ? decodeURIComponent(match[1]!) : ''
+  try {
+    return match ? decodeURIComponent(match[1]!) : ''
+  } catch {
+    return ''
+  }
 }
 
 function setCookie(name: string, value: string) {
@@ -110,13 +115,24 @@ export const LocaleSwitcher: React.FC<Props> = ({
   const currentLanguage = useMemo(() => localeToLanguage(currentLocale), [currentLocale])
 
   const [selectedLang, setSelectedLang] = useState<Language>(currentLanguage)
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(
-    () => getCookie('nb1_currency') || 'EUR',
+  const [currentCurrency, setCurrentCurrency] = useState(() => getDefaultCurrency(currentLocale))
+  const [selectedCurrency, setSelectedCurrency] = useState<string>(() =>
+    getDefaultCurrency(currentLocale),
   )
+  const [geoCountry, setGeoCountry] = useState('')
 
   // Keep selectedLang in sync if locale prop changes
   useEffect(() => {
+    const sync = () => {
+      const currency = getClientCurrency(currentLocale)
+      setCurrentCurrency(currency)
+      setSelectedCurrency(currency)
+      setGeoCountry(getCookie('nb1_country'))
+    }
     setSelectedLang(localeToLanguage(currentLocale))
+    sync()
+    window.addEventListener('nb1:currencychange', sync)
+    return () => window.removeEventListener('nb1:currencychange', sync)
   }, [currentLocale])
 
   // When language changes, reset currency to first available option
@@ -129,8 +145,11 @@ export const LocaleSwitcher: React.FC<Props> = ({
   }
 
   const handleApply = () => {
-    const geoCountry = getCookie('nb1_country')
-    const targetLocale = resolveLocale(selectedLang, selectedCurrency, geoCountry) as AppLocale
+    const targetLocale = resolveLocale(
+      selectedLang,
+      selectedCurrency,
+      geoCountry || (currentLocale === 'be' ? 'BE' : ''),
+    ) as AppLocale
     if (pageSlugs && typeof pageSlugs[targetLocale] !== 'string') return
 
     const rest = stripLeadingLocale(pathname, currentLocale)
@@ -144,7 +163,11 @@ export const LocaleSwitcher: React.FC<Props> = ({
     setCookie('nb1_currency', selectedCurrency)
 
     setOpen(false)
-    window.location.href = targetPath
+    if (targetLocale === currentLocale) {
+      window.dispatchEvent(new CustomEvent('nb1:currencychange', { detail: selectedCurrency }))
+    } else {
+      window.location.href = targetPath
+    }
   }
 
   // Close on outside click
@@ -164,7 +187,7 @@ export const LocaleSwitcher: React.FC<Props> = ({
   const pendingTargetLocale = resolveLocale(
     selectedLang,
     selectedCurrency,
-    getCookie('nb1_country'),
+    geoCountry || (currentLocale === 'be' ? 'BE' : ''),
   ) as AppLocale
   const pendingLocaleAvailable = !pageSlugs || typeof pageSlugs[pendingTargetLocale] === 'string'
 
@@ -305,10 +328,10 @@ export const LocaleSwitcher: React.FC<Props> = ({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-label={`Language and currency: ${currentLanguage.toUpperCase()} / ${getCookie('nb1_currency') || 'EUR'}`}
+        aria-label={`Language and currency: ${currentLanguage.toUpperCase()} / ${currentCurrency}`}
       >
         <span>
-          {currentLanguage.toUpperCase()} / {getCookie('nb1_currency') || 'EUR'}
+          {currentLanguage.toUpperCase()} / {currentCurrency}
         </span>
         <span className={`nb1-lang-chevron${open ? ' open' : ''}`}>
           <svg width="9" height="6" viewBox="0 0 9 6" fill="none" aria-hidden="true">

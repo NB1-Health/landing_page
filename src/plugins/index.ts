@@ -58,6 +58,7 @@ export const plugins: Plugin[] = [
       },
       hooks: {
         afterChange: [revalidateRedirects],
+        afterDelete: [revalidateRedirects],
       },
     },
   }),

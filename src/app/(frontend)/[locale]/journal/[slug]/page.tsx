@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import '@/styles/journal-tokens.css'
@@ -39,6 +40,7 @@ import { getAuthenticatedDraft, type AuthenticatedDraft } from '@/utilities/auth
 import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
 
 import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -73,6 +75,10 @@ type Args = {
 }
 
 export default async function PostPage({ params: paramsPromise }: Args) {
+  // The Journal is switched off on this deployment (JOURNAL_ENABLED). The route
+  // stays in the build and the content stays in the database; it simply has no
+  // public address.
+  if (!isJournalEnabled()) notFound()
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)
   const { slug = '', locale: localeParam } = await paramsPromise

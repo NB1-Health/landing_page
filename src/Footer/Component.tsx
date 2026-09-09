@@ -5,6 +5,7 @@ import type { Media } from '@/payload-types'
 import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getDictionary } from '@/i18n/getDictionary'
 import { getCachedHubLinks } from '@/utilities/hubQueries'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 import { FooterClient } from './FooterClient'
 
 type Props = {
@@ -56,10 +57,16 @@ export async function Footer({ locale, id }: Props) {
   // Journal first, then the hubs in their fixed order. The Journal is not a Hubs
   // record — it has its own route — so it is prepended here rather than seeded
   // into the collection.
-  const contentLinks = [
-    { label: dict.footer.journal, url: `/${appLocale}/journal` },
-    ...hubLinks.map((hub) => ({ label: hub.title, url: hub.path })),
-  ]
+  // The hub links already vanish with the Journal — `getCachedHubLinks` returns
+  // an empty array — but this Journal link is fixed rather than derived, so it
+  // needs the flag directly. With both gone the column renders empty and the
+  // footer drops it.
+  const contentLinks = isJournalEnabled()
+    ? [
+        { label: dict.footer.journal, url: `/${appLocale}/journal` },
+        ...hubLinks.map((hub) => ({ label: hub.title, url: hub.path })),
+      ]
+    : []
 
   const rawForm = footerData?.form
   const formObj = typeof rawForm === 'object' && rawForm !== null ? rawForm : null

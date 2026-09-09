@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import { usePriceTokens } from '@/lib/plans/PriceTokensProvider'
 
 import type { Page } from '@/payload-types'
 
@@ -12,7 +15,8 @@ const heroes = {
   mediumImpact: MediumImpactHero,
 }
 
-export const RenderHero: React.FC<Page['hero']> = (props) => {
+export const RenderHero: React.FC<Page['hero']> = (rawProps) => {
+  const props = usePriceTokens(rawProps)
   const { type } = props || {}
 
   if (!type || type === 'none') return null

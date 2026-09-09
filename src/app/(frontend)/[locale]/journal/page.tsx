@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import type { Metadata } from 'next/types'
 
 import '@/styles/journal-tokens.css'
@@ -27,6 +28,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 import PageClient from './page.client'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 export const dynamic = 'force-static'
 // Backstop only. `revalidatePost` invalidates this path on publish, so a new
@@ -34,6 +36,10 @@ export const dynamic = 'force-static'
 export const revalidate = 600
 
 export default async function Page({ params }: { params?: Promise<{ locale?: string }> }) {
+  // The Journal is switched off on this deployment (JOURNAL_ENABLED). The route
+  // stays in the build and the content stays in the database; it simply has no
+  // public address.
+  if (!isJournalEnabled()) notFound()
   const localeParam = (await params)?.locale ?? 'en'
   const locale: AppLocale = isAppLocale(localeParam) ? localeParam : 'en'
   const payload = await getPayload({ config: configPromise })

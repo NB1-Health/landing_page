@@ -69,3 +69,10 @@ jobs:
           STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
           STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
         run: npm run seo:check
+
+      - name: Verify server-rendered marketing navigation and currency
+        env:
+          SEO_BASE_URL: https://stg.nb1.com
+          STG_BASIC_AUTH_USERNAME: ${{ secrets.STG_BASIC_AUTH_USERNAME }}
+          STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
+        run: node scripts/check-marketing-currency.mjs

@@ -1,6 +1,10 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import { createRequire } from 'node:module'
+import { marketingCacheHeaders } from './src/utilities/marketingCachePolicy.mjs'
 
 import redirects from './redirects.js'
+
+const localeCodes = Object.keys(createRequire(import.meta.url)('./src/i18n/localeConfig.json'))
 
 const isStaging = process.env.DEPLOY_ENV === 'staging'
 
@@ -37,6 +41,7 @@ const nextConfig = {
   redirects,
   async headers() {
     return [
+      ...marketingCacheHeaders(localeCodes),
       ...(isStaging
         ? [
             {

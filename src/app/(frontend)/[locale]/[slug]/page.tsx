@@ -22,8 +22,9 @@ import {
   isHreflangXDefaultMissing,
   readHreflangOverrides,
 } from '@/utilities/hreflang'
-import { getServerCurrency } from '@/utilities/currency'
-import { resolvePriceTokensDeep } from '@/lib/plans/priceTokens'
+import { hasPriceToken } from '@/lib/plans/priceExpr'
+import { getPublicPlanPrices } from '@/lib/plans/api'
+import { PriceTokensProvider } from '@/lib/plans/PriceTokensProvider'
 import { getAuthenticatedDraft, type AuthenticatedDraft } from '@/utilities/authenticatedDraft'
 import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
@@ -93,9 +94,8 @@ const getCachedIsHomePage = unstable_cache(
   { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
 )
 
-// Currency-sensitive page copy is rendered from the visitor's cookie. Keep
-// landing pages request-rendered so newly published slugs work immediately and
-// a shared route cache never serves one visitor's currency to another.
+// Keep preview, checkout and newly published slugs request-rendered.
+// Public marketing HTML can be cached separately at the CDN.
 export const dynamic = 'force-dynamic'
 
 export default async function Page({ params: paramsPromise }: Args) {
@@ -160,8 +160,8 @@ export default async function Page({ params: paramsPromise }: Args) {
   if (rawSlug && isHome) redirect(`/${locale}`)
 
   const {
-    hero: rawHero,
-    layout: rawLayout,
+    hero,
+    layout,
     header: pageHeader,
     footer: pageFooter,
     hideHeader,
@@ -170,16 +170,14 @@ export default async function Page({ params: paramsPromise }: Args) {
   const headerId = typeof pageHeader === 'object' ? pageHeader?.id : pageHeader
   const footerId = typeof pageFooter === 'object' ? pageFooter?.id : pageFooter
 
-  // Resolve live-price tokens — incl. arithmetic like
-  // {{(price:core:4-price:core:12)*12}} — in EVERY field of EVERY block (and the
-  // hero), once, in the visitor's currency. This makes tokens work everywhere in
-  // page content without per-block wiring. No-op (returns input) when a section
-  // has no tokens, so it's cheap for token-free pages.
-  const currency = await getServerCurrency(locale)
-  const [hero, layout] = await Promise.all([
-    resolvePriceTokensDeep(rawHero, currency, locale),
-    resolvePriceTokensDeep(rawLayout, currency, locale),
-  ])
+  // All currencies share one public snapshot; visitor preferences stay in the browser.
+  const hasPrices = hasPriceToken(JSON.stringify([hero, layout]))
+  const initialPrices = hasPrices
+    ? await getPublicPlanPrices().catch((error) => {
+        console.error('[prices] Failed to load public rates', error)
+        return []
+      })
+    : []
   // The checkout PlanSelector is distinct from the generic marketing Plans block.
   // If an editor deliberately places this checkout selector on another page,
   // that page is treated as the first order-selection experience too.
@@ -227,8 +225,15 @@ export default async function Page({ params: paramsPromise }: Args) {
           />
         )}
 
-        {hero ? <RenderHero {...hero} /> : null}
-        <RenderBlocks blocks={layout || []} locale={locale} pageSlugs={pageSlugsByLocale} />
+        <PriceTokensProvider
+          key={locale}
+          locale={locale}
+          initialPrices={initialPrices}
+          enabled={hasPrices}
+        >
+          {hero ? <RenderHero {...hero} /> : null}
+          <RenderBlocks blocks={layout || []} locale={locale} pageSlugs={pageSlugsByLocale} />
+        </PriceTokensProvider>
       </article>
 
       {!hideFooter && <Footer locale={locale} id={footerId} />}

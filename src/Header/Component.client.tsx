@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { getDictionary } from '@/i18n/getDictionary'
 import { isAppLocale, localeConfig, type AppLocale } from '@/i18n/config'
@@ -42,12 +42,7 @@ export interface HeaderClientProps {
   locale: string
   /** The current document's semantic route and published localized slugs. */
   localizedDocument?: LocalizedDocument | null
-  /** Resolved server-side from the currency cookie (see src/utilities/currency.ts).
-   * Used as the initial state below instead of reading localStorage, so the
-   * SSR markup and the first client render match exactly — reading
-   * localStorage in a useState initializer caused a hydration mismatch for
-   * any returning visitor whose stored currency differed from the 'EUR'
-   * fallback used during SSR (localStorage isn't available on the server). */
+  /** Locale default shared by SSR and hydration; preferences are applied after mount. */
   initialCurrency?: string
   logo?: {
     url?: string | null
@@ -245,7 +240,6 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   }
 
   const isDark = theme === 'dark'
-  const router = useRouter()
   const pathname = usePathname()
 
   // Scroll / hide state
@@ -422,27 +416,31 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     setCurLocale(activeLocale)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
-  // Seeded from the server-resolved cookie value (not localStorage) so this
-  // matches the SSR HTML exactly — see initialCurrency prop doc above.
+  // Start with the locale default so shared HTML hydrates consistently.
   const [curCur, setCurCur] = useState(initialCurrency || 'EUR')
   // On mount, sync curCur from cookie — but validate it against the current locale.
   // If the cookie currency isn't allowed for this locale, use the locale's default.
   useEffect(() => {
-    try {
-      const currentLocale = pathname.split('/')[1] || 'en'
-      const allowed = LOCALE_ALLOWED_CURRENCIES[currentLocale]
-      const localDefault = LOCALE_DEFAULT_CURRENCY[currentLocale]
-      const match = document.cookie.match(/(?:^|; )nb1_currency=([^;]*)/)
-      const cookieCur = match ? decodeURIComponent(match[1]) : ''
-      const resolved = cookieCur && allowed?.includes(cookieCur) ? cookieCur : localDefault || 'EUR'
-      if (resolved !== curCur) setCurCur(resolved)
-      // Always write back so the next locale page sees the correct currency in the cookie
-      if (resolved !== cookieCur) {
-        document.cookie = `nb1_currency=${resolved}; path=/; max-age=31536000; samesite=lax`
+    const syncCurrency = () => {
+      try {
+        const currentLocale = pathname.split('/')[1] || 'en'
+        const allowed = LOCALE_ALLOWED_CURRENCIES[currentLocale]
+        const localDefault = LOCALE_DEFAULT_CURRENCY[currentLocale]
+        const match = document.cookie.match(/(?:^|; )nb1_currency=([^;]*)/)
+        const cookieCur = match ? decodeURIComponent(match[1]) : ''
+        const resolved = cookieCur && allowed?.includes(cookieCur) ? cookieCur : localDefault || 'EUR'
+        setCurCur(resolved)
+        // Repair an existing preference, but do not create a cookie for a default.
+        if (cookieCur && resolved !== cookieCur) {
+          document.cookie = `nb1_currency=${resolved}; path=/; max-age=31536000; samesite=lax`
+        }
+      } catch {
+        /* noop */
       }
-    } catch {
-      /* noop */
     }
+    syncCurrency()
+    window.addEventListener('nb1:currencychange', syncCurrency)
+    return () => window.removeEventListener('nb1:currencychange', syncCurrency)
   }, [pathname])
   // Pending selections — only committed when Apply is clicked.
   // Initialised to match current applied values; reset again whenever the menu opens.
@@ -496,7 +494,7 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
           return ''
         }
       })()
-      if (country === 'BE') return 'be'
+      if (country === 'BE' || curLocale === 'be') return 'be'
       return 'nl'
     }
     return 'en'
@@ -512,6 +510,11 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
       allowed && allowed.includes(pendingCur)
         ? pendingCur
         : (LOCALE_DEFAULT_CURRENCY[targetLocale] ?? pendingCur)
+    if (targetLocale === curLocale && lang === curLang) {
+      applyCur(targetCurrency)
+      setLocOpen(false)
+      return
+    }
     setCurLang(lang)
     lsSet('nb1_lang', lang)
     lsSet('nb1_currency', targetCurrency)
@@ -540,18 +543,13 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
   function applyCur(cur: string) {
     setCurCur(cur)
     lsSet('nb1_currency', cur)
-    // Mirror the selection into a cookie so server components (e.g. live
-    // pricing blocks) can read it on the next render — localStorage isn't
-    // visible to the server. router.refresh() re-renders server components
-    // with the new cookie value without a full page reload or losing the
-    // client state of components further down the tree.
+    // Persist across navigation; pricing components update through the event below.
     try {
       document.cookie = `nb1_currency=${cur}; path=/; max-age=31536000; samesite=lax`
     } catch {
       /* noop */
     }
     window.dispatchEvent(new CustomEvent('nb1:currencychange', { detail: cur }))
-    router.refresh()
   }
 
   const pendingTargetLocale = resolveTargetLocale(pendingLang, pendingCur)

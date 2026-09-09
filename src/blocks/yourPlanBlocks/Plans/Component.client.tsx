@@ -167,6 +167,10 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
   const priceMonths = influencerOffer ? 4 : 1
 
   useEffect(() => {
+    let active = true
+    setPlanCards(planCardsProp ?? [])
+    setComparison(comparisonProp)
+
     function applyPrices(
       currency: ReturnType<typeof getClientCurrency>,
       plans: Awaited<ReturnType<typeof fetchPlansClient>>,
@@ -175,6 +179,7 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
       // uk/uae→en); a lookup keyed by the raw locale only has en/de/fr/nl
       // keys and so wrongly falls back to "/mo" on ch/be.
       const perMonth = getDictionary(locale).plans.perMonth
+      if (!active || currency !== getClientCurrency(locale)) return
       const rateMap = buildRateMap(plans, currency)
       setPlanCards(
         (planCardsProp ?? []).map((card) => {
@@ -218,7 +223,10 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
         .catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
-    return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    return () => {
+      active = false
+      window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, planCardsProp, comparisonProp, priceMonths])
 

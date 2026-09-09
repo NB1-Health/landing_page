@@ -2,9 +2,10 @@ import { getCachedHeader } from '@/utilities/getHeaderFooter'
 import { getCachedJournalNav } from '@/utilities/journalNav'
 import { isAppLocale } from '@/i18n/config'
 import React, { Suspense } from 'react'
+import { connection } from 'next/server'
 
 import type { Media } from '@/payload-types'
-import { getServerCurrency } from '@/utilities/currency'
+import { resolveCurrency } from '@/utilities/currency'
 import { HeaderClient } from './Component.client'
 import type { LocalizedDocument } from './localizedDocument'
 
@@ -92,14 +93,11 @@ type Props = {
 }
 
 export async function Header({ locale, id, localizedDocument }: Props) {
+  // Keep query-aware navigation in the initial HTML without reading visitor cookies.
+  await connection()
   const data = (await getCachedHeader(id, locale)()) as HeaderData | null
-  // Resolved server-side from the cookie so the initial currency label
-  // matches what HeaderClient hydrates with — previously HeaderClient read
-  // localStorage in its useState initializer, which is unavailable during
-  // SSR (always fell back to 'EUR') but available on the client (the real
-  // stored value), causing a text mismatch on hydration whenever a
-  // returning visitor had a non-EUR currency saved.
-  const initialCurrency = await getServerCurrency(locale)
+  // A locale default keeps shared HTML independent of visitor cookies.
+  const initialCurrency = resolveCurrency(undefined, locale)
 
   // The Journal branch of the Discover menu. Fetched here rather than in the
   // client component because it is CMS data — generated from hub and pillar
