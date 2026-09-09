@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { parse } from 'node-html-parser'
 
 const base = new URL(process.env.SEO_BASE_URL || 'http://localhost:3000')
 const headers = {}
@@ -15,11 +14,11 @@ for (const userAgent of ['Mozilla/5.0', 'facebookexternalhit/1.1']) {
       signal: AbortSignal.timeout(30_000),
     })
     assert.equal(response.status, 200, 'Homepage must return 200')
-    const page = parse(await response.text())
-    const picker = page.querySelector('.nb1-loc-btn')
+    const html = await response.text()
+    const picker = html.match(/<button\b[^>]*class="[^"]*\bnb1-loc-btn\b[^"]*"[^>]*>([\s\S]*?)<\/button>/)?.[1]
     assert.ok(picker, 'Navigation must be rendered in the initial HTML')
-    assert.match(picker.text, /£/, 'Initial currency must be the locale default')
-    assert.doesNotMatch(picker.text, /CHF/, 'Visitor currency must not personalize shared HTML')
+    assert.match(picker, /£|&pound;|&#163;|&#x[aA]3;/, 'Initial currency must be the locale default')
+    assert.doesNotMatch(picker, /CHF/, 'Visitor currency must not personalize shared HTML')
     assert.doesNotMatch(response.headers.get('set-cookie') || '', /nb1_(currency|country)=/)
     console.log(`Homepage server navigation and currency: PASS (${userAgent}, ${currency})`)
   }
