@@ -6,7 +6,8 @@
 
 import { resolveCurrency } from '@/utilities/currency'
 import { getDictionary } from '@/i18n/getDictionary'
-import { AMOUNT_TOKEN_RE, PRICE_TOKEN_RE, evalArithmetic, hasPriceToken, resolveExpr } from './priceExpr'
+import { AMOUNT_TOKEN_RE, TOKEN_RE, evalArithmetic, hasToken, resolveExpr } from './priceExpr'
+import { getFee } from './fees'
 
 export type CurrencyCode = 'EUR' | 'GBP' | 'AED' | 'CHF'
 
@@ -115,8 +116,12 @@ function replaceTokens(
   currency: CurrencyCode,
   locale: string,
 ): string {
-  return text.replace(PRICE_TOKEN_RE, (_full, inner: string) => {
-    const val = resolveExpr(inner, (fam, mo) => rateMap[`${fam}:${mo}`])
+  return text.replace(TOKEN_RE, (_full, inner: string) => {
+    const val = resolveExpr(
+      inner,
+      (fam, mo) => rateMap[`${fam}:${mo}`],
+      (name) => getFee(name, currency),
+    )
     return val == null ? '' : formatPrice(val, currency, locale)
   })
 }
@@ -127,7 +132,7 @@ export function resolveTokens(
   currency: CurrencyCode,
   locale: string,
 ): string | null | undefined {
-  if (!hasPriceToken(text)) return text
+  if (!hasToken(text)) return text
   return replaceTokens(text as string, rateMap, currency, locale)
 }
 
@@ -157,7 +162,7 @@ export function resolveTokensDeep<T>(
 ): T {
   if (value == null) return value
   const scan = typeof value === 'string' ? value : JSON.stringify(value)
-  if (!hasPriceToken(scan)) return value
+  if (!hasToken(scan)) return value
   const resolved = replaceTokens(scan, rateMap, currency, locale)
   return typeof value === 'string' ? (resolved as T) : JSON.parse(resolved)
 }

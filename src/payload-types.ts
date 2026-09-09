@@ -7111,7 +7111,7 @@ export interface FaqPageBlock {
   title: string;
   subheading?: string | null;
   /**
-   * Each group becomes a numbered section (01, 02 …, added automatically) and a category chip that jumps to it.
+   * Each group becomes a numbered section (01, 02 …, added automatically) and a category chip that jumps to it. Any text or rich-text field in this block supports amount tokens, resolved to the visitor’s selected currency: “{{fee:kit}}” = the one-off kit fee (fixed per currency, see src/lib/plans/fees.ts) and “{{price:core:4}}” = a live plan rate. Arithmetic works too, e.g. “{{fee:kit*2}}”.
    */
   groups?:
     | {
@@ -7182,7 +7182,7 @@ export interface LegalDocBlock {
       }[]
     | null;
   /**
-   * Section numbers (1, 2 …) and the sticky table of contents are generated automatically. Inside each section add content blocks: a "Clause" is auto-numbered 1.1, 1.2 …; a "Card" is a bordered box with no number (and can hold a table).
+   * Section numbers (1, 2 …) and the sticky table of contents are generated automatically. Inside each section add content blocks: a "Clause" is auto-numbered 1.1, 1.2 …; a "Card" is a bordered box with no number (and can hold a table). Any text or rich-text field in this block supports amount tokens, resolved to the visitor’s selected currency: “{{fee:kit}}” = the one-off kit fee (fixed per currency, see src/lib/plans/fees.ts) and “{{price:core:4}}” = a live plan rate. Arithmetic works too, e.g. “{{fee:kit*2}}”. Never type a literal amount like “€49” — it would stay in euros for a visitor paying in GBP/CHF/AED.
    */
   sections?:
     | {

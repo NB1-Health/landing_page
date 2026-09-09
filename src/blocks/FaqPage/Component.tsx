@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import RichText from '@/components/RichText'
+import { usePriceTokens } from '@/lib/plans/PriceTokensProvider'
 
 type Item = { question?: string | null; answer?: any }
 type Group = { label?: string | null; items?: Item[] | null }
@@ -21,15 +22,18 @@ const slug = (s: string, i: number) =>
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-export const FaqPageComponent: React.FC<Props> = ({
-  title,
-  subheading,
-  groups,
-  calloutHeading,
-  calloutBody,
-  calloutCtaLabel,
-  calloutCtaHref,
-}) => {
+export const FaqPageComponent: React.FC<Props> = (props) => {
+  // Resolve {{price:…}} / {{fee:…}} tokens in questions, answers and callout
+  // copy against the visitor's selected currency (re-runs when they switch).
+  const {
+    title,
+    subheading,
+    groups,
+    calloutHeading,
+    calloutBody,
+    calloutCtaLabel,
+    calloutCtaHref,
+  } = usePriceTokens(props)
   const [open, setOpen] = useState<Set<string>>(new Set())
   const toggle = (k: string) =>
     setOpen((prev) => {

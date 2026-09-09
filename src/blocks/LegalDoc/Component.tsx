@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import RichText from '@/components/RichText'
 import { getDictionary } from '@/i18n/getDictionary'
+import { usePriceTokens } from '@/lib/plans/PriceTokensProvider'
 
 type ContentBlock = {
   type?: string
@@ -40,19 +41,23 @@ type Props = {
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-export const LegalDocComponent: React.FC<Props> = ({
-  title,
-  subheading,
-  showSummary,
-  summaryHeading,
-  summaryNote,
-  summaryItems,
-  sections,
-  calloutHeading,
-  calloutBody,
-  calloutRows,
-  locale,
-}) => {
+export const LegalDocComponent: React.FC<Props> = (props) => {
+  // Resolve {{price:…}} / {{fee:…}} tokens across every section, clause, card,
+  // table cell and callout row against the visitor's selected currency
+  // (re-runs when they switch) — e.g. "a one-time {{fee:kit}} kit fee".
+  const {
+    title,
+    subheading,
+    showSummary,
+    summaryHeading,
+    summaryNote,
+    summaryItems,
+    sections,
+    calloutHeading,
+    calloutBody,
+    calloutRows,
+    locale,
+  } = usePriceTokens(props)
   const dict = getDictionary(locale)
   const secs = sections ?? []
   const [active, setActive] = useState<string>('')
