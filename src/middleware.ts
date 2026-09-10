@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { appLocales, defaultLocale } from '@/i18n/config'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { appLocales, defaultLocale, isAppLocale } from '@/i18n/config'
+import { isJournalEnabled, isJournalLocale } from '@/utilities/journalEnabled'
 import { canCacheMarketingRequest } from '@/utilities/marketingCache'
 
 const GEO_LOCALES: Record<string, string> = {
@@ -89,10 +89,16 @@ export async function middleware(req: NextRequest) {
   const legacyJournalMatch = pathname.match(
     new RegExp(`^(/(?:${localePattern}))?/(?:posts|library)(/.*)?$`),
   )
-  // Only redirect while the Journal exists. Sending /posts to a 404 would be a
-  // pointless hop and would make a disabled Journal look broken rather than
-  // absent.
-  if (legacyJournalMatch && isJournalEnabled()) {
+  // Only redirect where the Journal exists. Sending /posts to a 404 would be a
+  // pointless hop and would make a market that is not switched on look broken
+  // rather than absent. An unprefixed /posts still redirects: the locale is
+  // resolved downstream, and the target is then subject to the same rule.
+  const legacyJournalPrefix = (legacyJournalMatch?.[1] ?? '').replace('/', '')
+  const legacyJournalAllowed =
+    legacyJournalPrefix === ''
+      ? isJournalEnabled()
+      : isAppLocale(legacyJournalPrefix) && isJournalLocale(legacyJournalPrefix)
+  if (legacyJournalMatch && legacyJournalAllowed) {
     const localePrefix = legacyJournalMatch[1] || ''
     const rest = legacyJournalMatch[2] || ''
     const url = req.nextUrl.clone()

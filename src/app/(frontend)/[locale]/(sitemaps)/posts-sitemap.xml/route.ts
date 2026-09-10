@@ -7,7 +7,7 @@ import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
 import { readHreflangOverrides } from '@/utilities/hreflang'
 import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
   const clean = path.startsWith('/') ? path : `/${path}`
@@ -17,13 +17,13 @@ function withLocale(siteURL: string, locale: AppLocale, path: string) {
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params
 
-  // Every entry in this sitemap is a `/{locale}/journal/{slug}` URL, so with the
-  // Journal switched off the whole file would advertise 404s. This is the
-  // pre-existing posts sitemap rather than one of the five added for the Journal,
-  // which is exactly why it was missed the first time.
-  if (!isJournalEnabled()) return new Response('Not found', { status: 404 })
   if (!isAppLocale(localeParam)) return new Response('Not found', { status: 404 })
   const locale = localeParam
+  // Every entry in this sitemap is a `/{locale}/journal/{slug}` URL, so outside a
+  // live Journal market the whole file would advertise 404s. This is the
+  // pre-existing posts sitemap rather than one of the five added for the Journal,
+  // which is exactly why it was missed the first time.
+  if (!isJournalLocale(locale)) return new Response('Not found', { status: 404 })
 
   const getPostsSitemap = unstable_cache(
     async () => {

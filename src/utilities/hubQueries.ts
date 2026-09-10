@@ -3,7 +3,7 @@ import { getPayload, type Payload, type Where } from 'payload'
 import { unstable_cache } from 'next/cache'
 
 import { appLocales, type AppLocale } from '@/i18n/config'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 
 export type HubKey = 'microbiome' | 'research' | 'lexicon'
 
@@ -38,7 +38,11 @@ function readSlugsByLocale(raw: unknown): Partial<Record<AppLocale, string>> {
   const slugs: Partial<Record<AppLocale, string>> = {}
   if (!raw || typeof raw !== 'object') return slugs
 
-  for (const locale of appLocales) {
+  // `journalLocales`, not `appLocales`. This map is the hreflang cluster for every
+  // hub page and every hub document under it, so a slug filled in for a market
+  // that is not switched on yet would advertise a URL that 404s — and §6 is
+  // explicit that one bad alternate "can invalidate the whole cluster".
+  for (const locale of journalLocales) {
     const value = (raw as Record<string, unknown>)[locale]
     if (typeof value === 'string' && value.trim()) slugs[locale] = value.trim()
   }
@@ -124,9 +128,9 @@ async function fetchHub(locale: AppLocale, where: Where): Promise<Hub | null> {
  */
 export const getCachedHubBySlug = (locale: AppLocale, slug: string) =>
   // The check sits OUTSIDE `unstable_cache` on purpose: inside, the answer would
-  // be cached, and flipping JOURNAL_ENABLED would need a tag bust to take effect.
-  // Out here, a restart is enough — which is all an env change gets anyway.
-  isJournalEnabled()
+  // be cached, and changing JOURNAL_LOCALES would need a tag bust to take effect.
+  // Out here, a deploy is enough.
+  isJournalLocale(locale)
     ? unstable_cache(
         async () => fetchHub(locale, { slug: { equals: slug } }),
         ['hub', locale, slug],
@@ -136,7 +140,7 @@ export const getCachedHubBySlug = (locale: AppLocale, slug: string) =>
 
 /** Cached lookup by the stable `key`, for code that wants "the Research hub". */
 export const getCachedHubByKey = (locale: AppLocale, key: HubKey) =>
-  isJournalEnabled()
+  isJournalLocale(locale)
     ? unstable_cache(
         async () => fetchHub(locale, { key: { equals: key } }),
         ['hub-key', locale, key],
@@ -211,7 +215,7 @@ export const getCachedHubLinks = (locale: AppLocale) =>
   // Empty, not null. Every caller already treats "no hubs in this locale" as a
   // reason to render nothing — `buildJournalNavTree` returns null, `HubStrip`
   // returns null, the footer column shortens — so this needs no new branches.
-  isJournalEnabled()
+  isJournalLocale(locale)
     ? unstable_cache(async () => fetchHubLinks(locale), ['hub-links', locale], {
         tags: ['hubs', `hub-links-${locale}`],
       })

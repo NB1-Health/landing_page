@@ -20,7 +20,7 @@ import { getJournalIndexData, JOURNAL_PAGE_SIZE } from '@/utilities/journalQueri
 import { buildJournalTrail } from '@/utilities/journalTrail'
 
 import PageClient from './page.client'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 
 export const revalidate = 600
 
@@ -32,12 +32,13 @@ type Args = {
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
-  // The Journal is switched off on this deployment (JOURNAL_ENABLED). The route
-  // stays in the build and the content stays in the database; it simply has no
-  // public address.
-  if (!isJournalEnabled()) notFound()
   const { locale: localeParam, pageNumber } = await paramsPromise
   if (!isAppLocale(localeParam)) notFound()
+  // Not a market the Journal is live in — see JOURNAL_LOCALES. The route stays in
+  // the build and the content stays in the database; it simply has no public
+  // address here. A 404 rather than an empty index: seven empty indexes would be
+  // seven thin near-duplicate pages, each claiming to translate the others.
+  if (!isJournalLocale(localeParam)) notFound()
 
   const requestedPage = Number(pageNumber)
   if (!Number.isInteger(requestedPage) || requestedPage < 1) notFound()
