@@ -6,7 +6,7 @@ import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
 import { readHreflangOverrides } from '@/utilities/hreflang'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
-import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
+import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
   const clean = path.startsWith('/') ? path : `/${path}`
@@ -69,17 +69,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
       ])
       const homePageID = englishHome.docs[0]?.id
 
-      // The Journal index is a route, not a Page document, so nothing in the
-      // query below can produce it. Hardcoded here because it exists in every
-      // locale unconditionally.
+      // `/posts` was the Journal index before TICKET-SEO-007 moved it to
+      // `/journal`, and this fixed entry was never updated — so it listed a URL
+      // that 301s, which a sitemap must never do: a crawler treats the redirect
+      // as a soft error and the target never gets credited to this sitemap.
       //
-      // This said `/posts` until now — a leftover the `/posts` → `/library` →
-      // `/journal` renames both missed. That URL 301s, and a sitemap entry that
-      // redirects is reported as "Page with redirect" and not indexed, so the
-      // Journal index has been absent from the sitemap the whole time.
-      const defaultSitemap = [
-        { loc: withLocale(SITE_URL, locale, '/journal'), lastmod: dateFallback },
-      ]
+      // Now it points at the index itself, and disappears entirely when the
+      // Journal is switched off, because then there is no index to point at.
+      const defaultSitemap = isJournalEnabled()
+        ? [{ loc: withLocale(SITE_URL, locale, '/journal'), lastmod: dateFallback }]
+        : []
 
       const sitemap =
         results.docs
@@ -101,9 +100,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
       return [...defaultSitemap, ...sitemap]
     },
     ['pages-sitemap', locale],
-    { revalidate: 600, tags: ['pages-sitemap', `pages-sitemap-${locale}`] },
+    { tags: ['pages-sitemap', `pages-sitemap-${locale}`] },
   )
 
   const sitemap = await getPagesSitemap()
-  return getServerSideSitemap(sitemap, SITEMAP_CACHE_HEADERS)
+  return getServerSideSitemap(sitemap)
 }

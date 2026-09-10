@@ -1,7 +1,7 @@
 import { isAppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
-import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -13,18 +13,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
   const site = getServerSideURL().replace(/\/$/, '')
   const lastmod = new Date().toISOString()
 
-  // The five Journal sitemaps are listed only when the Journal exists. An index
-  // pointing at five 404s is worse than a shorter index: a crawler retries them.
+  // With the Journal switched off every one of its children 404s, so listing
+  // them here would point a crawler at six dead URLs. The index keeps only
+  // pages-sitemap, which is not Journal content.
   const journal = isJournalEnabled()
+
   const entries = [
     `<sitemap>
        <loc>${site}/${locale}/pages-sitemap.xml</loc>
        <lastmod>${lastmod}</lastmod>
      </sitemap>`,
-    `<sitemap>
+    // Journal articles live in the pre-existing posts sitemap, so it is
+    // conditional too — its every URL is under /journal.
+    ...(journal
+      ? [
+          `<sitemap>
        <loc>${site}/${locale}/posts-sitemap.xml</loc>
        <lastmod>${lastmod}</lastmod>
      </sitemap>`,
+        ]
+      : []),
     // The hubs are not Page documents — they render through the Pages route but
     // live in their own collection, so `pages-sitemap` cannot see them.
     ...(journal
