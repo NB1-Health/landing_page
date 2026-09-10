@@ -12,6 +12,12 @@ import { getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
  * Region locales resolve through their configured parent language the same way
  * the block i18n tables do (ch -> de, be -> nl, uk/uae -> en), so they get the
  * right language until Trustpilot issues dedicated de-CH / nl-BE / en-GB tokens.
+ *
+ * A language can also be issued some templates but not others, so resolution is
+ * per variant: a locale missing the requested template falls through to its
+ * parent language and then English. The whole source falls back together --
+ * data-locale, token and review URL -- because a token only renders under the
+ * locale it was issued for.
  */
 export const TRUSTPILOT_BUSINESS_UNIT_ID = '6a58deaa3e37cfe6ecc085d5'
 
@@ -30,11 +36,18 @@ export const DEFAULT_TRUSTPILOT_VARIANT: TrustpilotVariant = 'microStar'
 type LocaleSource = {
   dataLocale: string
   reviewUrl: string
-  /** One dashboard-issued token per template. */
-  tokens: Record<TrustpilotVariant, string>
+  /**
+   * One dashboard-issued token per template. Partial: a template the dashboard
+   * has not issued for this language is left out, and resolves through the
+   * fallback chain instead of rendering under a token from another locale.
+   */
+  tokens: Partial<Record<TrustpilotVariant, string>>
 }
 
-const en: LocaleSource = {
+/** English closes every fallback chain, so it must carry every template. */
+type CompleteLocaleSource = LocaleSource & { tokens: Record<TrustpilotVariant, string> }
+
+const en: CompleteLocaleSource = {
   dataLocale: 'en-US',
   reviewUrl: 'https://www.trustpilot.com/review/nb1.com',
   tokens: {
@@ -70,7 +83,16 @@ const nl: LocaleSource = {
   },
 }
 
-const BY_LOCALE: Partial<Record<AppLocale, LocaleSource>> = { en, de, fr, nl }
+const it: LocaleSource = {
+  dataLocale: 'it-IT',
+  reviewUrl: 'https://it.trustpilot.com/review/nb1.com',
+  tokens: {
+    microStar: '30c9ffa2-327c-4a46-8f23-c6cdc41b069e',
+    microTrustScore: '5106703c-7fe9-45e4-82d9-fa5917a6c66d',
+  },
+}
+
+const BY_LOCALE: Partial<Record<AppLocale, LocaleSource>> = { en, de, fr, nl, it }
 
 export type TrustpilotConfig = {
   dataLocale: string
@@ -83,19 +105,28 @@ export function getTrustpilotConfig(
   locale?: string | null,
   variant: TrustpilotVariant = DEFAULT_TRUSTPILOT_VARIANT,
 ): TrustpilotConfig {
-  const source = resolveSource(locale)
+  const source = resolveSource(locale, variant)
   return {
     dataLocale: source.dataLocale,
     reviewUrl: source.reviewUrl,
-    token: source.tokens[variant],
+    token: source.tokens[variant] ?? en.tokens[variant],
     templateId: TRUSTPILOT_TEMPLATE_IDS[variant],
   }
 }
 
-function resolveSource(locale?: string | null): LocaleSource {
+/** First source in the locale's fallback chain that has a token for `variant`. */
+function resolveSource(
+  locale: string | null | undefined,
+  variant: TrustpilotVariant,
+): LocaleSource {
   if (!locale || !isAppLocale(locale)) return en
+
   const direct = BY_LOCALE[locale]
-  if (direct) return direct
+  if (direct?.tokens[variant]) return direct
+
   const fallback = getFallbackLocale(locale)
-  return (fallback && BY_LOCALE[fallback]) || en
+  const parent = fallback ? BY_LOCALE[fallback] : undefined
+  if (parent?.tokens[variant]) return parent
+
+  return en
 }
