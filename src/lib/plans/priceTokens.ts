@@ -39,7 +39,8 @@
  */
 import { formatPrice, type CurrencyCode } from '@/utilities/currency'
 import { getRate, type PlanFamily } from './api'
-import { PRICE_REF_RE, PRICE_TOKEN_RE, hasPriceToken, resolveExpr } from './priceExpr'
+import { PRICE_REF_RE, TOKEN_RE, hasPriceToken, hasToken, resolveExpr } from './priceExpr'
+import { getFee } from './fees'
 
 export { hasPriceToken }
 
@@ -79,8 +80,12 @@ function applyTokens(
   currency: CurrencyCode,
   locale: string,
 ): string {
-  return text.replace(PRICE_TOKEN_RE, (_full, inner: string) => {
-    const val = resolveExpr(inner, (fam, mo) => map.get(`${fam}:${mo}`))
+  return text.replace(TOKEN_RE, (_full, inner: string) => {
+    const val = resolveExpr(
+      inner,
+      (fam, mo) => map.get(`${fam}:${mo}`),
+      (name) => getFee(name, currency),
+    )
     return val == null ? '' : formatPrice(val, currency, locale)
   })
 }
@@ -107,7 +112,7 @@ export async function resolvePriceTokens<T extends string | null | undefined>(
   currency: CurrencyCode,
   locale: string,
 ): Promise<T> {
-  if (!text || !hasPriceToken(text)) return text
+  if (!text || !hasToken(text)) return text
   const map = await buildRateMap(text, currency)
   return applyTokens(text, map, currency, locale) as T
 }
@@ -124,7 +129,7 @@ export async function resolvePriceTokensDeep<T>(
 ): Promise<T> {
   if (value == null) return value
   const scan = typeof value === 'string' ? value : JSON.stringify(value)
-  if (!hasPriceToken(scan)) return value
+  if (!hasToken(scan)) return value
   const map = await buildRateMap(scan, currency)
   return deepApply(value, map, currency, locale)
 }

@@ -23,8 +23,18 @@
 /** A single `price:family:month` reference. */
 export const PRICE_REF_RE = /price\s*:\s*(core|advanced)\s*:\s*(\d+)/gi
 
+/**
+ * A single `fee:<name>` reference — a fixed, non-API amount looked up per
+ * currency in ./fees.ts (e.g. `fee:kit`). It occupies the same grammar slot as
+ * a price ref, so arithmetic works too: `{{fee:kit*2}}`.
+ */
+export const FEE_REF_RE = /fee\s*:\s*([a-z][a-z0-9_]*)/gi
+
 /** A full `{{ … }}` token whose body mentions at least one price ref. */
 export const PRICE_TOKEN_RE = /\{\{\s*([^{}]*?price\s*:[^{}]*?)\s*\}\}/gi
+
+/** A full `{{ … }}` token whose body mentions a price ref OR a fee ref. */
+export const TOKEN_RE = /\{\{\s*([^{}]*?(?:price|fee)\s*:[^{}]*?)\s*\}\}/gi
 
 /**
  * A `{{ … }}` token whose body is a plain numeric amount (no `price:` ref) —
@@ -39,6 +49,11 @@ export const AMOUNT_TOKEN_RE = /\{\{\s*((?:floor|ceil|round|[\d+\-*/().\s])+?)\s
 
 export function hasPriceToken(text: string | null | undefined): boolean {
   return !!text && /\{\{\s*[^{}]*price\s*:/i.test(text)
+}
+
+/** True when the text holds a price OR a fee token worth resolving. */
+export function hasToken(text: string | null | undefined): boolean {
+  return !!text && /\{\{\s*[^{}]*(?:price|fee)\s*:/i.test(text)
 }
 
 /**
@@ -113,15 +128,24 @@ export function evalArithmetic(raw: string): number | null {
 export function resolveExpr(
   inner: string,
   getRate: (family: string, month: number) => number | null | undefined,
+  getFee?: (name: string) => number | null | undefined,
 ): number | null {
   let missing = false
-  const numeric = inner.replace(PRICE_REF_RE, (_m, fam: string, mo: string) => {
+  let numeric = inner.replace(PRICE_REF_RE, (_m, fam: string, mo: string) => {
     const rate = getRate(fam.toLowerCase(), Number(mo))
     if (rate == null) {
       missing = true
       return '0'
     }
     return String(rate)
+  })
+  numeric = numeric.replace(FEE_REF_RE, (_m, name: string) => {
+    const amount = getFee?.(name.toLowerCase())
+    if (amount == null) {
+      missing = true
+      return '0'
+    }
+    return String(amount)
   })
   if (missing) return null
   return evalArithmetic(numeric)

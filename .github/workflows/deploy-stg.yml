@@ -62,12 +62,7 @@ jobs:
           STG_BASIC_AUTH_PASSWORD: ${{ secrets.STG_BASIC_AUTH_PASSWORD }}
         run: node scripts/check-staging-containment.mjs
 
-      # TEMP(journal-off): Journal is off (commit 5a86e01 "hide journal pages") so
-      # /journal 404s while still hardcoded in pages-sitemap/posts-sitemap -> seo:check
-      # fails. Skipped while Journal is off. RESTORE: delete `if: false` when Journal is
-      # back on, or after gating the sitemap journal entries on isJournalEnabled().
       - name: Verify staging international SEO
-        if: false
         env:
           SEO_DEPLOY_ENV: staging
           SEO_BASE_URL: https://stg.nb1.com

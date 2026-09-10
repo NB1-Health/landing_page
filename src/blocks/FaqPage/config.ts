@@ -35,7 +35,8 @@ export const FaqPageBlock: Block = {
       type: 'array',
       admin: {
         description:
-          'Each group becomes a numbered section (01, 02 …, added automatically) and a category chip that jumps to it.',
+          'Each group becomes a numbered section (01, 02 …, added automatically) and a category chip that jumps to it. '
+          + 'Any text or rich-text field in this block supports amount tokens, resolved to the visitor’s selected currency: “{{fee:kit}}” = the one-off kit fee (fixed per currency, see src/lib/plans/fees.ts) and “{{price:core:4}}” = a live plan rate. Arithmetic works too, e.g. “{{fee:kit*2}}”.',
         initCollapsed: true,
       },
       fields: [
