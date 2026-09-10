@@ -126,8 +126,7 @@ export const it = {
     email: {
       label: 'Email',
       placeholder: 'tu@email.com',
-      hint:
-        'Creeremo il tuo account e invieremo a questo indirizzo il tracking del kit e i tuoi risultati. Potrai impostare una password non appena riceverai il kit.',
+      hint: 'Creeremo il tuo account e invieremo a questo indirizzo il tracking del kit e i tuoi risultati. Potrai impostare una password non appena riceverai il kit.',
       invalid: 'Inserisci un indirizzo email valido.',
       typoSuggestion: 'Intendevi {domain}?',
       useSuggestion: 'Usa questo',
@@ -203,6 +202,9 @@ export const it = {
       discount: 'Sconto',
       firstMonth: 'Primo mese',
     },
+    referral: {
+      beenReferred: 'Hai ricevuto un invito da un amico?',
+    },
     confirm: {
       label: 'Conferma: {zeroPrice} da pagare oggi',
       paypal: 'Continua con PayPal →',
@@ -244,8 +246,7 @@ export const it = {
     },
     done: {
       heading: 'Ci sei',
-      body:
-        'Il tuo kit è in viaggio. Per il momento non ti addebiteremo nulla; il primo pagamento avverrà solo quando la tua formula entrerà in produzione.',
+      body: 'Il tuo kit è in viaggio. Per il momento non ti addebiteremo nulla; il primo pagamento avverrà solo quando la tua formula entrerà in produzione.',
       eyebrow: 'Order',
       inboxTitle: 'Controlla la posta',
       inboxBody:
@@ -280,8 +281,7 @@ export const it = {
         step1: {
           label: 'Oggi',
           title: 'Ordine confermato',
-          body:
-          'Controlla la posta: ti abbiamo inviato la ricevuta e un link per impostare la tua password e tracciare la spedizione del kit.',
+          body: 'Controlla la posta: ti abbiamo inviato la ricevuta e un link per impostare la tua password e tracciare la spedizione del kit.',
         },
         step2: {
           label: '~3 giorni',
@@ -379,7 +379,8 @@ export const it = {
     countAll: '{count} termini',
     countFiltered: '{shown} di {total} termini',
     searching: 'Ricerca in corso…',
-    resultsCapped: 'Mostrati i primi {shown} di {total} risultati. Continua a digitare per restringere.',
+    resultsCapped:
+      'Mostrati i primi {shown} di {total} risultati. Continua a digitare per restringere.',
     noMatch: 'Nessun termine corrisponde a questo filtro.',
     jumpToLetter: 'Vai alla lettera',
     backToTop: "Torna all'inizio",
