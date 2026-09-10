@@ -54,7 +54,7 @@ import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
 import { ConfirmationScreen } from './ConfirmationScreen'
-import MentionMeTag from '@/components/MentionMe/MentionMeTag'
+import MentionMeRefereeLink from '@/components/MentionMe/MentionMeRefereeLink'
 import { PaymentFailedScreen } from './PaymentFailedScreen'
 import {
   getStoredPlanSelection,
@@ -2760,21 +2760,6 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           text-decoration-color: rgba(10, 143, 176, 0.3);
         }
 
-        /* Mention Me referee link ("Been referred by a friend?") — brand teal.
-           MM injects .mmLink at runtime, so it needs :global scoped under .nb1-sum. */
-        .nb1-sum :global(.mmLink) {
-          display: inline-block;
-          padding-top: 12px;
-          color: #0a8fb0;
-          font-weight: 600;
-          text-decoration: underline;
-          text-underline-offset: 3px;
-          text-decoration-color: rgba(10, 143, 176, 0.3);
-        }
-        .nb1-sum :global(.mmLink:hover) {
-          color: #087491;
-        }
-
         /* ── Legal footer ── */
         .nb1-det-legal {
           text-align: center;
@@ -3893,8 +3878,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
             {/* Mention Me — a referred friend finds/claims their reward code (referee journey). No
                 volatile props (email/name change on keystroke and would reload the tag); situation +
-                locale are enough, MM's own widget captures the friend. */}
-            <MentionMeTag variant="referee" situation="checkout" locale="en_GB" />
+                locale are enough, MM's own widget captures the friend. The label is ours and
+                translated; MM's campaign copy is server-side (see MentionMeRefereeLink). */}
+            <MentionMeRefereeLink label={t.referral.beenReferred} situation="checkout" />
 
             <div className="nb1-sum-zero">{t.summary.dueToday.replace('{zeroPrice}', zero)}</div>
             <p className="nb1-sum-note">{t.summary.note}</p>

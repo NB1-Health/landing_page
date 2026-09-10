@@ -6,6 +6,7 @@ import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
 import { readHreflangOverrides } from '@/utilities/hreflang'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
+import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 import { isJournalEnabled } from '@/utilities/journalEnabled'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
@@ -104,5 +105,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
   )
 
   const sitemap = await getPagesSitemap()
-  return getServerSideSitemap(sitemap)
+  return getServerSideSitemap(sitemap, SITEMAP_CACHE_HEADERS)
 }

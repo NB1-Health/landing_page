@@ -241,6 +241,9 @@ export const de = {
       discount: 'Rabatt',
       firstMonth: 'Erster Monat',
     },
+    referral: {
+      beenReferred: 'Wurdest du von jemandem empfohlen?',
+    },
     confirm: {
       label: 'Bestätigen — {zeroPrice} heute fällig',
       paypal: 'Mit PayPal fortfahren →',

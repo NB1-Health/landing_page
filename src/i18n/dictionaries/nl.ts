@@ -239,6 +239,9 @@ export const nl = {
       discount: 'Korting',
       firstMonth: 'Gratis maand',
     },
+    referral: {
+      beenReferred: 'Ben je door iemand doorverwezen?',
+    },
     confirm: {
       label: 'Bevestigen — {zeroPrice} vandaag te betalen',
       paypal: 'Doorgaan met PayPal →',

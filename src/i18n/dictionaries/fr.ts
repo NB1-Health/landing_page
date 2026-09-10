@@ -239,6 +239,9 @@ export const fr = {
       discount: 'Remise',
       firstMonth: 'Mois offert',
     },
+    referral: {
+      beenReferred: 'Un proche vous a parrainé ?',
+    },
     confirm: {
       label: "Confirmer — {zeroPrice} dû aujourd'hui",
       paypal: 'Continuer avec PayPal →',
