@@ -42,7 +42,7 @@
  *
  * `grep -rn "isJournalEnabled" src` lists every one of them.
  */
-const JOURNAL_ENABLED = false
+const JOURNAL_ENABLED = true
 
 export function isJournalEnabled(): boolean {
   return JOURNAL_ENABLED
