@@ -49,7 +49,7 @@ import {
   getCommercialCheckoutContext,
   waitForCommercialConsentResolution,
 } from '@/lib/commercialIdentity'
-import { getClientCurrency, type CurrencyCode } from '@/lib/plans/clientUtils'
+import { getClientCurrency, resolveTokens, type CurrencyCode } from '@/lib/plans/clientUtils'
 import { isKlarnaAvailable } from '@/lib/klarnaMarkets'
 import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
@@ -3779,7 +3779,10 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 {t.confirm.and}{' '}
                 <a href={`/${locale || 'en'}/privacy-policy`}>{t.confirm.privacyPolicy}</a>
                 {t.confirm.legalMid}
-                <strong>{t.confirm.feeBold}</strong> {t.confirm.legalEnd}
+                <strong>
+                  {resolveTokens(t.confirm.feeBold, {}, currency, locale || 'en')}
+                </strong>{' '}
+                {t.confirm.legalEnd}
               </p>
             </div>
           </div>
@@ -3908,7 +3911,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
             <MentionMeRefereeLink label={t.referral.beenReferred} situation="checkout" />
 
             <div className="nb1-sum-zero">{t.summary.dueToday.replace('{zeroPrice}', zero)}</div>
-            <p className="nb1-sum-note">{t.summary.note}</p>
+            <p className="nb1-sum-note">
+              {resolveTokens(t.summary.note, {}, currency, locale || 'en')}
+            </p>
           </div>
           <div className="nb1-sum-secure">
             <svg

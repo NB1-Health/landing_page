@@ -255,7 +255,7 @@ export const de = {
       privacyPolicy: 'Datenschutzerklärung',
       legalMid:
         ' zu und willigst ein, dass NB1 deine biologische Probe und Gesundheitsdaten verarbeitet, um deine persönliche Supplement-Formel zu erstellen. Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, und erst wenn deine Formel in die Herstellung geht. Eine einmalige Gebühr von ',
-      feeBold: '€49',
+      feeBold: '{{fee:kit}}',
       legalEnd:
         'fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird. NB1 ist für Erwachsene ab 18.',
       accountExists: 'Für diese E-Mail-Adresse existiert bereits ein Konto. Bitte melde dich an.',
@@ -282,7 +282,7 @@ export const de = {
       monthly: 'Monatlich',
       editLink: 'Plan oder Laufzeit ändern',
       dueToday: '{zeroPrice} heute fällig',
-      note: 'Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, erst wenn deine persönliche Supplement Formel in die Herstellung geht. Niemals vorher. Eine einmalige Gebühr von €49 fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird.',
+      note: 'Deine erste Abbuchung erfolgt etwa zwei Wochen nach Rücksendung deiner Probe, erst wenn deine persönliche Supplement Formel in die Herstellung geht. Niemals vorher. Eine einmalige Gebühr von {{fee:kit}} fällt nur an, wenn deine Probe nicht innerhalb von 4 Wochen zurückgeschickt wird.',
     },
     done: {
       heading: 'Du bist dabei',
