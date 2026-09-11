@@ -56,7 +56,7 @@ import { appLocales, type AppLocale } from '@/i18n/config'
  *
  * `grep -rn "isJournalLocale\\|isJournalEnabled" src` lists every one of them.
  */
-const JOURNAL_ENABLED = true
+const JOURNAL_ENABLED = false
 
 /**
  * The markets the Journal is live in. Add a prefix to switch a market on.
