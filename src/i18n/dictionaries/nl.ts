@@ -248,14 +248,14 @@ export const nl = {
       klarna: 'Doorgaan met Klarna →',
       processing: 'Verwerken…',
       legalPrefix: 'Door te bevestigen ga je akkoord met onze',
-      terms: 'Algemene voorwaarden',
+      terms: 'Voorwaarden',
       and: 'en ons',
       privacyPolicy: 'Privacybeleid',
       legalMid:
-        ', en stem je ermee in dat NB1 je biologische monster en gezondheidsgegevens verwerkt om je formule samen te stellen. Je eerste betaling vindt pas plaats op het moment dat je formule in productie gaat, ongeveer twee weken nadat je je monster hebt teruggestuurd. Je betaalt eenmalig een bedrag van ',
-      feeBold: '€49',
+        ', en stem je ermee in dat NB1 jouw biologische test en gezondheidsgegevens verwerkt om je formule samen te stellen. De eerste afschrijving vindt pas plaats (ongeveer twee weken nadat je jouw sample hebt teruggestuurd) wanneer je formule daadwerkelijk in productie gaat. Een eenmalige vergoeding van ',
+      feeBold: '{{fee:kit}}',
       legalEnd:
-        ' wanneer je het monster niet binnen 4 weken terugstuurt. NB1 is voor volwassenen vanaf 18 jaar.',
+        'wordt alleen in rekening gebracht als de sample niet binnen 4 weken wordt teruggestuurd. NB1 is voor volwassenen (18+).',
       accountExists: 'Er bestaat al een account met dit e-mailadres. Meld je aan.',
       accountError: 'Je account kon niet worden aangemaakt. Probeer het opnieuw.',
       checkDetails: 'Controleer je gegevens en probeer het opnieuw.',
@@ -280,7 +280,7 @@ export const nl = {
       firstCycle: 'Eerste cyclus',
       editLink: 'Abonnement of looptijd wijzigen',
       dueToday: '{zeroPrice} vandaag te betalen',
-      note: 'De eerste afschrijving vindt pas plaats (ongeveer twee weken nadat je jouw sample hebt teruggestuurd) wanneer je formule daadwerkelijk in productie gaat. Nooit eerder. Een eenmalige vergoeding van € 49,- wordt alleen in rekening gebracht als de sample niet binnen 4 weken wordt teruggestuurd.',
+      note: 'De eerste afschrijving vindt pas plaats (ongeveer twee weken nadat je jouw sample hebt teruggestuurd) wanneer je formule daadwerkelijk in productie gaat. Nooit eerder. Een eenmalige vergoeding van {{fee:kit}} wordt alleen in rekening gebracht als de sample niet binnen 4 weken wordt teruggestuurd.',
     },
     done: {
       heading: 'Je bent erbij.',

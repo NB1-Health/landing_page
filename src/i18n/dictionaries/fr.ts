@@ -247,15 +247,15 @@ export const fr = {
       paypal: 'Continuer avec PayPal →',
       klarna: 'Continuer avec Klarna →',
       processing: 'Traitement en cours…',
-      legalPrefix: 'En confirmant, tu acceptes nos',
+      legalPrefix: 'En confirmant, vous acceptez nos',
       terms: 'Conditions',
       and: 'et notre',
       privacyPolicy: 'Politique de confidentialité',
       legalMid:
-        ", et tu consens à ce que NB1 traite ton échantillon biologique et tes données de santé pour créer ta formule. Ton premier prélèvement intervient environ deux semaines après le renvoi de ton échantillon, uniquement à l'entrée en fabrication. Des frais uniques de ",
-      feeBold: '49 €',
+        ', et vous consentez à ce que NB1 traite votre échantillon biologique et vos données de santé pour élaborer votre formule. Votre premier prélèvement intervient environ deux semaines après le renvoi de votre échantillon, uniquement à l’entrée en fabrication. Des frais uniques de ',
+      feeBold: '{{fee:kit}}',
       legalEnd:
-        " s'appliquent seulement si ton échantillon n'est pas renvoyé sous 4 semaines. NB1 est réservé aux adultes de 18 ans et plus.",
+        's’appliquent seulement si votre échantillon n’est pas renvoyé sous 4 semaines. NB1 est réservé aux adultes de 18 ans et plus.',
       accountExists: 'Un compte avec cet email existe déjà. Veuillez vous connecter.',
       accountError: 'Impossible de créer votre compte. Veuillez réessayer.',
       checkDetails: 'Veuillez vérifier vos informations et réessayer.',
@@ -280,7 +280,7 @@ export const fr = {
       firstCycle: 'Premier cycle',
       editLink: 'Modifier la formule ou la durée',
       dueToday: "{zeroPrice} dû aujourd'hui",
-      note: "Ton premier prélèvement intervient environ deux semaines après le renvoi de ton échantillon, uniquement à l'entrée en fabrication. Jamais avant. Des frais uniques de 49 € s'appliquent seulement si l'échantillon n'est pas renvoyé sous 4 semaines.",
+      note: "Ton premier prélèvement intervient environ deux semaines après le renvoi de ton échantillon, uniquement à l'entrée en fabrication. Jamais avant. Des frais uniques de {{fee:kit}} s'appliquent seulement si l'échantillon n'est pas renvoyé sous 4 semaines.",
     },
     done: {
       heading: "C'est parti !",

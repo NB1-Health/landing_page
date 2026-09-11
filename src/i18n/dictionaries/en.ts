@@ -258,9 +258,9 @@ export const en = {
       and: 'and',
       privacyPolicy: 'Privacy Policy',
       legalMid:
-        ', and consent to NB1 processing your biological sample. Your first charge is around two weeks after you return your sample, only once your formula enters manufacture. A one-time ',
-      feeBold: '€49 fee',
-      legalEnd: "applies only if your sample isn't returned within 4 weeks.",
+        ', and consent to NB1 processing your biological sample and health data to build your formula. Your first charge is around two weeks after you send back your sample, only once your formula enters manufacture. A one-time ',
+      feeBold: '{{fee:kit}} fee',
+      legalEnd: 'applies only if your sample isn’t returned within 4 weeks. NB1 is for adults 18+.',
       accountExists: 'An account with this email already exists. Please sign in instead.',
       accountError: 'Could not create your account. Please try again.',
       checkDetails: 'Please check your details and try again.',
@@ -284,7 +284,7 @@ export const en = {
       monthly: 'Monthly',
       editLink: 'Edit plan or duration',
       dueToday: '{zeroPrice} due today',
-      note: 'Your first charge is around two weeks after you return your sample, only once your formula enters manufacture.',
+      note: 'By confirming you agree to our Terms and Privacy Policy, and consent to NB1 processing your biological sample and health data to build your formula. Your first charge is around two weeks after you send back your sample, only once your formula enters manufacture. A one-time {{fee:kit}} fee applies only if your sample isn’t returned within 4 weeks. NB1 is for adults 18+.',
     },
     done: {
       heading: "You're in",
