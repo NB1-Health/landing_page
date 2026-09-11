@@ -400,7 +400,11 @@ export const PlanSelectorClient: React.FC<Props> = ({
           justify-content: center;
           gap: 12px;
           margin: 0 auto;
-          min-width: 330px;
+          /* The 330px floor is a desktop look; below it the toggle would be
+             forced wider than the container, and an over-wide block resolves
+             its auto margins to 0 and overflows right instead of centering. */
+          min-width: min(330px, 100%);
+          max-width: 100%;
           background: linear-gradient(180deg, rgba(10,143,176,0.10) 0%, rgba(10,143,176,0.035) 100%);
           border: 1.5px solid rgba(10, 143, 176, 0.2);
           border-radius: 14px;
@@ -525,6 +529,8 @@ export const PlanSelectorClient: React.FC<Props> = ({
           .nb1-ps-gdiv { display: none; }
         }
         @media (max-width: 560px) {
+          /* Narrower gutters so the label keeps one line for longer. */
+          .nb1-cmp-toggle { padding: 15px 18px; gap: 8px; font-size: 14.5px; }
           .nb1-ps-guarantee { gap: 12px 16px; padding: 14px 16px; justify-content: flex-start; }
           .nb1-ps-card { padding: 26px 22px; }
           .nb1-comp th, .nb1-comp td { padding: 11px 8px; font-size: 12.5px; }

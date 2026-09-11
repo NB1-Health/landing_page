@@ -2786,6 +2786,31 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           .nb1-det-wrap {
             padding: 24px 16px 60px;
           }
+          /* Collapsed step header: the summary sits on the title's row and
+             squeezes both the title and Edit, so on phones it drops to a line
+             of its own, indented past the step circle (30px circle + 14px gap).
+             Edit is re-ordered ahead of it to stay on the title row. The base
+             gap: 14px shorthand covers both axes, so wrapping would inherit it
+             as a row gap too -- only the column gap is wanted here, and the
+             summary's own margin sets the spacing under the title. */
+          .nb1-acc-hd {
+            flex-wrap: wrap;
+            row-gap: 0;
+            padding: 20px 16px;
+          }
+          .nb1-acc-body {
+            padding: 2px 16px 24px;
+          }
+          .nb1-acc-edit {
+            order: 1;
+          }
+          .nb1-acc-summary {
+            order: 2;
+            flex: 0 0 100%;
+            margin-left: 0;
+            padding-left: 44px;
+            margin-top: 4px;
+          }
           .nb1-frow {
             grid-template-columns: 1fr;
           }
