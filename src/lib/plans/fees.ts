@@ -40,7 +40,7 @@ export const FEES: Record<FeeName, Record<Currency, number>> = {
    * (the ratio the plan prices use: 89→379, 94→399, 99→419), rounded to the
    * house "ends in 9" price point.
    */
-  kit: { EUR: 49, GBP: 49, CHF: 49, AED: 209 },
+  kit: { EUR: 49, GBP: 42, CHF: 47, AED: 210 },
 }
 
 /**
