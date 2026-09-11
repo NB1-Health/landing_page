@@ -6,7 +6,7 @@ import { unstable_cache } from 'next/cache'
 import { hubDocumentSitemapEntries } from '@/utilities/hubDocumentSitemap'
 import { isAppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 
 /**
  * Published scientific articles: `/en/research/{slug}`.
@@ -23,9 +23,12 @@ import { isJournalEnabled } from '@/utilities/journalEnabled'
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params
-  if (!isJournalEnabled()) return new Response('Not found', { status: 404 })
   if (!isAppLocale(localeParam)) return new Response('Not found', { status: 404 })
   const locale = localeParam
+  // Not a live Journal market (JOURNAL_LOCALES). Every URL in this file sits under
+  // the Journal, so in a market that is not switched on the whole file would list
+  // pages that 404.
+  if (!isJournalLocale(locale)) return new Response('Not found', { status: 404 })
 
   const entries = await unstable_cache(
     async () =>

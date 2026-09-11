@@ -40,14 +40,17 @@ import { getAuthenticatedDraft, type AuthenticatedDraft } from '@/utilities/auth
 import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
 
 import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
 
   return (
     await Promise.all(
-      appLocales.map(async (locale) => {
+      // Only the live markets get prerendered. A market that is not switched on
+      // has no article URLs, so building them would spend build time on paths
+      // whose own route 404s.
+      journalLocales.map(async (locale) => {
         const posts = await payload.find({
           collection: 'posts',
           draft: false,
@@ -75,15 +78,16 @@ type Args = {
 }
 
 export default async function PostPage({ params: paramsPromise }: Args) {
-  // The Journal is switched off on this deployment (JOURNAL_ENABLED). The route
-  // stays in the build and the content stays in the database; it simply has no
-  // public address.
-  if (!isJournalEnabled()) notFound()
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)
   const { slug = '', locale: localeParam } = await paramsPromise
 
   const locale: AppLocale = isAppLocale(localeParam) ? localeParam : 'en'
+  // Not a market the Journal is live in — see JOURNAL_LOCALES. The route stays in
+  // the build and the content stays in the database; it simply has no public
+  // address here. A 404 rather than an empty index: seven empty indexes would be
+  // seven thin near-duplicate pages, each claiming to translate the others.
+  if (!isJournalLocale(locale)) notFound()
   const decodedSlug = decodeURIComponent(slug)
   const url = `/${locale}/journal/${decodedSlug}`
 
@@ -272,11 +276,15 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
     id: post.id,
     payload,
   })
+  // Published AND in a live market. `resolvePublishedLocaleSlugs` answers the
+  // first question only, so an article translated ahead of its market's launch
+  // would otherwise advertise an alternate whose route 404s.
   const pathsByLocale = Object.fromEntries(
-    Object.entries(publishedSlugs).map(([availableLocale, availableSlug]) => [
-      availableLocale,
-      `journal/${availableSlug}`,
-    ]),
+    Object.entries(publishedSlugs)
+      .filter(([availableLocale]) =>
+        journalLocales.includes(availableLocale as (typeof journalLocales)[number]),
+      )
+      .map(([availableLocale, availableSlug]) => [availableLocale, `journal/${availableSlug}`]),
   )
   const hreflangOverrides = readHreflangOverrides(post.meta?.seoOverrides)
   const currentLocaleExcluded =

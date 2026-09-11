@@ -15,7 +15,7 @@ import { HubStrip } from '@/components/HubStrip'
 import { JournalGrid } from '@/components/JournalGrid'
 import { Pagination } from '@/components/Pagination'
 import { getCachedHubLinks } from '@/utilities/hubQueries'
-import { appLocales, isAppLocale, type AppLocale } from '@/i18n/config'
+import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getDictionary } from '@/i18n/getDictionary'
 import { getJournalCopy } from '@/utilities/journalCopy'
 import { buildHreflangAlternates } from '@/utilities/hreflang'
@@ -28,7 +28,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 import PageClient from './page.client'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 
 export const dynamic = 'force-static'
 // Backstop only. `revalidatePost` invalidates this path on publish, so a new
@@ -36,12 +36,13 @@ export const dynamic = 'force-static'
 export const revalidate = 600
 
 export default async function Page({ params }: { params?: Promise<{ locale?: string }> }) {
-  // The Journal is switched off on this deployment (JOURNAL_ENABLED). The route
-  // stays in the build and the content stays in the database; it simply has no
-  // public address.
-  if (!isJournalEnabled()) notFound()
   const localeParam = (await params)?.locale ?? 'en'
   const locale: AppLocale = isAppLocale(localeParam) ? localeParam : 'en'
+  // Not a market the Journal is live in — see JOURNAL_LOCALES. The route stays in
+  // the build and the content stays in the database; it simply has no public
+  // address here. A 404 rather than an empty index: seven empty indexes would be
+  // seven thin near-duplicate pages, each claiming to translate the others.
+  if (!isJournalLocale(locale)) notFound()
   const payload = await getPayload({ config: configPromise })
   const dict = getDictionary(locale)
 
@@ -143,10 +144,13 @@ export async function generateMetadata({
     description,
     alternates: {
       canonical,
+      // The live markets only. Naming all nine would advertise seven URLs that
+      // 404, and §6 is explicit that one bad alternate can invalidate the whole
+      // cluster. Adding a prefix to JOURNAL_LOCALES grows this automatically.
       ...buildHreflangAlternates({
         siteURL,
         pathsByLocale: Object.fromEntries(
-          appLocales.map((availableLocale) => [availableLocale, 'journal']),
+          journalLocales.map((availableLocale) => [availableLocale, 'journal']),
         ),
       }),
     },

@@ -5,7 +5,7 @@ import { unstable_cache } from "next/cache";
 import { getCachedHubLinks } from "@/utilities/hubQueries";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { AppLocale } from "@/i18n/config";
-import { isJournalEnabled } from "@/utilities/journalEnabled";
+import { isJournalLocale } from "@/utilities/journalEnabled";
 
 /**
  * The Journal branch of the Discover menu, generated from the CMS.
@@ -234,7 +234,7 @@ export const getCachedJournalNav = (locale: AppLocale) =>
   // Same failure as the `navLabel` change that shipped and did not appear: see
   // the `-v2` note below. Checking out here means a warm entry is not consulted
   // at all when the Journal is off.
-  !isJournalEnabled()
+  !isJournalLocale(locale)
     ? async () => null
     : unstable_cache(
         async () => fetchJournalNav(locale),

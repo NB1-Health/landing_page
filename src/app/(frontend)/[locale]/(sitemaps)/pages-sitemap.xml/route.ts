@@ -7,7 +7,7 @@ import { getServerSideURL } from '@/utilities/getURL'
 import { readHreflangOverrides } from '@/utilities/hreflang'
 import { parseRobotsDirectives } from '@/utilities/robotsDirectives'
 import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 
 function withLocale(siteURL: string, locale: AppLocale, path: string) {
   const clean = path.startsWith('/') ? path : `/${path}`
@@ -75,9 +75,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
       // that 301s, which a sitemap must never do: a crawler treats the redirect
       // as a soft error and the target never gets credited to this sitemap.
       //
-      // Now it points at the index itself, and disappears entirely when the
-      // Journal is switched off, because then there is no index to point at.
-      const defaultSitemap = isJournalEnabled()
+      // Now it points at the index itself, and disappears in any market that is
+      // not a live Journal market, because there the index 404s.
+      const defaultSitemap = isJournalLocale(locale)
         ? [{ loc: withLocale(SITE_URL, locale, '/journal'), lastmod: dateFallback }]
         : []
 

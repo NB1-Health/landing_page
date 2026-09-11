@@ -1,6 +1,6 @@
 import { isAppLocale } from '@/i18n/config'
 import { getServerSideURL } from '@/utilities/getURL'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 import { SITEMAP_CACHE_HEADERS } from '@/utilities/sitemapCache'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {
@@ -16,7 +16,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ locale:
   // With the Journal switched off every one of its children 404s, so listing
   // them here would point a crawler at six dead URLs. The index keeps only
   // pages-sitemap, which is not Journal content.
-  const journal = isJournalEnabled()
+  // Whether THIS market has a Journal. Its six children all 404 otherwise, and
+  // listing them would point a crawler at six dead files.
+  const journal = isJournalLocale(locale)
 
   const entries = [
     `<sitemap>

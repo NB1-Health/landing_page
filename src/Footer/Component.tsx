@@ -5,7 +5,7 @@ import type { Media } from '@/payload-types'
 import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { getDictionary } from '@/i18n/getDictionary'
 import { getCachedHubLinks } from '@/utilities/hubQueries'
-import { isJournalEnabled } from '@/utilities/journalEnabled'
+import { isJournalLocale } from '@/utilities/journalEnabled'
 import { FooterClient } from './FooterClient'
 
 type Props = {
@@ -61,7 +61,7 @@ export async function Footer({ locale, id }: Props) {
   // an empty array — but this Journal link is fixed rather than derived, so it
   // needs the flag directly. With both gone the column renders empty and the
   // footer drops it.
-  const contentLinks = isJournalEnabled()
+  const contentLinks = isJournalLocale(appLocale)
     ? [
         { label: dict.footer.journal, url: `/${appLocale}/journal` },
         ...hubLinks.map((hub) => ({ label: hub.title, url: hub.path })),
