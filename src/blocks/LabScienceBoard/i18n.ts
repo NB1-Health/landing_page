@@ -9,11 +9,15 @@ export type LabScienceBoardStrings = {
 }
 
 const en: LabScienceBoardStrings = { independentValidator: 'Independent Validator' }
-const de: LabScienceBoardStrings = { independentValidator: 'Unabhängiger wissenschaftlicher Gutachter' }
+const de: LabScienceBoardStrings = {
+  independentValidator: 'Unabhängiger wissenschaftlicher Gutachter',
+}
 const fr: LabScienceBoardStrings = { independentValidator: 'Validateur indépendant' }
 const nl: LabScienceBoardStrings = { independentValidator: 'Onafhankelijke controle' }
 
-const BY_LOCALE: Partial<Record<AppLocale, LabScienceBoardStrings>> = { en, de, fr, nl }
+const it: LabScienceBoardStrings = { independentValidator: 'Validatore indipendente' }
+
+const BY_LOCALE: Partial<Record<AppLocale, LabScienceBoardStrings>> = { en, de, fr, nl, it }
 
 export function getScienceBoardStrings(locale?: AppLocale): LabScienceBoardStrings {
   return (locale && BY_LOCALE[locale]) || en
