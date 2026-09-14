@@ -4,7 +4,7 @@ import type { AppLocale } from '@/i18n/config'
  * Localized copy for LabComparison's hardcoded UI strings — the two mobile tab
  * buttons and the 16S figure caption. The caption's CMS field (`leftCaption`) is
  * not wired yet, so this is the live source for it. Locales without an entry fall
- * back to English. DE, FR and NL are all from the Lab workbook
+ * back to English. DE, FR, NL and IT are all from the Lab workbook
  * (LAB.085 / LAB.086 / LAB.090).
  */
 export type LabComparisonStrings = {
@@ -22,7 +22,8 @@ const en: LabComparisonStrings = {
 const de: LabComparisonStrings = {
   tab16s: 'Die meisten Darm-Tests',
   tabUs: 'Unser Testverfahren',
-  caption: 'Jede Mikrobe ist ein kleiner, grauer Datenpunkt. Du weißt aktuell also nur, dass sie "da ist".',
+  caption:
+    'Jede Mikrobe ist ein kleiner, grauer Datenpunkt. Du weißt aktuell also nur, dass sie "da ist".',
 }
 
 const fr: LabComparisonStrings = {
@@ -37,7 +38,13 @@ const nl: LabComparisonStrings = {
   caption: 'Elke microbe is niet meer dan een stip. Meer dan dat je ’m hebt, leer je niet.',
 }
 
-const BY_LOCALE: Partial<Record<AppLocale, LabComparisonStrings>> = { en, de, fr, nl }
+const it: LabComparisonStrings = {
+  tab16s: 'La maggior parte dei test',
+  tabUs: 'Il nostro test',
+  caption: "Ogni microbo è solo un puntino. L'unica cosa che scopri è che esiste.",
+}
+
+const BY_LOCALE: Partial<Record<AppLocale, LabComparisonStrings>> = { en, de, fr, nl, it }
 
 export function getComparisonStrings(locale?: AppLocale): LabComparisonStrings {
   return (locale && BY_LOCALE[locale]) || en

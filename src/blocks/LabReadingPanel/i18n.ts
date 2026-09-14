@@ -59,7 +59,13 @@ const en: LRPStrings = {
 }
 
 const de: LRPStrings = {
-  dims: ['Gesundheit', 'Vielfalt', 'Stoffwechsel', 'Balance der funktionellen Gruppen', 'Sicherheit'],
+  dims: [
+    'Gesundheit',
+    'Vielfalt',
+    'Stoffwechsel',
+    'Balance der funktionellen Gruppen',
+    'Sicherheit',
+  ],
   teams: [
     { name: 'Ballaststoffe', sub: 'Ballaststoffe abbauen' },
     { name: 'Butyrat', sub: 'Butyrat bilden' },
@@ -69,10 +75,22 @@ const de: LRPStrings = {
     { name: 'Protein', sub: 'Fermentieren Proteine' },
   ],
   ratios: [
-    { name: 'Bevorzugte Energiequelle', bad: 'vorwiegend proteinbasiert', good: 'vorwiegend kohlehydratbasiert' },
+    {
+      name: 'Bevorzugte Energiequelle',
+      bad: 'vorwiegend proteinbasiert',
+      good: 'vorwiegend kohlehydratbasiert',
+    },
     { name: 'Fermentationseffizienz', bad: 'Verlangsamt', good: 'Optimal' },
-    { name: 'Abhängigkeit zur Darmschleimhaut', bad: 'Nutzt die Darmschleimhaut als Energiequelle', good: 'Wird über Ernährung ausreichend versorgt' },
-    { name: 'Belastende Nebenprodukte', bad: 'Fäulnisbetont', good: 'Überwiegend von SCFA geprägt' },
+    {
+      name: 'Abhängigkeit zur Darmschleimhaut',
+      bad: 'Nutzt die Darmschleimhaut als Energiequelle',
+      good: 'Wird über Ernährung ausreichend versorgt',
+    },
+    {
+      name: 'Belastende Nebenprodukte',
+      bad: 'Fäulnisbetont',
+      good: 'Überwiegend von SCFA geprägt',
+    },
   ],
   status: { Low: 'Niedrig', High: 'Hoch', 'In range': 'Im Zielbereich' },
   zone: { 'In range': 'Im Zielbereich', Watch: 'Beobachten', 'Needs work': 'Optimierungsbedarf' },
@@ -83,7 +101,8 @@ const de: LRPStrings = {
     hold: 'Hier liegt der Fokus auf dem Erhalt der Werte – statt das Gleichgewicht zu stören.',
     stress:
       'Der Score sieht gut aus. An dieser Stelle geht es darum, <b>einen gezielten Komplex an Bakterienstämmen</b> hinzuzufügen – nicht um einen Wiederaufbau des kompletten Ökosystems.',
-    lowest: 'Die niedrigste Säule: <b>{p}.</b> Die Formel ist darauf ausgerichtet, diesen Wert zu bewegen.',
+    lowest:
+      'Die niedrigste Säule: <b>{p}.</b> Die Formel ist darauf ausgerichtet, diesen Wert zu bewegen.',
     lowerPillar: false,
   },
 }
@@ -104,7 +123,11 @@ const fr: LRPStrings = {
   ratios: [
     { name: 'Carburant principal', bad: 'Plutôt protéines', good: 'Plutôt glucides' },
     { name: 'Efficacité de fermentation', bad: 'Au point mort', good: 'Efficace' },
-    { name: 'Dépendance à la muqueuse intestinale', bad: 'Se nourrit de la muqueuse', good: 'Nourrie par votre alimentation' },
+    {
+      name: 'Dépendance à la muqueuse intestinale',
+      bad: 'Se nourrit de la muqueuse',
+      good: 'Nourrie par votre alimentation',
+    },
     { name: 'Sous-produits irritants', bad: 'Putréfactif', good: 'Dominé par les AGCC' },
   ],
   // `Low`, `Watch` and `borderline` have no translation yet — English until one is added.
@@ -156,7 +179,50 @@ const nl: LRPStrings = {
   },
 }
 
-const BY_LOCALE: Partial<Record<AppLocale, LRPStrings>> = { en, de, fr, nl }
+// Italian comes from the Lab translations workbook (LAB.295-327 and LAB.013).
+// `status`, `zone`, `borderline` and `focusLabel` have no Italian in the
+// workbook — its IT column stops at LAB.383 — so those follow the DE/FR/NL
+// wording and want a native review pass.
+const it: LRPStrings = {
+  dims: ['Salute', 'Diversità', 'Metabolico', 'Equilibrio del microbiota', 'Sicurezza'],
+  teams: [
+    { name: 'Fibre', sub: 'scompongono le fibre' },
+    { name: 'Butirrato', sub: 'producono butirrato' },
+    { name: 'Cross-feeder', sub: 'trasferiscono nutrienti' },
+    { name: 'Bifido', sub: 'nutrono la base di acetato' },
+    { name: 'Muco', sub: 'rinnovano lo strato di muco' },
+    { name: 'Proteine', sub: 'fermentano le proteine' },
+  ],
+  ratios: [
+    {
+      name: 'Fonte di energia principale',
+      bad: 'A prevalenza proteica',
+      good: 'A prevalenza di carboidrati',
+    },
+    { name: 'Efficienza di fermentazione', bad: 'Rallentata', good: 'Efficiente' },
+    {
+      name: 'Dipendenza dalla mucosa intestinale',
+      bad: 'Si nutrono della mucosa',
+      good: 'Nutriti dalla dieta',
+    },
+    { name: 'Sottoprodotti aggressivi', bad: 'Putrefattivi', good: 'A prevalenza di SCFA' },
+  ],
+  status: { Low: 'Basso', High: 'Alto', 'In range': 'Nel range' },
+  zone: { 'In range': 'Nel range', Watch: 'Da monitorare', 'Needs work': 'Da migliorare' },
+  borderline: 'Al limite',
+  focusLabel: 'Dove si concentrerà la formula',
+  sealsHead: 'Supportato dalla scienza',
+  note: {
+    hold: 'Il nostro compito qui è <b>preservare questo equilibrio</b>, non perturbarlo.',
+    stress:
+      "Il punteggio è ottimo. L'intervento consiste nell'inserire <b>un set mirato di ceppi</b>, e non in una completa ricostruzione dell'ecosistema.",
+    lowest:
+      'Il pilastro più debole: <b>{p}.</b> È esattamente ciò che la formula andrà a modificare.',
+    lowerPillar: false,
+  },
+}
+
+const BY_LOCALE: Partial<Record<AppLocale, LRPStrings>> = { en, de, fr, nl, it }
 
 /**
  * Resolve via the locale's configured fallback before dropping to English, so the

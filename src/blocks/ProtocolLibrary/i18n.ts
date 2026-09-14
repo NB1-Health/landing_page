@@ -13,7 +13,9 @@ const de: ProtocolLibraryStrings = { componentsOnFile: 'Inhaltsstoffe verfügbar
 const fr: ProtocolLibraryStrings = { componentsOnFile: 'composants disponibles' }
 const nl: ProtocolLibraryStrings = { componentsOnFile: 'componentenbibliotheek' }
 
-const BY_LOCALE: Partial<Record<AppLocale, ProtocolLibraryStrings>> = { en, de, fr, nl }
+const it: ProtocolLibraryStrings = { componentsOnFile: 'componenti disponibili' }
+
+const BY_LOCALE: Partial<Record<AppLocale, ProtocolLibraryStrings>> = { en, de, fr, nl, it }
 
 export function getLibraryStrings(locale?: AppLocale): ProtocolLibraryStrings {
   return (locale && BY_LOCALE[locale]) || en

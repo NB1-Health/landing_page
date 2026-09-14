@@ -63,7 +63,17 @@ const nl: LabFormulaStrings = {
   sourceQuest: 'Op basis van jouw vragenlijst',
 }
 
-const BY_LOCALE: Partial<Record<AppLocale, LabFormulaStrings>> = { en, de, fr, nl }
+const it: LabFormulaStrings = {
+  sceneWashesThrough: 'Da soli, transitano e vengono espulsi',
+  sceneStaysWorks: 'Nutriti con la fibra giusta, restano e fanno il loro lavoro',
+  doseTooLittle: 'Troppo poco',
+  doseRightForYou: 'Perfetto per te',
+  doseTooMuch: 'Troppo',
+  sourceSample: 'Dal tuo campione',
+  sourceQuest: 'Dal tuo questionario',
+}
+
+const BY_LOCALE: Partial<Record<AppLocale, LabFormulaStrings>> = { en, de, fr, nl, it }
 
 /** Resolves via the locale's configured parent language (ch → de, be → nl) before English. */
 export function getFormulaStrings(locale?: AppLocale): LabFormulaStrings {

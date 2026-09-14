@@ -15,8 +15,9 @@ const en: BiologyReadingToFormulaStrings = { componentSingular: 'component', com
 const de: BiologyReadingToFormulaStrings = { componentSingular: 'Bestandteil', componentPlural: 'Bestandteile' }
 const fr: BiologyReadingToFormulaStrings = { componentSingular: 'composant', componentPlural: 'composants' }
 const nl: BiologyReadingToFormulaStrings = { componentSingular: 'component', componentPlural: 'componenten' }
+const it: BiologyReadingToFormulaStrings = { componentSingular: 'componente', componentPlural: 'componenti' }
 
-const BY_LOCALE: Partial<Record<AppLocale, BiologyReadingToFormulaStrings>> = { en, de, fr, nl }
+const BY_LOCALE: Partial<Record<AppLocale, BiologyReadingToFormulaStrings>> = { en, de, fr, nl, it }
 
 export function getReadingToFormulaStrings(locale?: AppLocale): BiologyReadingToFormulaStrings {
   return (locale && BY_LOCALE[locale]) || en
