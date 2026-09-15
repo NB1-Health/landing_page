@@ -592,6 +592,33 @@ export const BiologyHeroComponent: React.FC<BiologyHeroBlockType> = ({
             margin-top: 2px;
           }
         }
+        /* The two scale tags sit absolutely over the canvas and were sized for the
+           English copy. Longer translations — FR "8,3 MILLIONS DE GÈNES / VOTRE
+           MICROBIOME INTESTINAL", with DE and IT longer still — made the nowrap
+           microbiome tag spill past the card's left edge on narrow screens: it is
+           anchored at left:27% and centred on itself, inside a wrapper that already
+           sits 20px proud of the card. (The short English copy overflowed too, but
+           only below ~320px.) Below 560px let both tags wrap and cap them to the
+           card's inner width, and centre the microbiome tag so no locale can reach
+           either edge. It is centred with auto margins rather than left:50% because
+           a box offset from the left can only shrink-to-fit the space remaining to
+           its right, which wraps even the English copy; spanning the wrapper gives
+           it the full width, so only genuinely long copy wraps. The cloud behind is
+           drawn from the canvas centre and is full-bleed, so no art is tied to 27%. */
+        @media (max-width: 560px) {
+          .bio-gtag,
+          .bio-mtag {
+            white-space: normal;
+            max-width: calc(100% - 56px);
+          }
+          .bio-mtag {
+            left: 0;
+            right: 0;
+            margin-inline: auto;
+            width: max-content;
+            transform: translateY(-50%);
+          }
+        }
       `}</style>
 
       <div className="bio-hero-grid">
