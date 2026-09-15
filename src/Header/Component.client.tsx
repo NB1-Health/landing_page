@@ -807,6 +807,24 @@ export const HeaderClient: React.FC<HeaderClientProps> = ({
     .nb1-disc:focus-within .nb1-disc-menu{
       opacity:1; visibility:visible; transform:translateY(0); pointer-events:auto; }
 
+    /* Bridge the 18px gap between the button and the panel it opens. .nb1-disc is
+       only as tall as the button, so that strip belonged to no hoverable element:
+       the pointer crossed it on the way down, :hover dropped, and the menu went
+       visibility:hidden / pointer-events:none before the pointer ever landed on
+       it — which is why the menu only stayed put when clicked. The bridge is part
+       of the menu's own subtree, so it is live exactly while the menu is open and
+       keeps .nb1-disc:hover true across the gap. Same for the submenu's 14px
+       horizontal gap. */
+    .nb1-disc-menu::before{ content:''; position:absolute; left:0; right:0; top:-18px; height:18px; }
+    .nb1-disc-sub:hover::after,
+    .nb1-disc-sub:focus-within::after,
+    .nb1-disc-sub[data-open='true']::after{
+      content:''; position:absolute; top:0; bottom:0; left:100%; width:14px; }
+
+    /* Hover now opens the menu for real, so the chevron has to agree with it —
+       otherwise it points down at an open panel. */
+    .nb1-disc:hover .nb1-disc-btn .chev{ transform:rotate(180deg); }
+
     /* Below the desktop breakpoint the whole flyout is replaced by the mobile
        sheet, which renders the same links as a flat list. Three hover panels on a
        360px screen is not a design, it is a trap. */

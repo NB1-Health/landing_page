@@ -29,6 +29,7 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 
 import PageClient from './page.client'
 import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
+import { journalIndexLocalizedDocument } from '@/Header/localizedDocument'
 
 export const dynamic = 'force-static'
 // Backstop only. `revalidatePost` invalidates this path on publish, so a new
@@ -75,7 +76,13 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
 
   return (
     <>
-      {!copy.header.hide && <Header id={copy.header.id} locale={locale} />}
+      {!copy.header.hide && (
+        <Header
+          id={copy.header.id}
+          locale={locale}
+          localizedDocument={journalIndexLocalizedDocument()}
+        />
+      )}
       <div className="jr-page">
         <PageClient />
         <JsonLd data={jsonLd} />
