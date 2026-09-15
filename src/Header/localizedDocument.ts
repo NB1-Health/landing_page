@@ -1,5 +1,6 @@
 import type { AppLocale } from '@/i18n/config'
 import type { PublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
+import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 
 /**
  * `'absolute'` carries a ready-made path per locale rather than a slug.
@@ -60,4 +61,38 @@ export function hubLocalizedDocument(
     }
   }
   return { route: 'absolute', slugs }
+}
+
+/**
+ * The Journal index in every live market, for the switcher on `/journal` and its
+ * paginated pages.
+ *
+ * Without a `localizedDocument` the switcher falls back to swapping the locale
+ * segment of the current path, which happily produces `/it/journal` — a route
+ * that `isJournalLocale` 404s. Naming the live markets explicitly is what makes
+ * the switcher grey the others out instead.
+ *
+ * Every market points at page 1 rather than the page number being viewed: the
+ * markets hold different numbers of articles, so `/de/journal/page/5` may not
+ * exist even though `/en/journal/page/5` does.
+ */
+export function journalIndexLocalizedDocument(): LocalizedDocument {
+  const slugs: PublishedLocaleSlugs = {}
+  for (const locale of journalLocales) slugs[locale] = `/${locale}/journal`
+  return { route: 'absolute', slugs }
+}
+
+/**
+ * Drop the markets the Journal is not live in from a published-slug map.
+ *
+ * An article translated ahead of its market's launch is published in that locale
+ * but has no route there yet, so the switcher must not offer it. The hreflang
+ * cluster in each Journal route already filters the same way.
+ */
+export function journalSwitcherSlugs(slugs: PublishedLocaleSlugs): PublishedLocaleSlugs {
+  const out: PublishedLocaleSlugs = {}
+  for (const [locale, slug] of Object.entries(slugs)) {
+    if (isJournalLocale(locale as AppLocale)) out[locale as AppLocale] = slug
+  }
+  return out
 }

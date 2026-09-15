@@ -41,6 +41,7 @@ import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailabi
 
 import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
+import { journalSwitcherSlugs } from '@/Header/localizedDocument'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -152,7 +153,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
         <Header
           id={headerId}
           locale={locale}
-          localizedDocument={{ route: 'post', slugs: publishedSlugs }}
+          localizedDocument={{ route: 'post', slugs: journalSwitcherSlugs(publishedSlugs) }}
         />
       )}
       <div className="jr-page">

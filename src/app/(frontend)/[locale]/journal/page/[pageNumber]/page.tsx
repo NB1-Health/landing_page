@@ -21,6 +21,7 @@ import { buildJournalTrail } from '@/utilities/journalTrail'
 
 import PageClient from './page.client'
 import { isJournalLocale } from '@/utilities/journalEnabled'
+import { journalIndexLocalizedDocument } from '@/Header/localizedDocument'
 
 export const revalidate = 600
 
@@ -59,7 +60,13 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   return (
     <>
-      {!copy.header.hide && <Header id={copy.header.id} locale={localeParam} />}
+      {!copy.header.hide && (
+        <Header
+          id={copy.header.id}
+          locale={localeParam}
+          localizedDocument={journalIndexLocalizedDocument()}
+        />
+      )}
       <div className="jr-page">
         <PageClient />
 
