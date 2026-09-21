@@ -1,6 +1,6 @@
 # Help article blocks
 
-Five blocks that together build a help / FAQ article — kit instructions,
+Six blocks that together build a help / FAQ article — kit instructions,
 "how do I…" pages, anything that needs steps, callouts and an inline FAQ.
 They are the block port of the `NB1_How to _stool_kit` mockup, which is
 itself a sibling of the Library Article template: same type system, same
@@ -14,9 +14,16 @@ Add them in this order, in the page's Content tab:
 | - | --------------------------- | -------------------------------------------------------------- |
 | 1 | **Help: Article Header**    | eyebrow, h1, one-sentence dek, optional "also read", hero photo |
 | 2 | **Help: On-page Nav**       | the sticky "On this page" contents rail                        |
-| 3 | **Help: Steps**             | the numbered body                                              |
-| 4 | **Help: Common Questions**  | the accordion                                                  |
-| 5 | **Help: CTA Banner**        | the navy support banner                                        |
+| 3 | **Help: Callout**           | optional — a boxed aside before the steps ("Before you start")  |
+| 4 | **Help: Steps**             | the numbered body                                              |
+| 5 | **Help: Callout**           | optional — a boxed panel after them ("What to never do")        |
+| 6 | **Help: Common Questions**  | the accordion                                                  |
+| 7 | **Help: CTA Banner**        | the navy support banner                                        |
+
+Only the Callout is optional, and it is the only one that can appear twice. Its
+**"Show in the contents rail"** checkbox is what separates its two jobs: on for
+a panel the reader should be able to jump to (its heading becomes an `h2` with
+`data-help-heading`), off for an aside that only makes sense where it sits.
 
 The site header and footer come from the page's own Header / Footer
 relationships as usual — the mockup's breadcrumb + language switcher strip is
@@ -28,6 +35,11 @@ deliberately **not** part of this kit.
 array, so reordering steps in the CMS renumbers them. Never type a number into
 a step title.
 
+**A step's parts render in a fixed order**, whatever order the fields sit in
+inside a step: flow strip → photo (if placed above) → body → code chips → photo
+(if placed below) → callouts → example guide → sub-note. A step that needs a
+different order is a design request, not a new select.
+
 **The nav rail and the body column are aligned by arithmetic.** Each block is
 its own DOM subtree (see `RenderBlocks`), so the rail cannot be a
 `position: sticky` sidebar inside the article grid — it is `position: fixed`
@@ -35,9 +47,11 @@ and lines itself up with the body column using the constants in
 `_shared/layout.ts`. Two consequences:
 
 - Keep **"Leave room for the contents rail"** set the same way on the Steps
-  block and the Common Questions block, or their two columns will not line up.
+  block, the Common Questions block and any Callout, or their body columns will
+  not line up.
 - If you change a number in `_shared/layout.ts`, change the matching literal in
-  `HelpNav`, `HelpSteps` and `HelpFaq` and re-check the alignment in a browser.
+  `HelpNav`, `HelpSteps`, `HelpFaq` and `HelpCallout` and re-check the alignment
+  in a browser.
   The values are literals in each component's styled-jsx on purpose —
   interpolating them would compile a per-instance stylesheet.
 
@@ -61,7 +75,7 @@ Carried over from the mockup's own instructions, worth keeping:
 - If a page needs a real design treatment, that's a design request, not a
   change to these blocks.
 
-## Seeding the example article
+## Seeding the example articles
 
 `npm run seed:help-stool-kit` creates (or updates) the English
 "How to use your stool testing kit" page from the original mockup —
@@ -69,8 +83,18 @@ Carried over from the mockup's own instructions, worth keeping:
 `scripts/seed-assets/`. It is idempotent (media matched by filename, page by
 slug) and saves the page as a **draft**.
 
-It doubles as the worked example of the content model: look there for how a
-step body, a code chip, a callout and an FAQ answer are actually shaped.
+`npm run seed:help-blood-kit` does the same for
+"How to use your blood testing kit" (`scripts/seed-help-blood-kit.ts`), from the
+blood-kit mockup. Between them they cover the whole content model: the stool
+article is the plain case (labelled contents photo, three steps, one code chip),
+the blood one exercises everything added for it — the flow strip, two code chips
+in one step, photo width and position, the example guide, the sub-note, a parts
+list in the lead paragraph, and both uses of the Callout block. Its nineteen
+illustrations were extracted from the mockup; the five drop-quality diagrams
+were rendered from its inline SVG.
+
+Look in either script for how a step body, a code chip, a callout and an FAQ
+answer are actually shaped.
 
 One gotcha it documents: a `linkType: 'custom'` URL inside rich text is
 rendered verbatim, so it has to carry its own `/en` prefix. Plain URL fields
@@ -79,13 +103,24 @@ store them unprefixed.
 
 ## Schema
 
-Tables: `hnv`, `hhr`, `hst` (+ `hst_st` steps, `hst_st_nt` callouts), `hfq`
-(+ `hfq_qs` questions), `hct`, each with `_locales` and `_v` variants. Created
-by `src/migrations/20260904_120000_help_article_blocks.ts`.
+Tables: `hnv`, `hhr`, `hst` (+ `hst_st` steps, and per step `hst_st_nt`
+callouts, `hst_st_fl` flow frames, `hst_st_cd` code chips, `hst_st_gd` guide
+examples), `hcl`, `hfq` (+ `hfq_qs` questions), `hct`, each with `_locales` and
+`_v` variants. Created by
+`src/migrations/20260904_120000_help_article_blocks.ts` and
+`src/migrations/20260921_120000_help_blood_kit_blocks.ts` (the blood-kit wave:
+`helpCallout`, the three new step arrays, and `mediaPosition` / `mediaWidth` /
+`subnote` on a step).
 
-Every text field is localized, and so are the three image fields —
-`helpHero.image`, `helpSteps.introImage` and `helpSteps.steps[].media`
-(`20260904_140000_help_localize_images.ts`). Those photos carry baked-in
+`steps[].code`, the single code chip, is superseded by `steps[].codes` but still
+rendered, so the stool article did not have to be re-seeded. Leave it empty on
+new steps.
+
+Every text field is localized, and so is every image field — `helpHero.image`,
+`helpSteps.introImage`, `helpSteps.steps[].media`
+(`20260904_140000_help_localize_images.ts`), and the newer
+`helpSteps.steps[].flow[].image` and `helpSteps.steps[].guide[].image`, which
+were localized from the start. Those photos carry baked-in
 labels ("WASH HANDS", "Kit box"), so a locale that hasn't had its own version
 uploaded shows no image rather than an English one. The step photo falls back
 to the grey placeholder box if "Photo placeholder text" is filled in, which

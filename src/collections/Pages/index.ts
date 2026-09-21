@@ -116,6 +116,7 @@ import { HelpNavBlock } from '@/blocks/helpBlocks/HelpNav/config'
 import { HelpHeroBlock } from '@/blocks/helpBlocks/HelpHero/config'
 import { HelpStepsBlock } from '@/blocks/helpBlocks/HelpSteps/config'
 import { HelpFaqBlock } from '@/blocks/helpBlocks/HelpFaq/config'
+import { HelpCalloutBlock } from '@/blocks/helpBlocks/HelpCallout/config'
 import { HelpCtaBlock } from '@/blocks/helpBlocks/HelpCta/config'
 import { seoOverridesField } from '@/fields/seoOverrides'
 
@@ -285,10 +286,13 @@ export const Pages: CollectionConfig<'pages'> = {
                 ReferInfoBlock,
                 ReferFaqBlock,
                 CustomerReviewsBlock,
-                // Help / FAQ article kit — use these five together, in order.
+                // Help / FAQ article kit — use these together, in this order.
+                // Only the Callout is optional, and it can appear twice (an
+                // aside before the steps, a "never do this" panel after them).
                 HelpHeroBlock,
                 HelpNavBlock,
                 HelpStepsBlock,
+                HelpCalloutBlock,
                 HelpFaqBlock,
                 HelpCtaBlock,
               ],

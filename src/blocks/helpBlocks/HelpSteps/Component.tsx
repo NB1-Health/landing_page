@@ -13,20 +13,35 @@ type Note = {
   body?: DefaultTypedEditorState | null
 }
 
+type CodeChip = {
+  label?: string | null
+  value?: string | null
+  linkLabel?: string | null
+  linkUrl?: string | null
+}
+
+/** A frame in the flow strip, or an example in the grey guide panel. */
+type Figurine = {
+  image?: MediaLike
+  label?: string | null
+}
+
 type Step = {
   title?: string | null
   anchor?: string | null
   body?: DefaultTypedEditorState | null
-  code?: {
-    label?: string | null
-    value?: string | null
-    linkLabel?: string | null
-    linkUrl?: string | null
-  } | null
+  flow?: Figurine[] | null
+  codes?: CodeChip[] | null
+  /** Superseded by `codes`; still rendered for articles seeded before it existed. */
+  code?: CodeChip | null
   media?: MediaLike
   mediaCaption?: string | null
+  mediaPosition?: ('above' | 'below') | null
+  mediaWidth?: ('full' | 'medium' | 'small') | null
   mediaPlaceholder?: string | null
   notes?: Note[] | null
+  guide?: Figurine[] | null
+  subnote?: string | null
 }
 
 export type HelpStepsBlockType = {
@@ -40,6 +55,12 @@ export type HelpStepsBlockType = {
   locale?: string | null
 }
 
+/** Inline max-width for a step figure. `full` leaves the column width alone. */
+const FIGURE_WIDTH: Record<string, string | undefined> = {
+  small: '190px',
+  medium: '300px',
+}
+
 /**
  * The numbered body of a help article.
  *
@@ -47,6 +68,10 @@ export type HelpStepsBlockType = {
  * array in the CMS renumbers everything and nothing is ever hand-numbered.
  * Each `h2` carries `data-help-heading` — that attribute is the contract with
  * the `Help: On-page Nav` block, which builds its list from it.
+ *
+ * Parts of a step render in one fixed order (see the block config): flow strip,
+ * photo-if-above, body, code chips, photo-if-below, callouts, example guide,
+ * sub-note.
  */
 export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
   reserveTocSpace,
@@ -96,6 +121,26 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
           color: #12314d;
           font-weight: 500;
           margin: 0 0 8px;
+        }
+        /* The mockup's .faq-plain — a parts list under the lead line. Quieter
+           and tighter than a list inside a step body. */
+        .hs-lead :global(ul),
+        .hs-lead :global(ol) {
+          margin: 0 0 28px;
+          padding-left: 20px;
+        }
+        .hs-lead :global(ul) {
+          list-style: disc;
+        }
+        .hs-lead :global(ol) {
+          list-style: decimal;
+        }
+        .hs-lead :global(li) {
+          font-size: 15px;
+          line-height: 1.6;
+          font-weight: 400;
+          color: rgba(18, 49, 77, 0.7);
+          margin: 0 0 6px;
         }
         .hs-body :global(p) {
           font-size: 16px;
@@ -238,6 +283,72 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
           color: #12314d;
         }
 
+        /* ---- flow strip ---- */
+        .hs-flow {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+          margin: 18px 0;
+        }
+        .hs-flow .fi {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          width: 92px;
+        }
+        .hs-flow .fi img {
+          display: block;
+          width: 92px;
+          height: auto;
+          border-radius: 8px;
+          border: 1px solid rgba(18, 49, 77, 0.1);
+        }
+        .hs-flow .lbl {
+          font-family: ui-monospace, Menlo, monospace;
+          font-size: 9.5px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          text-align: center;
+          line-height: 1.3;
+          color: rgba(18, 49, 77, 0.45);
+        }
+
+        /* ---- example guide ---- */
+        .hs-guide {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 24px;
+          background: #f7fafc;
+          border: 1px solid rgba(18, 49, 77, 0.1);
+          border-radius: 12px;
+          padding: 16px 18px;
+          margin: 18px 0;
+        }
+        .hs-guide .d {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          width: 84px;
+        }
+        .hs-guide .d img {
+          display: block;
+          width: 40px;
+          height: 40px;
+          object-fit: contain;
+        }
+        .hs-guide .lbl {
+          font-family: ui-monospace, Menlo, monospace;
+          font-size: 9px;
+          font-weight: 600;
+          text-transform: uppercase;
+          text-align: center;
+          line-height: 1.3;
+          color: rgba(18, 49, 77, 0.45);
+        }
+
         /* ---- figures ---- */
         .hs-img {
           margin: 20px 0;
@@ -308,6 +419,14 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
           text-underline-offset: 2px;
         }
 
+        /* ---- sub-note ---- */
+        .hs-subnote {
+          font-size: 14px;
+          line-height: 1.55;
+          color: rgba(18, 49, 77, 0.55);
+          margin: 6px 0 0;
+        }
+
         /* ---- closing ---- */
         .hs-done {
           font-family: 'Instrument Sans', 'Inter', sans-serif;
@@ -346,16 +465,56 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
         <div className="hs-steps">
           {steps.map((step, i) => {
             const id = helpAnchor(step.anchor, step.title, i)
-            const codeHref = localizedHref(step.code?.linkUrl, locale)
-            const showCode = Boolean(step.code?.value || (step.code?.linkLabel && codeHref))
+
+            // Legacy single chip first, then the array — an article that has
+            // both (there should be none) reads left to right in that order.
+            const legacyChip =
+              step.code && (step.code.value || step.code.linkLabel) ? [step.code] : []
+            const chips: CodeChip[] = [...legacyChip, ...(step.codes || [])]
+            const codeLink = chips.find((c) => c.linkLabel && localizedHref(c.linkUrl, locale))
+            const codeHref = localizedHref(codeLink?.linkUrl, locale)
+            const showCode = chips.some((c) => c.value) || Boolean(codeLink)
+
             const stepSrc = mediaUrl(step.media)
             const showFigure = Boolean(stepSrc || step.mediaPlaceholder)
+            const figureWidth = FIGURE_WIDTH[step.mediaWidth || 'full']
+            const figureAbove = step.mediaPosition === 'above'
+
+            const flow = (step.flow || []).filter((f) => mediaUrl(f.image) || f.label)
+            const guide = (step.guide || []).filter((g) => mediaUrl(g.image) || g.label)
+
+            const figure = showFigure ? (
+              <figure className="hs-img" style={figureWidth ? { maxWidth: figureWidth } : undefined}>
+                {stepSrc ? (
+                  <img src={stepSrc} alt={mediaAlt(step.media, step.title || '')} />
+                ) : (
+                  <div className="ph">{step.mediaPlaceholder}</div>
+                )}
+                {step.mediaCaption && <figcaption>{step.mediaCaption}</figcaption>}
+              </figure>
+            ) : null
 
             return (
               <React.Fragment key={id || i}>
                 <h2 id={id} data-help-heading="">
                   {step.title}
                 </h2>
+
+                {flow.length > 0 && (
+                  <div className="hs-flow">
+                    {flow.map((frame, f) => {
+                      const src = mediaUrl(frame.image)
+                      return (
+                        <div className="fi" key={`${id}-flow-${f}`}>
+                          {src && <img src={src} alt={mediaAlt(frame.image, frame.label || '')} />}
+                          {frame.label && <div className="lbl">{frame.label}</div>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {figureAbove && figure}
 
                 {step.body && (
                   <div className="hs-body">
@@ -370,31 +529,24 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
 
                 {showCode && (
                   <div className="hs-code">
-                    {step.code?.value && (
-                      <div className="box">
-                        {step.code?.label && <div className="k">{step.code.label}</div>}
-                        <div className="v">{step.code.value}</div>
-                      </div>
+                    {chips.map((chip, c) =>
+                      chip.value ? (
+                        <div className="box" key={`${id}-code-${c}`}>
+                          {chip.label && <div className="k">{chip.label}</div>}
+                          <div className="v">{chip.value}</div>
+                        </div>
+                      ) : null,
                     )}
-                    {step.code?.linkLabel && codeHref && (
+                    {codeLink && codeHref && (
                       <a href={codeHref}>
-                        {step.code.linkLabel}
+                        {codeLink.linkLabel}
                         <span aria-hidden="true">→</span>
                       </a>
                     )}
                   </div>
                 )}
 
-                {showFigure && (
-                  <figure className="hs-img">
-                    {stepSrc ? (
-                      <img src={stepSrc} alt={mediaAlt(step.media, step.title || '')} />
-                    ) : (
-                      <div className="ph">{step.mediaPlaceholder}</div>
-                    )}
-                    {step.mediaCaption && <figcaption>{step.mediaCaption}</figcaption>}
-                  </figure>
-                )}
+                {!figureAbove && figure}
 
                 {(step.notes || []).map((note, n) =>
                   note.title || note.body ? (
@@ -414,6 +566,24 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
                     </div>
                   ) : null,
                 )}
+
+                {guide.length > 0 && (
+                  <div className="hs-guide">
+                    {guide.map((example, g) => {
+                      const src = mediaUrl(example.image)
+                      return (
+                        <div className="d" key={`${id}-guide-${g}`}>
+                          {src && (
+                            <img src={src} alt={mediaAlt(example.image, example.label || '')} />
+                          )}
+                          {example.label && <div className="lbl">{example.label}</div>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {step.subnote && <p className="hs-subnote">{step.subnote}</p>}
               </React.Fragment>
             )
           })}

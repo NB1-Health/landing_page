@@ -8,6 +8,16 @@ import { helpBodyEditor, helpInlineEditor } from '../_shared/editors'
  * Steps are numbered by CSS from their position in the array — never type a
  * number into a title. Each step's heading is what the on-page nav rail picks
  * up, so a title should read as a task ("Register your kit"), not as a label.
+ *
+ * A step renders its parts in ONE fixed order, whatever order the fields appear
+ * in here:
+ *
+ *   heading → flow strip → [photo, if placed above] → body → code chips
+ *   → [photo, if placed below] → callouts → example guide → sub-note
+ *
+ * That order was taken from the two kit mockups (stool + blood) and is
+ * deliberately not configurable: a step that needs a different order is a
+ * design request, not a new select.
  */
 export const HelpStepsBlock: Block = {
   slug: 'helpSteps',
@@ -42,8 +52,15 @@ export const HelpStepsBlock: Block = {
       label: 'Lead paragraph',
       type: 'richText',
       localized: true,
-      editor: helpInlineEditor,
-      admin: { description: 'Optional. One short paragraph before step 1.' },
+      // helpBodyEditor rather than helpInlineEditor: the blood-kit mockup opens
+      // with a "Kit content" line followed by a plain bulleted parts list, so
+      // the lead needs lists. Headings and links come along with it; keep the
+      // lead to a line or two regardless.
+      editor: helpBodyEditor,
+      admin: {
+        description:
+          'Optional. One short paragraph before step 1, and — where the kit has no labelled contents photo — a bulleted parts list under it.',
+      },
     },
     {
       name: 'steps',
@@ -82,11 +99,70 @@ export const HelpStepsBlock: Block = {
           },
         },
         {
+          name: 'flow',
+          label: 'Flow strip',
+          type: 'array',
+          dbName: 'hst_st_fl',
+          maxRows: 6,
+          labels: { singular: 'Frame', plural: 'Frames' },
+          admin: {
+            initCollapsed: true,
+            description:
+              'A row of small numbered illustrations above the step body — the printed card\'s "do this, then this" strip. Leave empty for a step that has one photo instead; use the step photo below for that.',
+          },
+          fields: [
+            {
+              name: 'image',
+              type: 'upload',
+              relationTo: 'media',
+              localized: true,
+              admin: {
+                description: 'Set per locale — a frame with words in it needs a translated version.',
+              },
+            },
+            {
+              name: 'label',
+              type: 'text',
+              localized: true,
+              admin: { description: 'Optional caption under the frame, e.g. "Warm your hands".' },
+            },
+          ],
+        },
+        {
+          name: 'codes',
+          label: 'Code chips',
+          type: 'array',
+          dbName: 'hst_st_cd',
+          maxRows: 4,
+          labels: { singular: 'Code chip', plural: 'Code chips' },
+          admin: {
+            initCollapsed: true,
+            description:
+              'One boxed sample per row, shown side by side — a kit with two differently formatted codes gets two rows. The optional action link is rendered once, after the boxes.',
+          },
+          fields: [
+            { name: 'label', type: 'text', localized: true, defaultValue: 'Example' },
+            {
+              name: 'value',
+              type: 'text',
+              admin: { description: 'e.g. DE013|A12BC345D6. Not localized — it is a literal sample.' },
+            },
+            { name: 'linkLabel', type: 'text', localized: true },
+            {
+              name: 'linkUrl',
+              type: 'text',
+              localized: true,
+              admin: { description: 'Site-relative, e.g. /login.' },
+            },
+          ],
+        },
+        {
           name: 'code',
-          label: 'Code chip',
+          label: 'Code chip (legacy)',
           type: 'group',
           admin: {
-            description: 'The small boxed sample + action link. Leave the value empty to hide it.',
+            description:
+              'Superseded by "Code chips" above, which takes more than one sample. Still rendered so existing articles keep working — leave it empty on new steps.',
           },
           fields: [
             { name: 'label', type: 'text', localized: true, defaultValue: 'Code sample' },
@@ -112,10 +188,39 @@ export const HelpStepsBlock: Block = {
           localized: true,
           admin: {
             description:
-              'Optional. Shown under the step body. Set per locale — a diagram with words in it needs a translated version.',
+              'Optional. One illustration for this step. Set per locale — a diagram with words in it needs a translated version.',
           },
         },
         { name: 'mediaCaption', type: 'text', localized: true },
+        {
+          name: 'mediaPosition',
+          label: 'Photo position',
+          type: 'select',
+          defaultValue: 'below',
+          options: [
+            { label: 'Below the step body', value: 'below' },
+            { label: 'Above the step body', value: 'above' },
+          ],
+          admin: {
+            description:
+              'Above is for a diagram the text then refers to ("use this finger"); below is for a photo of the result.',
+          },
+        },
+        {
+          name: 'mediaWidth',
+          label: 'Photo width',
+          type: 'select',
+          defaultValue: 'full',
+          options: [
+            { label: 'Full column', value: 'full' },
+            { label: 'Medium (300px)', value: 'medium' },
+            { label: 'Small (190px)', value: 'small' },
+          ],
+          admin: {
+            description:
+              'Small and medium keep a single-object diagram from being blown up across the whole column.',
+          },
+        },
         {
           name: 'mediaPlaceholder',
           label: 'Photo placeholder text',
@@ -155,6 +260,47 @@ export const HelpStepsBlock: Block = {
             },
             { name: 'body', type: 'richText', localized: true, editor: helpInlineEditor },
           ],
+        },
+        {
+          name: 'guide',
+          label: 'Example guide',
+          type: 'array',
+          dbName: 'hst_st_gd',
+          maxRows: 6,
+          labels: { singular: 'Example', plural: 'Examples' },
+          admin: {
+            initCollapsed: true,
+            description:
+              'A grey panel of small labelled examples — right and wrong versions of the same thing, like the blood card\'s "too small / too big / perfect" drops. Order them so the correct one comes last.',
+          },
+          fields: [
+            {
+              name: 'image',
+              type: 'upload',
+              relationTo: 'media',
+              localized: true,
+              admin: {
+                description:
+                  'A small square diagram, ideally on a transparent background. Set per locale only if the drawing carries text.',
+              },
+            },
+            {
+              name: 'label',
+              type: 'text',
+              localized: true,
+              admin: { description: 'Two or three words, e.g. "Too small".' },
+            },
+          ],
+        },
+        {
+          name: 'subnote',
+          label: 'Sub-note',
+          type: 'text',
+          localized: true,
+          admin: {
+            description:
+              'Optional quiet line closing the step, e.g. "Each circle should be filled evenly." Not a callout — it renders as small grey text, with no box.',
+          },
         },
       ],
     },

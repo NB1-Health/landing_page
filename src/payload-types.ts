@@ -376,6 +376,7 @@ export interface Page {
     | HelpHeroBlock
     | HelpNavBlock
     | HelpStepsBlock
+    | HelpCalloutBlock
     | HelpFaqBlock
     | HelpCtaBlock
   )[];
@@ -7633,7 +7634,7 @@ export interface HelpStepsBlock {
   introImage?: (number | null) | Media;
   introImageCaption?: string | null;
   /**
-   * Optional. One short paragraph before step 1.
+   * Optional. One short paragraph before step 1, and — where the kit has no labelled contents photo — a bulleted parts list under it.
    */
   intro?: {
     root: {
@@ -7678,7 +7679,41 @@ export interface HelpStepsBlock {
       [k: string]: unknown;
     } | null;
     /**
-     * The small boxed sample + action link. Leave the value empty to hide it.
+     * A row of small numbered illustrations above the step body — the printed card's "do this, then this" strip. Leave empty for a step that has one photo instead; use the step photo below for that.
+     */
+    flow?:
+      | {
+          /**
+           * Set per locale — a frame with words in it needs a translated version.
+           */
+          image?: (number | null) | Media;
+          /**
+           * Optional caption under the frame, e.g. "Warm your hands".
+           */
+          label?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * One boxed sample per row, shown side by side — a kit with two differently formatted codes gets two rows. The optional action link is rendered once, after the boxes.
+     */
+    codes?:
+      | {
+          label?: string | null;
+          /**
+           * e.g. DE013|A12BC345D6. Not localized — it is a literal sample.
+           */
+          value?: string | null;
+          linkLabel?: string | null;
+          /**
+           * Site-relative, e.g. /login.
+           */
+          linkUrl?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Superseded by "Code chips" above, which takes more than one sample. Still rendered so existing articles keep working — leave it empty on new steps.
      */
     code?: {
       label?: string | null;
@@ -7693,10 +7728,18 @@ export interface HelpStepsBlock {
       linkUrl?: string | null;
     };
     /**
-     * Optional. Shown under the step body. Set per locale — a diagram with words in it needs a translated version.
+     * Optional. One illustration for this step. Set per locale — a diagram with words in it needs a translated version.
      */
     media?: (number | null) | Media;
     mediaCaption?: string | null;
+    /**
+     * Above is for a diagram the text then refers to ("use this finger"); below is for a photo of the result.
+     */
+    mediaPosition?: ('below' | 'above') | null;
+    /**
+     * Small and medium keep a single-object diagram from being blown up across the whole column.
+     */
+    mediaWidth?: ('full' | 'medium' | 'small') | null;
     /**
      * Shown in a grey 16:9 box while the photo is still missing, e.g. "Collection flow diagram". Leave empty to render nothing until there is an image.
      */
@@ -7729,6 +7772,26 @@ export interface HelpStepsBlock {
           id?: string | null;
         }[]
       | null;
+    /**
+     * A grey panel of small labelled examples — right and wrong versions of the same thing, like the blood card's "too small / too big / perfect" drops. Order them so the correct one comes last.
+     */
+    guide?:
+      | {
+          /**
+           * A small square diagram, ideally on a transparent background. Set per locale only if the drawing carries text.
+           */
+          image?: (number | null) | Media;
+          /**
+           * Two or three words, e.g. "Too small".
+           */
+          label?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Optional quiet line closing the step, e.g. "Each circle should be filled evenly." Not a callout — it renders as small grey text, with no box.
+     */
+    subnote?: string | null;
     id?: string | null;
   }[];
   outro?: {
@@ -7758,6 +7821,50 @@ export interface HelpStepsBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'helpSteps';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpCalloutBlock".
+ */
+export interface HelpCalloutBlock {
+  /**
+   * Keep this matched to the same setting on the Steps block, so the body columns line up.
+   */
+  reserveTocSpace?: boolean | null;
+  variant?: ('info' | 'quiet') | null;
+  /**
+   * A short line, e.g. "Before you start". Leave empty for a bare panel.
+   */
+  heading?: string | null;
+  /**
+   * On for a panel the reader should be able to jump to ("What to never do"). Off for an aside that only makes sense where it sits ("Before you start"). Needs a heading.
+   */
+  showInNav?: boolean | null;
+  /**
+   * Anchor id for the heading, used by the contents rail and by links pointing at it (e.g. never). Defaults to a slug of the heading. Not localized — keep links stable across locales.
+   */
+  anchor?: string | null;
+  /**
+   * One short paragraph, or a bulleted list. Links are supported — pointing at a step on the same page works too (#step-4).
+   */
+  body: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'helpCallout';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -9311,6 +9418,7 @@ export interface PagesSelect<T extends boolean = true> {
         helpHero?: T | HelpHeroBlockSelect<T>;
         helpNav?: T | HelpNavBlockSelect<T>;
         helpSteps?: T | HelpStepsBlockSelect<T>;
+        helpCallout?: T | HelpCalloutBlockSelect<T>;
         helpFaq?: T | HelpFaqBlockSelect<T>;
         helpCta?: T | HelpCtaBlockSelect<T>;
       };
@@ -12355,6 +12463,22 @@ export interface HelpStepsBlockSelect<T extends boolean = true> {
         title?: T;
         anchor?: T;
         body?: T;
+        flow?:
+          | T
+          | {
+              image?: T;
+              label?: T;
+              id?: T;
+            };
+        codes?:
+          | T
+          | {
+              label?: T;
+              value?: T;
+              linkLabel?: T;
+              linkUrl?: T;
+              id?: T;
+            };
         code?:
           | T
           | {
@@ -12365,6 +12489,8 @@ export interface HelpStepsBlockSelect<T extends boolean = true> {
             };
         media?: T;
         mediaCaption?: T;
+        mediaPosition?: T;
+        mediaWidth?: T;
         mediaPlaceholder?: T;
         notes?:
           | T
@@ -12374,6 +12500,14 @@ export interface HelpStepsBlockSelect<T extends boolean = true> {
               body?: T;
               id?: T;
             };
+        guide?:
+          | T
+          | {
+              image?: T;
+              label?: T;
+              id?: T;
+            };
+        subnote?: T;
         id?: T;
       };
   outro?:
@@ -12382,6 +12516,20 @@ export interface HelpStepsBlockSelect<T extends boolean = true> {
         doneText?: T;
         note?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HelpCalloutBlock_select".
+ */
+export interface HelpCalloutBlockSelect<T extends boolean = true> {
+  reserveTocSpace?: T;
+  variant?: T;
+  heading?: T;
+  showInNav?: T;
+  anchor?: T;
+  body?: T;
   id?: T;
   blockName?: T;
 }

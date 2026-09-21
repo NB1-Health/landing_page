@@ -116,6 +116,7 @@ import { HelpNavComponent } from './helpBlocks/HelpNav/Component'
 import { HelpHeroComponent } from './helpBlocks/HelpHero/Component'
 import { HelpStepsComponent } from './helpBlocks/HelpSteps/Component'
 import { HelpFaqComponent } from './helpBlocks/HelpFaq/Component'
+import { HelpCalloutComponent } from './helpBlocks/HelpCallout/Component'
 import { HelpCtaComponent } from './helpBlocks/HelpCta/Component'
 
 const blockComponents: Record<string, React.FC<any>> = {
@@ -228,6 +229,7 @@ const blockComponents: Record<string, React.FC<any>> = {
   helpNav: HelpNavComponent,
   helpHero: HelpHeroComponent,
   helpSteps: HelpStepsComponent,
+  helpCallout: HelpCalloutComponent,
   helpFaq: HelpFaqComponent,
   helpCta: HelpCtaComponent,
 }
