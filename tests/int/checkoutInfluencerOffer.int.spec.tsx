@@ -40,7 +40,14 @@ vi.mock('@stripe/react-stripe-js', async () => {
     useStripe: () => ({ confirmCardSetup: stripeUi.confirmCardSetup }),
   }
 })
-vi.mock('react-phone-number-input', () => ({
+// Partial mock: the component imports four helpers from this package
+// (isSupportedCountry, getCountryCallingCode, parsePhoneNumber and
+// isValidPhoneNumber). Keep the real ones — hand-rolled stubs, parsePhoneNumber
+// above all, would decide `hasNationalNumber` on made-up rules and let these
+// tests pass for the wrong reason. Only the visual input is replaced, and
+// isValidPhoneNumber is relaxed on purpose so any number is accepted.
+vi.mock('react-phone-number-input', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-phone-number-input')>()),
   default: () => null,
   isValidPhoneNumber: () => true,
 }))
