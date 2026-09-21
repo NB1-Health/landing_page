@@ -11,7 +11,13 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
-import PhoneInput, { isValidPhoneNumber, type Country } from 'react-phone-number-input'
+import PhoneInput, {
+  getCountryCallingCode,
+  isSupportedCountry,
+  isValidPhoneNumber,
+  parsePhoneNumber,
+  type Country,
+} from 'react-phone-number-input'
 import AddressAutocomplete, { type GooglePlace } from './AddressAutocomplete'
 import 'react-phone-number-input/style.css'
 import { createFirebaseAccount } from '@/lib/createAccount'
@@ -156,9 +162,83 @@ const COUNTRY_CODES: Record<string, string> = {
   Romania: 'RO',
 }
 
+/**
+ * The country the address form opens on, and the phone country that has to
+ * match it at first paint. Both `country` and `phoneCountry` read this so the
+ * two cannot drift when the default changes.
+ */
 // UAE operations are limited to Dubai + Abu Dhabi (ClickUp 86cb99egq). When the country is the
 // UAE the city becomes a fixed dropdown of these two, so no other emirate can be selected/typed.
 const UAE_ALLOWED_CITIES = ['Dubai', 'Abu Dhabi']
+
+const DEFAULT_COUNTRY = 'Germany'
+const DEFAULT_PHONE_COUNTRY = (COUNTRY_CODES[DEFAULT_COUNTRY] as Country) ?? 'DE'
+
+/** "+49" for an ISO country, or null when the phone library does not know it. */
+function dialCode(c: Country): string | null {
+  try {
+    return isSupportedCountry(c) ? `+${getCountryCallingCode(c)}` : null
+  } catch {
+    return null
+  }
+}
+
+/** Whether the visitor has actually typed a number, as opposed to just a prefix. */
+function hasNationalNumber(value: string): boolean {
+  try {
+    return Boolean(parsePhoneNumber(value.trim())?.nationalNumber)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Whether the phone field is effectively empty — nothing, or only the dial code
+ * the country selector put there. Validation treats this as "required" rather
+ * than "invalid", so auto-filling the prefix cannot turn an untouched field into
+ * a wrong-looking one.
+ */
+function isBlankPhone(value: string, c: Country): boolean {
+  const trimmed = value.replace(/[^\d+]/g, '')
+  if (!trimmed || trimmed === '+') return true
+  return trimmed === dialCode(c)
+}
+
+/**
+ * Move a phone value onto `next`'s dial code, keeping whatever the visitor has
+ * typed after it. Covers every state the field can be in:
+ *
+ *   ""            -> "+44"            (empty: just show the new prefix)
+ *   "+49"         -> "+44"            (prefix only, nothing typed yet)
+ *   "+49151"      -> "+44151"         (half-typed, not parseable yet)
+ *   "+4915112345678" -> "+4415112345678"
+ *
+ * Returns null only when it genuinely cannot be worked out — an unsupported
+ * country, or a value that matches neither the old prefix nor a parseable
+ * number. Callers leave the field untouched then, which is the "if the code
+ * can't be changed, nothing happens" rule.
+ */
+function rePrefixPhone(value: string, from: Country, next: Country): string | null {
+  const nextPrefix = dialCode(next)
+  if (!nextPrefix) return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return nextPrefix
+
+  // A complete number: keep the national part, which survives any formatting.
+  const national = hasNationalNumber(trimmed) ? parsePhoneNumber(trimmed)?.nationalNumber : null
+  if (national) return `${nextPrefix}${national}`
+
+  // Not parseable yet — swap the old prefix off the front and keep the rest, so
+  // digits typed before changing country are not thrown away.
+  const fromPrefix = dialCode(from)
+  const digits = trimmed.replace(/[^\d+]/g, '')
+  if (fromPrefix && digits.startsWith(fromPrefix)) {
+    return `${nextPrefix}${digits.slice(fromPrefix.length)}`
+  }
+  if (digits === '+' || !digits) return nextPrefix
+  return null
+}
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
@@ -501,13 +581,15 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* step 2 */
   const [fn, setFn] = useState('')
   const [ln, setLn] = useState('')
-  const [country, setCountry] = useState('Germany') // value stays the English key (matches COUNTRIES); display label is localized via dict.countries
+  const [country, setCountry] = useState(DEFAULT_COUNTRY) // value stays the English key (matches COUNTRIES); display label is localized via dict.countries
   const [a1, setA1] = useState('')
   const [a2, setA2] = useState('')
   const [zip, setZip] = useState('')
   const [city, setCity] = useState('')
-  const [phone, setPhone] = useState('')
-  const [phoneCountry, setPhoneCountry] = useState<Country>('DE')
+  // Seeded with the default country's dial code so the prefix on screen matches
+  // the country selector at first paint, rather than an empty field.
+  const [phone, setPhone] = useState(() => dialCode(DEFAULT_PHONE_COUNTRY) ?? '')
+  const [phoneCountry, setPhoneCountry] = useState<Country>(DEFAULT_PHONE_COUNTRY)
   const [addrErr, setAddrErr] = useState<Record<string, string>>({})
 
   /* step 3 */
@@ -648,27 +730,37 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   const [bRegNum, setBRegNum] = useState('')
   const [bEmail, setBEmail] = useState('')
   const [bEmailSuggestion, setBEmailSuggestion] = useState<string | null>(null)
-  const [bPhone, setBPhone] = useState('')
-  const [bPhoneCountry, setBPhoneCountry] = useState<Country>('DE')
+  const [bPhone, setBPhone] = useState(() => dialCode(DEFAULT_PHONE_COUNTRY) ?? '')
+  const [bPhoneCountry, setBPhoneCountry] = useState<Country>(DEFAULT_PHONE_COUNTRY)
   const [bA1, setBA1] = useState('')
   const [bA2, setBA2] = useState('')
   const [bZip, setBZip] = useState('')
   const [bCity, setBCity] = useState('')
-  const [bCountry, setBCountry] = useState('Germany')
+  const [bCountry, setBCountry] = useState(DEFAULT_COUNTRY)
 
   /* account creation */
   const [accountStatus, setAccountStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [accountErr, setAccountErr] = useState('')
   const submittingRef = useRef(false)
 
-  /* sync phone prefix with shipping/billing country when phone field is empty */
+  /* Keep the phone prefix in step with the shipping/billing country.
+     This covers country changes the visitor did not make directly — restoring
+     saved checkout data, mainly. It only ever fills in a prefix: a number that
+     has actually been typed is left alone, so a restored country cannot rewrite
+     a restored phone number. The country <select> handlers do the full swap. */
   useEffect(() => {
-    if (!phone) setPhoneCountry((COUNTRY_CODES[country] as Country) ?? 'DE')
+    const iso = COUNTRY_CODES[country] as Country | undefined
+    if (!iso || !isSupportedCountry(iso)) return
+    setPhoneCountry(iso)
+    setPhone((prev) => (hasNationalNumber(prev) ? prev : (dialCode(iso) ?? prev)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country])
 
   useEffect(() => {
-    if (!bPhone) setBPhoneCountry((COUNTRY_CODES[bCountry] as Country) ?? 'DE')
+    const iso = COUNTRY_CODES[bCountry] as Country | undefined
+    if (!iso || !isSupportedCountry(iso)) return
+    setBPhoneCountry(iso)
+    setBPhone((prev) => (hasNationalNumber(prev) ? prev : (dialCode(iso) ?? prev)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bCountry])
 
@@ -1140,7 +1232,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     // Phone is required for delivery updates. The input keeps the value in
     // E.164 (+49…), so isValidPhoneNumber checks it against the numbering
     // rules of the country the visitor picked in the country-code selector.
-    if (!phone) e.phone = t.required
+    if (isBlankPhone(phone, phoneCountry)) e.phone = t.required
     else if (!isValidPhoneNumber(phone)) e.phone = t.address.phoneInvalid
     return e
   }
@@ -1169,7 +1261,8 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       if (bFn.trim() && !hasLetter(bFn)) e.bFn = t.nameInvalid
       if (bLn.trim() && !hasLetter(bLn)) e.bLn = t.nameInvalid
       if (bEmail.trim() && !EMAIL_RE.test(bEmail)) e.bEmail = t.email.invalid
-      if (bPhone && !isValidPhoneNumber(bPhone)) e.bPhone = t.address.phoneInvalid
+      if (!isBlankPhone(bPhone, bPhoneCountry) && !isValidPhoneNumber(bPhone))
+        e.bPhone = t.address.phoneInvalid
       if (!bA1.trim()) e.bA1 = t.required
       if (!bZip.trim()) e.bZip = t.required
       if (!bCity.trim()) e.bCity = t.required
@@ -3043,6 +3136,25 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     onChange={(e) => {
                       const next = e.target.value
                       setCountry(next)
+                      // Move the phone prefix to the newly chosen country. The
+                      // effect above only does this while the phone field is
+                      // empty; this covers a number already typed, which is the
+                      // case the visitor actually notices. It lives in the
+                      // handler rather than an effect on `country` so that
+                      // restoring saved checkout data — which also sets the
+                      // country — can never rewrite a number the visitor saved.
+                      const nextPhoneCountry = COUNTRY_CODES[next] as Country | undefined
+                      if (nextPhoneCountry && isSupportedCountry(nextPhoneCountry)) {
+                        // The country we are moving FROM is the form's own previous
+                        // value, not `phoneCountry`. For an ambiguous dial code
+                        // (+44 is GB/GG/JE/IM) the phone library cannot name a
+                        // country and reports undefined, so `phoneCountry` is not
+                        // trustworthy here — using it left the field stuck on +44.
+                        const prevIso = (COUNTRY_CODES[country] as Country | undefined) ?? phoneCountry
+                        const rebuilt = rePrefixPhone(phone, prevIso, nextPhoneCountry)
+                        setPhoneCountry(nextPhoneCountry)
+                        if (rebuilt !== null) setPhone(rebuilt)
+                      }
                       // UAE has no postal codes, but the field is required → auto-fill 00000.
                       // Leaving AE drops that placeholder so a real code is entered.
                       if (COUNTRY_CODES[next] === 'AE') {
@@ -3168,7 +3280,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                     <PhoneInput
                       id="nb1-phone"
                       country={phoneCountry}
-                      onCountryChange={(c) => setPhoneCountry(c ?? 'DE')}
+                      // `undefined` means the library could not name a country for
+                      // the current value (an ambiguous dial code like +44), not
+                      // that the visitor chose Germany. Keep what we have.
+                      onCountryChange={(c) => {
+                        if (c) setPhoneCountry(c)
+                      }}
                       value={phone}
                       onChange={(val) => setPhone(val ?? '')}
                       international
@@ -3586,7 +3703,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       <div className={`nb1-phone-wrap${payErr.bPhone ? ' err' : ''}`}>
                         <PhoneInput
                           country={bPhoneCountry}
-                          onCountryChange={(c) => setBPhoneCountry(c ?? 'DE')}
+                          onCountryChange={(c) => {
+                            if (c) setBPhoneCountry(c)
+                          }}
                           value={bPhone}
                           onChange={(val) => setBPhone(val ?? '')}
                           international
@@ -3603,7 +3722,18 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       <select
                         autoComplete="billing country-name"
                         value={bCountry}
-                        onChange={(e) => setBCountry(e.target.value)}
+                        onChange={(e) => {
+                          const next = e.target.value
+                          setBCountry(next)
+                          const nextPhoneCountry = COUNTRY_CODES[next] as Country | undefined
+                          if (nextPhoneCountry && isSupportedCountry(nextPhoneCountry)) {
+                            const prevIso =
+                              (COUNTRY_CODES[bCountry] as Country | undefined) ?? bPhoneCountry
+                            const rebuilt = rePrefixPhone(bPhone, prevIso, nextPhoneCountry)
+                            setBPhoneCountry(nextPhoneCountry)
+                            if (rebuilt !== null) setBPhone(rebuilt)
+                          }
+                        }}
                       >
                         {COUNTRIES.map((c) => (
                           <option key={c} value={c}>
