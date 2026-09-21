@@ -3279,7 +3279,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                   <div className={`nb1-phone-wrap${addrErr.phone ? ' err' : ''}`}>
                     <PhoneInput
                       id="nb1-phone"
-                      country={phoneCountry}
+                      // `defaultCountry`, not `country`: the flag is derived from the
+                      // value, and a shared dial code (+44 is GB/GG/JE/IM) names no
+                      // country on its own, which left the UK showing the generic
+                      // flag. `defaultCountry` is what the library consults in
+                      // exactly that case, so GB wins instead of Guernsey.
+                      defaultCountry={phoneCountry}
                       // `undefined` means the library could not name a country for
                       // the current value (an ambiguous dial code like +44), not
                       // that the visitor chose Germany. Keep what we have.
@@ -3702,7 +3707,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                       </label>
                       <div className={`nb1-phone-wrap${payErr.bPhone ? ' err' : ''}`}>
                         <PhoneInput
-                          country={bPhoneCountry}
+                          defaultCountry={bPhoneCountry}
                           onCountryChange={(c) => {
                             if (c) setBPhoneCountry(c)
                           }}
