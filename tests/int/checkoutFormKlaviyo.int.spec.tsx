@@ -22,7 +22,14 @@ vi.mock('@stripe/react-stripe-js', () => ({
   useElements: () => null,
   useStripe: () => null,
 }))
-vi.mock('react-phone-number-input', () => ({
+// Partial mock: the component imports four helpers from this package
+// (isSupportedCountry, getCountryCallingCode, parsePhoneNumber and
+// isValidPhoneNumber). Keep the real ones — hand-rolled stubs, parsePhoneNumber
+// above all, would decide `hasNationalNumber` on made-up rules and let these
+// tests pass for the wrong reason. Only the visual input is replaced, and
+// isValidPhoneNumber is relaxed on purpose so any number is accepted.
+vi.mock('react-phone-number-input', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-phone-number-input')>()),
   default: () => null,
   isValidPhoneNumber: () => true,
 }))
@@ -41,7 +48,16 @@ vi.mock('@/lib/meta/browser', () => ({
   getMetaSidecar: () => ({}),
   sendMetaCapiEvent: vi.fn(),
 }))
-vi.mock('@/lib/plans/clientUtils', () => ({ getClientCurrency: () => 'EUR' }))
+// Partial mock, not a replacement: this component pulls several helpers from
+// clientUtils (getClientCurrency, resolveTokens, …). A factory that returns a
+// fixed object leaves every other export undefined, so the render throws the
+// moment the component reaches for a new one — which is exactly what happened
+// when the confirm-step fee copy started going through resolveTokens. Keep the
+// real module and pin only the currency.
+vi.mock('@/lib/plans/clientUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/plans/clientUtils')>()),
+  getClientCurrency: () => 'EUR' as const,
+}))
 vi.mock('@/lib/klarnaMarkets', () => ({ isKlarnaAvailable: () => false }))
 
 function changeInput(input: HTMLInputElement, value: string): void {
