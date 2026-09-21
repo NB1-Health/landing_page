@@ -220,10 +220,14 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
           align-items: center;
           gap: 14px;
         }
+        /* Step 1 draws no border of its own — .hs-divider above it is the line.
+           margin-top: 0 so the divider's 28px bottom margin is the whole gap
+           between that line and the title, matching the 28px padding-top every
+           other step puts between its own border and its title. */
         .hs-steps h2:first-of-type {
           border-top: none;
           padding-top: 0;
-          margin-top: 6px;
+          margin-top: 0;
         }
         .hs-steps h2::before {
           content: counter(hsstep);
@@ -349,6 +353,17 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
           color: rgba(18, 49, 77, 0.45);
         }
 
+        /* The mockup's .faq-kit-divider — the hairline that closes the lead-in
+           and opens the numbered steps. Step 1's heading deliberately has no
+           border-top of its own, so this rule is what draws that line. */
+        .hs-divider {
+          border-top: 1px solid rgba(18, 49, 77, 0.1);
+          /* 28px: the gap every other step has between its line and its title
+             (their h2 padding-top). Collapses with .hs-steps' own top margin,
+             which is why that one can stay as it is. */
+          margin: 0 0 28px;
+        }
+
         /* ---- figures ---- */
         .hs-img {
           margin: 20px 0;
@@ -461,6 +476,8 @@ export const HelpStepsComponent: React.FC<HelpStepsBlockType> = ({
             <RichText data={intro} locale={richLocale} enableGutter={false} enableProse={false} />
           </div>
         )}
+
+        {(introSrc || intro) && <div className="hs-divider" />}
 
         <div className="hs-steps">
           {steps.map((step, i) => {
