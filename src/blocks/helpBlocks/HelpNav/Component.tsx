@@ -16,6 +16,9 @@ const ARTICLE_SELECTOR = '[data-help-article]'
 /** TOP_OFFSET from _shared/layout.ts — the rail's resting distance from the top. */
 const TOP_OFFSET = 96
 
+/** Clearance kept between the bottom of the rail and the end of the article. */
+const BOTTOM_GAP = 24
+
 /**
  * Top of a region's CONTENT, not of its box.
  *
@@ -70,6 +73,7 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
     visible: false,
   })
   const rescanTimer = useRef<number | undefined>(undefined)
+  const railRef = useRef<HTMLElement | null>(null)
 
   const heading = label || 'On this page'
   const min = typeof minHeadings === 'number' && minHeadings > 0 ? minHeadings : 2
@@ -131,13 +135,25 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
       const bottom = Math.max(...rects.map((r) => r.bottom))
       const vh = window.innerHeight
 
-      // In view at all, and not yet scrolled off the bottom.
-      const visible = top <= vh - 160 && bottom >= 260
-      // Level with the top of the body column, then resting at TOP_OFFSET once
-      // the body has scrolled up past it — and never pushed so far down the
-      // list itself is off-screen.
       const bodyTop = Math.min(...regions.map(contentTop))
-      const railTop = Math.min(Math.max(bodyTop, TOP_OFFSET), Math.max(TOP_OFFSET, vh - 180))
+      const railH = railRef.current?.offsetHeight ?? 0
+
+      // Level with the top of the body column, then resting at TOP_OFFSET once
+      // the body has scrolled up past it.
+      let railTop = Math.max(bodyTop, TOP_OFFSET)
+
+      // ...and parked above the end of the article, so the rail never floats
+      // over what comes after it — the CTA banner is a separate block and is
+      // NOT marked `data-help-article`, so `bottom` here is where the last
+      // article region (the questions) ends. Moving the rail up rather than
+      // capping its height is deliberate: the list is short enough to show in
+      // full and must never scroll inside itself.
+      if (railH && railTop + railH > bottom - BOTTOM_GAP) {
+        railTop = bottom - BOTTOM_GAP - railH
+      }
+
+      // In view at all, and still showing something once parked.
+      const visible = bodyTop <= vh - 160 && railTop + railH > 60
 
       setRail((prev) =>
         prev.visible === visible && Math.abs(prev.top - railTop) < 1 ? prev : { top: railTop, visible },
@@ -168,6 +184,8 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
       ro = new ResizeObserver(onScroll)
       document.querySelectorAll<HTMLElement>(ARTICLE_SELECTOR).forEach((r) => ro?.observe(r))
       ro.observe(document.body)
+      // The rail's own height is an input to the parking maths above.
+      if (railRef.current) ro.observe(railRef.current)
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -197,6 +215,7 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
 
   return (
     <nav
+      ref={railRef}
       className={`hn-rail${rail.visible ? ' in' : ''}`}
       style={{ top: `${rail.top}px` }}
       aria-label={heading}
