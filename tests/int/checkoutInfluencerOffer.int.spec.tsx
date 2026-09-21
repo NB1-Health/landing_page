@@ -53,7 +53,16 @@ vi.mock('@/lib/meta/browser', () => ({
   getMetaSidecar: () => ({}),
   sendMetaCapiEvent: vi.fn(),
 }))
-vi.mock('@/lib/plans/clientUtils', () => ({ getClientCurrency: () => 'EUR' }))
+// Partial mock, not a replacement: this component pulls several helpers from
+// clientUtils (getClientCurrency, resolveTokens, …). A factory that returns a
+// fixed object leaves every other export undefined, so the render throws the
+// moment the component reaches for a new one — which is exactly what happened
+// when the confirm-step fee copy started going through resolveTokens. Keep the
+// real module and pin only the currency.
+vi.mock('@/lib/plans/clientUtils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/plans/clientUtils')>()),
+  getClientCurrency: () => 'EUR' as const,
+}))
 vi.mock('@/lib/klarnaMarkets', () => ({ isKlarnaAvailable: () => false }))
 
 function memoryStorage(): Storage {
