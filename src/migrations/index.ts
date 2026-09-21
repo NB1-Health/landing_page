@@ -175,6 +175,7 @@ import * as migration_20260904_084947_influencer_landing_pages from './20260904_
 import * as migration_20260904_120000_help_article_blocks from './20260904_120000_help_article_blocks'
 import * as migration_20260904_140000_help_localize_images from './20260904_140000_help_localize_images'
 import * as migration_20260907_105644_influencer_template_design from './20260907_105644_influencer_template_design'
+import * as migration_20260921_120000_help_blood_kit_blocks from './20260921_120000_help_blood_kit_blocks'
 
 export const migrations = [
   {
@@ -1061,5 +1062,10 @@ export const migrations = [
     up: migration_20260907_105644_influencer_template_design.up,
     down: migration_20260907_105644_influencer_template_design.down,
     name: '20260907_105644_influencer_template_design',
+  },
+  {
+    up: migration_20260921_120000_help_blood_kit_blocks.up,
+    down: migration_20260921_120000_help_blood_kit_blocks.down,
+    name: '20260921_120000_help_blood_kit_blocks',
   },
 ]

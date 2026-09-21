@@ -13,6 +13,25 @@ type Item = { id: string; text: string }
 const HEADING_SELECTOR = '[data-help-heading]'
 const ARTICLE_SELECTOR = '[data-help-article]'
 
+/** TOP_OFFSET from _shared/layout.ts — the rail's resting distance from the top. */
+const TOP_OFFSET = 96
+
+/**
+ * Top of a region's CONTENT, not of its box.
+ *
+ * Every block in the kit carries its vertical rhythm as padding on the section
+ * that holds `data-help-article` (44px on Steps and on a plain Callout, 48px on
+ * a Callout that joins the rail). Aligning the rail to the box top would lift it
+ * into the article header sitting above — the header is centred in the viewport,
+ * so the two would overlap. The content top is where the mockup's sticky sidebar
+ * starts, level with the first thing in the body column.
+ */
+function contentTop(region: HTMLElement): number {
+  const { top } = region.getBoundingClientRect()
+  const pad = parseFloat(getComputedStyle(region).paddingTop)
+  return top + (Number.isFinite(pad) ? pad : 0)
+}
+
 function readHeadings(): Item[] {
   if (typeof document === 'undefined') return []
   return Array.from(document.querySelectorAll<HTMLElement>(HEADING_SELECTOR))
@@ -44,7 +63,12 @@ function sameItems(a: Item[], b: Item[]) {
 export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeadings }) => {
   const [items, setItems] = useState<Item[]>([])
   const [activeId, setActiveId] = useState('')
-  const [visible, setVisible] = useState(false)
+  // `top` follows the article body while it sits below the rail's resting
+  // position, so the rail never floats beside the article header above it.
+  const [rail, setRail] = useState<{ top: number; visible: boolean }>({
+    top: TOP_OFFSET,
+    visible: false,
+  })
   const rescanTimer = useRef<number | undefined>(undefined)
 
   const heading = label || 'On this page'
@@ -87,31 +111,72 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
     return () => obs.disconnect()
   }, [items])
 
-  // Show the rail only while the article body is on screen, so it does not
-  // float over the header above it or the CTA banner below it.
+  // Show the rail while the article body is on screen, and keep it level with
+  // the top of that body until the body has scrolled up past its resting
+  // position. Two things this avoids: the rail floating beside the article
+  // header (which is centred in the viewport and would run straight through
+  // it), and the rail being invisible at the top of the page, where there is
+  // obviously room for it — the mockup's sticky sidebar shows from the start.
   useEffect(() => {
     let frame = 0
     const update = () => {
       frame = 0
       const regions = Array.from(document.querySelectorAll<HTMLElement>(ARTICLE_SELECTOR))
       if (!regions.length) {
-        setVisible(false)
+        setRail((prev) => (prev.visible ? { ...prev, visible: false } : prev))
         return
       }
       const rects = regions.map((r) => r.getBoundingClientRect())
       const top = Math.min(...rects.map((r) => r.top))
       const bottom = Math.max(...rects.map((r) => r.bottom))
-      setVisible(top <= 120 && bottom >= 260)
+      const vh = window.innerHeight
+
+      // In view at all, and not yet scrolled off the bottom.
+      const visible = top <= vh - 160 && bottom >= 260
+      // Level with the top of the body column, then resting at TOP_OFFSET once
+      // the body has scrolled up past it — and never pushed so far down the
+      // list itself is off-screen.
+      const bodyTop = Math.min(...regions.map(contentTop))
+      const railTop = Math.min(Math.max(bodyTop, TOP_OFFSET), Math.max(TOP_OFFSET, vh - 180))
+
+      setRail((prev) =>
+        prev.visible === visible && Math.abs(prev.top - railTop) < 1 ? prev : { top: railTop, visible },
+      )
     }
     const onScroll = () => {
       if (!frame) frame = window.requestAnimationFrame(update)
     }
 
     update()
+
+    // Measuring once on mount is not enough, and this is the bug it hides: the
+    // first measurement runs before the layout has settled — web fonts swap in
+    // and change the article header's height, images above the body resolve —
+    // and at the top of the page no scroll event ever fires to correct the
+    // rail, so it sits too high until you scroll. Re-measure on the next frame,
+    // once fonts are ready, and whenever a region's box actually changes.
+    let cancelled = false
+    const remeasure = () => {
+      if (!cancelled) update()
+    }
+
+    const settle = window.requestAnimationFrame(remeasure)
+    if ('fonts' in document) void document.fonts.ready.then(remeasure)
+
+    let ro: ResizeObserver | undefined
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(onScroll)
+      document.querySelectorAll<HTMLElement>(ARTICLE_SELECTOR).forEach((r) => ro?.observe(r))
+      ro.observe(document.body)
+    }
+
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     return () => {
+      cancelled = true
+      window.cancelAnimationFrame(settle)
       if (frame) window.cancelAnimationFrame(frame)
+      ro?.disconnect()
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
@@ -132,7 +197,8 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
 
   return (
     <nav
-      className={`hn-rail${visible ? ' in' : ''}`}
+      className={`hn-rail${rail.visible ? ' in' : ''}`}
+      style={{ top: `${rail.top}px` }}
       aria-label={heading}
       data-screen-label="On this page"
     >
@@ -141,11 +207,13 @@ export const HelpNavComponent: React.FC<HelpNavBlockType> = ({ label, minHeading
           /* Aligned to the article column: see _shared/layout.ts.
              left = 50% - ARTICLE_MAX/2, width = RAIL. */
           position: fixed;
+          /* top is set inline, from the scroll handler above — this is the
+             resting value, and what a no-JS render gets. */
           top: 96px;
           left: max(24px, calc(50% - 410px));
           width: 190px;
-          max-height: calc(100vh - 140px);
-          overflow-y: auto;
+          /* No max-height and no overflow: the rail is exactly as tall as its
+             list and never scrolls inside itself. */
           z-index: 20;
           opacity: 0;
           visibility: hidden;
