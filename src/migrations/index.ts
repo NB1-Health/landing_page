@@ -186,6 +186,8 @@ import * as migration_20260922_180000_rd_lab_block from './20260922_180000_rd_la
 import * as migration_20260922_190000_rd_reviews_block from './20260922_190000_rd_reviews_block'
 import * as migration_20260922_200000_rd_plans_block from './20260922_200000_rd_plans_block'
 import * as migration_20260922_210000_rd_close_block from './20260922_210000_rd_close_block'
+import * as migration_20260922_220000_rd_chrome_collections from './20260922_220000_rd_chrome_collections'
+import * as migration_20260922_230000_rd_headers_rels from './20260922_230000_rd_headers_rels'
 
 export const migrations = [
   {
@@ -1127,5 +1129,15 @@ export const migrations = [
     up: migration_20260922_210000_rd_close_block.up,
     down: migration_20260922_210000_rd_close_block.down,
     name: '20260922_210000_rd_close_block',
+  },
+  {
+    up: migration_20260922_220000_rd_chrome_collections.up,
+    down: migration_20260922_220000_rd_chrome_collections.down,
+    name: '20260922_220000_rd_chrome_collections',
+  },
+  {
+    up: migration_20260922_230000_rd_headers_rels.up,
+    down: migration_20260922_230000_rd_headers_rels.down,
+    name: '20260922_230000_rd_headers_rels',
   },
 ]

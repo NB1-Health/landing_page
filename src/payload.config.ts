@@ -18,6 +18,8 @@ import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Footers } from './Footer/config'
 import { Headers } from './Header/config'
+import { RdHeaders } from './collections/RdHeaders'
+import { RdFooters } from './collections/RdFooters'
 import { Hubs } from './collections/Hubs'
 import { Pillars } from './collections/Pillars'
 import { ConversionBlocks } from './collections/ConversionBlocks'
@@ -149,6 +151,11 @@ export default buildConfig({
     hideCollectionFromNonAdmins(Authors),
     hideCollectionFromNonAdmins(Headers),
     hideCollectionFromNonAdmins(Footers),
+    // Redesign chrome. Separate collections, not variants of the two above:
+    // those drive every live page and their components carry A/B variants,
+    // section nav and journal nav this design has no use for.
+    hideCollectionFromNonAdmins(RdHeaders),
+    hideCollectionFromNonAdmins(RdFooters),
     AgentOperations,
     // The Journal collections are deliberately NOT wrapped. They are editorial
     // content — an editor who cannot see Hubs, Pillars or LexiconTerms cannot do

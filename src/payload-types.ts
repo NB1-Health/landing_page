@@ -79,6 +79,8 @@ export interface Config {
     authors: Author;
     headers: Header;
     footers: Footer;
+    'rd-headers': RdHeader;
+    'rd-footers': RdFooter;
     'agent-operations': AgentOperation;
     hubs: Hub;
     pillars: Pillar;
@@ -117,6 +119,8 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     headers: HeadersSelect<false> | HeadersSelect<true>;
     footers: FootersSelect<false> | FootersSelect<true>;
+    'rd-headers': RdHeadersSelect<false> | RdHeadersSelect<true>;
+    'rd-footers': RdFootersSelect<false> | RdFootersSelect<true>;
     'agent-operations': AgentOperationsSelect<false> | AgentOperationsSelect<true>;
     hubs: HubsSelect<false> | HubsSelect<true>;
     pillars: PillarsSelect<false> | PillarsSelect<true>;
@@ -232,6 +236,14 @@ export interface Page {
    * Do not render any footer on this page.
    */
   hideFooter?: boolean | null;
+  /**
+   * Use the redesign nav on this page instead of the site header. Leave empty for the normal one.
+   */
+  rdHeader?: (number | null) | RdHeader;
+  /**
+   * Use the redesign footer on this page instead of the site footer. Leave empty for the normal one.
+   */
+  rdFooter?: (number | null) | RdFooter;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
     richText?: {
@@ -1250,6 +1262,179 @@ export interface Form {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Header for the redesign pages. A page picks one; otherwise the default is used.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-headers".
+ */
+export interface RdHeader {
+  id: number;
+  /**
+   * Shown in the admin list only. Never rendered.
+   */
+  name?: string | null;
+  isDefault?: boolean | null;
+  /**
+   * For a light nav. The mockup carries both and swaps them by breakpoint.
+   */
+  logo?: (number | null) | Media;
+  /**
+   * For a dark nav, and in the mobile sheet.
+   */
+  logoLight?: (number | null) | Media;
+  /**
+   * The faint mark behind the mobile menu. Decorative, 14% opacity.
+   */
+  sheetWatermark?: (number | null) | Media;
+  homeUrl?: string | null;
+  /**
+   * The links across the nav. They are ALSO the mobile sheet's first group — one list, two places.
+   */
+  navItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  discoverLabel?: string | null;
+  /**
+   * The desktop dropdown. NOT the sheet's second group — that is a separate list, because the mockup gives them different members and different destinations.
+   */
+  discoverItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  primaryLabel?: string | null;
+  moreLabel?: string | null;
+  /**
+   * Mobile only. Below 1120px the sheet is the only route to these, so it is not a duplicate of the Discover menu.
+   */
+  moreItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  languageLabel?: string | null;
+  applyLabel?: string | null;
+  loginLabel?: string | null;
+  loginUrl?: string | null;
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Read by screen readers; the button shows three bars.
+   */
+  menuLabel?: string | null;
+  /**
+   * Read by screen readers; the button shows a cross.
+   */
+  closeLabel?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Footer for the redesign pages. A page picks one; otherwise the default is used.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-footers".
+ */
+export interface RdFooter {
+  id: number;
+  /**
+   * Shown in the admin list only. Never rendered.
+   */
+  name?: string | null;
+  isDefault?: boolean | null;
+  logo?: (number | null) | Media;
+  tagline?: string | null;
+  signupLabel?: string | null;
+  signupPlaceholder?: string | null;
+  /**
+   * Read by screen readers; the input shows the placeholder.
+   */
+  signupInputLabel?: string | null;
+  /**
+   * The arrow glyph is drawn by the button — do not type it.
+   */
+  signupButtonLabel?: string | null;
+  signupNote?: string | null;
+  columnOneTitle?: string | null;
+  /**
+   * First footer column.
+   */
+  columnOneLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  columnTwoTitle?: string | null;
+  /**
+   * Second footer column.
+   */
+  columnTwoLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  columnThreeTitle?: string | null;
+  /**
+   * Third footer column.
+   */
+  columnThreeLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  copyright?: string | null;
+  /**
+   * The row beside the copyright.
+   */
+  legalLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The arrow is part of the label in the mockup, so it is typed here rather than drawn.
+   */
+  social?: {
+    label?: string | null;
+    url?: string | null;
+  };
+  disclaimer?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -9969,6 +10154,14 @@ export interface PayloadLockedDocument {
         value: number | Footer;
       } | null)
     | ({
+        relationTo: 'rd-headers';
+        value: number | RdHeader;
+      } | null)
+    | ({
+        relationTo: 'rd-footers';
+        value: number | RdFooter;
+      } | null)
+    | ({
         relationTo: 'agent-operations';
         value: number | AgentOperation;
       } | null)
@@ -10090,6 +10283,8 @@ export interface PagesSelect<T extends boolean = true> {
   hideHeader?: T;
   footer?: T;
   hideFooter?: T;
+  rdHeader?: T;
+  rdFooter?: T;
   hero?:
     | T
     | {
@@ -14221,6 +14416,115 @@ export interface FootersSelect<T extends boolean = true> {
         logo?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-headers_select".
+ */
+export interface RdHeadersSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  logo?: T;
+  logoLight?: T;
+  sheetWatermark?: T;
+  homeUrl?: T;
+  navItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  discoverLabel?: T;
+  discoverItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  primaryLabel?: T;
+  moreLabel?: T;
+  moreItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  languageLabel?: T;
+  applyLabel?: T;
+  loginLabel?: T;
+  loginUrl?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  menuLabel?: T;
+  closeLabel?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-footers_select".
+ */
+export interface RdFootersSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  logo?: T;
+  tagline?: T;
+  signupLabel?: T;
+  signupPlaceholder?: T;
+  signupInputLabel?: T;
+  signupButtonLabel?: T;
+  signupNote?: T;
+  columnOneTitle?: T;
+  columnOneLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  columnTwoTitle?: T;
+  columnTwoLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  columnThreeTitle?: T;
+  columnThreeLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  copyright?: T;
+  legalLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  social?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+      };
+  disclaimer?: T;
   updatedAt?: T;
   createdAt?: T;
 }

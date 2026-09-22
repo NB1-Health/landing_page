@@ -10,6 +10,8 @@ import React from 'react'
 
 import { Header } from '@/Header/Component'
 import { Footer } from '@/Footer/Component'
+import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
+import { RdFooterServer } from '@/components/RdChrome/FooterServer'
 import { RenderBlocks } from '@/blocks/RenderBlocks'
 import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
@@ -170,6 +172,13 @@ export default async function Page({ params: paramsPromise }: Args) {
   const headerId = typeof pageHeader === 'object' ? pageHeader?.id : pageHeader
   const footerId = typeof pageFooter === 'object' ? pageFooter?.id : pageFooter
 
+  // Redesign chrome. A page that picks one gets it INSTEAD of the site header or
+  // footer — not as well as. Picking neither leaves this page exactly as it was,
+  // which is why every existing page is unaffected by this.
+  const { rdHeader, rdFooter } = page as any
+  const rdHeaderId = typeof rdHeader === 'object' ? rdHeader?.id : rdHeader
+  const rdFooterId = typeof rdFooter === 'object' ? rdFooter?.id : rdFooter
+
   // All currencies share one public snapshot; visitor preferences stay in the browser.
   const hasPrices = hasPriceToken(JSON.stringify([hero, layout]))
   const initialPrices = hasPrices
@@ -199,13 +208,20 @@ export default async function Page({ params: paramsPromise }: Args) {
     <>
       <JsonLd data={pageJsonLd} />
 
-      {!hideHeader && (
-        <Header
-          locale={locale}
-          id={headerId}
-          localizedDocument={{ route: isHome ? 'home' : 'page', slugs: pageSlugsByLocale }}
-        />
-      )}
+      {!hideHeader &&
+        (rdHeaderId ? (
+          <RdHeaderServer
+            locale={locale}
+            id={rdHeaderId}
+            localizedDocument={{ route: isHome ? 'home' : 'page', slugs: pageSlugsByLocale }}
+          />
+        ) : (
+          <Header
+            locale={locale}
+            id={headerId}
+            localizedDocument={{ route: isHome ? 'home' : 'page', slugs: pageSlugsByLocale }}
+          />
+        ))}
 
       <article
         data-nb1-order-entry={isOrderEntry ? 'true' : undefined}
@@ -236,7 +252,12 @@ export default async function Page({ params: paramsPromise }: Args) {
         </PriceTokensProvider>
       </article>
 
-      {!hideFooter && <Footer locale={locale} id={footerId} />}
+      {!hideFooter &&
+        (rdFooterId ? (
+          <RdFooterServer locale={locale} id={rdFooterId} />
+        ) : (
+          <Footer locale={locale} id={footerId} />
+        ))}
     </>
   )
 }

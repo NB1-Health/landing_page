@@ -77,6 +77,34 @@ div:not(.rd-block *):has(> .rd-block) {
   overflow-x: clip;
 }
 
+/*
+ * The chrome establishes its OWN container.
+ *
+ * The header and footer are rendered by `[locale]/[slug]/page.tsx` as siblings
+ * of <article>, not inside the wrapper RenderBlocks creates — so they sit
+ * outside the `nb1page` container above and every `@container nb1page` query
+ * fails against them. The whole responsive system is those queries, and the
+ * stylesheet is mobile-first, so failing them is not a small degradation: the
+ * nav links stay `display:none`, the Discover menu and language switcher stay
+ * hidden, and the footer's three columns never leave their phone stack. That is
+ * exactly how it first shipped.
+ *
+ * Both chrome roots span the viewport — the nav is full-bleed and the footer's
+ * max-width lives on an inner div — so making each its own container answers
+ * every query against the viewport width, which is what the mockup's `#nb1home`
+ * does. Putting it here rather than on a wrapper keeps it independent of how the
+ * page happens to nest them.
+ *
+ * `container-type: inline-size` does NOT make these a containing block for
+ * fixed-position descendants, so the mobile sheet's `position: fixed; inset: 0`
+ * still resolves against the viewport — verified in the mockup, which nests the
+ * same sheet inside the same kind of container.
+ */
+.rd-chrome {
+  container-type: inline-size;
+  container-name: nb1page;
+}
+
 /* ─── layout rules copied from the mockup, `#nb1home` rescoped ─── */
 @keyframes nb1spin{to{transform:rotate(360deg);}}
   @keyframes nb1spinrev{to{transform:rotate(-360deg);}}

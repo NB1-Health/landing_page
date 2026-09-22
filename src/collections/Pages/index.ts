@@ -188,6 +188,33 @@ export const Pages: CollectionConfig<'pages'> = {
 
     ...chromeFields({ noun: 'page' }),
 
+    // Redesign chrome. Added HERE rather than in chromeFields() because that
+    // helper is shared with every other content collection, and only pages are
+    // being redesigned. Leave both empty and the page keeps the site header and
+    // footer exactly as before — this is additive, and nothing existing moves.
+    {
+      name: 'rdHeader',
+      type: 'relationship',
+      relationTo: 'rd-headers',
+      label: 'Redesign header',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Use the redesign nav on this page instead of the site header. Leave empty for the normal one.',
+      },
+    },
+    {
+      name: 'rdFooter',
+      type: 'relationship',
+      relationTo: 'rd-footers',
+      label: 'Redesign footer',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Use the redesign footer on this page instead of the site footer. Leave empty for the normal one.',
+      },
+    },
+
     {
       type: 'tabs',
       tabs: [
