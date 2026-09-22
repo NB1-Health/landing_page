@@ -58,7 +58,7 @@ export async function RdHeaderServer({
   return (
     <div className="rd-block" style={SCOPE}>
       <RdHeader
-        {...(data as never)}
+        {...data}
         locale={locale}
         initialCurrency={resolveCurrency(undefined, locale)}
         localizedDocument={localizedDocument ?? null}

@@ -18,7 +18,7 @@ export async function RdFooterServer({
   if (!data) return null
   return (
     <div className="rd-block" style={SCOPE}>
-      <RdFooter {...(data as never)} />
+      <RdFooter {...data} />
     </div>
   )
 }
