@@ -1,0 +1,261 @@
+/*
+ * nb1 redesign design tokens and base rules — COPIED from the mockup, not retyped.
+ */
+:root {
+--nb1-blue-grey:#B3E7F3;--nb1-dark-brown:#514745;--nb1-warm-grey:#AFACAC;--nb1-cool-grey:#F0F5FF;--nb1-black:#000;
+    --nb1-blue:#5FEAFF;--nb1-lime:#D9FF65;--nb1-soft-pink:#FF9CE0;--nb1-orange:#FF8B3E;
+    --cta:#D9FF65;
+    --nb1-hairline:color-mix(in oklab,var(--nb1-warm-grey) 26%,var(--nb1-cool-grey));
+    --nb1-white:var(--nb1-cool-grey);
+    --nb1-space-xs:4px;--nb1-space-sm:8px;--nb1-space-md:16px;--nb1-space-lg:24px;--nb1-space-xl:40px;--nb1-space-2xl:64px;
+    --nb1-radius-sm:8px;--nb1-radius-md:16px;--nb1-radius-lg:24px;--nb1-radius-pill:999px;
+    --nb1-lh-tight:.95;--nb1-lh-body:1.35;
+    --nb1-tracking-display:-.02em;--nb1-tracking-body:-.01em;
+    --nb1-ring-accent:var(--nb1-blue);--nb1-ring-width:.12em;
+    --nb1-sphere-soft:radial-gradient(circle closest-side at 50% 50%,var(--nb1-warm-grey) 0% 30%,transparent 80%),radial-gradient(circle closest-side at 50% 50%,var(--nb1-cool-grey) 0% 99.5%,transparent 100%);
+    --nb1-tracking-label:.02em;--nb1-radius-control:10px;
+    --nb1-bubble-size:72px;--nb1-bubble-halo:var(--nb1-blue);--nb1-bubble-core:var(--nb1-cool-grey);
+    --nb1-bubble-fill:52%;--nb1-bubble-blur:16%;
+    --nb1-domain-gut:var(--nb1-lime);--nb1-domain-energy:var(--nb1-cool-grey);
+    --nb1-domain-resilience:var(--nb1-blue-grey);--nb1-domain-immunity:var(--nb1-blue);
+    --nb1-domain-sleep:var(--nb1-dark-brown);
+    --nb1-font-primary:"Martina Plantijn","Freight Text Pro",Georgia,serif;
+    --nb1-font-secondary:"F37 Zagma","Neue Haas Grotesk Display","Helvetica Neue",Arial,sans-serif;
+    --nb1-font-tertiary:"OO Theran","Space Mono",ui-monospace,Menlo,monospace;
+}
+
+/*
+ * Base rules ported from the mockup's global <style>, scoped to `.rd-block`
+ * because the app's `body` belongs to the wider site.
+ *
+ * Only INHERITED properties belong here. `background` is not one — see the
+ * wrapper rule below. The block ROOT is included in the box-sizing rule on
+ * purpose: the mockup's is a bare `*`, which covers the <section> itself, and
+ * excluding the root makes a padded `max-width` section measure too wide.
+ */
+.rd-block {
+  color: var(--nb1-dark-brown);
+  font-family: var(--nb1-font-secondary);
+  font-weight: 350;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+.rd-block,
+.rd-block *,
+.rd-block *::before,
+.rd-block *::after { box-sizing: border-box; }
+
+.rd-block h1, .rd-block h2, .rd-block h3,
+.rd-block h4, .rd-block h5, .rd-block p { margin: 0; }
+
+.rd-block a { color: inherit; text-decoration: none; }
+.rd-block a:hover { color: var(--nb1-dark-brown); opacity: .7; }
+
+.rd-block summary { list-style: none; cursor: pointer; }
+.rd-block summary::-webkit-details-marker { display: none; }
+
+/*
+ * The page wrapper — the mockup's `#nb1home`, reconstructed.
+ *
+ * RenderBlocks wraps every block in a plain <div> that already spans the
+ * viewport. Two things must live here and cannot live on the block root:
+ *
+ * 1. the page fill — `background` does not inherit, so on the block it is
+ *    clipped to that section's own box;
+ * 2. the named CONTAINER — the responsive system is container queries, and a
+ *    section that sets `max-width` would otherwise become its own container and
+ *    answer every query against its own width instead of the viewport's.
+ *
+ * `:not(.rd-block *)` keeps this to the outermost wrapper, so a block whose own
+ * markup contains a nested <section> cannot create a second page wrapper.
+ */
+div:not(.rd-block *):has(> .rd-block) {
+  background-color: var(--nb1-cool-grey);
+  container-type: inline-size;
+  container-name: nb1page;
+  overflow-x: clip;
+}
+
+/* ─── layout rules copied from the mockup, `#nb1home` rescoped ─── */
+@keyframes nb1spin{to{transform:rotate(360deg);}}
+  @keyframes nb1spinrev{to{transform:rotate(-360deg);}}
+  .rd-block [data-m="rail"]::-webkit-scrollbar{display:none;}
+  .rd-block [data-m="gbub"], .rd-block:is([data-m="gbub"]){--nb1-bubble-size:clamp(40px,13cqw,54px);display:block;line-height:0;}
+  .rd-block [data-m="gbub"] .nb1-bubble__orb, .rd-block:is([data-m="gbub"] .nb1-bubble__orb){
+    display:block;position:relative;background:var(--orb-ring);
+    box-shadow:0 0 0 .5px rgba(81,71,69,.06);
+  }
+  .rd-block [data-m="gbub"] .nb1-bubble__orb::after{
+    content:"";position:absolute;inset:14%;border-radius:50%;
+    background:var(--orb-core);filter:blur(3px);
+  }
+  [data-m="biocard"]{display:grid;grid-template-columns:330px minmax(0,1fr);}
+  [data-m="biocard"] img{height:100%;min-height:340px;}
+  @container biomodal (max-width:760px){
+    [data-m="biocard"]{grid-template-columns:1fr;}
+    [data-m="biocard"] img{height:230px;min-height:0;object-position:50% 0%;}
+    [data-m="biocard"] > div:last-child{padding:26px 24px 30px;}
+  }
+  @container nb1page (min-width:900px){ .rd-block [data-m="herocopy"], .rd-block:is([data-m="herocopy"]){padding:0 0 42px 32px!important;} }
+  @container nb1page (max-width:760px){
+    .rd-block [data-m="trust"] [data-m="rail"], .rd-block:is([data-m="trust"] [data-m="rail"]){justify-content:center!important;overflow:hidden;min-height:52px;}
+    .rd-block [data-m="tdot"], .rd-block:is([data-m="tdot"]){display:none!important;}
+    .rd-block [data-m="tslide"], .rd-block:is([data-m="tslide"]){display:none!important;}
+    .rd-block [data-m="tslide"][data-on="1"], .rd-block:is([data-m="tslide"][data-on="1"]){display:flex!important;animation:nb1fadein .45s ease both;}
+  }
+  @keyframes nb1fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .rd-block [data-m="gbub"] .nb1-bubble__label, .rd-block:is([data-m="gbub"] .nb1-bubble__label){position:absolute;left:50%;top:calc(100% + 9px);transform:translateX(-50%);white-space:nowrap;font-size:10.5px;line-height:1.3;}
+  .rd-block [data-m="gbub"][data-on="1"] .nb1-bubble__orb, .rd-block:is([data-m="gbub"][data-on="1"] .nb1-bubble__orb){box-shadow:0 0 0 2px var(--nb1-dark-brown);}
+  /* nav dissolved into the hero photo until the page scrolls */
+  .rd-block nav[data-over="1"], .rd-block:is(nav[data-over="1"]){background:transparent!important;border-bottom-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+  .rd-block nav[data-over="1"], .rd-block:is(nav[data-over="1"]),.rd-block nav[data-over="1"] a, .rd-block:is(nav[data-over="1"] a),.rd-block nav[data-over="1"] button, .rd-block:is(nav[data-over="1"] button),.rd-block nav[data-over="1"] span, .rd-block:is(nav[data-over="1"] span),.rd-block nav[data-over="1"] svg, .rd-block:is(nav[data-over="1"] svg){color:#FFFFFF!important;opacity:1!important;}
+  /* OO Theran is Light-only, so hairline white over photography reads as translucent.
+     Optical weight from a hairline stroke + a tight contact shadow, not a scrim. */
+  .rd-block nav[data-over="1"] a, .rd-block:is(nav[data-over="1"] a),.rd-block nav[data-over="1"] button, .rd-block:is(nav[data-over="1"] button){
+    -webkit-text-stroke:.35px #fff;
+    text-shadow:0 1px 3px rgba(20,16,15,.55),0 0 1px rgba(20,16,15,.4);
+  }
+  .rd-block nav[data-over="1"] [data-m="logodark"], .rd-block:is(nav[data-over="1"] [data-m="logodark"]){display:none!important;}
+  .rd-block nav[data-over="1"] [data-m="logolight"], .rd-block:is(nav[data-over="1"] [data-m="logolight"]){display:block!important;}
+  .rd-block nav[data-over="1"] [data-m="navcta"], .rd-block:is(nav[data-over="1"] [data-m="navcta"]){background:transparent!important;border:1.5px solid #FFFFFF!important;color:#FFFFFF!important;}
+  .rd-block nav[data-over="1"] [data-m="navcta"] span, .rd-block:is(nav[data-over="1"] [data-m="navcta"] span){color:#FFFFFF!important;}
+  .rd-block nav[data-over="1"] [data-m="burger"] span, .rd-block:is(nav[data-over="1"] [data-m="burger"] span){background:#fff!important;}
+  /* phone: comfortable tap targets and tighter rhythm */
+  @container nb1page (max-width:560px){
+    .rd-block button, .rd-block:is(button), .rd-block summary, .rd-block:is(summary), .rd-block a[href], .rd-block:is(a[href]){min-height:44px;}
+    .rd-block nav a[href="#close"], .rd-block:is(nav a[href="#close"]){min-height:44px;align-items:center;}
+    .rd-block section, .rd-block:is(section){padding-top:44px!important;padding-bottom:44px!important;}
+    .rd-block section#top, .rd-block:is(section#top){padding-top:0!important;padding-bottom:0!important;}
+    .rd-block [data-m="herostage"], .rd-block:is([data-m="herostage"]){min-height:640px!important;}
+    .rd-block [data-m="bubsm"], .rd-block:is([data-m="bubsm"]){display:none!important;}
+    .rd-block [data-m="bub"] > div:first-child, .rd-block:is([data-m="bub"] > div:first-child){width:52px!important;height:52px!important;}
+    .rd-block [data-m="tight"], .rd-block:is([data-m="tight"]){padding-top:40px!important;padding-bottom:40px!important;}
+    .rd-block [data-m="chip"], .rd-block:is([data-m="chip"]){padding:.85em 1.15em!important;}
+    .rd-block [data-m="board"], .rd-block:is([data-m="board"]){height:auto!important;aspect-ratio:3 / 4.4!important;}
+    .rd-block [data-m="marker"], .rd-block:is([data-m="marker"]){flex-basis:82%!important;}
+    .rd-block [data-m="athcard"], .rd-block:is([data-m="athcard"]){min-height:300px!important;}
+    .rd-block [data-m="score"], .rd-block:is([data-m="score"]){width:min(70cqi,190px)!important;font-size:44px!important;}
+    .rd-block [data-m="orbit"], .rd-block:is([data-m="orbit"]){width:min(80cqi,280px)!important;}
+    .rd-block [data-m="ring"], .rd-block:is([data-m="ring"]){width:min(96cqi,340px)!important;}
+    .rd-block [data-m="node"], .rd-block:is([data-m="node"]){min-height:0!important;}
+    .rd-block [data-m="usparrow"], .rd-block:is([data-m="usparrow"]){display:none!important;}
+    .rd-block [data-m="uspwrap"], .rd-block:is([data-m="uspwrap"]){padding-left:0!important;padding-right:0!important;}
+    .rd-block [data-m="uspslide"], .rd-block:is([data-m="uspslide"]){padding:14px 20px!important;min-height:0!important;}
+    .rd-block [data-m="herowrap"], .rd-block:is([data-m="herowrap"]){padding-top:22px!important;padding-bottom:18px!important;gap:18px!important;}
+    .rd-block [data-m="herogrid"], .rd-block:is([data-m="herogrid"]){gap:18px!important;}
+    .rd-block nav, .rd-block:is(nav){padding:9px 18px!important;}
+    .rd-block nav a[href="#close"], .rd-block:is(nav a[href="#close"]){font-size:11px!important;padding:.85em 1.05em!important;gap:.7em!important;}
+    .rd-block nav img, .rd-block:is(nav img){height:18px!important;}
+    .rd-block [data-m="stack"], .rd-block:is([data-m="stack"]){padding-left:16px!important;padding-right:16px!important;}
+    .rd-block [data-m="card"], .rd-block:is([data-m="card"]){padding:22px 20px!important;}
+    .rd-block [data-cmprow], .rd-block:is([data-cmprow]){grid-template-columns:1fr 68px 68px!important;}
+    .rd-block [data-cmprow] > div, .rd-block:is([data-cmprow] > div){padding-left:12px!important;padding-right:12px!important;}
+    .rd-block [data-cmprow] > div[style*="font-size:14.5px"], .rd-block:is([data-cmprow] > div[style*="font-size:14.5px"]){font-size:13px!important;line-height:1.35!important;}
+    .rd-block [data-cmprow] span[style*="font-size:13.5px"], .rd-block:is([data-cmprow] span[style*="font-size:13.5px"]){font-size:11.5px!important;line-height:1.25!important;display:inline-block;}
+    .rd-block [data-cmprow] a, .rd-block:is([data-cmprow] a){font-size:10.5px!important;padding:.75em .85em!important;text-align:center;}
+    /* the CTA row leaves the 3-column grid and stacks full width */
+    .rd-block [data-m="cmpspacer"], .rd-block:is([data-m="cmpspacer"]){display:none!important;}
+    .rd-block [data-m="cmpcta"], .rd-block:is([data-m="cmpcta"]){grid-column:1 / -1!important;background:transparent!important;padding:14px 16px!important;}
+    .rd-block [data-m="cmpcta"] a, .rd-block:is([data-m="cmpcta"] a){width:100%;justify-content:center;font-size:12px!important;padding:1em 1.2em!important;}
+    .rd-block [data-m="cmpcta"] + [data-m="cmpcta"], .rd-block:is([data-m="cmpcta"] + [data-m="cmpcta"]){border-top:0!important;padding-top:0!important;}
+    .rd-block [data-m="wadrow"], .rd-block:is([data-m="wadrow"]){grid-template-columns:104px 1fr!important;gap:16px!important;padding:14px!important;}
+  }
+  @container nb1page (max-width:1180px){
+    .rd-block nav, .rd-block:is(nav){gap:12px!important;}
+    .rd-block [data-d~="navlinks"], .rd-block:is([data-d~="navlinks"]){gap:20px!important;}
+  }
+  @container nb1page (max-width:1120px){
+    .rd-block nav [data-d~="navmore"], .rd-block:is(nav [data-d~="navmore"]){display:none!important;}
+  }
+  @container nb1page (max-width:899px){
+    .rd-block [data-m="navcta"], .rd-block:is([data-m="navcta"]){display:none!important;}
+    .rd-block [data-m="burger"], .rd-block:is([data-m="burger"]){display:flex!important;}
+  }
+  /* mobile-first: layout upgrades only from 900px */
+  @container nb1page (min-width:900px){
+    [data-d~="pad"]{padding-left:48px!important;padding-right:48px!important;}
+    [data-d~="g2"]{grid-template-columns:1fr 1fr!important;}
+    [data-d~="g3"]{grid-template-columns:repeat(3,1fr)!important;}
+    .rd-block [data-m="footcols"], .rd-block:is([data-m="footcols"]){grid-template-columns:repeat(3,1fr)!important;gap:32px!important;}
+    [data-d~="g4"]{grid-template-columns:repeat(4,1fr)!important;}
+    [data-d~="hero"]{grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;align-items:center!important;}
+    [data-d~="row"]{flex-direction:row!important;align-items:center!important;}
+    [data-d~="side"]{grid-template-columns:.9fr 1.1fr!important;gap:64px!important;}
+    [data-d~="ath"]{grid-template-columns:1fr 1.1fr!important;}
+    [data-d~="navlinks"]{display:flex!important;}
+    [data-d~="navmore"]{display:flex!important;}
+    [data-d~="orbit"]{width:min(100%,520px)!important;height:auto!important;}
+    [data-d~="rail"]{grid-template-columns:repeat(4,1fr)!important;}
+    [data-d~="bigpad"]{padding-top:104px!important;padding-bottom:104px!important;}
+    [data-d~="mcard"]{flex:0 0 calc((100% - 28px) / 3)!important;aspect-ratio:3 / 4.2!important;}
+    .rd-block [data-m="scoregrid"], .rd-block:is([data-m="scoregrid"]){grid-template-columns:1.05fr .95fr!important;gap:56px!important;}
+    [data-d~="bcard"]{flex:0 0 calc((100% - 28px) / 3)!important;}
+    [data-d~="rcard"]{flex:0 0 calc((100% - 42px) / 4)!important;max-width:none!important;}
+    .rd-block [data-m="revnav"], .rd-block:is([data-m="revnav"]){display:none!important;}
+    .rd-block #revRail + div, .rd-block:is(#revRail + div){display:none!important;}
+    [data-d~="pcard"]{flex:1 1 0!important;}
+    [data-d~="gutside"] > *{grid-row:1;}
+    [data-d~="gutside"] > [data-d~="guttext"]{grid-column:2;}
+    [data-d~="gutside"] > :not([data-d~="guttext"]){grid-column:1;}
+    [data-d~="wadgrid"]{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:28px!important;align-items:start!important;}
+    [data-d~="wadgrid"] [data-m="wadrow"]{display:block!important;background:transparent!important;color:var(--nb1-cool-grey)!important;border:0!important;padding:0!important;box-shadow:none!important;}
+    [data-d~="wadgrid"] [data-m="wadrow"] span[style*="border:1px solid rgba(81,71,69,.24)"]{border-color:rgba(240,245,255,.28)!important;}
+    [data-d~="wadgrid"] [data-m="wadrow"] > div:first-child{margin-bottom:22px;}
+    [data-d~="wadgrid"] [data-m="wadrow"] > div:last-child > div:nth-child(2){font-size:30px!important;}
+    [data-d~="foot"]{grid-template-columns:1.1fr 1fr!important;gap:64px!important;}
+  }
+
+/*
+ * Trustpilot TrustBox sizing — see src/components/Trustpilot/RdTrustRating.tsx.
+ *
+ * This is one of the few places the pipeline AUTHORS css rather than moving it,
+ * and it is unavoidable: the mockup draws the rating by hand, so there is no
+ * widget in it to copy from. The TrustBox is an iframe, so none of the strip's
+ * own type or colour reaches inside it — scale is the only lever there is.
+ *
+ * The numbers are derived from the two type sizes rather than eyeballed:
+ *
+ *   Micro Star renders 18px type in a 24px box
+ *   the strip beside it is 14.5px type with 19px star tiles
+ *   --rd-tp-scale  = 14.5 / 18  = 0.8056   (the old .ht-tp value was 0.7222,
+ *                                           which is where the strip's visibly
+ *                                           small 13px type came from)
+ *   height         = 24 * 0.8056 = 19.3px  ≈ the mockup's 19px tiles
+ *   --rd-tp-slice  = "Excellent" (~63px) + 10px gap + 5*19px + 4*2px = 176px
+ *   --rd-tp-layout = 176 / 0.8056 = 219px
+ *
+ * The slice is what the box SHOWS. The TrustBox draws its own wordmark at some
+ * widths and not others, and RdTrustRating always draws the mockup's; clipping
+ * to the stars is what stops both appearing at once. The order inside the
+ * TrustBox is Excellent -> stars -> wordmark, so the clip can only ever remove
+ * the part being replaced.
+ *
+ * `--rd-tp-slice` is a variable because "Excellent" is a different length in
+ * every locale, and because the TrustBox's metrics are Trustpilot's to change.
+ * docs/rd-trustpilot-preview.html renders the real widget across a range of
+ * slice widths beside the mockup's target, for checking by eye.
+ *
+ * `line-height: 0` stops the iframe's inline baseline adding a stray gap.
+ */
+.rd-block .rd-hero__tp {
+  --rd-tp-slice: 176px;
+  --rd-tp-layout: 219px;
+  --rd-tp-scale: 0.8056;
+}
+
+.rd-block .rd-tp__box {
+  display: block;
+  width: var(--rd-tp-slice, 176px);
+  height: 19px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.rd-block .rd-tp__box .trustpilot-widget {
+  width: var(--rd-tp-layout, 219px);
+  transform: scale(var(--rd-tp-scale, 0.8056));
+  transform-origin: left top;
+}
+

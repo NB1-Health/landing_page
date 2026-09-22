@@ -12,6 +12,13 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
 import './globals.css'
+// Redesign stylesheets. `fonts.css` self-hosts the three brand faces;
+// `rd-toolkit.css` is the designer's component library verbatim; `rd-tokens.css`
+// holds the tokens, the `.rd-block` base rules and the page's container-query
+// layout. Ported by scripts/mockup-to-block/tools/port_css.py, not retyped.
+import './fonts.css'
+import './rd-toolkit.css'
+import './rd-tokens.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

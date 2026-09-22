@@ -6,6 +6,15 @@ import type { Page } from '@/payload-types'
 import type { AppLocale } from '@/i18n/config'
 
 import { ContentBlock } from '@/blocks/Content/Component'
+import { RdHeroComponent } from '@/blocks/redesign/Hero/Component'
+import { RdProtocolComponent } from '@/blocks/redesign/Protocol/Component'
+import { RdFormulaComponent } from '@/blocks/redesign/Formula/Component'
+import { RdProofComponent } from '@/blocks/redesign/Proof/Component'
+import { RdBiologyComponent } from '@/blocks/redesign/Biology/Component'
+import { RdLabComponent } from '@/blocks/redesign/Lab/Component'
+import { RdReviewsComponent } from '@/blocks/redesign/Reviews/Component'
+import { RdPlansComponent } from '@/blocks/redesign/Plans/Component'
+import { RdCloseComponent } from '@/blocks/redesign/Close/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { FormCustomBlock } from '@/blocks/FormCostom/Component'
@@ -120,6 +129,15 @@ import { HelpCalloutComponent } from './helpBlocks/HelpCallout/Component'
 import { HelpCtaComponent } from './helpBlocks/HelpCta/Component'
 
 const blockComponents: Record<string, React.FC<any>> = {
+  rdHero: RdHeroComponent,
+  rdProtocol: RdProtocolComponent,
+  rdFormula: RdFormulaComponent,
+  rdProof: RdProofComponent,
+  rdBiology: RdBiologyComponent,
+  rdLab: RdLabComponent,
+  rdReviews: RdReviewsComponent,
+  rdPlans: RdPlansComponent,
+  rdClose: RdCloseComponent,
   content: ContentBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,

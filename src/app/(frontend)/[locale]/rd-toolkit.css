@@ -1,0 +1,219 @@
+/*
+ * nb1 redesign brand toolkit — the designer's component library, verbatim.
+ *
+ * The mockup's markup references these by class, so the classes ship as-is.
+ * Flattening them into inline styles would lose the system, and every
+ * component built later would drift from this file instead of inheriting it.
+ */
+/* nb1 — Brand Toolkit 2026 · Components
+   Coded, tokens-driven, parameterizable — this is the component deliverable.
+   The Figma exports in assets/reference/*-spec.svg are the visual spec these match.
+   Requires tokens.css. Components render best with the Theran/Zagma/Martina webfonts
+   installed (see assets/fonts/README.md); otherwise the fallback stacks apply. */
+
+/* ---- Tags & data labels — Theran caps in a soft rounded rectangle ---- */
+.nb1-tag {
+  font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase;
+  letter-spacing: var(--nb1-tracking-label); font-size: 0.875rem; line-height: 1;
+  display: inline-flex; align-items: center; gap: var(--nb1-space-sm);
+  padding: 0.85em 1.3em; border-radius: var(--nb1-radius-control);
+  background: var(--nb1-cool-grey); color: var(--nb1-dark-brown);
+}
+.nb1-tag--info    { background: var(--nb1-blue); color: var(--nb1-black); }   /* e.g. ADVANCED */
+/* Outline tag — transparent, with both edge and ink taken from the inherited text colour,
+   so it adapts to its ground: cool grey over photography and dark grounds, dark brown on
+   light ones. Set `color` on the tag or its container; never leave it to chance on a photo. */
+.nb1-tag--outline {
+  background: transparent; color: inherit;
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 55%, transparent);
+} /* e.g. 4 UNITS */
+
+/* ---- Value pairing — a round icon token butted against a value pill ---- */
+.nb1-value {
+  display: inline-flex; align-items: center; gap: 0.5em;
+  font-family: var(--nb1-font-secondary); font-weight: 350; font-size: 1rem;
+}
+.nb1-value__icon {
+  width: 2.2em; height: 2.2em; border-radius: 50%;
+  background: var(--nb1-lime); color: var(--nb1-black);
+  display: grid; place-items: center; font-size: 0.85em;
+}
+.nb1-value__pill {
+  background: var(--nb1-lime); color: var(--nb1-black);
+  padding: 0.55em 0.9em; border-radius: var(--nb1-radius-md);
+}
+
+/* ---- CTA — Theran caps in a rounded rectangle + a detached circular arrow token ---- */
+.nb1-cta { display: inline-flex; align-items: center; gap: 0.4em; border: 0; background: none; cursor: pointer; padding: 0; }
+.nb1-cta__label {
+  font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase;
+  letter-spacing: var(--nb1-tracking-label); font-size: 0.95rem;
+  background: var(--nb1-blue-grey); color: var(--nb1-dark-brown);
+  padding: 1em 1.4em; border-radius: var(--nb1-radius-control); white-space: nowrap;
+}
+.nb1-cta__arrow {
+  width: 3em; height: 3em; border-radius: 50%; flex: none;
+  background: var(--nb1-blue-grey); color: var(--nb1-dark-brown);
+  display: grid; place-items: center; font-size: 0.95rem;
+}
+.nb1-cta--accent .nb1-cta__label,
+.nb1-cta--accent .nb1-cta__arrow { background: var(--nb1-blue); color: var(--nb1-black); }
+.nb1-cta--lime   .nb1-cta__label,
+.nb1-cta--lime   .nb1-cta__arrow { background: var(--nb1-lime); color: var(--nb1-black); }
+
+/* ============================================================
+   BUBBLE — the atom of the circle system.
+   Four axes: size · halo colour · core colour · core fill (+ edge blur).
+   Every other circular form in this system is a bubble with different axes:
+   a score is a large low-contrast bubble, a journey marker is a bubble whose
+   fill decreases over time, an indicator dot is a small crisp bubble.
+   ============================================================ */
+.nb1-bubble { display: inline-grid; justify-items: center; gap: 0.6em; }
+.nb1-bubble__orb {
+  width: var(--nb1-bubble-size); aspect-ratio: 1; border-radius: 50%; flex: none;
+  background: radial-gradient(circle closest-side at 50% 50%,
+    var(--nb1-bubble-core) 0% calc(var(--nb1-bubble-fill) - var(--nb1-bubble-blur)),
+    var(--nb1-bubble-halo) calc(var(--nb1-bubble-fill) + var(--nb1-bubble-blur)),
+    transparent 100%);
+}
+/* Treatments — each restates the gradient rather than re-declaring the axes,
+   so the axis tokens stay owned by :root and the domain scopes below. */
+/* hard ring edge — over imagery */
+.nb1-bubble--crisp .nb1-bubble__orb {
+  background: radial-gradient(circle closest-side at 50% 50%,
+    var(--nb1-bubble-core) 0% var(--nb1-bubble-fill),
+    var(--nb1-bubble-halo) var(--nb1-bubble-fill) 100%);
+}
+/* Soft ombré orb — over flat colour fields only. A solid core, then a light halo
+   that dissolves outward into the ground. The halo is a masked edge with harmonic
+   blur, NOT a glow: it emits no light, it only softens the boundary. */
+.nb1-bubble--ombre .nb1-bubble__orb {
+  background: radial-gradient(circle closest-side at 50% 50%,
+    var(--nb1-bubble-core) 0% 48%,
+    var(--nb1-bubble-core) 56%,
+    var(--nb1-bubble-halo) 68%,
+    transparent 96%);
+}
+/* flat disc of the halo colour */
+.nb1-bubble--solid .nb1-bubble__orb { background: var(--nb1-bubble-halo); }
+/* ring only — the core reads as ground; set the core to the surface behind it */
+.nb1-bubble--hollow .nb1-bubble__orb {
+  background: radial-gradient(circle closest-side, var(--nb1-bubble-core) 0% 76%, var(--nb1-bubble-halo) 76% 100%);
+}
+/* Label — Theran caps, centred under the orb; optional second line for state or delta */
+.nb1-bubble__label { font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase;
+  letter-spacing: var(--nb1-tracking-label); font-size: 0.875rem; line-height: 1.3; text-align: center; }
+.nb1-bubble__status { display: block; }
+.nb1-bubble--label-above { grid-auto-flow: row dense; }
+.nb1-bubble--label-above .nb1-bubble__label { order: -1; }
+
+/* Domain scopes — core is fixed per health domain, halo is the composition's choice.
+   Applied as data attributes: <div class="nb1-bubble" data-domain="gut"> */
+[data-domain="gut"]        { --nb1-bubble-core: var(--nb1-domain-gut); }
+[data-domain="energy"]     { --nb1-bubble-core: var(--nb1-domain-energy); }
+[data-domain="resilience"] { --nb1-bubble-core: var(--nb1-domain-resilience); }
+[data-domain="immunity"]   { --nb1-bubble-core: var(--nb1-domain-immunity); }
+[data-domain="sleep"]      { --nb1-bubble-core: var(--nb1-domain-sleep); }
+
+/* ---- Score — a bubble at display scale: ombré sphere, hairline accent edge, numeral in the core ---- */
+.nb1-score {
+  display: inline-grid; place-items: center; aspect-ratio: 1; min-width: 160px; border-radius: 50%;
+  border: var(--nb1-ring-width) solid var(--nb1-ring-accent);
+  font-family: var(--nb1-font-primary); font-weight: 400; font-size: 2.5rem; color: var(--nb1-dark-brown);
+}
+/* Primary treatment: soft sphere, no stroke, big Zagma numeral in the warm-grey core.
+   The rim dissolves into whatever ground it sits on. */
+.nb1-score--sphere {
+  border: 0; background: var(--nb1-sphere-soft);
+  font-family: var(--nb1-font-secondary); font-weight: 350; color: var(--nb1-black);
+  letter-spacing: var(--nb1-tracking-display);
+}
+
+/* Thick aqua ring on a cool-grey core — the in-product score. A crisp bubble at display scale. */
+.nb1-score--ring {
+  border: 0; border-radius: 50%;
+  background: radial-gradient(circle closest-side,
+    var(--nb1-cool-grey) 0% 72%, var(--nb1-blue) 72% 100%);
+  font-family: var(--nb1-font-secondary); font-weight: 350; color: var(--nb1-black);
+  letter-spacing: var(--nb1-tracking-display);
+}
+
+/* ---- Grid markers — equally-spaced dots framing a message-led layout ---- */
+.nb1-frame { position: relative; }
+.nb1-frame__markers {
+  position: absolute; inset: var(--nb1-frame-inset, var(--nb1-space-xl)); pointer-events: none;
+  display: grid; grid-template-columns: auto auto; justify-content: space-between; align-content: space-between;
+  gap: var(--nb1-space-2xl);
+}
+.nb1-frame__markers > * { width: 10px; height: 10px; border-radius: 50%; background: var(--nb1-warm-grey); }
+/* On posters and OOH the markers may each take a different accent — the frame becomes
+   the composition's only colour. Structural use on editorial layouts stays warm grey. */
+.nb1-frame__markers > [data-accent="orange"] { background: var(--nb1-orange); }
+.nb1-frame__markers > [data-accent="pink"]   { background: var(--nb1-soft-pink); }
+.nb1-frame__markers > [data-accent="aqua"]   { background: var(--nb1-blue); }
+.nb1-frame__markers > [data-accent="lime"]   { background: var(--nb1-lime); }
+.nb1-frame__markers > [data-accent="brown"]  { background: var(--nb1-dark-brown); }
+
+/* ---- Ticker — repeating Theran caps strip along the foot of a poster ---- */
+.nb1-ticker {
+  display: flex; align-items: baseline; gap: 2.2em; overflow: hidden; white-space: nowrap;
+  font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase;
+  letter-spacing: var(--nb1-tracking-label); color: var(--nb1-dark-brown);
+}
+.nb1-ticker > * { flex: none; }
+
+/* ---- Indicator dot — a bubble at text scale (handle / marker / bullet) ---- */
+.nb1-dot {
+  display: inline-block; width: 1em; height: 1em; border-radius: 50%;
+  background: radial-gradient(circle closest-side,
+    var(--nb1-cool-grey) 0% 42%, var(--nb1-ring-accent) 42% 100%);
+  box-shadow: inset 0 0 0 0.18em var(--nb1-cool-grey), 0 0 0 0.14em var(--nb1-ring-accent);
+}
+
+/* ---- Journey step — indicator + MONTH pill + Martina title + Zagma body ---- */
+.nb1-step { display: grid; grid-template-columns: 2.4em 1fr; gap: 0 1em; align-items: start; margin-bottom: 1.5em; }
+/* The marker is a bubble whose core fill drains as the journey progresses.
+   Fill is the one axis that carries meaning: full core = done, empty ring = not yet. */
+.nb1-step__mark {
+  width: 2.4em; height: 2.4em; border-radius: 50%;
+  background: radial-gradient(circle closest-side,
+    var(--nb1-cool-grey) 0% 58%, var(--nb1-orange) 58% 100%);
+}
+.nb1-step__mark--filled { background: radial-gradient(circle closest-side, var(--nb1-cool-grey) 0% 20%, var(--nb1-orange) 46% 100%); } /* month 1 */
+.nb1-step__mark--open   { background: radial-gradient(circle closest-side, var(--nb1-cool-grey) 0% 78%, var(--nb1-orange) 78% 100%); } /* the retest */
+.nb1-step__pill { font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase; letter-spacing: var(--nb1-tracking-label); font-size: 0.75rem; background: var(--nb1-blue-grey); color: var(--nb1-dark-brown); padding: 0.4em 0.8em; border-radius: var(--nb1-radius-pill); display: inline-block; }
+.nb1-step__title { font-family: var(--nb1-font-primary); font-weight: 400; font-size: 2rem; line-height: 1; margin: 0.25em 0 0.3em; letter-spacing: var(--nb1-tracking-display); }
+.nb1-step__body { font-family: var(--nb1-font-secondary); font-weight: 350; font-size: 1rem; max-width: 34ch; opacity: 0.85; }
+
+/* ---- Nav tabs — pill segmented nav; active = lime (Zagma, sentence case) ---- */
+.nb1-tabs { display: inline-flex; gap: 0.5em; flex-wrap: wrap; }
+.nb1-tab {
+  font-family: var(--nb1-font-secondary); font-weight: 350; font-size: 1rem;
+  padding: 0.6em 1.1em; border-radius: var(--nb1-radius-pill);
+  background: transparent; color: var(--nb1-dark-brown); border: 0; cursor: pointer;
+}
+.nb1-tab.is-active { background: var(--nb1-lime); color: var(--nb1-black); }
+
+/* ---- Numbered list — circular number badges (e.g. "Where you stand") ---- */
+.nb1-numlist { counter-reset: nb1num; list-style: none; padding: 0; margin: 0; display: grid; gap: 1.1em; }
+.nb1-numlist li {
+  display: flex; align-items: center; gap: 0.9em;
+  font-family: var(--nb1-font-secondary); font-weight: 350; font-size: 1.25rem; color: var(--nb1-dark-brown);
+}
+.nb1-numlist li::before {
+  counter-increment: nb1num; content: counter(nb1num);
+  width: 1.9em; height: 1.9em; flex: none; border-radius: 50%;
+  background: var(--nb1-dark-brown); color: var(--nb1-cool-grey);
+  display: grid; place-items: center; font-size: 0.8em; font-weight: 400;
+}
+
+/* ---- Metric slider — sub-score row: label+value / track+handle / max ---- */
+.nb1-slider { display: grid; grid-template-columns: 6em 1fr 2.2em; align-items: center; column-gap: 1em; margin: 1.2em 0; }
+.nb1-slider__label { font-family: var(--nb1-font-tertiary); font-weight: 300; text-transform: uppercase; letter-spacing: var(--nb1-tracking-label); font-size: 0.72rem; color: var(--nb1-dark-brown); display: block; }
+.nb1-slider__value { font-family: var(--nb1-font-secondary); font-weight: 350; font-size: 1rem; color: var(--nb1-dark-brown); }
+.nb1-slider__track { position: relative; height: 1.5px; background: var(--nb1-warm-grey); }
+.nb1-slider__track .nb1-dot { position: absolute; top: 50%; transform: translate(-50%,-50%); font-size: 1.4em; }
+.nb1-slider__max { text-align: right; font-family: var(--nb1-font-secondary); font-size: 1rem; color: var(--nb1-dark-brown); }
+
+/* ---- CTA marketing variant — Zagma sentence-case instead of Theran caps ---- */
+.nb1-cta--marketing .nb1-cta__label { font-family: var(--nb1-font-secondary); font-weight: 350; text-transform: none; letter-spacing: 0; }

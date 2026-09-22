@@ -176,6 +176,16 @@ import * as migration_20260904_120000_help_article_blocks from './20260904_12000
 import * as migration_20260904_140000_help_localize_images from './20260904_140000_help_localize_images'
 import * as migration_20260907_105644_influencer_template_design from './20260907_105644_influencer_template_design'
 import * as migration_20260921_120000_help_blood_kit_blocks from './20260921_120000_help_blood_kit_blocks'
+import * as migration_20260922_120000_rd_hero_block from './20260922_120000_rd_hero_block'
+import * as migration_20260922_130000_rd_protocol_block from './20260922_130000_rd_protocol_block'
+import * as migration_20260922_140000_rd_formula_block from './20260922_140000_rd_formula_block'
+import * as migration_20260922_150000_rd_proof_block from './20260922_150000_rd_proof_block'
+import * as migration_20260922_160000_rd_biology_block from './20260922_160000_rd_biology_block'
+import * as migration_20260922_170000_rd_biology_modal from './20260922_170000_rd_biology_modal'
+import * as migration_20260922_180000_rd_lab_block from './20260922_180000_rd_lab_block'
+import * as migration_20260922_190000_rd_reviews_block from './20260922_190000_rd_reviews_block'
+import * as migration_20260922_200000_rd_plans_block from './20260922_200000_rd_plans_block'
+import * as migration_20260922_210000_rd_close_block from './20260922_210000_rd_close_block'
 
 export const migrations = [
   {
@@ -1067,5 +1077,55 @@ export const migrations = [
     up: migration_20260921_120000_help_blood_kit_blocks.up,
     down: migration_20260921_120000_help_blood_kit_blocks.down,
     name: '20260921_120000_help_blood_kit_blocks',
+  },
+  {
+    up: migration_20260922_120000_rd_hero_block.up,
+    down: migration_20260922_120000_rd_hero_block.down,
+    name: '20260922_120000_rd_hero_block',
+  },
+  {
+    up: migration_20260922_130000_rd_protocol_block.up,
+    down: migration_20260922_130000_rd_protocol_block.down,
+    name: '20260922_130000_rd_protocol_block',
+  },
+  {
+    up: migration_20260922_140000_rd_formula_block.up,
+    down: migration_20260922_140000_rd_formula_block.down,
+    name: '20260922_140000_rd_formula_block',
+  },
+  {
+    up: migration_20260922_150000_rd_proof_block.up,
+    down: migration_20260922_150000_rd_proof_block.down,
+    name: '20260922_150000_rd_proof_block',
+  },
+  {
+    up: migration_20260922_160000_rd_biology_block.up,
+    down: migration_20260922_160000_rd_biology_block.down,
+    name: '20260922_160000_rd_biology_block',
+  },
+  {
+    up: migration_20260922_170000_rd_biology_modal.up,
+    down: migration_20260922_170000_rd_biology_modal.down,
+    name: '20260922_170000_rd_biology_modal',
+  },
+  {
+    up: migration_20260922_180000_rd_lab_block.up,
+    down: migration_20260922_180000_rd_lab_block.down,
+    name: '20260922_180000_rd_lab_block',
+  },
+  {
+    up: migration_20260922_190000_rd_reviews_block.up,
+    down: migration_20260922_190000_rd_reviews_block.down,
+    name: '20260922_190000_rd_reviews_block',
+  },
+  {
+    up: migration_20260922_200000_rd_plans_block.up,
+    down: migration_20260922_200000_rd_plans_block.down,
+    name: '20260922_200000_rd_plans_block',
+  },
+  {
+    up: migration_20260922_210000_rd_close_block.up,
+    down: migration_20260922_210000_rd_close_block.down,
+    name: '20260922_210000_rd_close_block',
   },
 ]

@@ -8,6 +8,15 @@ import {
   enforceAgentDraftOperation,
 } from '../../access/roles'
 
+import { RdHeroBlock } from '@/blocks/redesign/Hero/config'
+import { RdProtocolBlock } from '@/blocks/redesign/Protocol/config'
+import { RdFormulaBlock } from '@/blocks/redesign/Formula/config'
+import { RdProofBlock } from '@/blocks/redesign/Proof/config'
+import { RdBiologyBlock } from '@/blocks/redesign/Biology/config'
+import { RdLabBlock } from '@/blocks/redesign/Lab/config'
+import { RdReviewsBlock } from '@/blocks/redesign/Reviews/config'
+import { RdPlansBlock } from '@/blocks/redesign/Plans/config'
+import { RdCloseBlock } from '@/blocks/redesign/Close/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
 import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
@@ -193,6 +202,15 @@ export const Pages: CollectionConfig<'pages'> = {
               name: 'layout',
               type: 'blocks',
               blocks: [
+                RdHeroBlock,
+                RdProtocolBlock,
+                RdFormulaBlock,
+                RdProofBlock,
+                RdBiologyBlock,
+                RdLabBlock,
+                RdReviewsBlock,
+                RdPlansBlock,
+                RdCloseBlock,
                 Content,
                 BoxCardBlock,
                 FormulaCardBlock,
