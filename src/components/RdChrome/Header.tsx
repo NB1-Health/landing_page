@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { RdHeader as Props } from '@/payload-types'
 import { useLocaleCurrency } from '@/components/LocaleCurrency/useLocaleCurrency'
 import type { LocalizedDocument } from '@/Header/localizedDocument'
@@ -136,6 +136,55 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetLocOpen, setSheetLocOpen] = useState(false)
 
+  // THE SCROLLED STATE. The nav floats transparent over the dark hero and turns
+  // into a solid light bar once the hero has gone by — white logo and white text
+  // above, dark logo and dark text below. `data-over` is the only thing that
+  // selects between them: every rule in rd-tokens.css that draws the floating
+  // state is scoped to `nav[data-over="1"]`, and the nav's own style attribute
+  // already carries the solid appearance, so `0` is not a second set of rules but
+  // the absence of the first.
+  //
+  // The mockup drives this from an IntersectionObserver on the hero stage, and
+  // this is that observer: same target, same `-90px` top inset, same threshold.
+  // It is NOT a scrollY threshold — the hero's height varies with its copy and
+  // with the viewport, and a number typed here would be right at one size only.
+  //
+  // Where it departs from the mockup, and why. The mockup retries for the hero
+  // forever, because in the mockup the header and the hero are one document and
+  // the hero is always coming. Here they are not: the header is a collection an
+  // editor points a page at, and a redesign page whose first block is not rdHero
+  // has no hero stage at all. Retrying forever would leave that page pinned in
+  // the floating state — white text and a white logo on a white page, i.e.
+  // an invisible header. So the wait is bounded, and running out settles on
+  // solid, which is legible over anything.
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    let io: IntersectionObserver | null = null
+    let raf = 0
+    let tries = 0
+    const attach = () => {
+      const el = document.querySelector('.rd-block [data-m="herostage"]')
+      if (!el) {
+        if (++tries < 30) {
+          raf = requestAnimationFrame(attach)
+          return
+        }
+        setScrolled(true)
+        return
+      }
+      io = new IntersectionObserver((entries) => setScrolled(!entries[0].isIntersecting), {
+        rootMargin: '-90px 0px 0px 0px',
+        threshold: 0,
+      })
+      io.observe(el)
+    }
+    raf = requestAnimationFrame(attach)
+    return () => {
+      cancelAnimationFrame(raf)
+      io?.disconnect()
+    }
+  }, [])
+
   const {
     langs, curLang, curCur, curSym,
     pendingLang, setPendingLang, pendingLocaleAvailable,
@@ -158,7 +207,7 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
       backdropFilter: "blur(12px)",
       borderBottom: "1px solid rgba(81, 71, 69, 0.1)",
       WebkitBackdropFilter: "blur(12px)"
-    }} className="rd-block rd-chrome rd-header" data-over="1">
+    }} className="rd-chrome rd-header" data-over={scrolled ? '0' : '1'}>
       <a style={{
         display: "block",
         flex: "1 1 auto",
@@ -439,7 +488,7 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
       borderRadius: "0px",
       overflow: "hidden",
       zIndex: "130"
-    }, display: sheetOpen ? 'flex' : 'none' }} className="rd-block rd-chrome rd-header__sheet">
+    }, display: sheetOpen ? 'flex' : 'none' }} className="rd-chrome rd-header__sheet">
       <img style={{
         position: "absolute",
         right: "-26%",
