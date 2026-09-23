@@ -32,6 +32,14 @@ import { RdPgQuietBlock } from '@/blocks/redesign/PgQuiet/config'
 import { RdPgGuaranteeBlock } from '@/blocks/redesign/PgGuarantee/config'
 import { RdPgFaqBlock } from '@/blocks/redesign/PgFaq/config'
 import { RdPgBuyBlock } from '@/blocks/redesign/PgBuy/config'
+import { RdPrHeroBlock } from '@/blocks/redesign/PrHero/config'
+import { RdPrJourneyBlock } from '@/blocks/redesign/PrJourney/config'
+import { RdPrKitBlock } from '@/blocks/redesign/PrKit/config'
+import { RdPrBloodKitBlock } from '@/blocks/redesign/PrBloodKit/config'
+import { RdPrAnalyseBlock } from '@/blocks/redesign/PrAnalyse/config'
+import { RdPrFormulaBlock } from '@/blocks/redesign/PrFormula/config'
+import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
+import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
 import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
@@ -266,6 +274,14 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdPgGuaranteeBlock,
                 RdPgFaqBlock,
                 RdPgBuyBlock,
+                RdPrHeroBlock,
+                RdPrJourneyBlock,
+                RdPrKitBlock,
+                RdPrBloodKitBlock,
+                RdPrAnalyseBlock,
+                RdPrFormulaBlock,
+                RdPrArrivesBlock,
+                RdPrAdvancedBlock,
                 Content,
                 BoxCardBlock,
                 FormulaCardBlock,

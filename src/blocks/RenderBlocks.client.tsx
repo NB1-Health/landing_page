@@ -28,6 +28,14 @@ import { RdPgQuietComponent } from '@/blocks/redesign/PgQuiet/Component'
 import { RdPgGuaranteeComponent } from '@/blocks/redesign/PgGuarantee/Component'
 import { RdPgFaqComponent } from '@/blocks/redesign/PgFaq/Component'
 import { RdPgBuyComponent } from '@/blocks/redesign/PgBuy/Component'
+import { RdPrHeroComponent } from '@/blocks/redesign/PrHero/Component'
+import { RdPrJourneyComponent } from '@/blocks/redesign/PrJourney/Component'
+import { RdPrKitComponent } from '@/blocks/redesign/PrKit/Component'
+import { RdPrBloodKitComponent } from '@/blocks/redesign/PrBloodKit/Component'
+import { RdPrAnalyseComponent } from '@/blocks/redesign/PrAnalyse/Component'
+import { RdPrFormulaComponent } from '@/blocks/redesign/PrFormula/Component'
+import { RdPrArrivesComponent } from '@/blocks/redesign/PrArrives/Component'
+import { RdPrAdvancedComponent } from '@/blocks/redesign/PrAdvanced/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { FormCustomBlock } from '@/blocks/FormCostom/Component'
@@ -164,6 +172,14 @@ const blockComponents: Record<string, React.FC<any>> = {
   rdPgGuarantee: RdPgGuaranteeComponent,
   rdPgFaq: RdPgFaqComponent,
   rdPgBuy: RdPgBuyComponent,
+  rdPrHero: RdPrHeroComponent,
+  rdPrJourney: RdPrJourneyComponent,
+  rdPrKit: RdPrKitComponent,
+  rdPrBloodKit: RdPrBloodKitComponent,
+  rdPrAnalyse: RdPrAnalyseComponent,
+  rdPrFormula: RdPrFormulaComponent,
+  rdPrArrives: RdPrArrivesComponent,
+  rdPrAdvanced: RdPrAdvancedComponent,
   content: ContentBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,

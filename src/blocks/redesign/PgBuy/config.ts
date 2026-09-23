@@ -32,6 +32,25 @@ import { localizedLink } from '@/fields/localizedLink'
  * (`protocol/Order your kit - Cycle Core.html`), which would be broken links in the
  * app. Same call as rdPgHero's two, and recorded in the punch list's CTA table
  * rather than guessed.
+ *
+ * REUSED ON THE PROTOCOL, which is why `variant` exists.
+ *
+ * The two mockups' #buy sections are the same component. Measured: all 41 common
+ * nodes carry byte-identical inline styles, and the only structural difference is
+ * that Our Plans' cards have feature rows where The Protocol's have none — which
+ * an empty `features` array already renders exactly, with no code change.
+ *
+ * What is NOT interchangeable is the style SCOPE. The two mockups are built on
+ * opposite responsive models: Our Plans is desktop-first, with `max-width`
+ * container queries overriding the inline styles downward; The Protocol is
+ * mobile-first, with `min-width` queries overriding them upward. So the same inline
+ * `padding: 72px 20px` is the DESKTOP value on one page and the PHONE value on the
+ * other, and a block that wears the wrong page's class gets the wrong layout —
+ * measured at 25 of 41 nodes differing at 1440px, including the container width,
+ * the heading size and every edge of the section's padding.
+ *
+ * `variant` therefore picks the root class and nothing else. It defaults to the
+ * Our Plans value, so the row already seeded there renders exactly as it shipped.
  */
 export const RdPgBuyBlock: Block = {
   slug: "rdPgBuy",
@@ -39,6 +58,7 @@ export const RdPgBuyBlock: Block = {
   labels: { singular: "PG Buy", plural: "PG Buy" },
   fields: [
     { name: "anchorId", type: "text", label: "Anchor id", admin: { description: "Rendered as the section id. Deliberately NOT localized \u2014 a fragment must be identical in every locale." }, defaultValue: "buy" },
+    { name: "variant", type: "select", options: ["plans", "protocol"], label: "Page style", admin: { description: "Which page this instance belongs to. The two pages are built on opposite responsive models, so the block has to know which stylesheet governs it. Leave as Our Plans unless this block is on The Protocol." }, defaultValue: "plans" },
     { name: "heading", type: "text", localized: true, required: true, defaultValue: "So we start by reading yours." },
     { name: "intro", type: "textarea", localized: true, defaultValue: "Your kit ships first; your formula is produced after your analysis, never before." },
     {

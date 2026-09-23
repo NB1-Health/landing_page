@@ -203,6 +203,15 @@ import * as migration_20260923_210000_rd_pg_guarantee_block from './20260923_210
 import * as migration_20260923_220000_rd_pg_faq_block from './20260923_220000_rd_pg_faq_block'
 import * as migration_20260923_230000_rd_pg_buy_block from './20260923_230000_rd_pg_buy_block'
 import * as migration_20260923_240000_rd_pg_data_report_avatar from './20260923_240000_rd_pg_data_report_avatar'
+import * as migration_20260924_100000_rd_pr_hero_block from './20260924_100000_rd_pr_hero_block'
+import * as migration_20260924_110000_rd_pr_journey_block from './20260924_110000_rd_pr_journey_block'
+import * as migration_20260924_120000_rd_pr_kit_block from './20260924_120000_rd_pr_kit_block'
+import * as migration_20260924_130000_rd_pr_blood_kit_block from './20260924_130000_rd_pr_blood_kit_block'
+import * as migration_20260924_140000_rd_pr_analyse_block from './20260924_140000_rd_pr_analyse_block'
+import * as migration_20260924_150000_rd_pr_formula_block from './20260924_150000_rd_pr_formula_block'
+import * as migration_20260924_160000_rd_pr_arrives_block from './20260924_160000_rd_pr_arrives_block'
+import * as migration_20260924_170000_rd_pr_advanced_block from './20260924_170000_rd_pr_advanced_block'
+import * as migration_20260924_180000_rd_pg_buy_variant from './20260924_180000_rd_pg_buy_variant'
 
 export const migrations = [
   {
@@ -1229,5 +1238,50 @@ export const migrations = [
     up: migration_20260923_240000_rd_pg_data_report_avatar.up,
     down: migration_20260923_240000_rd_pg_data_report_avatar.down,
     name: '20260923_240000_rd_pg_data_report_avatar',
+  },
+  {
+    up: migration_20260924_100000_rd_pr_hero_block.up,
+    down: migration_20260924_100000_rd_pr_hero_block.down,
+    name: '20260924_100000_rd_pr_hero_block',
+  },
+  {
+    up: migration_20260924_110000_rd_pr_journey_block.up,
+    down: migration_20260924_110000_rd_pr_journey_block.down,
+    name: '20260924_110000_rd_pr_journey_block',
+  },
+  {
+    up: migration_20260924_120000_rd_pr_kit_block.up,
+    down: migration_20260924_120000_rd_pr_kit_block.down,
+    name: '20260924_120000_rd_pr_kit_block',
+  },
+  {
+    up: migration_20260924_130000_rd_pr_blood_kit_block.up,
+    down: migration_20260924_130000_rd_pr_blood_kit_block.down,
+    name: '20260924_130000_rd_pr_blood_kit_block',
+  },
+  {
+    up: migration_20260924_140000_rd_pr_analyse_block.up,
+    down: migration_20260924_140000_rd_pr_analyse_block.down,
+    name: '20260924_140000_rd_pr_analyse_block',
+  },
+  {
+    up: migration_20260924_150000_rd_pr_formula_block.up,
+    down: migration_20260924_150000_rd_pr_formula_block.down,
+    name: '20260924_150000_rd_pr_formula_block',
+  },
+  {
+    up: migration_20260924_160000_rd_pr_arrives_block.up,
+    down: migration_20260924_160000_rd_pr_arrives_block.down,
+    name: '20260924_160000_rd_pr_arrives_block',
+  },
+  {
+    up: migration_20260924_170000_rd_pr_advanced_block.up,
+    down: migration_20260924_170000_rd_pr_advanced_block.down,
+    name: '20260924_170000_rd_pr_advanced_block',
+  },
+  {
+    up: migration_20260924_180000_rd_pg_buy_variant.up,
+    down: migration_20260924_180000_rd_pg_buy_variant.down,
+    name: '20260924_180000_rd_pg_buy_variant',
   },
 ]

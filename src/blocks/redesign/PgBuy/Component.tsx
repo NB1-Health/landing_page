@@ -14,12 +14,12 @@ import type { RdPgBuyBlock as Props } from '@/payload-types'
 // The closing buy section: two plan cards, three reassurance blocks and a line of small print.
 
 
-export const RdPgBuy: React.FC<Props> = ({ anchorId, heading, intro, plans, seals, smallPrint }) => {
+export const RdPgBuy: React.FC<Props> = ({ anchorId, heading, intro, plans, seals, smallPrint, variant }) => {
   return (
     <section style={{
       background: "var(--nb1-dark-brown)",
       color: "var(--nb1-cool-grey)"
-    }} className="rd-pg rd-pgbuy" id={anchorId || undefined}>
+    }} className={variant === 'protocol' ? 'rd-pr rd-prbuy' : 'rd-pg rd-pgbuy'} id={anchorId || undefined}>
       <div style={{
         maxWidth: "1240px",
         margin: "0px auto",

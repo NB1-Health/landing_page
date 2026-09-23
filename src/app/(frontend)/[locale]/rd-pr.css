@@ -1,0 +1,213 @@
+/*
+ * rd-pr — this page's layout rules, scoped to `.rd-pr`.
+ *
+ * Not `.rd-block`: that class is on every converted block of every page,
+ * and these rules are this mockup's, written against bare tags and shared
+ * `data-d` tokens. Scoped to `.rd-block` they rewrite the other pages.
+ * Every block converted from this mockup carries `rd-pr rd-pr-<name>` and
+ * NOT `rd-block`, so no page can reach back the other way either.
+ *
+ * The :root token block from the port is dropped here: rd-tokens.css ships
+ * it once for every page. Only the tokens THIS mockup resolves differently
+ * are repeated, on `.rd-pr` above, where they inherit to this page alone.
+ */
+.rd-pr {
+  /* The tokens this mockup resolves DIFFERENTLY from the shipped :root,
+   * measured on documentElement rather than parsed out of the source.
+   * Custom properties inherit, so defining them here beats :root for this
+   * page's blocks and leaves every other page exactly as it shipped.
+   * Nothing in the markup changes — the copied styles still say var(...),
+   * which is what keeps them verbatim. */
+  --nb1-bubble-core: var(--nb1-blue-grey);
+  --nb1-bubble-halo: var(--nb1-blue-grey);
+  --nb1-bubble-size: 44px;
+  --nb1-radius-sm: 10px;
+  --tint: color-mix(in oklab,var(--nb1-blue-grey) 34%,var(--nb1-cool-grey));
+}
+
+/*
+ * Base rules ported from the mockup's global <style>, scoped to `.rd-pr`
+ * because the app's `body` belongs to the wider site.
+ *
+ * Only INHERITED properties belong here. `background` is not one — see the
+ * wrapper rule below. The block ROOT is included in the box-sizing rule on
+ * purpose: the mockup's is a bare `*`, which covers the <section> itself, and
+ * excluding the root makes a padded `max-width` section measure too wide.
+ */
+.rd-pr {
+  color: var(--nb1-dark-brown);
+  font-family: var(--nb1-font-secondary);
+  font-weight: 350;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+.rd-pr,
+.rd-pr *,
+.rd-pr *::before,
+.rd-pr *::after { box-sizing: border-box; }
+
+.rd-pr h1, .rd-pr h2, .rd-pr h3,
+.rd-pr h4, .rd-pr h5, .rd-pr p { margin: 0; }
+
+.rd-pr a { color: inherit; text-decoration: none; }
+.rd-pr a:hover { color: var(--nb1-dark-brown); opacity: .7; }
+
+.rd-pr summary { list-style: none; cursor: pointer; }
+.rd-pr summary::-webkit-details-marker { display: none; }
+
+/*
+ * The page wrapper — the mockup's `#nb1pro`, reconstructed.
+ *
+ * RenderBlocks wraps every block in a plain <div> that already spans the
+ * viewport. Two things must live here and cannot live on the block root:
+ *
+ * 1. the page fill — `background` does not inherit, so on the block it is
+ *    clipped to that section's own box;
+ * 2. the named CONTAINER — the responsive system is container queries, and a
+ *    section that sets `max-width` would otherwise become its own container and
+ *    answer every query against its own width instead of the viewport's.
+ *
+ * `:not(.rd-pr *)` keeps this to the outermost wrapper, so a block whose own
+ * markup contains a nested <section> cannot create a second page wrapper.
+ */
+div:not(.rd-pr *):has(> .rd-pr) {
+  background-color: var(--nb1-cool-grey);
+  container-type: inline-size;
+  container-name: nb1page;
+  overflow-x: clip;
+}
+
+
+                                                                       
+.rd-pr li{list-style:none;}
+  .rd-pr [data-m="rail"]::-webkit-scrollbar{display:none;}
+  /* a replaced element's automatic minimum is its intrinsic width, which blows a
+     grid column out past the viewport — every grid child opts out of that */
+  .rd-pr [style*="grid"] > *, .rd-pr:is([style*="grid"] > *), .rd-pr:is([style*="grid"]) > *{min-width:0;}
+  .rd-pr img, .rd-pr:is(img){max-width:100%;min-width:0;}
+  .rd-pr nav[data-over="1"], .rd-pr:is(nav[data-over="1"]){background:transparent!important;border-bottom-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+  /* the journey stage: one treatment at every width */
+  .rd-pr [data-m="jwlabel"], .rd-pr:is([data-m="jwlabel"]){background:var(--nb1-blue-grey);color:var(--nb1-dark-brown);padding:.42em .6em;border-radius:6px 0 0 6px;}
+  .rd-pr [data-m="jwnum"], .rd-pr:is([data-m="jwnum"]){display:grid!important;place-items:center;background:color-mix(in oklab,var(--nb1-blue-grey) 74%,var(--nb1-cool-grey));color:var(--nb1-dark-brown);min-width:2.6em;border-radius:999px;margin-left:2px;}
+  @keyframes nb1drift{from{transform:translateX(0);}to{transform:translateX(-33.3333%);}}
+  @media (prefers-reduced-motion:reduce){.rd-pr [data-m="ingrow"], .rd-pr:is([data-m="ingrow"]){animation:none!important;}}
+  /* the full cluster (4 links + Discover + locale + Log in + CTA) needs ~990px,
+     so the burger takes over there — not at 899, which left a 90px broken band */
+  @container nb1page (max-width:999px){
+    .rd-pr [data-m="navcta"], .rd-pr:is([data-m="navcta"]),.rd-pr [data-m="navextra"], .rd-pr:is([data-m="navextra"]){display:none!important;}
+    .rd-pr [data-m="burger"], .rd-pr:is([data-m="burger"]){display:flex!important;}
+  }
+  @container nb1page (max-width:899px){
+    .rd-pr [data-m="plate"], .rd-pr:is([data-m="plate"]){width:84px!important;height:84px!important;}
+    .rd-pr [data-m="partshot"], .rd-pr:is([data-m="partshot"]){height:190px!important;}
+    .rd-pr [data-m="readshot"], .rd-pr:is([data-m="readshot"]){height:210px!important;}
+    .rd-pr [data-m="ingrail"], .rd-pr:is([data-m="ingrail"]){margin-top:34px!important;}
+    .rd-pr [data-m="jline"], .rd-pr:is([data-m="jline"]){display:none!important;}
+
+  }
+  .rd-pr [data-m="roster"]::-webkit-scrollbar{display:none;}
+  @container nb1page (min-width:1000px){
+    .rd-pr [data-d~="navlinks"], .rd-pr:is([data-d~="navlinks"]){display:flex!important;}
+  }
+  @container nb1page (min-width:900px){
+    .rd-pr [data-m="trio"], .rd-pr:is([data-m="trio"]){grid-template-columns:repeat(3,1fr)!important;gap:0 20px!important;}
+    .rd-pr [data-m="steps3"], .rd-pr:is([data-m="steps3"]),.rd-pr [data-m="benefits3"], .rd-pr:is([data-m="benefits3"]),.rd-pr [data-m="advgrid"], .rd-pr:is([data-m="advgrid"]){grid-template-columns:repeat(3,1fr)!important;}
+    .rd-pr [data-m="proof"], .rd-pr:is([data-m="proof"]){grid-template-columns:92px 1fr!important;gap:0 26px!important;}
+    .rd-pr [data-m="triocell"] + [data-m="triocell"]::before{content:"";position:absolute;top:0;bottom:0;left:-10px;width:1px;background:rgba(81,71,69,.24);}
+    .rd-pr [data-m="roster"], .rd-pr:is([data-m="roster"]){display:grid!important;grid-template-columns:repeat(5,1fr)!important;gap:18px!important;overflow:visible!important;}
+    .rd-pr [data-m="rostercell"], .rd-pr:is([data-m="rostercell"]){flex:none!important;}
+    .rd-pr [data-d~="pad"], .rd-pr:is([data-d~="pad"]){padding-left:48px!important;padding-right:48px!important;}
+    .rd-pr [data-d~="bigpad"], .rd-pr:is([data-d~="bigpad"]){padding-top:104px!important;padding-bottom:104px!important;}
+
+    .rd-pr [data-d~="g2"], .rd-pr:is([data-d~="g2"]){display:grid!important;grid-template-columns:1fr 1fr!important;gap:22px!important;}
+    .rd-pr [data-d~="g3"], .rd-pr:is([data-d~="g3"]){display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:20px!important;}
+    .rd-pr [data-d~="g4"], .rd-pr:is([data-d~="g4"]){display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:16px!important;}
+    /* the board rail is a swipe rail on phones only; at desktop it is a three-up grid */
+    .rd-pr [data-m="rail"][data-d~="g3"], .rd-pr:is([data-m="rail"][data-d~="g3"]){overflow:visible!important;}
+    .rd-pr [data-m="rail"][data-d~="g3"] > div, .rd-pr:is([data-m="rail"][data-d~="g3"] > div), .rd-pr:is([data-m="rail"][data-d~="g3"]) > div{flex:1 1 0!important;min-width:0;}
+    .rd-pr [data-d~="side"], .rd-pr:is([data-d~="side"]){grid-template-columns:1.02fr .98fr!important;gap:56px!important;}
+    .rd-pr [data-m="jside"], .rd-pr:is([data-m="jside"]){grid-template-columns:.92fr 1.08fr!important;gap:40px!important;}
+    .rd-pr [data-d~="bigh"], .rd-pr:is([data-d~="bigh"]){font-size:clamp(40px,4.6cqi,60px)!important;}
+    .rd-pr [data-m="ucard"], .rd-pr:is([data-m="ucard"]){grid-template-columns:1fr 1fr!important;}
+    .rd-pr [data-m="kitshot"], .rd-pr:is([data-m="kitshot"]){height:440px!important;}
+    .rd-pr [data-m="beforeafter"], .rd-pr:is([data-m="beforeafter"]){grid-template-columns:1fr 1fr!important;gap:20px!important;}
+    .rd-pr [data-m="beforeafter"] [data-m="kitshot"], .rd-pr:is([data-m="beforeafter"] [data-m="kitshot"]), .rd-pr:is([data-m="beforeafter"]) [data-m="kitshot"]{height:360px!important;}
+  }
+  @container nb1page (max-width:899px){
+    /* stacked rows: identity, then the bullets full width. A two-column split
+       needs ~493px of text width, so it only starts once the track can carry it. */
+    .rd-pr [data-m="triocell"], .rd-pr:is([data-m="triocell"]){display:block!important;text-align:left!important;padding:22px 0 26px!important;}
+    .rd-pr [data-m="triocell"] > div:first-child, .rd-pr:is([data-m="triocell"] > div:first-child), .rd-pr:is([data-m="triocell"]) > div:first-child{display:grid!important;grid-template-columns:40px 1fr;gap:0 12px;align-items:center;}
+    .rd-pr [data-m="triocell"] > div:first-child > span.nb1-bubble, .rd-pr:is([data-m="triocell"] > div:first-child > span.nb1-bubble), .rd-pr:is([data-m="triocell"]) > div:first-child > span.nb1-bubble{--nb1-bubble-size:40px!important;grid-row:1 / span 2;grid-column:1;}
+    .rd-pr [data-m="triocell"] > div:first-child > div:nth-of-type(1), .rd-pr:is([data-m="triocell"] > div:first-child > div:nth-of-type(1)), .rd-pr:is([data-m="triocell"]) > div:first-child > div:nth-of-type(1){grid-row:1;grid-column:2;margin-top:0!important;font-size:24px!important;}
+    .rd-pr [data-m="triocell"] > div:first-child > div:nth-of-type(2), .rd-pr:is([data-m="triocell"] > div:first-child > div:nth-of-type(2)), .rd-pr:is([data-m="triocell"]) > div:first-child > div:nth-of-type(2){grid-row:2;grid-column:2;margin-top:4px!important;}
+    .rd-pr [data-m="triocell"] > p, .rd-pr:is([data-m="triocell"] > p), .rd-pr:is([data-m="triocell"]) > p{text-align:left!important;margin-top:12px!important;max-width:none!important;}
+    .rd-pr [data-m="triocell"] > div:last-child, .rd-pr:is([data-m="triocell"] > div:last-child), .rd-pr:is([data-m="triocell"]) > div:last-child{margin-top:16px!important;padding-top:14px!important;align-items:flex-start!important;text-align:left!important;}
+    .rd-pr [data-m="triocell"] > div:last-child > div, .rd-pr:is([data-m="triocell"] > div:last-child > div), .rd-pr:is([data-m="triocell"]) > div:last-child > div{max-width:none!important;}
+    /* the five-across map becomes stacked stages, as on Our Plans */
+    .rd-pr [data-m="jgrid"], .rd-pr:is([data-m="jgrid"]){gap:0!important;}
+    .rd-pr [data-m="jstep"], .rd-pr:is([data-m="jstep"]){padding:0 0 30px!important;}
+    .rd-pr [data-m="jstep"] > div:nth-child(3), .rd-pr:is([data-m="jstep"] > div:nth-child(3)), .rd-pr:is([data-m="jstep"]) > div:nth-child(3){font-size:32px!important;}
+    .rd-pr [data-m="jline"], .rd-pr:is([data-m="jline"]){display:none!important;}
+  }
+  @container nb1page (min-width:720px) and (max-width:899px){
+    .rd-pr [data-m="triocell"], .rd-pr:is([data-m="triocell"]){display:grid!important;grid-template-columns:1.3fr .7fr!important;gap:0 20px!important;align-items:start!important;}
+    .rd-pr [data-m="triocell"] > div:first-child, .rd-pr:is([data-m="triocell"] > div:first-child), .rd-pr:is([data-m="triocell"]) > div:first-child{grid-column:1;}
+    .rd-pr [data-m="triocell"] > p, .rd-pr:is([data-m="triocell"] > p), .rd-pr:is([data-m="triocell"]) > p{grid-column:1;}
+    .rd-pr [data-m="triocell"] > div:last-child, .rd-pr:is([data-m="triocell"] > div:last-child), .rd-pr:is([data-m="triocell"]) > div:last-child{grid-column:2;grid-row:1 / span 2;margin-top:0!important;padding-top:0!important;border-top:0!important;}
+  }
+  @container nb1page (max-width:620px){
+    .rd-pr [data-m="stepbody"], .rd-pr:is([data-m="stepbody"]){padding-left:0!important;}
+  }
+
+
+/* ═══ hand-written overrides below — NOT ported from the mockup ═══
+ * tools/dead_rules.py stops at this line: everything below is a
+ * deliberate deviation written against the APP's markup, so testing
+ * it against the mockup would find nothing and delete it.
+ */
+/*
+ * The trust line's inline link.
+ *
+ * In the mockup the <a> carries its own style attribute. In the app that link is
+ * a node INSIDE a lexical value, so there is no element in the component to hang
+ * an inline style on — and there should not be: an editor who added a second
+ * link to that sentence would get an unstyled one. A rule is the right shape.
+ *
+ * Values copied from the mockup's own style attribute on
+ * `div/div/div/div[1]/p/a`, not chosen here.
+ *
+ * NOT VERIFIED BY THE HARNESS. `payload-richtext` is a class the real RichText
+ * puts on its wrapper; the harness's stub deliberately omits that wrapper so the
+ * two trees stay alignable, so this selector cannot match there and the harness
+ * still reports `padding-bottom: 1px -> 0px` on the anchor. That one difference
+ * is the harness's, not the page's — confirm it in the browser after seeding.
+ */
+.rd-pr .payload-richtext a {
+  border-bottom: 1.5px solid var(--nb1-blue-grey);
+  padding-bottom: 1px;
+}
+
+/*
+ * Bold runs inside this page's rich text.
+ *
+ * The mockup styles every <b> explicitly; lexical bold carries no inline style,
+ * so in the app it falls to the UA default of 700. Measured on this mockup: both
+ * <b> elements are font-weight 500, and 500 is what the journey block's
+ * `Never before.` is supposed to be — the harness reported 500 -> 700 on it.
+ *
+ * Scoped to `.rd-pr b` rather than `.rd-pr .payload-richtext b` on purpose: the
+ * harness's RichText stub emits <b> but not Payload's wrapper class, so this
+ * form is one the fidelity check can actually see. It is also exactly as broad
+ * as the evidence — every bold on this page is 500, and a later block that wants
+ * 700 will show up as a difference rather than being silently restyled.
+ *
+ * The other two mockups are MIXED — Our Plans has four <b> at 350, one at 500
+ * and three at 700; the homepage seven at 500 and three at 700 — so there is no
+ * shared rule to write, and whether their shipped blocks have the same 700
+ * problem is on the punch list.
+ */
+.rd-pr b {
+  font-weight: 500;
+}

@@ -25,6 +25,12 @@ import './rd-tokens.css'
 // elements on the homepage. Loaded globally, it applies only where a block root
 // carries `rd-pg`.
 import './rd-pg.css'
+// `rd-pr.css` is The Protocol mockup's own layout, scoped to `.rd-pr` on the
+// same reasoning. It also carries the five design tokens that mockup resolves
+// differently from the shipped `:root` — bubble size and colours, radius-sm,
+// and `--tint`, which the shipped tokens do not define at all. They sit on
+// `.rd-pr` so they inherit to this page's blocks and reach no other page.
+import './rd-pr.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
