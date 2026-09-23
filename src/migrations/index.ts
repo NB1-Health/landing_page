@@ -188,6 +188,20 @@ import * as migration_20260922_200000_rd_plans_block from './20260922_200000_rd_
 import * as migration_20260922_210000_rd_close_block from './20260922_210000_rd_close_block'
 import * as migration_20260922_220000_rd_chrome_collections from './20260922_220000_rd_chrome_collections'
 import * as migration_20260922_230000_rd_headers_rels from './20260922_230000_rd_headers_rels'
+import * as migration_20260923_100000_rd_pg_hero_block from './20260923_100000_rd_pg_hero_block'
+import * as migration_20260923_110000_rd_pg_plans_block from './20260923_110000_rd_pg_plans_block'
+import * as migration_20260923_120000_rd_pg_advanced_block from './20260923_120000_rd_pg_advanced_block'
+import * as migration_20260923_130000_rd_pg_words_block from './20260923_130000_rd_pg_words_block'
+import * as migration_20260923_140000_rd_formula_variant from './20260923_140000_rd_formula_variant'
+import * as migration_20260923_150000_rd_pg_data_block from './20260923_150000_rd_pg_data_block'
+import * as migration_20260923_160000_rd_pg_board_strip_block from './20260923_160000_rd_pg_board_strip_block'
+import * as migration_20260923_170000_rd_pg_timeline_block from './20260923_170000_rd_pg_timeline_block'
+import * as migration_20260923_180000_rd_pg_board_block from './20260923_180000_rd_pg_board_block'
+import * as migration_20260923_190000_rd_pg_athletes_block from './20260923_190000_rd_pg_athletes_block'
+import * as migration_20260923_200000_rd_pg_quiet_block from './20260923_200000_rd_pg_quiet_block'
+import * as migration_20260923_210000_rd_pg_guarantee_block from './20260923_210000_rd_pg_guarantee_block'
+import * as migration_20260923_220000_rd_pg_faq_block from './20260923_220000_rd_pg_faq_block'
+import * as migration_20260923_230000_rd_pg_buy_block from './20260923_230000_rd_pg_buy_block'
 
 export const migrations = [
   {
@@ -1139,5 +1153,75 @@ export const migrations = [
     up: migration_20260922_230000_rd_headers_rels.up,
     down: migration_20260922_230000_rd_headers_rels.down,
     name: '20260922_230000_rd_headers_rels',
+  },
+  {
+    up: migration_20260923_100000_rd_pg_hero_block.up,
+    down: migration_20260923_100000_rd_pg_hero_block.down,
+    name: '20260923_100000_rd_pg_hero_block',
+  },
+  {
+    up: migration_20260923_110000_rd_pg_plans_block.up,
+    down: migration_20260923_110000_rd_pg_plans_block.down,
+    name: '20260923_110000_rd_pg_plans_block',
+  },
+  {
+    up: migration_20260923_120000_rd_pg_advanced_block.up,
+    down: migration_20260923_120000_rd_pg_advanced_block.down,
+    name: '20260923_120000_rd_pg_advanced_block',
+  },
+  {
+    up: migration_20260923_130000_rd_pg_words_block.up,
+    down: migration_20260923_130000_rd_pg_words_block.down,
+    name: '20260923_130000_rd_pg_words_block',
+  },
+  {
+    up: migration_20260923_140000_rd_formula_variant.up,
+    down: migration_20260923_140000_rd_formula_variant.down,
+    name: '20260923_140000_rd_formula_variant',
+  },
+  {
+    up: migration_20260923_150000_rd_pg_data_block.up,
+    down: migration_20260923_150000_rd_pg_data_block.down,
+    name: '20260923_150000_rd_pg_data_block',
+  },
+  {
+    up: migration_20260923_160000_rd_pg_board_strip_block.up,
+    down: migration_20260923_160000_rd_pg_board_strip_block.down,
+    name: '20260923_160000_rd_pg_board_strip_block',
+  },
+  {
+    up: migration_20260923_170000_rd_pg_timeline_block.up,
+    down: migration_20260923_170000_rd_pg_timeline_block.down,
+    name: '20260923_170000_rd_pg_timeline_block',
+  },
+  {
+    up: migration_20260923_180000_rd_pg_board_block.up,
+    down: migration_20260923_180000_rd_pg_board_block.down,
+    name: '20260923_180000_rd_pg_board_block',
+  },
+  {
+    up: migration_20260923_190000_rd_pg_athletes_block.up,
+    down: migration_20260923_190000_rd_pg_athletes_block.down,
+    name: '20260923_190000_rd_pg_athletes_block',
+  },
+  {
+    up: migration_20260923_200000_rd_pg_quiet_block.up,
+    down: migration_20260923_200000_rd_pg_quiet_block.down,
+    name: '20260923_200000_rd_pg_quiet_block',
+  },
+  {
+    up: migration_20260923_210000_rd_pg_guarantee_block.up,
+    down: migration_20260923_210000_rd_pg_guarantee_block.down,
+    name: '20260923_210000_rd_pg_guarantee_block',
+  },
+  {
+    up: migration_20260923_220000_rd_pg_faq_block.up,
+    down: migration_20260923_220000_rd_pg_faq_block.down,
+    name: '20260923_220000_rd_pg_faq_block',
+  },
+  {
+    up: migration_20260923_230000_rd_pg_buy_block.up,
+    down: migration_20260923_230000_rd_pg_buy_block.down,
+    name: '20260923_230000_rd_pg_buy_block',
   },
 ]

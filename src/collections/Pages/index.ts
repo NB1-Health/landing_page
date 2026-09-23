@@ -17,6 +17,21 @@ import { RdLabBlock } from '@/blocks/redesign/Lab/config'
 import { RdReviewsBlock } from '@/blocks/redesign/Reviews/config'
 import { RdPlansBlock } from '@/blocks/redesign/Plans/config'
 import { RdCloseBlock } from '@/blocks/redesign/Close/config'
+// Our Plans blocks. A separate family from the nine above: same pipeline, a
+// different mockup, and `rd-pg`-scoped styles so the two cannot collide.
+import { RdPgHeroBlock } from '@/blocks/redesign/PgHero/config'
+import { RdPgPlansBlock } from '@/blocks/redesign/PgPlans/config'
+import { RdPgAdvancedBlock } from '@/blocks/redesign/PgAdvanced/config'
+import { RdPgWordsBlock } from '@/blocks/redesign/PgWords/config'
+import { RdPgDataBlock } from '@/blocks/redesign/PgData/config'
+import { RdPgBoardStripBlock } from '@/blocks/redesign/PgBoardStrip/config'
+import { RdPgTimelineBlock } from '@/blocks/redesign/PgTimeline/config'
+import { RdPgBoardBlock } from '@/blocks/redesign/PgBoard/config'
+import { RdPgAthletesBlock } from '@/blocks/redesign/PgAthletes/config'
+import { RdPgQuietBlock } from '@/blocks/redesign/PgQuiet/config'
+import { RdPgGuaranteeBlock } from '@/blocks/redesign/PgGuarantee/config'
+import { RdPgFaqBlock } from '@/blocks/redesign/PgFaq/config'
+import { RdPgBuyBlock } from '@/blocks/redesign/PgBuy/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
 import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
@@ -238,6 +253,19 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdReviewsBlock,
                 RdPlansBlock,
                 RdCloseBlock,
+                RdPgHeroBlock,
+                RdPgPlansBlock,
+                RdPgAdvancedBlock,
+                RdPgWordsBlock,
+                RdPgDataBlock,
+                RdPgBoardStripBlock,
+                RdPgTimelineBlock,
+                RdPgBoardBlock,
+                RdPgAthletesBlock,
+                RdPgQuietBlock,
+                RdPgGuaranteeBlock,
+                RdPgFaqBlock,
+                RdPgBuyBlock,
                 Content,
                 BoxCardBlock,
                 FormulaCardBlock,

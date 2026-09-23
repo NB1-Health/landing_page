@@ -301,6 +301,19 @@ export interface Page {
     | RdReviewsBlock
     | RdPlansBlock
     | RdCloseBlock
+    | RdPgHeroBlock
+    | RdPgPlansBlock
+    | RdPgAdvancedBlock
+    | RdPgWordsBlock
+    | RdPgDataBlock
+    | RdPgBoardStripBlock
+    | RdPgTimelineBlock
+    | RdPgBoardBlock
+    | RdPgAthletesBlock
+    | RdPgQuietBlock
+    | RdPgGuaranteeBlock
+    | RdPgFaqBlock
+    | RdPgBuyBlock
     | ContentBlock
     | BoxCardBlock
     | FormulaCardBlock
@@ -1607,6 +1620,10 @@ export interface RdProtocolBlock {
  */
 export interface RdFormulaBlock {
   /**
+   * Which page’s proportions to use. The markup is the same either way — this only changes the type scale, the gutters and the column split. Leave it on Homepage for every page that is not Our Plans.
+   */
+  variant?: ('homepage' | 'ourPlans') | null;
+  /**
    * Rendered as the section id. Deliberately NOT localized.
    */
   anchorId?: string | null;
@@ -2222,6 +2239,883 @@ export interface RdCloseBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdClose';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgHeroBlock".
+ */
+export interface RdPgHeroBlock {
+  /**
+   * Rendered as the section id, for linking to this section. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The line break is yours to place — it is what keeps the second line from widowing.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The ↗ glyph is drawn by the button — do not type it into the label.
+   */
+  primaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Here the arrow IS part of the label — the mockup types it into the text rather than drawing it, so it travels with the translation.
+   */
+  secondaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The overlapping faces beside the science-board line. Three is the mockup's count; the overlap is applied from the second row on, so adding or removing one still reads as a stack.
+   */
+  trustAvatars?:
+    | {
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  trustHeadline?: string | null;
+  trustDetail?: string | null;
+  image?: (number | null) | Media;
+  imageBadge?: string | null;
+  scoreLabel?: string | null;
+  /**
+   * Text, not a number: the decimal separator differs by locale.
+   */
+  scoreValue?: string | null;
+  scoreRating?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgPlansBlock".
+ */
+export interface RdPgPlansBlock {
+  /**
+   * Rendered as the section id. The page's own nav and the footer link to "#plans", so changing it breaks them. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The line break is yours to place — it is what keeps "One difference." on its own line.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  core: {
+    name: string;
+    tagline?: string | null;
+    /**
+     * The amount only. The "/mo" beside it is a separate field so it can be translated on its own.
+     */
+    price?: string | null;
+    priceSuffix?: string | null;
+    terms?: string | null;
+    listLabel?: string | null;
+    /**
+     * Each row is drawn with a ✓ disc; the disc is part of the row, not something you type.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The card's own button. The comparison table has its own pair of buttons below.
+     */
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    note?: string | null;
+  };
+  advanced: {
+    /**
+     * The lime tag hung off the top edge of the card. Leave empty and no badge is drawn.
+     */
+    badge?: string | null;
+    name: string;
+    tagline?: string | null;
+    /**
+     * The amount only. The "/mo" beside it is a separate field so it can be translated on its own.
+     */
+    price?: string | null;
+    priceSuffix?: string | null;
+    terms?: string | null;
+    listLabel?: string | null;
+    /**
+     * Each row is drawn with a ✓ disc; the disc is part of the row, not something you type.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The card's own button. The comparison table has its own pair of buttons below.
+     */
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    note?: string | null;
+  };
+  compareOpenLabel?: string | null;
+  /**
+   * The mockup only ever shows the closed wording; this is the text once the table is open.
+   */
+  compareCloseLabel?: string | null;
+  /**
+   * One entry per section of the table. Sections and rows both render in this order.
+   */
+  compare?:
+    | {
+        title: string;
+        rows?:
+          | {
+              label: string;
+              /**
+               * "included" draws the disc, "excluded" a dimmed dash, "text" shows the wording beside it.
+               */
+              coreKind?: ('included' | 'excluded' | 'text') | null;
+              /**
+               * Only used when Core is set to "text".
+               */
+              coreText?: string | null;
+              /**
+               * "included" draws the disc, "excluded" a dimmed dash, "text" shows the wording beside it.
+               */
+              advancedKind?: ('included' | 'excluded' | 'text') | null;
+              /**
+               * Only used when Advanced is set to "text".
+               */
+              advancedText?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  compareCta?: {
+    coreUrl?: string | null;
+    coreLabel?: string | null;
+    advancedUrl?: string | null;
+    advancedLabel?: string | null;
+  };
+  /**
+   * The three notes under the cards.
+   */
+  assurances?:
+    | {
+        /**
+         * A single character drawn inside the disc — ◔, ↻, ◉ in the mockup. Not an upload: it takes the section's own colour and scales with the text.
+         */
+        glyph?: string | null;
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgPlans';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAdvancedBlock".
+ */
+export interface RdPgAdvancedBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The orange chip under the paragraph. Leave empty and no chip is drawn.
+   */
+  tagLabel?: string | null;
+  /**
+   * Exactly three. Each is drawn with its own icon, which is part of the design rather than a field — a fourth row would save but never appear.
+   */
+  cards?:
+    | {
+        /**
+         * The small label beside the icon — "Every cycle", "From cycle one".
+         */
+        chip?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * Each row is drawn with its own dot.
+         */
+        points?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Bold marks the clause that carries the promise; the rest is plain.
+   */
+  footnote?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgAdvanced';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgWordsBlock".
+ */
+export interface RdPgWordsBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The words before the tenure — "nb1 customer" in the mockup. The tenure itself is per review.
+   */
+  customerLabel?: string | null;
+  /**
+   * Four across at desktop; below the breakpoint the row scrolls and snaps.
+   */
+  reviews?:
+    | {
+        image?: (number | null) | Media;
+        /**
+         * Where the portrait is anchored vertically, as a percentage. 50 is the middle; lower numbers pull the face up.
+         */
+        focalY?: number | null;
+        name: string;
+        /**
+         * Shown after the byline prefix, including its separator — " · 4 months in".
+         */
+        tenure?: string | null;
+        quote?: string | null;
+        /**
+         * The full text. The card shows the first 150 characters and reveals the rest on See more, so write it in full.
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  seeMoreLabel?: string | null;
+  seeLessLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgWords';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgDataBlock".
+ */
+export interface RdPgDataBlock {
+  /**
+   * Rendered as the section id. The page's footer links to "#data". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * Exactly four, in order. Each is its own button in the markup, so a fifth would never appear.
+   */
+  tabs?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Exactly four, matched to the tabs by position.
+   */
+  panels?:
+    | {
+        title: string;
+        /**
+         * Three per panel. The numbers come from the order, not from a field.
+         */
+        steps?:
+          | {
+              title: string;
+              body?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The ↗ glyph is drawn by the link — do not type it into the label.
+   */
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgData';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardStripBlock".
+ */
+export interface RdPgBoardStripBlock {
+  /**
+   * Rendered as the element id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The science board members shown as an overlapping stack. Any number works; the first sits flush and every one after it laps 14px over the one before.
+   */
+  avatars?:
+    | {
+        /**
+         * Cropped to a circle and anchored to the top of the frame, as in the mockup.
+         */
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sentence before the link. It ends with a space — that space is what separates it from the link, so keep it when translating.
+   */
+  note?: string | null;
+  /**
+   * Sits inline at the end of the note, underlined in blue.
+   */
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBoardStrip';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgTimelineBlock".
+ */
+export interface RdPgTimelineBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The word before the number on every card — "Month" in the mockup. One field for the section, because it is the same word on all four.
+   */
+  monthLabel?: string | null;
+  /**
+   * Four columns at desktop. The first column's rule is accented automatically — that marks where the timeline starts, so it follows whichever card is first.
+   */
+  months?:
+    | {
+        /**
+         * The second half of the chip. Text rather than a number so a locale can write it its own way.
+         */
+        number?: string | null;
+        /**
+         * An optional third chip after the number — "Advanced" on the retest month. Leave empty and no chip is rendered.
+         */
+        tag?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * How much of the dot above the card is solid, 0–100. The mockup runs 62, 40, 26, 8 across the four months; the rest of the dot's gradient is derived from this one number.
+         */
+        dial?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Fills the band under the four columns, behind a left-to-right dark gradient that keeps the figures readable.
+   */
+  image?: (number | null) | Media;
+  bannerLabel?: string | null;
+  /**
+   * A 2×2 grid inside the banner. The design is built for exactly four — a fifth row will not render.
+   */
+  stats?:
+    | {
+        /**
+         * The large number, exactly as it should read. The mockup writes bare numerals with no unit.
+         */
+        value?: string | null;
+        /**
+         * The first part of the line under the figure.
+         */
+        caption?: string | null;
+        /**
+         * The end of the caption. Three of the four keep it on one line so the phrase never breaks in the middle, and their value starts with a space; the third breaks the line before it instead, and its value does not.
+         */
+        tail?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgTimeline';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardBlock".
+ */
+export interface RdPgBoardBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each row is one card in the rail AND the panel it opens. Exactly three: the panels are laid out individually because they do not all have the same number of paragraphs.
+   */
+  scientists?:
+    | {
+        photo?: (number | null) | Media;
+        name: string;
+        /**
+         * The line under the name ON THE CARD.
+         */
+        role?: string | null;
+        /**
+         * The small print on the card.
+         */
+        credentials?: string | null;
+        /**
+         * The outlined pill at the top of the panel.
+         */
+        panelEyebrow?: string | null;
+        /**
+         * The uppercase line under the name IN THE PANEL.
+         */
+        panelCredentials?: string | null;
+        bio?: string | null;
+        /**
+         * Optional. The paragraph is not rendered at all when empty.
+         */
+        bioExtra?: string | null;
+        /**
+         * Rendered with the blue rule down its left edge.
+         */
+        quote?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  readBioLabel?: string | null;
+  /**
+   * Read by screen readers; the button itself shows ✕.
+   */
+  closeLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBoard';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAthletesBlock".
+ */
+export interface RdPgAthletesBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  intro?: string | null;
+  /**
+   * Two cards side by side. The grid is 1.18fr / 1fr, so the FIRST card is the wider one and carries the larger quote — that follows position, not the person. The design is built for exactly two; a third has no column.
+   */
+  athletes?:
+    | {
+        /**
+         * Fills the card, behind a bottom-up dark gradient that keeps the quote readable.
+         */
+        photo?: (number | null) | Media;
+        /**
+         * Include the quotation marks — they are part of the text in the mockup, not drawn by the design.
+         */
+        quote?: string | null;
+        /**
+         * Name and title, separated by the interpunct as in the mockup.
+         */
+        attribution?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The uppercase line to the left of the time.
+   */
+  recordLabel?: string | null;
+  /**
+   * The large figure between the two captions.
+   */
+  recordValue?: string | null;
+  /**
+   * The uppercase line to the right of the time.
+   */
+  recordPlace?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgAthletes';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgQuietBlock".
+ */
+export interface RdPgQuietBlock {
+  /**
+   * Rendered as the section id. The mockup gives this band none; set one only if something needs to link to it. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * One sentence over a hairline rule. The closing clause is coloured with the Blue grey token from the editor's colour menu — it is a colour, not bold, so it stays a colour in every locale and a translator can move where it starts.
+   */
+  statement?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgQuiet';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgGuaranteeBlock".
+ */
+export interface RdPgGuaranteeBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each is one numbered row: a number, an eyebrow, a heading, a paragraph and a row of chips. The mockup has two; any number works, since the rows are identical in style.
+   */
+  points?:
+    | {
+        /**
+         * Written, not counted — "01", "02". Adding a row in the middle means renumbering the ones after it.
+         */
+        number?: string | null;
+        /**
+         * The small uppercase line above the heading.
+         */
+        eyebrow?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * The pills under the paragraph. They wrap, so any number fits.
+         */
+        chips?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgGuarantee';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgFaqBlock".
+ */
+export interface RdPgFaqBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each row opens and closes on its own. Any number works; the last row automatically closes the stack with a bottom rule, so that follows whichever row is last.
+   */
+  faqs?:
+    | {
+        /**
+         * Written, not counted — "01", "02". Adding a question in the middle means renumbering the ones after it.
+         */
+        number?: string | null;
+        question: string;
+        answer?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBuyBlock".
+ */
+export interface RdPgBuyBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The cards at the end of the page. The mockup has two; the grid takes any number.
+   */
+  plans?:
+    | {
+        /**
+         * The pill above the card. Giving a plan a badge is what makes it the highlighted one — it also switches the card's border, its ticks and its button to the accent colour. Leave empty for a plain card.
+         */
+        badge?: string | null;
+        /**
+         * The small uppercase line at the top of the card.
+         */
+        name: string;
+        /**
+         * The sentence under the name.
+         */
+        summary?: string | null;
+        /**
+         * Including the currency symbol, exactly as it should read.
+         */
+        price?: string | null;
+        /**
+         * The smaller text beside the price — "/mo" in the mockup.
+         */
+        priceSuffix?: string | null;
+        /**
+         * The small print under the price.
+         */
+        note?: string | null;
+        /**
+         * The uppercase line above the ticks — it differs per card in the mockup ("What's inside" and "Everything in Core, plus").
+         */
+        featuresLabel?: string | null;
+        /**
+         * One tick each. Any number; the cards do not have to match.
+         */
+        features?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        cta: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          /**
+           * Localized: each locale can point at a different destination.
+           */
+          url?: string | null;
+          label: string;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Three short blocks under the cards.
+   */
+  seals?:
+    | {
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The last line on the page, under everything.
+   */
+  smallPrint?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBuy';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -10320,6 +11214,19 @@ export interface PagesSelect<T extends boolean = true> {
         rdReviews?: T | RdReviewsBlockSelect<T>;
         rdPlans?: T | RdPlansBlockSelect<T>;
         rdClose?: T | RdCloseBlockSelect<T>;
+        rdPgHero?: T | RdPgHeroBlockSelect<T>;
+        rdPgPlans?: T | RdPgPlansBlockSelect<T>;
+        rdPgAdvanced?: T | RdPgAdvancedBlockSelect<T>;
+        rdPgWords?: T | RdPgWordsBlockSelect<T>;
+        rdPgData?: T | RdPgDataBlockSelect<T>;
+        rdPgBoardStrip?: T | RdPgBoardStripBlockSelect<T>;
+        rdPgTimeline?: T | RdPgTimelineBlockSelect<T>;
+        rdPgBoard?: T | RdPgBoardBlockSelect<T>;
+        rdPgAthletes?: T | RdPgAthletesBlockSelect<T>;
+        rdPgQuiet?: T | RdPgQuietBlockSelect<T>;
+        rdPgGuarantee?: T | RdPgGuaranteeBlockSelect<T>;
+        rdPgFaq?: T | RdPgFaqBlockSelect<T>;
+        rdPgBuy?: T | RdPgBuyBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
         'box-card'?: T | BoxCardBlockSelect<T>;
         'formula-card'?: T | FormulaCardBlockSelect<T>;
@@ -10521,6 +11428,7 @@ export interface RdProtocolBlockSelect<T extends boolean = true> {
  * via the `definition` "RdFormulaBlock_select".
  */
 export interface RdFormulaBlockSelect<T extends boolean = true> {
+  variant?: T;
   anchorId?: T;
   heading?: T;
   intro?: T;
@@ -10836,6 +11744,444 @@ export interface RdCloseBlockSelect<T extends boolean = true> {
         url?: T;
         label?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgHeroBlock_select".
+ */
+export interface RdPgHeroBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  primaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  secondaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  trustAvatars?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  trustHeadline?: T;
+  trustDetail?: T;
+  image?: T;
+  imageBadge?: T;
+  scoreLabel?: T;
+  scoreValue?: T;
+  scoreRating?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgPlansBlock_select".
+ */
+export interface RdPgPlansBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  core?:
+    | T
+    | {
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        terms?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        note?: T;
+      };
+  advanced?:
+    | T
+    | {
+        badge?: T;
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        terms?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        note?: T;
+      };
+  compareOpenLabel?: T;
+  compareCloseLabel?: T;
+  compare?:
+    | T
+    | {
+        title?: T;
+        rows?:
+          | T
+          | {
+              label?: T;
+              coreKind?: T;
+              coreText?: T;
+              advancedKind?: T;
+              advancedText?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  compareCta?:
+    | T
+    | {
+        coreUrl?: T;
+        coreLabel?: T;
+        advancedUrl?: T;
+        advancedLabel?: T;
+      };
+  assurances?:
+    | T
+    | {
+        glyph?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAdvancedBlock_select".
+ */
+export interface RdPgAdvancedBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tagLabel?: T;
+  cards?:
+    | T
+    | {
+        chip?: T;
+        title?: T;
+        body?: T;
+        points?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  footnote?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgWordsBlock_select".
+ */
+export interface RdPgWordsBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  customerLabel?: T;
+  reviews?:
+    | T
+    | {
+        image?: T;
+        focalY?: T;
+        name?: T;
+        tenure?: T;
+        quote?: T;
+        body?: T;
+        id?: T;
+      };
+  seeMoreLabel?: T;
+  seeLessLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgDataBlock_select".
+ */
+export interface RdPgDataBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tabs?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  panels?:
+    | T
+    | {
+        title?: T;
+        steps?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardStripBlock_select".
+ */
+export interface RdPgBoardStripBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  avatars?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  note?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgTimelineBlock_select".
+ */
+export interface RdPgTimelineBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  monthLabel?: T;
+  months?:
+    | T
+    | {
+        number?: T;
+        tag?: T;
+        title?: T;
+        body?: T;
+        dial?: T;
+        id?: T;
+      };
+  image?: T;
+  bannerLabel?: T;
+  stats?:
+    | T
+    | {
+        value?: T;
+        caption?: T;
+        tail?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardBlock_select".
+ */
+export interface RdPgBoardBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  scientists?:
+    | T
+    | {
+        photo?: T;
+        name?: T;
+        role?: T;
+        credentials?: T;
+        panelEyebrow?: T;
+        panelCredentials?: T;
+        bio?: T;
+        bioExtra?: T;
+        quote?: T;
+        id?: T;
+      };
+  readBioLabel?: T;
+  closeLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAthletesBlock_select".
+ */
+export interface RdPgAthletesBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  athletes?:
+    | T
+    | {
+        photo?: T;
+        quote?: T;
+        attribution?: T;
+        id?: T;
+      };
+  recordLabel?: T;
+  recordValue?: T;
+  recordPlace?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgQuietBlock_select".
+ */
+export interface RdPgQuietBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  statement?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgGuaranteeBlock_select".
+ */
+export interface RdPgGuaranteeBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  points?:
+    | T
+    | {
+        number?: T;
+        eyebrow?: T;
+        title?: T;
+        body?: T;
+        chips?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgFaqBlock_select".
+ */
+export interface RdPgFaqBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  faqs?:
+    | T
+    | {
+        number?: T;
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBuyBlock_select".
+ */
+export interface RdPgBuyBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  plans?:
+    | T
+    | {
+        badge?: T;
+        name?: T;
+        summary?: T;
+        price?: T;
+        priceSuffix?: T;
+        note?: T;
+        featuresLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        id?: T;
+      };
+  seals?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  smallPrint?: T;
   id?: T;
   blockName?: T;
 }

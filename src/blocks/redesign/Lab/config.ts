@@ -1,5 +1,11 @@
 import type { Block } from 'payload'
 
+import {
+  closeLabelField,
+  readBioLabelField,
+  scientistsField,
+} from '@/blocks/redesign/_shared/scienceBoard'
+
 /**
  * GENERATED from manifests/section-06.json + section-16.json — defaults are the
  * mockup's own values.
@@ -13,13 +19,11 @@ import type { Block } from 'payload'
  * overlay holding all three panels, one shown at a time. It was extracted by
  * clicking each card in turn (manifest 16).
  *
- * THREE ROWS, FIXED. The cards repeat cleanly, but the panels do not: Polina's
- * has two biography paragraphs and the other two have one, and the quote is
- * always the LAST paragraph — so its position differs between panels. Bound
- * positionally, panel 2's quote would land in its second biography slot, which
- * is exactly what the first derivation produced. The panels are therefore bound
- * per index, like rdProtocol's steps, and the array is fixed at three.
- * `bioExtra` is the optional second paragraph; it is hidden when empty.
+ * The per-person fields and the two labels are SHARED with Our Plans' rdPgBoard,
+ * which shows the same board with different markup — see _shared/scienceBoard.ts,
+ * which also records why the three rows are fixed. `bioExtra` is the optional
+ * second paragraph; it is hidden when empty. The defaults below are this page's
+ * own and stay here.
  *
  * The three assurance icons are each a different hand-drawn glyph, so those
  * three are bound per index too rather than repeated from one template.
@@ -38,19 +42,7 @@ export const RdLabBlock: Block = {
     },
     { name: 'heading', type: 'text', localized: true, required: true, defaultValue: "Who signs off your formula." },
     { name: 'intro', type: 'textarea', localized: true, defaultValue: "Real people with verifiable credentials. Every formula is approved by a scientist before it goes into production." },
-    {
-      name: 'scientists',
-      type: 'array',
-      label: 'Science board',
-      minRows: 3,
-      maxRows: 3,
-      admin: {
-        description:
-          'Each row is one card in the rail AND the panel it opens. Exactly three: '
-          + 'the panels are laid out individually because they do not all have the '
-          + 'same number of paragraphs.',
-      },
-      defaultValue: [
+    scientistsField([
       {
             "name": "Dr. Polina Novikova",
             "role": "Chief Scientific Officer",
@@ -79,61 +71,9 @@ export const RdLabBlock: Block = {
             "bio": "Dr. Venema is one of Europe’s most cited microbiome researchers, with 25 years of experience and 254 publications with more than 17,000 citations. Founder and CEO of Beneficial Microbes Consultancy, and editor-in-chief of the journal Beneficial Microbes.",
             "quote": "After twenty-five years studying these microbes, what convinces me is rigour: sequencing depth, reproducibility, and honest interpretation. That’s the standard I hold NB1’s science to."
       }
-],
-      fields: [
-        { name: 'photo', type: 'upload', relationTo: 'media', label: 'Portrait' },
-        { name: 'name', type: 'text', localized: true, required: true },
-        {
-          name: 'role',
-          type: 'text',
-          localized: true,
-          admin: { description: 'The line under the name ON THE CARD.' },
-        },
-        {
-          name: 'credentials',
-          type: 'text',
-          localized: true,
-          admin: { description: 'The small print on the card.' },
-        },
-        {
-          name: 'panelEyebrow',
-          type: 'text',
-          localized: true,
-          label: 'Panel pill',
-          admin: { description: 'The outlined pill at the top of the panel.' },
-        },
-        {
-          name: 'panelCredentials',
-          type: 'text',
-          localized: true,
-          label: 'Panel credentials',
-          admin: { description: 'The uppercase line under the name IN THE PANEL.' },
-        },
-        { name: 'bio', type: 'textarea', localized: true, label: 'Biography' },
-        {
-          name: 'bioExtra',
-          type: 'textarea',
-          localized: true,
-          label: 'Biography, second paragraph',
-          admin: { description: 'Optional. The paragraph is not rendered at all when empty.' },
-        },
-        {
-          name: 'quote',
-          type: 'textarea',
-          localized: true,
-          admin: { description: 'Rendered with the blue rule down its left edge.' },
-        },
-      ],
-    },
-    { name: 'readBioLabel', type: 'text', localized: true, defaultValue: "Read bio →" },
-    {
-      name: 'closeLabel',
-      type: 'text',
-      localized: true,
-      label: 'Close button label',
-      admin: { description: 'Read by screen readers; the button itself shows ✕.' },
-      defaultValue: "Close",
-    },
+]),
+    readBioLabelField("Read bio →"),
+    closeLabelField("Close"),
     {
       name: 'assurances',
       type: 'array',

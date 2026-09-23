@@ -15,6 +15,19 @@ import { RdLabComponent } from '@/blocks/redesign/Lab/Component'
 import { RdReviewsComponent } from '@/blocks/redesign/Reviews/Component'
 import { RdPlansComponent } from '@/blocks/redesign/Plans/Component'
 import { RdCloseComponent } from '@/blocks/redesign/Close/Component'
+import { RdPgHeroComponent } from '@/blocks/redesign/PgHero/Component'
+import { RdPgPlansComponent } from '@/blocks/redesign/PgPlans/Component'
+import { RdPgAdvancedComponent } from '@/blocks/redesign/PgAdvanced/Component'
+import { RdPgWordsComponent } from '@/blocks/redesign/PgWords/Component'
+import { RdPgDataComponent } from '@/blocks/redesign/PgData/Component'
+import { RdPgBoardStripComponent } from '@/blocks/redesign/PgBoardStrip/Component'
+import { RdPgTimelineComponent } from '@/blocks/redesign/PgTimeline/Component'
+import { RdPgBoardComponent } from '@/blocks/redesign/PgBoard/Component'
+import { RdPgAthletesComponent } from '@/blocks/redesign/PgAthletes/Component'
+import { RdPgQuietComponent } from '@/blocks/redesign/PgQuiet/Component'
+import { RdPgGuaranteeComponent } from '@/blocks/redesign/PgGuarantee/Component'
+import { RdPgFaqComponent } from '@/blocks/redesign/PgFaq/Component'
+import { RdPgBuyComponent } from '@/blocks/redesign/PgBuy/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { FormCustomBlock } from '@/blocks/FormCostom/Component'
@@ -138,6 +151,19 @@ const blockComponents: Record<string, React.FC<any>> = {
   rdReviews: RdReviewsComponent,
   rdPlans: RdPlansComponent,
   rdClose: RdCloseComponent,
+  rdPgHero: RdPgHeroComponent,
+  rdPgPlans: RdPgPlansComponent,
+  rdPgAdvanced: RdPgAdvancedComponent,
+  rdPgWords: RdPgWordsComponent,
+  rdPgData: RdPgDataComponent,
+  rdPgBoardStrip: RdPgBoardStripComponent,
+  rdPgTimeline: RdPgTimelineComponent,
+  rdPgBoard: RdPgBoardComponent,
+  rdPgAthletes: RdPgAthletesComponent,
+  rdPgQuiet: RdPgQuietComponent,
+  rdPgGuarantee: RdPgGuaranteeComponent,
+  rdPgFaq: RdPgFaqComponent,
+  rdPgBuy: RdPgBuyComponent,
   content: ContentBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,

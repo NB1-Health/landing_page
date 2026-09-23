@@ -1,0 +1,318 @@
+/*
+ * Our Plans — the layout rules, scoped to `.rd-pg`.
+ *
+ * Not `.rd-block`: that class is on every converted block of every page,
+ * and these rules are this mockup's, written against bare tags and shared
+ * `data-d` tokens. Scoped to `.rd-block` they rewrite the homepage — 559
+ * elements at 375px, measured by tools/css_regression.py. Every block
+ * converted from this mockup carries `rd-pg rd-<name>` and NOT `rd-block`,
+ * so the homepage cannot reach back the other way either.
+ */
+.rd-pg {
+  /* The one token the two mockups disagree on. It inherits, so defining it
+   * here beats :root for this page's blocks and leaves the homepage's
+   * spheres exactly as they shipped. */
+  --nb1-sphere-soft: radial-gradient(circle at 50% 42%,var(--nb1-cool-grey) 0%,var(--nb1-cool-grey) 54%,var(--nb1-warm-grey) 84%,var(--nb1-cool-grey) 100%);
+}
+
+/*
+ * What `.rd-block` provided, reproduced for `.rd-pg`.
+ *
+ * Only INHERITED properties belong on the block root. `background` is not one —
+ * it is on the wrapper below, because on the block it would be clipped to that
+ * section's own box.
+ */
+.rd-pg {
+  color: var(--nb1-dark-brown);
+  font-family: var(--nb1-font-secondary);
+  font-weight: 350;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+.rd-pg,
+.rd-pg *,
+.rd-pg *::before,
+.rd-pg *::after { box-sizing: border-box; }
+
+.rd-pg h1, .rd-pg h2, .rd-pg h3,
+.rd-pg h4, .rd-pg h5, .rd-pg p { margin: 0; }
+
+.rd-pg a { color: inherit; text-decoration: none; }
+.rd-pg a:hover { color: var(--nb1-dark-brown); opacity: .7; }
+
+.rd-pg summary { list-style: none; cursor: pointer; }
+.rd-pg summary::-webkit-details-marker { display: none; }
+
+/*
+ * The page wrapper. The named CONTAINER must live here rather than on the block
+ * root: the responsive system is container queries, and a section that sets
+ * max-width would otherwise become its own container and answer every query
+ * against its own width instead of the viewport's.
+ */
+div:not(.rd-pg *):has(> .rd-pg) {
+  background-color: var(--nb1-cool-grey);
+  container-type: inline-size;
+  container-name: nb1page;
+  overflow-x: clip;
+}
+
+/* ─── layout rules copied from the mockup, `#nb1pg` → `.rd-pg` ───, `#nb1pg` rescoped ─── */
+@keyframes nb1spin{to{transform:rotate(360deg);}}
+  @keyframes nb1up{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+  .reveal{opacity:0;}
+  .reveal.in{animation:nb1up .7s cubic-bezier(.16,.84,.44,1) forwards;}
+  @container nb1page (max-width: 1180px){
+    .rd-pg nav, .rd-pg:is(nav){padding-left:24px!important;padding-right:24px!important;gap:16px!important;}
+    .rd-pg nav > div:first-of-type, .rd-pg:is(nav > div:first-of-type), .rd-pg:is(nav) > div:first-of-type{gap:22px!important;}
+    .rd-pg nav > div:last-of-type, .rd-pg:is(nav > div:last-of-type), .rd-pg:is(nav) > div:last-of-type{gap:18px!important;}
+  }
+  @container nb1page (max-width: 1080px){
+    .rd-pg nav > div:first-of-type, .rd-pg:is(nav > div:first-of-type), .rd-pg:is(nav) > div:first-of-type{display:none!important;}
+  }
+  @container nb1page (max-width: 940px){
+    .rd-pg nav [data-navlogin], .rd-pg:is(nav [data-navlogin]), .rd-pg:is(nav) [data-navlogin]{display:none!important;}
+  }
+  /* the burger covers exactly the range where the centre links are hidden */
+  @container nb1page (max-width: 1080px){
+    .rd-pg [data-m="burger"], .rd-pg:is([data-m="burger"]){display:flex!important;}
+    .rd-pg nav, .rd-pg:is(nav){grid-template-columns:1fr auto!important;gap:16px!important;}
+    .rd-pg nav > div:first-of-type, .rd-pg:is(nav > div:first-of-type), .rd-pg:is(nav) > div:first-of-type{display:none!important;}
+    .rd-pg nav > div:last-of-type, .rd-pg:is(nav > div:last-of-type), .rd-pg:is(nav) > div:last-of-type{gap:14px!important;}
+  }
+  @container nb1page (max-width: 880px){
+    .rd-pg nav, .rd-pg:is(nav){padding-left:20px!important;padding-right:20px!important;}
+    .rd-pg nav, .rd-pg:is(nav){grid-template-columns:auto auto!important;justify-content:space-between!important;}
+    .rd-pg nav > div:first-of-type, .rd-pg:is(nav > div:first-of-type), .rd-pg:is(nav) > div:first-of-type{display:none!important;}
+    .rd-pg nav > div:last-of-type > div, .rd-pg:is(nav > div:last-of-type > div), .rd-pg:is(nav) > div:last-of-type > div, .rd-pg nav > div:last-of-type > a[href="#"], .rd-pg:is(nav > div:last-of-type > a[href="#"]), .rd-pg:is(nav) > div:last-of-type > a[href="#"]{display:none!important;}
+
+    .rd-pg section, .rd-pg:is(section), .rd-pg section > div, .rd-pg:is(section > div), .rd-pg:is(section) > div{padding-left:20px!important;padding-right:20px!important;}
+    .rd-pg [style*="grid-template-columns"]:not([data-keepcols]), .rd-pg:is([style*="grid-template-columns"]:not([data-keepcols])){grid-template-columns:1fr!important;gap:28px!important;}
+    .rd-pg [style*="position: sticky"], .rd-pg:is([style*="position: sticky"]), .rd-pg [style*="position:sticky"], .rd-pg:is([style*="position:sticky"]){position:static!important;top:auto!important;}
+    .rd-pg [style*="min-height"], .rd-pg:is([style*="min-height"]){min-height:0!important;}
+    .rd-pg [data-phone], .rd-pg:is([data-phone]){width:100%!important;max-width:330px!important;height:auto!important;aspect-ratio:372/760;justify-self:center!important;}
+    .rd-pg nav, .rd-pg:is(nav){position:static!important;}
+    .rd-pg [data-heroart], .rd-pg:is([data-heroart]){padding-left:0!important;justify-content:flex-start!important;min-height:0!important;}
+    .rd-pg [data-heroart] [data-scorebadge], .rd-pg:is([data-heroart] [data-scorebadge]), .rd-pg:is([data-heroart]) [data-scorebadge]{left:auto!important;right:-10px!important;bottom:-18px!important;width:118px!important;height:118px!important;border-width:12px!important;}
+    .rd-pg [data-m="brk"], .rd-pg:is([data-m="brk"]){padding:0 20px 64px!important;}
+    .rd-pg [data-m="brail"], .rd-pg:is([data-m="brail"]){display:flex!important;grid-template-columns:none!important;gap:14px!important;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;}
+    .rd-pg [data-m="brail"]::-webkit-scrollbar{display:none;}
+    .rd-pg [data-m="bcard"], .rd-pg:is([data-m="bcard"]){flex:0 0 78%!important;scroll-snap-align:start;}
+    .rd-pg [data-m="bimg"], .rd-pg:is([data-m="bimg"]){height:auto!important;aspect-ratio:4 / 5!important;object-position:50% 0%!important;}
+    .rd-pg [data-m="athgrid"], .rd-pg:is([data-m="athgrid"]){grid-template-columns:1fr!important;}
+    .rd-pg [data-m="athgrid"] > div, .rd-pg:is([data-m="athgrid"] > div), .rd-pg:is([data-m="athgrid"]) > div{min-height:430px!important;}
+    .rd-pg [data-m="athrec"], .rd-pg:is([data-m="athrec"]){grid-template-columns:1fr!important;gap:14px!important;padding:24px!important;text-align:left!important;}
+    .rd-pg [data-m="athrec"] > div:last-child, .rd-pg:is([data-m="athrec"] > div:last-child), .rd-pg:is([data-m="athrec"]) > div:last-child{text-align:left!important;}
+    .rd-pg [data-cmprow], .rd-pg:is([data-cmprow]){grid-template-columns:1fr 88px 88px!important;gap:0!important;font-size:13px!important;}
+    .rd-pg [data-cmprow] > div, .rd-pg:is([data-cmprow] > div), .rd-pg:is([data-cmprow]) > div{padding-left:10px!important;padding-right:10px!important;}
+    /* the header prices must fit their column, so scale them with it */
+    .rd-pg [data-m="cmpprice"], .rd-pg:is([data-m="cmpprice"]){font-size:19px!important;}
+    .rd-pg [data-m="cmpprice"] span, .rd-pg:is([data-m="cmpprice"] span), .rd-pg:is([data-m="cmpprice"]) span{font-size:11px!important;display:block!important;margin-top:3px;opacity:.7;}
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-pg [data-cmprow] > div[style*="font-size:14.5px"], .rd-pg:is([data-cmprow] > div[style*="font-size:14.5px"]), .rd-pg:is([data-cmprow]) > div[style*="font-size:14.5px"]{font-size:13px!important;line-height:1.35!important;} */
+
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-pg [data-cmprow] span[style*="font-size:13.5px"], .rd-pg:is([data-cmprow] span[style*="font-size:13.5px"]), .rd-pg:is([data-cmprow]) span[style*="font-size:13.5px"]{font-size:11.5px!important;line-height:1.25!important;display:inline-block;} */
+
+    .rd-pg [data-cmprow] a, .rd-pg:is([data-cmprow] a), .rd-pg:is([data-cmprow]) a{font-size:10px!important;padding:.75em .85em!important;text-align:center;}
+    .rd-pg [data-trust], .rd-pg:is([data-trust]){flex-wrap:wrap!important;}
+  }
+
+  /* while the hero is single-column the desktop 48px gutter leaves a dead right half */
+  @container nb1page (max-width: 899px){
+    .rd-pg [data-m="advgrid"], .rd-pg:is([data-m="advgrid"]){grid-template-columns:1fr!important;gap:14px!important;}
+
+    .rd-pg header, .rd-pg:is(header){padding-left:24px!important;padding-right:24px!important;padding-bottom:40px!important;}
+    /* gutters stack: section + inner wrapper. Let the section own it, zero the inner. */
+    .rd-pg section, .rd-pg:is(section){padding-left:24px!important;padding-right:24px!important;}
+    .rd-pg section > div, .rd-pg:is(section > div), .rd-pg:is(section) > div{padding-left:0!important;padding-right:0!important;}
+    /* column-sized max-widths would otherwise leave the right half empty */
+    .rd-pg header h1, .rd-pg:is(header h1), .rd-pg:is(header) h1,.rd-pg header p, .rd-pg:is(header p), .rd-pg:is(header) p,.rd-pg header [data-heroart], .rd-pg:is(header [data-heroart]), .rd-pg:is(header) [data-heroart]{max-width:none!important;width:100%!important;}
+    .rd-pg header [data-heroart] > div, .rd-pg:is(header [data-heroart] > div), .rd-pg:is(header) [data-heroart] > div,.rd-pg header [data-heroart] > div > div, .rd-pg:is(header [data-heroart] > div > div), .rd-pg:is(header) [data-heroart] > div > div{max-width:none!important;width:100%!important;}
+  }
+  @container nb1page (max-width: 700px){
+    /* reviews: one card at a time instead of four crammed columns */
+    .rd-pg [data-d~="rcard"], .rd-pg:is([data-d~="rcard"]){flex:0 0 82%!important;min-width:0!important;}
+    /* the four-month timeline stacks, orb and month sit on one line */
+    .rd-pg [data-m="tlgrid"], .rd-pg:is([data-m="tlgrid"]){grid-template-columns:1fr!important;gap:0!important;}
+    .rd-pg [data-m="tlcell"], .rd-pg:is([data-m="tlcell"]){border-top:0!important;padding:0 0 30px!important;display:grid;grid-template-columns:44px 1fr;gap:0 16px;align-items:center;}
+    .rd-pg [data-m="tlcell"]:first-child, .rd-pg:is([data-m="tlcell"]:first-child){border-top:0!important;}
+    .rd-pg [data-m="tlorb"], .rd-pg:is([data-m="tlorb"]){width:44px!important;height:44px!important;margin-bottom:0!important;grid-row:1;grid-column:1;}
+    .rd-pg [data-m="tlmonth"], .rd-pg:is([data-m="tlmonth"]){grid-row:1;grid-column:2;}
+    .rd-pg [data-m="tlh"], .rd-pg:is([data-m="tlh"]){grid-row:2;grid-column:2;font-size:34px!important;line-height:1.02!important;margin:10px 0 0!important;}
+    .rd-pg [data-m="tlcell"] p, .rd-pg:is([data-m="tlcell"] p), .rd-pg:is([data-m="tlcell"]) p{grid-row:3;grid-column:2;margin-top:10px;}
+    /* the report stats read two-up */
+    .rd-pg [data-m="statgrid"] > div > div:last-child, .rd-pg:is([data-m="statgrid"] > div > div:last-child), .rd-pg:is([data-m="statgrid"]) > div > div:last-child{max-width:none!important;}
+    .rd-pg [data-m="statgrid"], .rd-pg:is([data-m="statgrid"]){gap:22px 18px!important;}
+    .rd-pg [data-m="herogrid"], .rd-pg:is([data-m="herogrid"]){grid-template-columns:minmax(0,1fr)!important;gap:28px!important;}
+    .rd-pg [data-m="herogrid"] > div, .rd-pg:is([data-m="herogrid"] > div), .rd-pg:is([data-m="herogrid"]) > div{min-width:0!important;}
+    /* the world-record card stacks, number first */
+    .rd-pg [data-m="athrec"], .rd-pg:is([data-m="athrec"]){grid-template-columns:1fr!important;gap:14px!important;padding:24px 22px!important;text-align:left!important;}
+    .rd-pg [data-m="athrec"] > div:nth-child(1), .rd-pg:is([data-m="athrec"] > div:nth-child(1)), .rd-pg:is([data-m="athrec"]) > div:nth-child(1){order:2;max-width:none!important;}
+    .rd-pg [data-m="athrec"] > div:nth-child(2), .rd-pg:is([data-m="athrec"] > div:nth-child(2)), .rd-pg:is([data-m="athrec"]) > div:nth-child(2){order:1;font-size:56px!important;}
+    .rd-pg [data-m="athrec"] > div:nth-child(3), .rd-pg:is([data-m="athrec"] > div:nth-child(3)), .rd-pg:is([data-m="athrec"]) > div:nth-child(3){order:3;text-align:left!important;}
+  }
+
+
+/* ═══ hand-written overrides below — NOT ported from the mockup ═══
+ * tools/dead_rules.py stops at this line: everything below is a
+ * deliberate deviation written against the APP's markup, so testing
+ * it against the mockup would find nothing and delete it — which is
+ * exactly what happened the first time.
+ */
+/* ─── Per-block corrections, hand-maintained ───────────────────────────────
+ *
+ * Appended to rd-pg.css by tools/pg_scope.py. Everything above it is copied
+ * from the mockup; everything here is a decision, and each one says why.
+ *
+ * These exist because a CMS rich-text field cannot carry the mockup's inline
+ * formatting. The mockup writes emphasis as `<b style="font-weight:500">`;
+ * Payload's editor stores a bold FLAG and its renderer emits a <strong> at the
+ * browser's 700. So the same sentence renders heavier in the app than in the
+ * design — which is not a bold anyone chose, it is the default of a different
+ * mechanism.
+ *
+ * There is no blanket rule: the mockup's own <b> elements run 350, 500 and 700
+ * in different sections. So the weight is set per block, to that block's value.
+ */
+
+/* rdPgAdvanced — closing line. The mockup: `font-weight: 500; opacity: 1`. */
+.rd-pgadvanced :is(b, strong) {
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* rdPgPlans — the comparison table's two buttons, on a phone.
+ *
+ * REQUESTED DEVIATION. The mockup has this wrong: at 390px the table's columns
+ * are 88px and the buttons keep `white-space: nowrap`, so each one renders 164px
+ * wide and spills out of its cell and off the table. Our recreation reproduced it
+ * exactly — measured, mockup and ours both 88px cell / 164px link — which is why
+ * no check flagged it.
+ *
+ * Asked for: both buttons the width of the table, stacked, and sized like the
+ * buttons on the plan cards above. So the two CTA cells span every column
+ * instead of sitting in their 88px ones, which makes them fall onto separate
+ * grid rows, and the empty spacer cell beside them is dropped. They are
+ * addressed positionally — the last three cells of the grid — because this
+ * mockup gives them no attribute of their own; the generated grid carries only
+ * the `data-m` the manifest actually has.
+ *
+ * The size is taken from the card buttons rather than chosen: measured at 390px
+ * they are 14px type with 1.1em of padding, which comes out 48px tall. The
+ * mockup's own phone rule shrinks the table's to 10px/.75em — 30px tall — and
+ * that rule marks both !important, so matching the cards means overriding it.
+ *
+ * Same breakpoint as the mockup's own button rule (880px), so the two stay
+ * together.
+ */
+@container nb1page (max-width: 880px) {
+  /* the empty cell that sits beside the buttons in the three-column layout */
+  .rd-pgplans [data-cmprow] > div:nth-last-child(3) {
+    display: none !important;
+  }
+
+  .rd-pgplans [data-cmprow] > div:nth-last-child(-n + 2) {
+    grid-column: 1 / -1;
+  }
+
+  /* `display` needs !important: the Advanced button carries `inline-flex` inline,
+   * and an inline declaration beats a stylesheet rule — the first attempt at this
+   * changed nothing visible for exactly that reason. */
+  .rd-pgplans [data-cmprow] > div:nth-last-child(-n + 2) a {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    font-size: 14px !important;
+    padding: 1.1em !important;
+  }
+}
+
+/* ─── rdFormula, Our Plans variant ────────────────────────────────────────
+ *
+ * The homepage's rdFormula reused on Our Plans. Its markup is identical — 72
+ * nodes, the same three tabs — and exactly six computed values differ, verified
+ * node for node against both mockups at 390px and 1440px. So the block gained a
+ * `variant` field that adds this class and changes nothing else; every inline
+ * style in the component stays the homepage's, and these rules replace the six.
+ *
+ * Addressed POSITIONALLY rather than by tag. The heading and the intro are
+ * `rich` fields, and the `rich` op turns their node into a <div> — Payload's
+ * RichText renders a <div>, which cannot sit inside an <h2> or a <p>. So
+ * `.rd-formula--pg h2` matches nothing, which is how the first attempt at this
+ * silently did nothing at all.
+ *
+ * `.rd-block.rd-formula--pg` for the section, not `.rd-formula--pg`: the
+ * homepage's own phone rule is `.rd-block section{padding:44px 0!important}`,
+ * and two !important declarations are settled by specificity — (0,1,1) there,
+ * so this needs (0,2,0) to win rather than relying on file order.
+ *
+ * !important throughout because the values being replaced are inline styles.
+ *
+ * Deliberately NOT under `.rd-pg`: this block is the homepage's and keeps
+ * `rd-block`, so `.rd-pg` is not on it.
+ */
+.rd-formula--pg > div > div:first-child {
+  margin-bottom: 48px !important;
+}
+
+/* the heading's wrapper — the inner <h2> inherits, because globals.css resets
+ * h1..h6 to `font-size: unset` */
+.rd-formula--pg > div > div:first-child > div:first-child {
+  font-size: clamp(40px, 5vw, 58px) !important;
+  line-height: 0.95 !important;
+}
+
+.rd-formula--pg > div > div:first-child > div:nth-child(2) {
+  font-size: 18px !important;
+  line-height: 1.45 !important;
+}
+
+@container nb1page (min-width: 901px) {
+  .rd-formula--pg > div > div:nth-child(2) {
+    grid-template-columns: 1.05fr 0.95fr !important;
+    gap: 48px !important;
+  }
+}
+
+@container nb1page (max-width: 900px) {
+  .rd-formula--pg > div > div:nth-child(2) {
+    gap: 28px !important;
+  }
+  /* the phone gutter moves from the inner column out to the section itself */
+  .rd-block.rd-formula--pg {
+    padding: 0 24px !important;
+  }
+  .rd-formula--pg > div {
+    padding: 104px 0 !important;
+  }
+}
+
+/* rdFormula, Our Plans variant — the "left out" note's hanging ✕.
+ *
+ * The mockup writes that note as `<p style="display:flex;gap:8px">` with two
+ * children: the orange ✕ span and the bare text. Flex makes the text an
+ * anonymous item, so the 8px gap separates them and the ✕ hangs in its own
+ * column.
+ *
+ * In the app the note is a `rich` field, so Payload's RichText inserts its own
+ * container and a <p> between the flex box and those two children. The flex
+ * container then has ONE child, the gap applies to nothing, and the ✕ renders
+ * jammed against the sentence.
+ *
+ * `display: contents` on both wrappers makes the span and the text flex items
+ * again. Targeted at a rich-text child of a gap-8 flex box, which in this block
+ * is only that note — and spelt both ways because React serialises the style
+ * attribute without the space the browser puts in.
+ */
+.rd-formula--pg [style*="gap:8px"] > .payload-richtext,
+.rd-formula--pg [style*="gap: 8px"] > .payload-richtext,
+.rd-formula--pg [style*="gap:8px"] > .payload-richtext > p,
+.rd-formula--pg [style*="gap: 8px"] > .payload-richtext > p {
+  display: contents;
+}

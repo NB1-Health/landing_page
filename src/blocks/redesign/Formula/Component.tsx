@@ -21,10 +21,23 @@ const mediaUrl = (m: unknown): string | undefined =>
 const mediaAlt = (m: unknown): string =>
   m && typeof m === 'object' && 'alt' in m ? ((m as { alt?: string }).alt ?? '') : ''
 
+/**
+ * `variant` adds a class and nothing else.
+ *
+ * The Our Plans page uses this same section — identical 72-node markup, the same
+ * three tabs — at a different type scale, gutter and column split. Six computed
+ * values differ and nothing else does, verified node for node against both
+ * mockups at 390px and 1440px.
+ *
+ * So the variant is a CLASS, not a branch: every style below stays exactly as it
+ * shipped, and `rd-pg.css` carries the six Our Plans values keyed off
+ * `.rd-formula--pg`. With the field unset the rendered markup is byte-identical
+ * to what the homepage has always produced.
+ */
 export const RdFormula: React.FC<Props> = (props) => {
   const {
     anchorId, heading, intro, replacesLabel, kitImage, imageCaption,
-    morning, evening, living,
+    morning, evening, living, variant,
   } = props
   const replaces = props.replaces ?? []
   const [activeTab, setActiveTab] = useState(0)
@@ -32,7 +45,7 @@ export const RdFormula: React.FC<Props> = (props) => {
     <section style={{
       background: "var(--nb1-dark-brown)",
       color: "var(--nb1-cool-grey)"
-    }} className="rd-block rd-formula" id={anchorId || undefined}>
+    }} className={'rd-block rd-formula' + (variant === 'ourPlans' ? ' rd-formula--pg' : '')} id={anchorId || undefined}>
       <div style={{
         maxWidth: "1240px",
         margin: "0px auto",

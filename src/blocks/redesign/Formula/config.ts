@@ -25,6 +25,22 @@ export const RdFormulaBlock: Block = {
   labels: { singular: 'RD Formula', plural: 'RD Formulas' },
   fields: [
     {
+      name: 'variant',
+      type: 'select',
+      options: [
+        { label: 'Homepage', value: 'homepage' },
+        { label: 'Our Plans', value: 'ourPlans' },
+      ],
+      defaultValue: 'homepage',
+      label: 'Size variant',
+      admin: {
+        description:
+          'Which page\u2019s proportions to use. The markup is the same either way \u2014 '
+          + 'this only changes the type scale, the gutters and the column split. '
+          + 'Leave it on Homepage for every page that is not Our Plans.',
+      },
+    },
+    {
       name: 'anchorId',
       type: 'text',
       defaultValue: 'formula',

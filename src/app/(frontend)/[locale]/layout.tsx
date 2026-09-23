@@ -19,6 +19,12 @@ import './globals.css'
 import './fonts.css'
 import './rd-toolkit.css'
 import './rd-tokens.css'
+// `rd-pg.css` is the Our Plans mockup's own layout, scoped to `.rd-pg` rather
+// than `.rd-block`. Both mockups style bare tags and the same data-d tokens, so
+// on one scope the second page rewrites the first — measured at 559 changed
+// elements on the homepage. Loaded globally, it applies only where a block root
+// carries `rd-pg`.
+import './rd-pg.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
