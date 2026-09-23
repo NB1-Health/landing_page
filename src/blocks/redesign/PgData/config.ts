@@ -12,15 +12,24 @@ import { localizedLink } from '@/fields/localizedLink'
  * enough: `innerText` only reports the visible screen, which made it look at first
  * as though the phone had one screen that changed.
  *
- * THE PHONE IS AN ILLUSTRATION and carries no fields. It draws a sample report —
- * a greeting, a score, a delta, four charts — and the numbers only read correctly
- * as a set: changing 85.5 without also changing "up 11.9 points on your last read"
- * and "Up from 73.6" makes the picture contradict itself. It is a picture of the
- * product rather than editorial copy.
+ * THE PHONE IS AN ILLUSTRATION and carries almost no fields. It draws a sample
+ * report — a greeting, a score, a delta, four charts — and the numbers only read
+ * correctly as a set: changing 85.5 without also changing "up 11.9 points on your
+ * last read" and "Up from 73.6" makes the picture contradict itself. It is a
+ * picture of the product rather than editorial copy.
  *
- * Its two images ship as static files under `public/rd-pg/`, byte-for-byte the
- * mockup's own. They cannot be uploads, because static markup has no field to
- * point at, and the mockup's `assets/<uuid>.png` paths would 404 in the app.
+ * The one exception is `reportAvatar`, the face in the report header. It was a
+ * static file for the same reason as the rest of the illustration; it is now a
+ * LOCALIZED upload because that was asked for explicitly. That makes it the only
+ * media field on the page that localizes — the standing rule is that text and URL
+ * fields localize and media does not — so it is recorded on the punch list as a
+ * deliberate deviation rather than left to look like an oversight.
+ * `localization.fallback` is true, so a locale that sets no image of its own shows
+ * the default locale's; only a locale that wants a different face has to fill it in.
+ *
+ * The nb1 mark beside it is still a static file under `public/rd-pg/`,
+ * byte-for-byte the mockup's own: the mockup's `assets/<uuid>.png` path would 404
+ * in the app, and nothing has asked for that one to be editable.
  *
  * `tabs` and `panels` are bound BY INDEX and are four long. Each tab button and
  * each panel is its own node in the markup, so a fifth row would store fine and
@@ -182,6 +191,7 @@ export const RdPgDataBlock: Block = {
         },
       ],
     },
+    { name: "reportAvatar", type: "upload", localized: true, relationTo: "media", label: "Report avatar", admin: { description: "The face in the sample report's header, drawn at 30x30. Localized: leave it empty in a locale and that locale shows the default locale's image. The rest of the phone is a fixed illustration and has no fields." } },
     localizedLink({
       overrides: {
           name: "cta",

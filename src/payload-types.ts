@@ -2667,6 +2667,10 @@ export interface RdPgDataBlock {
       }[]
     | null;
   /**
+   * The face in the sample report's header, drawn at 30x30. Localized: leave it empty in a locale and that locale shows the default locale's image. The rest of the phone is a fixed illustration and has no fields.
+   */
+  reportAvatar?: (number | null) | Media;
+  /**
    * The ↗ glyph is drawn by the link — do not type it into the label.
    */
   cta: {
@@ -11966,6 +11970,7 @@ export interface RdPgDataBlockSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  reportAvatar?: T;
   cta?:
     | T
     | {

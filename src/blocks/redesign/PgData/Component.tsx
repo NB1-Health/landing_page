@@ -15,7 +15,10 @@ import type { RdPgDataBlock as Props } from '@/payload-types'
 // Four tabs. Both the text panel and the phone's screen are swapped by activeTab; all eight live in the DOM at once and are toggled by display, exactly as the mockup does it.
 
 
-export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panels, tabs }) => {
+const mediaUrl = (m: unknown): string | undefined =>
+  m && typeof m === 'object' && 'url' in m ? ((m as { url?: string }).url ?? undefined) : undefined
+
+export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panels, reportAvatar, tabs }) => {
   const [activeTab, setActiveTab] = useState(0)
 
   return (
@@ -469,7 +472,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     borderRadius: "50%",
                     objectFit: "cover",
                     objectPosition: "50% 14%"
-                  }} src={'/rd-pg/report-avatar.png'} alt="" />
+                  }} src={mediaUrl(reportAvatar)} alt={''} />
                 </div>
               </div>
               <div style={{

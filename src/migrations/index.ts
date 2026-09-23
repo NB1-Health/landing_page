@@ -202,6 +202,7 @@ import * as migration_20260923_200000_rd_pg_quiet_block from './20260923_200000_
 import * as migration_20260923_210000_rd_pg_guarantee_block from './20260923_210000_rd_pg_guarantee_block'
 import * as migration_20260923_220000_rd_pg_faq_block from './20260923_220000_rd_pg_faq_block'
 import * as migration_20260923_230000_rd_pg_buy_block from './20260923_230000_rd_pg_buy_block'
+import * as migration_20260923_240000_rd_pg_data_report_avatar from './20260923_240000_rd_pg_data_report_avatar'
 
 export const migrations = [
   {
@@ -1223,5 +1224,10 @@ export const migrations = [
     up: migration_20260923_230000_rd_pg_buy_block.up,
     down: migration_20260923_230000_rd_pg_buy_block.down,
     name: '20260923_230000_rd_pg_buy_block',
+  },
+  {
+    up: migration_20260923_240000_rd_pg_data_report_avatar.up,
+    down: migration_20260923_240000_rd_pg_data_report_avatar.down,
+    name: '20260923_240000_rd_pg_data_report_avatar',
   },
 ]
