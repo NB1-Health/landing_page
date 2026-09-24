@@ -212,6 +212,16 @@ import * as migration_20260924_150000_rd_pr_formula_block from './20260924_15000
 import * as migration_20260924_160000_rd_pr_arrives_block from './20260924_160000_rd_pr_arrives_block'
 import * as migration_20260924_170000_rd_pr_advanced_block from './20260924_170000_rd_pr_advanced_block'
 import * as migration_20260924_180000_rd_pg_buy_variant from './20260924_180000_rd_pg_buy_variant'
+import * as migration_20260924_190000_rd_lb_hero_block from './20260924_190000_rd_lb_hero_block'
+import * as migration_20260924_200000_rd_lb_not_block from './20260924_200000_rd_lb_not_block'
+import * as migration_20260924_210000_rd_lb_reads_block from './20260924_210000_rd_lb_reads_block'
+import * as migration_20260924_220000_rd_lb_method_block from './20260924_220000_rd_lb_method_block'
+import * as migration_20260924_230000_rd_lb_lab_block from './20260924_230000_rd_lb_lab_block'
+import * as migration_20260925_000000_rd_lb_reading_block from './20260925_000000_rd_lb_reading_block'
+import * as migration_20260925_010000_rd_lb_formula_block from './20260925_010000_rd_lb_formula_block'
+import * as migration_20260925_020000_rd_lb_advanced_block from './20260925_020000_rd_lb_advanced_block'
+import * as migration_20260925_030000_rd_lb_board_block from './20260925_030000_rd_lb_board_block'
+import * as migration_20260925_040000_rd_pg_buy_lab_variant from './20260925_040000_rd_pg_buy_lab_variant'
 
 export const migrations = [
   {
@@ -1283,5 +1293,55 @@ export const migrations = [
     up: migration_20260924_180000_rd_pg_buy_variant.up,
     down: migration_20260924_180000_rd_pg_buy_variant.down,
     name: '20260924_180000_rd_pg_buy_variant',
+  },
+  {
+    up: migration_20260924_190000_rd_lb_hero_block.up,
+    down: migration_20260924_190000_rd_lb_hero_block.down,
+    name: '20260924_190000_rd_lb_hero_block',
+  },
+  {
+    up: migration_20260924_200000_rd_lb_not_block.up,
+    down: migration_20260924_200000_rd_lb_not_block.down,
+    name: '20260924_200000_rd_lb_not_block',
+  },
+  {
+    up: migration_20260924_210000_rd_lb_reads_block.up,
+    down: migration_20260924_210000_rd_lb_reads_block.down,
+    name: '20260924_210000_rd_lb_reads_block',
+  },
+  {
+    up: migration_20260924_220000_rd_lb_method_block.up,
+    down: migration_20260924_220000_rd_lb_method_block.down,
+    name: '20260924_220000_rd_lb_method_block',
+  },
+  {
+    up: migration_20260924_230000_rd_lb_lab_block.up,
+    down: migration_20260924_230000_rd_lb_lab_block.down,
+    name: '20260924_230000_rd_lb_lab_block',
+  },
+  {
+    up: migration_20260925_000000_rd_lb_reading_block.up,
+    down: migration_20260925_000000_rd_lb_reading_block.down,
+    name: '20260925_000000_rd_lb_reading_block',
+  },
+  {
+    up: migration_20260925_010000_rd_lb_formula_block.up,
+    down: migration_20260925_010000_rd_lb_formula_block.down,
+    name: '20260925_010000_rd_lb_formula_block',
+  },
+  {
+    up: migration_20260925_020000_rd_lb_advanced_block.up,
+    down: migration_20260925_020000_rd_lb_advanced_block.down,
+    name: '20260925_020000_rd_lb_advanced_block',
+  },
+  {
+    up: migration_20260925_030000_rd_lb_board_block.up,
+    down: migration_20260925_030000_rd_lb_board_block.down,
+    name: '20260925_030000_rd_lb_board_block',
+  },
+  {
+    up: migration_20260925_040000_rd_pg_buy_lab_variant.up,
+    down: migration_20260925_040000_rd_pg_buy_lab_variant.down,
+    name: '20260925_040000_rd_pg_buy_lab_variant',
   },
 ]

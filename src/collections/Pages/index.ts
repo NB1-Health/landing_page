@@ -40,6 +40,15 @@ import { RdPrAnalyseBlock } from '@/blocks/redesign/PrAnalyse/config'
 import { RdPrFormulaBlock } from '@/blocks/redesign/PrFormula/config'
 import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
 import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
+import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
+import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
+import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
+import { RdLbMethodBlock } from '@/blocks/redesign/LbMethod/config'
+import { RdLbLabBlock } from '@/blocks/redesign/LbLab/config'
+import { RdLbReadingBlock } from '@/blocks/redesign/LbReading/config'
+import { RdLbFormulaBlock } from '@/blocks/redesign/LbFormula/config'
+import { RdLbAdvancedBlock } from '@/blocks/redesign/LbAdvanced/config'
+import { RdLbBoardBlock } from '@/blocks/redesign/LbBoard/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
 import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
@@ -282,6 +291,15 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdPrFormulaBlock,
                 RdPrArrivesBlock,
                 RdPrAdvancedBlock,
+                RdLbHeroBlock,
+                RdLbNotBlock,
+                RdLbReadsBlock,
+                RdLbMethodBlock,
+                RdLbLabBlock,
+                RdLbReadingBlock,
+                RdLbFormulaBlock,
+                RdLbAdvancedBlock,
+                RdLbBoardBlock,
                 Content,
                 BoxCardBlock,
                 FormulaCardBlock,

@@ -19,7 +19,9 @@ export const RdPgBuy: React.FC<Props> = ({ anchorId, heading, intro, plans, seal
     <section style={{
       background: "var(--nb1-dark-brown)",
       color: "var(--nb1-cool-grey)"
-    }} className={variant === 'protocol' ? 'rd-pr rd-prbuy' : 'rd-pg rd-pgbuy'} id={anchorId || undefined}>
+    }} className={variant === 'protocol' ? 'rd-pr rd-prbuy'
+      : variant === 'lab' ? 'rd-lb rd-lbbuy'
+      : 'rd-pg rd-pgbuy'} id={anchorId || undefined}>
       <div style={{
         maxWidth: "1240px",
         margin: "0px auto",

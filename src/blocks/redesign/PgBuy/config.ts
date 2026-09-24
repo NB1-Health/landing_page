@@ -33,24 +33,36 @@ import { localizedLink } from '@/fields/localizedLink'
  * app. Same call as rdPgHero's two, and recorded in the punch list's CTA table
  * rather than guessed.
  *
- * REUSED ON THE PROTOCOL, which is why `variant` exists.
+ * REUSED ON THE PROTOCOL AND ON THE LAB, which is why `variant` exists.
  *
- * The two mockups' #buy sections are the same component. Measured: all 41 common
- * nodes carry byte-identical inline styles, and the only structural difference is
- * that Our Plans' cards have feature rows where The Protocol's have none — which
- * an empty `features` array already renders exactly, with no code change.
+ * All three mockups' #buy sections are the same component. Measured: Our Plans
+ * against The Protocol, all 41 common nodes carry byte-identical inline styles, and
+ * the only structural difference is that Our Plans' cards have feature rows where
+ * The Protocol's have none — which an empty `features` array already renders
+ * exactly, with no code change. The Lab against The Protocol is closer still: 47
+ * nodes each, zero differences of any kind, and one word of copy (the third seal
+ * says "It's in your subscription" where The Protocol says "It is").
  *
- * What is NOT interchangeable is the style SCOPE. The two mockups are built on
- * opposite responsive models: Our Plans is desktop-first, with `max-width`
- * container queries overriding the inline styles downward; The Protocol is
- * mobile-first, with `min-width` queries overriding them upward. So the same inline
+ * What is NOT interchangeable is the style SCOPE. The mockups are built on opposite
+ * responsive models: Our Plans is desktop-first, with `max-width` container queries
+ * overriding the inline styles downward; The Protocol and The Lab are mobile-first,
+ * with `min-width` queries overriding them upward. So the same inline
  * `padding: 72px 20px` is the DESKTOP value on one page and the PHONE value on the
  * other, and a block that wears the wrong page's class gets the wrong layout —
  * measured at 25 of 41 nodes differing at 1440px, including the container width,
  * the heading size and every edge of the section's padding.
  *
+ * AND THE TWO MOBILE-FIRST PAGES ARE STILL NOT THE SAME SCOPE, which is why The Lab
+ * got a third option rather than borrowing `protocol`. They differ in one token:
+ * `[data-d~="bigh"]` caps at 58px under `.rd-lb` and 60px under `.rd-pr`. Rendering
+ * The Lab's section as `protocol` was measured — 3 nodes differ at 1440px, the
+ * heading at 60px/720px against the mockup's 58px/700px, and the section 2px taller
+ * for it. As `lab`: 41 nodes, 0 differing at 390, 900 and 1440px.
+ *
  * `variant` therefore picks the root class and nothing else. It defaults to the
- * Our Plans value, so the row already seeded there renders exactly as it shipped.
+ * Our Plans value, so the rows already seeded there render exactly as they shipped —
+ * re-measured after this third option was added, and still 0 of 59 nodes differing
+ * on Our Plans and 0 of 41 on The Protocol.
  */
 export const RdPgBuyBlock: Block = {
   slug: "rdPgBuy",
@@ -58,7 +70,7 @@ export const RdPgBuyBlock: Block = {
   labels: { singular: "PG Buy", plural: "PG Buy" },
   fields: [
     { name: "anchorId", type: "text", label: "Anchor id", admin: { description: "Rendered as the section id. Deliberately NOT localized \u2014 a fragment must be identical in every locale." }, defaultValue: "buy" },
-    { name: "variant", type: "select", options: ["plans", "protocol"], label: "Page style", admin: { description: "Which page this instance belongs to. The two pages are built on opposite responsive models, so the block has to know which stylesheet governs it. Leave as Our Plans unless this block is on The Protocol." }, defaultValue: "plans" },
+    { name: "variant", type: "select", options: ["plans", "protocol", "lab"], label: "Page style", admin: { description: "Which page this instance belongs to. Each page has its own stylesheet and they are not interchangeable — Our Plans is desktop-first where the other two are mobile-first, and The Lab and The Protocol size the big heading differently. Leave as Our Plans unless this block is on The Protocol or The Lab." }, defaultValue: "plans" },
     { name: "heading", type: "text", localized: true, required: true, defaultValue: "So we start by reading yours." },
     { name: "intro", type: "textarea", localized: true, defaultValue: "Your kit ships first; your formula is produced after your analysis, never before." },
     {

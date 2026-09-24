@@ -36,6 +36,15 @@ import { RdPrAnalyseComponent } from '@/blocks/redesign/PrAnalyse/Component'
 import { RdPrFormulaComponent } from '@/blocks/redesign/PrFormula/Component'
 import { RdPrArrivesComponent } from '@/blocks/redesign/PrArrives/Component'
 import { RdPrAdvancedComponent } from '@/blocks/redesign/PrAdvanced/Component'
+import { RdLbHeroComponent } from '@/blocks/redesign/LbHero/Component'
+import { RdLbNotComponent } from '@/blocks/redesign/LbNot/Component'
+import { RdLbReadsComponent } from '@/blocks/redesign/LbReads/Component'
+import { RdLbMethodComponent } from '@/blocks/redesign/LbMethod/Component'
+import { RdLbLabComponent } from '@/blocks/redesign/LbLab/Component'
+import { RdLbReadingComponent } from '@/blocks/redesign/LbReading/Component'
+import { RdLbFormulaComponent } from '@/blocks/redesign/LbFormula/Component'
+import { RdLbAdvancedComponent } from '@/blocks/redesign/LbAdvanced/Component'
+import { RdLbBoardComponent } from '@/blocks/redesign/LbBoard/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { FormCustomBlock } from '@/blocks/FormCostom/Component'
@@ -180,6 +189,15 @@ const blockComponents: Record<string, React.FC<any>> = {
   rdPrFormula: RdPrFormulaComponent,
   rdPrArrives: RdPrArrivesComponent,
   rdPrAdvanced: RdPrAdvancedComponent,
+  rdLbHero: RdLbHeroComponent,
+  rdLbNot: RdLbNotComponent,
+  rdLbReads: RdLbReadsComponent,
+  rdLbMethod: RdLbMethodComponent,
+  rdLbLab: RdLbLabComponent,
+  rdLbReading: RdLbReadingComponent,
+  rdLbFormula: RdLbFormulaComponent,
+  rdLbAdvanced: RdLbAdvancedComponent,
+  rdLbBoard: RdLbBoardComponent,
   content: ContentBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,

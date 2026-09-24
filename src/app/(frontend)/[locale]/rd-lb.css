@@ -1,0 +1,247 @@
+/*
+ * rd-lb — this page's layout rules, scoped to `.rd-lb`.
+ *
+ * Not `.rd-block`: that class is on every converted block of every page,
+ * and these rules are this mockup's, written against bare tags and shared
+ * `data-d` tokens. Scoped to `.rd-block` they rewrite the other pages.
+ * Every block converted from this mockup carries `rd-lb rd-lb-<name>` and
+ * NOT `rd-block`, so no page can reach back the other way either.
+ *
+ * The :root token block from the port is dropped here: rd-tokens.css ships
+ * it once for every page. Only the tokens THIS mockup resolves differently
+ * are repeated, on `.rd-lb` above, where they inherit to this page alone.
+ */
+.rd-lb {
+  /* The tokens this mockup resolves DIFFERENTLY from the shipped :root,
+   * measured on documentElement rather than parsed out of the source.
+   * Custom properties inherit, so defining them here beats :root for this
+   * page's blocks and leaves every other page exactly as it shipped.
+   * Nothing in the markup changes — the copied styles still say var(...),
+   * which is what keeps them verbatim. */
+  --nb1-accent: var(--nb1-blue);
+  --nb1-bg-accent: var(--nb1-blue-grey);
+  --nb1-bg-dark: var(--nb1-dark-brown);
+  --nb1-bg-light: var(--nb1-cool-grey);
+  --nb1-fg-on-dark: var(--nb1-cool-grey);
+  --nb1-fg-on-light: var(--nb1-dark-brown);
+  --nb1-hero: var(--nb1-blue-grey);
+  --nb1-sphere-soft: radial-gradient(circle closest-side at 50% 50%, var(--nb1-warm-grey) 0% 30%, transparent 80%), radial-gradient(circle closest-side at 50% 50%, var(--nb1-cool-grey) 0% 99.5%, transparent 100%);
+  --nb1-weight-primary: 400;
+  --nb1-weight-secondary: 350;
+  --nb1-weight-tertiary: 300;
+  --paper: color-mix(in oklab,var(--nb1-warm-grey) 16%,var(--nb1-cool-grey));
+}
+
+/*
+ * Base rules ported from the mockup's global <style>, scoped to `.rd-lb`
+ * because the app's `body` belongs to the wider site.
+ *
+ * Only INHERITED properties belong here. `background` is not one — see the
+ * wrapper rule below. The block ROOT is included in the box-sizing rule on
+ * purpose: the mockup's is a bare `*`, which covers the <section> itself, and
+ * excluding the root makes a padded `max-width` section measure too wide.
+ */
+.rd-lb {
+  color: var(--nb1-dark-brown);
+  font-family: var(--nb1-font-secondary);
+  font-weight: 350;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+.rd-lb,
+.rd-lb *,
+.rd-lb *::before,
+.rd-lb *::after { box-sizing: border-box; }
+
+.rd-lb h1, .rd-lb h2, .rd-lb h3,
+.rd-lb h4, .rd-lb h5, .rd-lb p { margin: 0; }
+
+.rd-lb a { color: inherit; text-decoration: none; }
+.rd-lb a:hover { color: var(--nb1-dark-brown); opacity: .7; }
+
+.rd-lb summary { list-style: none; cursor: pointer; }
+.rd-lb summary::-webkit-details-marker { display: none; }
+
+/*
+ * The page wrapper — the mockup's `#nb1lab`, reconstructed.
+ *
+ * RenderBlocks wraps every block in a plain <div> that already spans the
+ * viewport. Two things must live here and cannot live on the block root:
+ *
+ * 1. the page fill — `background` does not inherit, so on the block it is
+ *    clipped to that section's own box;
+ * 2. the named CONTAINER — the responsive system is container queries, and a
+ *    section that sets `max-width` would otherwise become its own container and
+ *    answer every query against its own width instead of the viewport's.
+ *
+ * `:not(.rd-lb *)` keeps this to the outermost wrapper, so a block whose own
+ * markup contains a nested <section> cannot create a second page wrapper.
+ */
+div:not(.rd-lb *):has(> .rd-lb) {
+  background-color: var(--nb1-cool-grey);
+  container-type: inline-size;
+  container-name: nb1page;
+  overflow-x: clip;
+}
+
+
+                                                                       
+.rd-lb button{font:inherit;}
+  .rd-lb [data-m="rail"]::-webkit-scrollbar{display:none;}
+  .rd-lb .h2, .rd-lb:is(.h2){font-family:var(--nb1-font-primary);font-weight:400;font-size:clamp(30px,5cqi,50px);line-height:1;letter-spacing:-.025em;}
+  .rd-lb .h3, .rd-lb:is(.h3){font-family:var(--nb1-font-primary);font-weight:400;font-size:clamp(21px,3.4cqi,27px);line-height:1.12;}
+  .rd-lb .lede, .rd-lb:is(.lede){font-family:var(--nb1-font-secondary);font-size:clamp(16px,4.2cqi,17px);line-height:1.55;opacity:.82;}
+  .rd-lb .lab, .rd-lb:is(.lab){font-family:var(--nb1-font-tertiary);text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;color:rgba(81,71,69,.86);}
+  .rd-lb .mono, .rd-lb:is(.mono){font-family:var(--nb1-font-tertiary);font-size:12px;}
+  .rd-lb [data-m="fibrecols"], .rd-lb:is([data-m="fibrecols"]){grid-template-columns:1fr!important;}
+  @container nb1page (min-width:640px){ .rd-lb [data-m="fibrecols"], .rd-lb:is([data-m="fibrecols"]){grid-template-columns:1fr 1fr!important;} }
+  /* Advanced sits on dark brown; its cards stay light, so pin their ink */
+  .rd-lb [data-m="dark"] [data-m="advcard"], .rd-lb:is([data-m="dark"] [data-m="advcard"]), .rd-lb:is([data-m="dark"]) [data-m="advcard"]{color:var(--nb1-dark-brown);}
+  .rd-lb .card, .rd-lb:is(.card){background:var(--nb1-cool-grey);border-radius:var(--nb1-radius-md);box-shadow:inset 0 0 0 1px var(--nb1-hairline);}
+  .rd-lb [data-m="cols4"], .rd-lb:is([data-m="cols4"]){grid-template-columns:1fr 1fr!important;}
+  @container nb1page (min-width:1000px){
+    .rd-lb [data-d~="navlinks"], .rd-lb:is([data-d~="navlinks"]){display:flex!important;}
+  }
+  @container nb1page (min-width:900px){ .rd-lb [data-m="cols4"], .rd-lb:is([data-m="cols4"]){grid-template-columns:repeat(4,1fr)!important;} }
+  @container nb1page (max-width:620px){
+    .rd-lb [data-m="stepbody"], .rd-lb:is([data-m="stepbody"]){padding-left:0!important;}
+    .rd-lb [data-m="railline"], .rd-lb:is([data-m="railline"]){display:none!important;}
+  }
+  @keyframes cmpPulse{0%,100%{transform:scale(1);opacity:.7;}60%{transform:scale(2.8);opacity:0;}}
+  .rd-lb .halo, .rd-lb:is(.halo){transform-box:fill-box;transform-origin:center;opacity:.6;animation:cmpPulse 2s ease-in-out infinite;pointer-events:none;}
+  .rd-lb .node.hero, .rd-lb:is(.node.hero){cursor:pointer;}
+  .rd-lb [data-m="usfig"] .node.hero, .rd-lb:is([data-m="usfig"] .node.hero), .rd-lb:is([data-m="usfig"]) .node.hero{filter:drop-shadow(0 0 5px rgba(95,234,255,.95));}
+  @media (prefers-reduced-motion:reduce){.rd-lb .halo, .rd-lb:is(.halo){animation:none;opacity:.6;}}
+  /* over the light hero the bar dissolves; ink stays dark brown */
+  .rd-lb nav[data-over="1"], .rd-lb:is(nav[data-over="1"]){background:transparent!important;border-bottom-color:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+  /* mobile-first; layout upgrades from 900px */
+  @container nb1page (min-width:900px){
+    .rd-lb [data-d~="pad"], .rd-lb:is([data-d~="pad"]){padding-left:48px!important;padding-right:48px!important;}
+    .rd-lb [data-m="benchrow"], .rd-lb:is([data-m="benchrow"]){flex-direction:column!important;align-items:flex-start!important;gap:10px!important;border-bottom:0!important;border-top:1px solid var(--nb1-hairline)!important;}
+    .rd-lb [data-d~="labband"], .rd-lb:is([data-d~="labband"]){grid-template-columns:1.05fr .95fr!important;gap:56px!important;padding-top:64px!important;padding-bottom:64px!important;}
+    .rd-lb [data-m="labshot"], .rd-lb:is([data-m="labshot"]){aspect-ratio:auto!important;height:380px!important;}
+    .rd-lb [data-d~="notrow"], .rd-lb:is([data-d~="notrow"]){grid-template-columns:.8fr 1.2fr!important;gap:32px!important;align-items:baseline;}
+    .rd-lb [data-d~="quoteband"], .rd-lb:is([data-d~="quoteband"]){grid-template-columns:1.05fr .95fr!important;}
+    .rd-lb [data-m="quoteshot"], .rd-lb:is([data-m="quoteshot"]){height:auto!important;min-height:340px;}
+    .rd-lb [data-d~="quoteband"] > div:last-child, .rd-lb:is([data-d~="quoteband"] > div:last-child), .rd-lb:is([data-d~="quoteband"]) > div:last-child{padding:40px 38px!important;}
+    .rd-lb [data-m="heroveil"], .rd-lb:is([data-m="heroveil"]){background:linear-gradient(90deg,var(--nb1-cool-grey) 0%,var(--nb1-cool-grey) 40%,rgba(179,231,243,.14) 78%)!important;}
+    .rd-lb [data-m="herostage"] [data-d~="pad"], .rd-lb:is([data-m="herostage"] [data-d~="pad"]), .rd-lb:is([data-m="herostage"]) [data-d~="pad"]{padding-top:96px!important;padding-bottom:64px!important;}
+    .rd-lb [data-d~="bigpad"], .rd-lb:is([data-d~="bigpad"]){padding-top:104px!important;padding-bottom:104px!important;}
+
+    .rd-lb [data-d~="g2"], .rd-lb:is([data-d~="g2"]){display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:22px!important;}
+    .rd-lb [data-d~="side"] [data-d~="g2"], .rd-lb:is([data-d~="side"] [data-d~="g2"]), .rd-lb:is([data-d~="side"]) [data-d~="g2"]{grid-template-columns:minmax(0,1fr)!important;}
+    .rd-lb [data-d~="g3"], .rd-lb:is([data-d~="g3"]){display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:20px!important;}
+    .rd-lb [data-d~="side"], .rd-lb:is([data-d~="side"]){grid-template-columns:.95fr 1.05fr!important;gap:56px!important;}
+    .rd-lb [data-d~="rcard"], .rd-lb:is([data-d~="rcard"]){flex:0 0 calc((100% - 40px) / 3)!important;}
+    .rd-lb [data-d~="mcard2"], .rd-lb:is([data-d~="mcard2"]){flex:0 0 calc((100% - 72px) / 4)!important;}
+    .rd-lb [data-m="leadrow"], .rd-lb:is([data-m="leadrow"]){grid-template-columns:300px 1fr!important;gap:44px!important;}
+    .rd-lb [data-m="valrow"], .rd-lb:is([data-m="valrow"]){grid-template-columns:140px 1fr!important;gap:22px!important;}
+    .rd-lb [data-m="statgrid"], .rd-lb:is([data-m="statgrid"]){grid-template-columns:repeat(4,1fr)!important;}
+    /* 4:5 is unbounded on a wide container, so cap the portrait */
+    .rd-lb [data-d~="rcard"] > [role="img"], .rd-lb:is([data-d~="rcard"] > [role="img"]), .rd-lb:is([data-d~="rcard"]) > [role="img"]{aspect-ratio:auto!important;height:400px!important;}
+    .rd-lb [data-d~="bigh"], .rd-lb:is([data-d~="bigh"]){font-size:clamp(40px,4.6cqi,58px)!important;}
+    .rd-lb [data-m="patgrid"], .rd-lb:is([data-m="patgrid"]){grid-template-columns:repeat(4,1fr)!important;}
+  }
+  /* the full cluster (4 links + Discover + locale + Log in + CTA) needs ~990px,
+     so the burger takes over there — not at 899, which left a 90px broken band */
+  @container nb1page (max-width:999px){
+    .rd-lb [data-m="navcta"], .rd-lb:is([data-m="navcta"]),.rd-lb [data-m="navextra"], .rd-lb:is([data-m="navextra"]){display:none!important;}
+    .rd-lb [data-m="burger"], .rd-lb:is([data-m="burger"]){display:flex!important;}
+  }
+  @container nb1page (max-width:899px){
+
+    /* the hero held a 540px floor regardless of content, and the veil buried the photo */
+    .rd-lb [data-m="herostage"], .rd-lb:is([data-m="herostage"]){min-height:0!important;}
+    .rd-lb [data-m="herostage"] [data-d~="pad"], .rd-lb:is([data-m="herostage"] [data-d~="pad"]), .rd-lb:is([data-m="herostage"]) [data-d~="pad"]{padding-top:132px!important;padding-bottom:32px!important;}
+    /* copy first, then the photo as a contained plate: headline → lede → CTA → image */
+    .rd-lb [data-m="heroveil"], .rd-lb:is([data-m="heroveil"]){display:none!important;}
+    .rd-lb [data-m="herostage"], .rd-lb:is([data-m="herostage"]){display:flex!important;flex-direction:column!important;}
+    .rd-lb [data-m="herostage"] > [data-d~="pad"], .rd-lb:is([data-m="herostage"] > [data-d~="pad"]), .rd-lb:is([data-m="herostage"]) > [data-d~="pad"]{order:1;padding-top:96px!important;padding-bottom:28px!important;background:var(--nb1-cool-grey);}
+    .rd-lb [data-m="herostage"] img, .rd-lb:is([data-m="herostage"] img), .rd-lb:is([data-m="herostage"]) img{order:2;position:static!important;aspect-ratio:1 / 1!important;height:auto!important;width:calc(100% - 48px)!important;margin:0 24px!important;border-radius:var(--nb1-radius-md)!important;object-fit:cover!important;object-position:72% 60%!important;flex:none!important;}
+    /* the dose chart's labels are ~4px effective at phone width; use a legible ladder */
+    .rd-lb [data-m="dosesvg"], .rd-lb:is([data-m="dosesvg"]){display:none!important;}
+    .rd-lb [data-m="dosealt"], .rd-lb:is([data-m="dosealt"]){display:block!important;}
+    /* the two validators: bigger portraits, meta beside them, no dead column */
+    .rd-lb [data-m="valrow"], .rd-lb:is([data-m="valrow"]){grid-template-columns:118px 1fr!important;gap:0 18px!important;align-items:start!important;}
+    .rd-lb [data-m="valshot"], .rd-lb:is([data-m="valshot"]){max-width:none!important;width:118px!important;aspect-ratio:3 / 4!important;}
+    /* the secondary board reads as a list, not four cards in a rail */
+    .rd-lb [data-m~="teamrail"], .rd-lb:is([data-m~="teamrail"]){flex-direction:column!important;overflow:visible!important;gap:0!important;}
+    .rd-lb [data-m="teamcell"], .rd-lb:is([data-m="teamcell"]){flex:none!important;display:grid;grid-template-columns:96px 1fr;gap:0 18px;padding-bottom:30px;}
+    .rd-lb [data-m="teamcell"] [data-m="teamshot"], .rd-lb:is([data-m="teamcell"] [data-m="teamshot"]), .rd-lb:is([data-m="teamcell"]) [data-m="teamshot"]{grid-row:1;grid-column:1;aspect-ratio:3 / 4!important;}
+    .rd-lb [data-m="teamcell"] [data-m="teamtext"], .rd-lb:is([data-m="teamcell"] [data-m="teamtext"]), .rd-lb:is([data-m="teamcell"]) [data-m="teamtext"]{grid-row:1;grid-column:2;}
+    .rd-lb [data-m="teamcell"] [data-m="teamtext"] > div:first-child, .rd-lb:is([data-m="teamcell"] [data-m="teamtext"] > div:first-child), .rd-lb:is([data-m="teamcell"]) [data-m="teamtext"] > div:first-child{margin-top:0!important;}
+    .rd-lb [data-m="teamcell"] [data-m="teamquote"], .rd-lb:is([data-m="teamcell"] [data-m="teamquote"]), .rd-lb:is([data-m="teamcell"]) [data-m="teamquote"]{grid-row:2;grid-column:1 / -1;margin-top:16px!important;}
+    /* the board stats read two-up, compact, not four tall cards */
+    .rd-lb [data-m="statgrid"], .rd-lb:is([data-m="statgrid"]){grid-template-columns:1fr 1fr!important;gap:12px!important;}
+    .rd-lb [data-m="statgrid"] > div, .rd-lb:is([data-m="statgrid"] > div), .rd-lb:is([data-m="statgrid"]) > div{min-height:0!important;padding:18px 16px!important;}
+    .rd-lb [data-m="statgrid"] > div > div:last-child, .rd-lb:is([data-m="statgrid"] > div > div:last-child), .rd-lb:is([data-m="statgrid"]) > div > div:last-child{margin-top:10px!important;padding-top:0!important;border-top:0!important;}
+    /* three compact USPs side by side, not three tall stacked blocks */
+    .rd-lb [data-m="sealtri"], .rd-lb:is([data-m="sealtri"]){grid-template-columns:repeat(3,1fr)!important;gap:14px!important;margin-top:26px!important;}
+    .rd-lb [data-m="sealrow"], .rd-lb:is([data-m="sealrow"]){padding:16px 0 0!important;border-top:1px solid var(--nb1-hairline);}
+    .rd-lb [data-m="sealrow"] > div:first-child, .rd-lb:is([data-m="sealrow"] > div:first-child), .rd-lb:is([data-m="sealrow"]) > div:first-child{font-size:26px!important;}
+    .rd-lb [data-m="seallong"], .rd-lb:is([data-m="seallong"]){display:none!important;}
+    .rd-lb [data-m="sealshort"], .rd-lb:is([data-m="sealshort"]){display:block!important;}
+    /* the four reads: two up, rather than four thin rows */
+    .rd-lb [data-m="fourup"], .rd-lb:is([data-m="fourup"]){display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px 16px!important;}
+    /* two-column layouts authored inline never collapsed: this is the real mobile bug */
+    .rd-lb [data-d~="side"], .rd-lb:is([data-d~="side"]){grid-template-columns:1fr!important;gap:48px!important;}
+    .rd-lb section > [data-d~="pad"], .rd-lb:is(section > [data-d~="pad"]), .rd-lb:is(section) > [data-d~="pad"]{padding-top:72px!important;padding-bottom:72px!important;}
+    .rd-lb [data-m="herostage"] > [data-d~="pad"], .rd-lb:is([data-m="herostage"] > [data-d~="pad"]), .rd-lb:is([data-m="herostage"]) > [data-d~="pad"]{padding-top:132px!important;padding-bottom:32px!important;}
+    .rd-lb [style*="1fr 1fr"]:not([data-m="cols4"]):not([data-m="fourup"]):not([data-m="doselegend"]):not([data-m="statgrid"]), .rd-lb:is([style*="1fr 1fr"]:not([data-m="cols4"]):not([data-m="fourup"]):not([data-m="doselegend"]):not([data-m="statgrid"])){grid-template-columns:1fr!important;}
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-lb [style*="repeat(3"]:not([data-m="cols4"]):not([data-m="sealtri"]), .rd-lb:is([style*="repeat(3"]:not([data-m="cols4"]):not([data-m="sealtri"])){grid-template-columns:1fr!important;} */
+
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-lb [style*="repeat(4"]:not([data-m="cols4"]), .rd-lb:is([style*="repeat(4"]:not([data-m="cols4"])){grid-template-columns:1fr 1fr!important;} */
+
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-lb [style*="columns:.9fr"], .rd-lb:is([style*="columns:.9fr"]),.rd-lb [style*="columns:1.2fr"], .rd-lb:is([style*="columns:1.2fr"]),.rd-lb [style*="columns:.92fr"], .rd-lb:is([style*="columns:.92fr"]){grid-template-columns:1fr!important;} */
+
+    /* three sequential cards, then one line down to the formula */
+    .rd-lb [data-m~="readsrail"], .rd-lb:is([data-m~="readsrail"]){flex-direction:column!important;overflow:visible!important;}
+    .rd-lb [data-m="readcard"], .rd-lb:is([data-m="readcard"]){flex:none!important;}
+    .rd-lb [data-m~="readsrail"] + div svg, .rd-lb:is([data-m~="readsrail"] + div svg), .rd-lb:is([data-m~="readsrail"]) + div svg{display:none!important;}
+    .rd-lb [data-m="joinline"], .rd-lb:is([data-m="joinline"]){display:block!important;}
+    /* the lab band's fact list is capped for a desktop column */
+    /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
+   It would match OUR markup only, because React serialises the style
+   attribute without the space the browser puts in. See tools/dead_rules.py.
+   .rd-lb [data-d~="labband"] [style*="max-width:46ch"], .rd-lb:is([data-d~="labband"] [style*="max-width:46ch"]), .rd-lb:is([data-d~="labband"]) [style*="max-width:46ch"]{max-width:none!important;} */
+
+  }
+
+
+/* ═══ hand-written overrides below — NOT ported from the mockup ═══
+ * tools/dead_rules.py and tools/page_scope.py stop at this line: everything
+ * below is a deliberate deviation written against the APP's markup, so testing
+ * it against the mockup would find nothing and delete it.
+ */
+
+/*
+ * Rich-text bold on this page is 500, not the browser's 700.
+ *
+ * Every <b> the mockup writes carries `font-weight: 500` inline, and inline wins
+ * — so those are already right and this rule cannot reach them. It exists for
+ * the bold Payload's RichText emits, which has no inline style: #formula's
+ * `We use <b>strains</b>: specific, named…` is emphasis INSIDE a sentence, so it
+ * is a rich-text field rather than a separate one an offset would have to
+ * re-insert, and without this it would render 700 against the mockup's 500.
+ *
+ * Scoped to `.rd-lb b` rather than `.rd-lb .payload-richtext b` on purpose: the
+ * harness's RichText stub emits <b> but not Payload's wrapper class, so this
+ * form is one the fidelity check can actually see. It is also exactly as broad
+ * as the evidence — measured on the mockup, all six <b> on this page compute to
+ * 500 and none to anything else, the same as The Protocol. A later block that
+ * wants 700 will show up as a difference rather than being silently restyled.
+ */
+.rd-lb b,
+.rd-lb strong {
+  font-weight: 500;
+}

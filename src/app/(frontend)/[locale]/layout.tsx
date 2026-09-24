@@ -31,6 +31,13 @@ import './rd-pg.css'
 // and `--tint`, which the shipped tokens do not define at all. They sit on
 // `.rd-pr` so they inherit to this page's blocks and reach no other page.
 import './rd-pr.css'
+// `rd-lb.css` is The Lab mockup's own layout, scoped to `.rd-lb` on the same
+// reasoning. It carries the twelve tokens that mockup resolves differently from
+// the shipped `:root` — eleven semantic aliases it introduces (--nb1-accent,
+// the --nb1-bg-*/--nb1-fg-* pair, --nb1-hero, the three --nb1-weight-* and
+// --paper) plus its own --nb1-sphere-soft. They sit on `.rd-lb`, so they inherit
+// to this page's blocks and reach no other page.
+import './rd-lb.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
