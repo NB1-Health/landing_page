@@ -222,6 +222,7 @@ import * as migration_20260925_010000_rd_lb_formula_block from './20260925_01000
 import * as migration_20260925_020000_rd_lb_advanced_block from './20260925_020000_rd_lb_advanced_block'
 import * as migration_20260925_030000_rd_lb_board_block from './20260925_030000_rd_lb_board_block'
 import * as migration_20260925_040000_rd_pg_buy_lab_variant from './20260925_040000_rd_pg_buy_lab_variant'
+import * as migration_20260925_050000_rd_lb_method_figures from './20260925_050000_rd_lb_method_figures'
 
 export const migrations = [
   {
@@ -1343,5 +1344,10 @@ export const migrations = [
     up: migration_20260925_040000_rd_pg_buy_lab_variant.up,
     down: migration_20260925_040000_rd_pg_buy_lab_variant.down,
     name: '20260925_040000_rd_pg_buy_lab_variant',
+  },
+  {
+    up: migration_20260925_050000_rd_lb_method_figures.up,
+    down: migration_20260925_050000_rd_lb_method_figures.down,
+    name: '20260925_050000_rd_lb_method_figures',
   },
 ]

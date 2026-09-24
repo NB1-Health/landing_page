@@ -4160,6 +4160,14 @@ export interface RdLbMethodBlock {
    */
   intro?: string | null;
   /**
+   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel.
+   */
+  leftFigure?: (number | null) | Media;
+  /**
+   * The same gut coloured by what each microbe can do, for the "What each one can do" panel.
+   */
+  rightFigure?: (number | null) | Media;
+  /**
    * The left card. Its figure is a fixed drawing of 1,250 identical dots shipped as a file — only the words and the alt text are editable.
    */
   left?: {

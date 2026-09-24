@@ -97,8 +97,10 @@ export const RdLbMethodBlock: Block = {
         }
       } },
     { name: "intro", type: "textarea", localized: true, label: "Standfirst", admin: { description: "The line under the headline." }, defaultValue: "The same gut. The same microbes, read two completely different ways." },
+    { name: "leftFigure", type: "upload", relationTo: "media", label: "Left figure \u2014 the 16S cloud", admin: { description: "The grey gut drawn as 1,250 identical dots, for the \"Who's there\" panel. An SVG. It is drawn as an <image> INSIDE the panel's own <svg>, positioned to that svg's viewBox \u2014 so a replacement has to use the same 44.5 14.1 245.2 253.8 viewBox or it will not line up. Its alt is the panel's own \"figureAlt\" field, not the media row's." } },
+    { name: "rightFigure", type: "upload", relationTo: "media", label: "Right figure \u2014 the shotgun cloud", admin: { description: "The same gut coloured by what each microbe can do, for the \"What each one can do\" panel. Same viewBox rule as the left figure. The three tappable microbes are NOT in this file \u2014 they are drawn by the block over the top, so a replacement should not include them." } },
     {
-      name: "left", type: 'group', label: "16S panel", admin: { description: "The left card. Its figure is a fixed drawing of 1,250 identical dots shipped as a file \u2014 only the words and the alt text are editable." },
+      name: "left", type: 'group', label: "16S panel", admin: { description: "The left card. Its figure is the uploaded \"Left figure\" above; these are its words and its alt text." },
       fields: [
         { name: "eyebrow", type: "text", localized: true, defaultValue: "Almost every gut test" },
         { name: "title", type: "text", localized: true, defaultValue: "Who's there" },
@@ -108,7 +110,7 @@ export const RdLbMethodBlock: Block = {
       ],
     },
     {
-      name: "right", type: 'group', label: "Our panel", admin: { description: "The right card. Its figure is the same drawing with three tappable microbes over it." },
+      name: "right", type: 'group', label: "Our panel", admin: { description: "The right card. Its figure is the uploaded \"Right figure\" above, with three tappable microbes drawn over it by the block." },
       fields: [
         { name: "eyebrow", type: "text", localized: true, defaultValue: "Our method" },
         { name: "title", type: "text", localized: true, defaultValue: "What each one can do" },
