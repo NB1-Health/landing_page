@@ -6,7 +6,7 @@ import { PayloadRedirects } from '@/components/PayloadRedirects'
 import { JsonLd } from '@/components/JsonLd/index'
 import configPromise from '@payload-config'
 import { getPayload, type Payload, type RequiredDataFromCollectionSlug } from 'payload'
-import React from 'react'
+import React, { cache } from 'react'
 
 import { Header } from '@/Header/Component'
 import { Footer } from '@/Footer/Component'
@@ -78,22 +78,46 @@ const getCachedPageMeta = unstable_cache(
   { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
 )
 
-const getCachedPublishedLocaleSlugs = unstable_cache(
-  async (id: number | string) => {
-    const payload = await getPayload({ config: configPromise })
-    return resolvePublishedLocaleSlugs({ collection: 'pages', id, payload })
-  },
-  ['published-page', 'locale-slugs'],
-  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+// `React.cache` on top of `unstable_cache` — the two solve different problems and
+// this route needs both. `unstable_cache` is the persistent Data Cache, shared
+// across requests and busted by tag. `React.cache` is per-request memoisation.
+//
+// Without it these three run TWICE on every request, because `generateMetadata`
+// and `Page` are separate functions that each need the same answers (hub, locale
+// slugs, is-this-home). On a warm Data Cache the second call is cheap; on a cold
+// one — after a deploy, a `revalidateTag`, or the 600s TTL lapsing — both calls
+// miss and both hit Postgres, with no coalescing between them. Staging is cold
+// far more often than production, which is exactly when it can least afford it.
+const getCachedPublishedLocaleSlugs = cache(
+  unstable_cache(
+    async (id: number | string) => {
+      const payload = await getPayload({ config: configPromise })
+      return resolvePublishedLocaleSlugs({ collection: 'pages', id, payload })
+    },
+    ['published-page', 'locale-slugs'],
+    { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+  ),
 )
 
-const getCachedIsHomePage = unstable_cache(
-  async (id: number | string) => {
-    const payload = await getPayload({ config: configPromise })
-    return isHomePageDocument(payload, PUBLISHED_READ, id)
-  },
-  ['published-page', 'is-home'],
-  { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+const getCachedIsHomePage = cache(
+  unstable_cache(
+    async (id: number | string) => {
+      const payload = await getPayload({ config: configPromise })
+      return isHomePageDocument(payload, PUBLISHED_READ, id)
+    },
+    ['published-page', 'is-home'],
+    { revalidate: PAGE_CACHE_SECONDS, tags: [PAGE_CACHE_TAG] },
+  ),
+)
+
+/**
+ * `getCachedHubBySlug` is a FACTORY — it returns the cached function, so the
+ * call site reads `getCachedHubBySlug(a, b)()`. Memoising the factory would
+ * dedupe nothing, so the wrapper below memoises the invocation instead. Both
+ * `Page` and `generateMetadata` go through this.
+ */
+const hubBySlug = cache(async (locale: AppLocale, slug: string) =>
+  getCachedHubBySlug(locale, slug)(),
 )
 
 // Keep preview, checkout and newly published slugs request-rendered.
@@ -120,7 +144,7 @@ export default async function Page({ params: paramsPromise }: Args) {
   // asking on every page request is cheap. Hubs win over Pages: a slug
   // collision is refused at save time by `rejectPageSlugCollision`.
   if (rawSlug) {
-    const hub = await getCachedHubBySlug(locale, decodedSlug)()
+    const hub = await hubBySlug(locale, decodedSlug)
     if (hub) return <HubPage hub={hub} locale={locale} />
   }
 
@@ -143,14 +167,20 @@ export default async function Page({ params: paramsPromise }: Args) {
   if (page.id == null) return <PayloadRedirects url={url} />
   const pageId = page.id
 
-  const publishedSlugs = read.draft
-    ? await resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
-    : await getCachedPublishedLocaleSlugs(pageId)
-  const isHome =
-    !rawSlug ||
-    (read.draft
-      ? await isHomePageDocument(payload, read, pageId)
-      : await getCachedIsHomePage(pageId))
+  // These two are independent of each other, and each is a round trip. Awaited
+  // in sequence they cost the sum; started together they cost the slower one.
+  // The `!rawSlug` short-circuit is preserved deliberately — the home route must
+  // still answer `isHome` without asking the database at all.
+  const [publishedSlugs, isHome] = await Promise.all([
+    read.draft
+      ? resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
+      : getCachedPublishedLocaleSlugs(pageId),
+    !rawSlug
+      ? Promise.resolve(true)
+      : read.draft
+        ? isHomePageDocument(payload, read, pageId)
+        : getCachedIsHomePage(pageId),
+  ])
 
   // Draft previews remain available to authenticated editors. Public rendering is
   // gated before any content fallback so an unpublished locale cannot masquerade
@@ -268,7 +298,7 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const decodedSlug = decodeURIComponent(rawSlug ?? 'home-page')
 
   if (rawSlug) {
-    const hub = await getCachedHubBySlug(locale, decodedSlug)()
+    const hub = await hubBySlug(locale, decodedSlug)
     if (hub) return buildHubMetadata(hub, locale)
   }
 
@@ -287,14 +317,19 @@ export async function generateMetadata({ params: paramsPromise }: Args): Promise
   const pageId = page.id
 
   const siteURL = getServerSideURL()
-  const publishedSlugs = read.draft
-    ? await resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
-    : await getCachedPublishedLocaleSlugs(pageId)
-  const isHome =
-    !rawSlug ||
-    (read.draft
-      ? await isHomePageDocument(payload, read, pageId)
-      : await getCachedIsHomePage(pageId))
+  // Same pair as in `Page`, parallelised the same way. On a public request both
+  // of these are already memoised by `React.cache` from the render above, so
+  // this usually resolves without touching the database at all.
+  const [publishedSlugs, isHome] = await Promise.all([
+    read.draft
+      ? resolvePublishedLocaleSlugs({ collection: 'pages', id: pageId, payload })
+      : getCachedPublishedLocaleSlugs(pageId),
+    !rawSlug
+      ? Promise.resolve(true)
+      : read.draft
+        ? isHomePageDocument(payload, read, pageId)
+        : getCachedIsHomePage(pageId),
+  ])
   const canonical = new URL(
     getPagePath(locale, (page as { slug?: string }).slug, isHome),
     siteURL,

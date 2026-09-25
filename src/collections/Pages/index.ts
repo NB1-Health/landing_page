@@ -545,7 +545,16 @@ export const Pages: CollectionConfig<'pages'> = {
 
   versions: {
     drafts: {
-      autosave: { interval: 5000 },
+      // 5s -> 15s. Autosave is debounced, so this is the shortest gap between
+      // writes while someone is actively typing — it does NOT fire on an idle
+      // form (measured: an untouched edit view makes no autosave requests at
+      // all). Each write is a full document save across 9 locales into both
+      // `pages` and `_pages_v`, so on the 1-vCPU staging box a save every 5s
+      // while an editor types is real load.
+      //
+      // 15 rather than 30: 30s of unsaved work is a long time to lose to a
+      // crashed tab, and the win from 15->30 is half the win from 5->15.
+      autosave: { interval: 15000 },
       localizeStatus: true,
       schedulePublish: true,
     },
