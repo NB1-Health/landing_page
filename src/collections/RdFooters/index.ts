@@ -47,6 +47,21 @@ export const RdFooters: CollectionConfig = {
       defaultValue: true,
     },
     {
+      name: 'variant',
+      type: 'select',
+      options: ['full', 'slim', 'stack'],
+      label: 'Layout',
+      admin: {
+        description:
+          "Which footer this row draws. `full` is the homepage's \u2014 newsletter, blurb, three link "
+          + "columns, legal strip. `slim` is Our Plans' single row: logo, a row of links, copyright. "
+          + "`stack` is The Protocol's and The Lab's: logo, tagline, a link row under a hairline, "
+          + "copyright. The three share a root element and nothing else, which is why this is a "
+          + "layout switch rather than a set of toggles.",
+      },
+      defaultValue: 'full',
+    },
+    {
       name: 'logo',
       type: 'upload',
       relationTo: 'media',
@@ -256,6 +271,54 @@ export const RdFooters: CollectionConfig = {
       localized: true,
       label: "Disclaimer",
       defaultValue: "nb1 is a wellness and lifestyle subscription. Sequencing insights are informational and do not constitute medical advice. Supplements are not intended to diagnose, treat, cure, or prevent any disease. If you are pregnant, nursing, or taking medication, consult your healthcare provider before use. Formulas are generated from sequencing data and approved by a qualified researcher prior to manufacture.",
+    },
+    {
+      name: 'tone',
+      type: 'group',
+      label: 'Tone (stack only)',
+      admin: {
+        condition: (_data, siblingData) => siblingData?.variant === 'stack',
+        description:
+          "THESE EXIST BECAUSE THE TWO MOCKUPS DRIFTED, not because the design has a tone system. "
+          + "The Protocol and The Lab draw the same footer with three values different: the tagline "
+          + "at .78 against .72, the copyright at rgba(240,245,255,.62) against .72, and the link "
+          + "row set by `color` on one page and by `opacity` on the other \u2014 a different CSS "
+          + "property, which is the clearest sign it is drift. Recreating both exactly was a "
+          + "deliberate call; normalising them is a one-line change here if that is revisited.",
+      },
+      fields: [
+        {
+          name: 'taglineOpacity',
+          type: 'text',
+          label: 'Tagline opacity',
+          admin: { description: "The Protocol: 0.78. The Lab: 0.72." },
+          defaultValue: '0.78',
+        },
+        {
+          name: 'linkRowColor',
+          type: 'text',
+          label: 'Link row colour',
+          admin: {
+            description:
+              "Set on The Protocol (rgba(240,245,255,.78)). Leave EMPTY to fall back to the opacity "
+              + "below, which is how The Lab draws the same row.",
+          },
+          defaultValue: 'rgba(240,245,255,.78)',
+        },
+        {
+          name: 'linkRowOpacity',
+          type: 'text',
+          label: 'Link row opacity',
+          admin: { description: "Used only when the colour above is empty. The Lab: 0.75." },
+        },
+        {
+          name: 'copyrightColor',
+          type: 'text',
+          label: 'Copyright colour',
+          admin: { description: "The Protocol: rgba(240,245,255,.62). The Lab: rgba(240,245,255,.72)." },
+          defaultValue: 'rgba(240,245,255,.62)',
+        },
+      ],
     },
   ],
 }

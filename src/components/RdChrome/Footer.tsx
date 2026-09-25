@@ -24,6 +24,141 @@ const mediaUrl = (m: unknown): string | undefined =>
 const mediaAlt = (m: unknown): string =>
   m && typeof m === 'object' && 'alt' in m ? ((m as { alt?: string }).alt ?? '') : ''
 
+// THE ROOT IS THE SAME ON ALL THREE PAGES. Dark-brown ground, cool-grey ink, one
+// hairline on top — byte-identical in the homepage, Our Plans, Protocol and Lab
+// mockups. Only what sits inside it changes, which is what makes this a layout
+// switch on one component rather than three components.
+const ROOT: React.CSSProperties = {
+  background: "var(--nb1-dark-brown)",
+  color: "var(--nb1-cool-grey)",
+  borderTop: "1px solid rgba(240, 245, 255, 0.12)",
+}
+
+const LINK_ROW_BASE: React.CSSProperties = {
+  fontFamily: "var(--nb1-font-tertiary)",
+  textTransform: "uppercase",
+}
+
+/**
+ * Our Plans' footer. ONE FLEX ROW — logo, links, copyright — and 117px tall
+ * against the homepage's 559px.
+ *
+ * No `data-d="pad"` on the container, deliberately: the mockup writes a flat
+ * `padding: 48px` here and does not opt this row into the shared padding scale.
+ * Adding the attribute would hand it the homepage's breakpoint padding and the
+ * difference would not show until a phone.
+ *
+ * Its two opacities are literals rather than fields, because exactly one page
+ * uses this layout. The `stack` variant below is the one drawn twice, and that
+ * is where the tone fields earn their place.
+ */
+const SlimFooter: React.FC<Props> = ({ logo, copyright, ...props }) => {
+  const links = props.columnOneLinks ?? []
+  return (
+    <footer style={ROOT} className="rd-block rd-chrome rd-footer">
+      <div style={{
+        maxWidth: "1240px",
+        margin: "0px auto",
+        padding: "48px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "24px"
+      }}>
+        {mediaUrl(logo) ? (
+          <img src={mediaUrl(logo)} alt={mediaAlt(logo)} style={{
+            height: "20px",
+            width: "auto"
+          }} />
+        ) : null}
+        <div style={{
+          ...LINK_ROW_BASE,
+          display: "flex",
+          gap: "28px",
+          letterSpacing: "0.1em",
+          fontSize: "11.5px",
+          opacity: "0.8"
+        }}>
+          {links.map((l, i) => (
+            <a key={l.id ?? i} href={l.url ?? '#'}>{l.label}</a>
+          ))}
+        </div>
+        <div style={{
+          ...LINK_ROW_BASE,
+          letterSpacing: "0.08em",
+          fontSize: "10.5px",
+          opacity: "0.5"
+        }}>{copyright}</div>
+      </div>
+    </footer>
+  )
+}
+
+/**
+ * The Protocol's and The Lab's footer. Logo, tagline, a link row under its own
+ * hairline, copyright — stacked, 279px.
+ *
+ * `data-d="pad"` IS on this container, because the mockup puts it there. That
+ * opts it into the shared padding scale, which is what the two pages draw.
+ *
+ * The link row takes a COLOUR on The Protocol and an OPACITY on The Lab. Both
+ * are carried rather than reconciled: see the `tone` group in the collection for
+ * why, and for what to change if that decision is revisited.
+ */
+const StackFooter: React.FC<Props> = ({ logo, tagline, copyright, tone, ...props }) => {
+  const links = props.columnOneLinks ?? []
+  const linkColor = tone?.linkRowColor || undefined
+  return (
+    <footer style={ROOT} className="rd-block rd-chrome rd-footer">
+      <div style={{
+        maxWidth: "1240px",
+        margin: "0px auto",
+        padding: "52px 20px 40px"
+      }} data-d="pad">
+        {mediaUrl(logo) ? (
+          <img src={mediaUrl(logo)} alt={mediaAlt(logo)} style={{
+            height: "20px",
+            width: "auto",
+            alignSelf: "flex-start"
+          }} />
+        ) : null}
+        <p style={{
+          fontFamily: "var(--nb1-font-secondary)",
+          fontSize: "15px",
+          lineHeight: "1.5",
+          opacity: tone?.taglineOpacity ?? "0.78",
+          marginTop: "18px",
+          maxWidth: "44ch"
+        }}>{tagline}</p>
+        <div style={{
+          ...LINK_ROW_BASE,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "22px",
+          marginTop: "28px",
+          paddingTop: "24px",
+          borderTop: "1px solid rgba(240, 245, 255, 0.14)",
+          letterSpacing: "0.08em",
+          fontSize: "10.5px",
+          ...(linkColor ? { color: linkColor } : { opacity: tone?.linkRowOpacity ?? "0.75" })
+        }}>
+          {links.map((l, i) => (
+            <a key={l.id ?? i} href={l.url ?? '#'}>{l.label}</a>
+          ))}
+        </div>
+        <div style={{
+          ...LINK_ROW_BASE,
+          letterSpacing: "0.08em",
+          fontSize: "10.5px",
+          color: tone?.copyrightColor ?? "rgba(240, 245, 255, 0.62)",
+          marginTop: "20px"
+        }}>{copyright}</div>
+      </div>
+    </footer>
+  )
+}
+
 export const RdFooter: React.FC<Props> = (props) => {
   const {
     logo, tagline, signupLabel, signupPlaceholder, signupInputLabel,
@@ -31,6 +166,13 @@ export const RdFooter: React.FC<Props> = (props) => {
     columnOneTitle, columnTwoTitle, columnThreeTitle,
     copyright, social, disclaimer,
   } = props
+  // The two new layouts return BEFORE the homepage's markup, so that markup is
+  // not touched at all — not wrapped, not re-indented, not made conditional. A
+  // row with no variant (every row that existed before this field) falls
+  // through to it, which is what keeps the shipped footer exactly as it was.
+  if (props.variant === 'slim') return <SlimFooter {...props} />
+  if (props.variant === 'stack') return <StackFooter {...props} />
+
   const columnOneLinks = props.columnOneLinks ?? []
   const columnTwoLinks = props.columnTwoLinks ?? []
   const columnThreeLinks = props.columnThreeLinks ?? []

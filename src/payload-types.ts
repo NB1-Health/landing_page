@@ -1400,6 +1400,10 @@ export interface RdFooter {
    */
   name?: string | null;
   isDefault?: boolean | null;
+  /**
+   * Which footer this row draws. `full` is the homepage's — newsletter, blurb, three link columns, legal strip. `slim` is Our Plans' single row: logo, a row of links, copyright. `stack` is The Protocol's and The Lab's: logo, tagline, a link row under a hairline, copyright. The three share a root element and nothing else, which is why this is a layout switch rather than a set of toggles.
+   */
+  variant?: ('full' | 'slim' | 'stack') | null;
   logo?: (number | null) | Media;
   tagline?: string | null;
   signupLabel?: string | null;
@@ -1465,6 +1469,27 @@ export interface RdFooter {
     url?: string | null;
   };
   disclaimer?: string | null;
+  /**
+   * THESE EXIST BECAUSE THE TWO MOCKUPS DRIFTED, not because the design has a tone system. The Protocol and The Lab draw the same footer with three values different: the tagline at .78 against .72, the copyright at rgba(240,245,255,.62) against .72, and the link row set by `color` on one page and by `opacity` on the other — a different CSS property, which is the clearest sign it is drift. Recreating both exactly was a deliberate call; normalising them is a one-line change here if that is revisited.
+   */
+  tone?: {
+    /**
+     * The Protocol: 0.78. The Lab: 0.72.
+     */
+    taglineOpacity?: string | null;
+    /**
+     * Set on The Protocol (rgba(240,245,255,.78)). Leave EMPTY to fall back to the opacity below, which is how The Lab draws the same row.
+     */
+    linkRowColor?: string | null;
+    /**
+     * Used only when the colour above is empty. The Lab: 0.75.
+     */
+    linkRowOpacity?: string | null;
+    /**
+     * The Protocol: rgba(240,245,255,.62). The Lab: rgba(240,245,255,.72).
+     */
+    copyrightColor?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -4160,15 +4185,15 @@ export interface RdLbMethodBlock {
    */
   intro?: string | null;
   /**
-   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel.
+   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel. An SVG. It is drawn as an <image> INSIDE the panel's own <svg>, positioned to that svg's viewBox — so a replacement has to use the same 44.5 14.1 245.2 253.8 viewBox or it will not line up. Its alt is the panel's own "figureAlt" field, not the media row's.
    */
   leftFigure?: (number | null) | Media;
   /**
-   * The same gut coloured by what each microbe can do, for the "What each one can do" panel.
+   * The same gut coloured by what each microbe can do, for the "What each one can do" panel. Same viewBox rule as the left figure. The three tappable microbes are NOT in this file — they are drawn by the block over the top, so a replacement should not include them.
    */
   rightFigure?: (number | null) | Media;
   /**
-   * The left card. Its figure is a fixed drawing of 1,250 identical dots shipped as a file — only the words and the alt text are editable.
+   * The left card. Its figure is the uploaded "Left figure" above; these are its words and its alt text.
    */
   left?: {
     eyebrow?: string | null;
@@ -4178,7 +4203,7 @@ export interface RdLbMethodBlock {
     caption?: string | null;
   };
   /**
-   * The right card. Its figure is the same drawing with three tappable microbes over it.
+   * The right card. Its figure is the uploaded "Right figure" above, with three tappable microbes drawn over it by the block.
    */
   right?: {
     eyebrow?: string | null;
@@ -14360,6 +14385,8 @@ export interface RdLbMethodBlockSelect<T extends boolean = true> {
   anchorId?: T;
   heading?: T;
   intro?: T;
+  leftFigure?: T;
+  rightFigure?: T;
   left?:
     | T
     | {
@@ -18435,6 +18462,7 @@ export interface RdHeadersSelect<T extends boolean = true> {
 export interface RdFootersSelect<T extends boolean = true> {
   name?: T;
   isDefault?: T;
+  variant?: T;
   logo?: T;
   tagline?: T;
   signupLabel?: T;
@@ -18481,6 +18509,14 @@ export interface RdFootersSelect<T extends boolean = true> {
         url?: T;
       };
   disclaimer?: T;
+  tone?:
+    | T
+    | {
+        taglineOpacity?: T;
+        linkRowColor?: T;
+        linkRowOpacity?: T;
+        copyrightColor?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
