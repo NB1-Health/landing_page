@@ -49,13 +49,6 @@ const RdLbBoardComponent = dynamic(() => import('@/blocks/redesign/LbBoard/Compo
 const FormBlock = dynamic(() => import('@/blocks/Form/Component').then((m) => m.FormBlock))
 const MediaBlock = dynamic(() => import('@/blocks/MediaBlock/Component').then((m) => m.MediaBlock))
 const FormCustomBlock = dynamic(() => import('@/blocks/FormCostom/Component').then((m) => m.FormCustomBlock))
-const BoxCardBlock = dynamic(() => import('@/blocks/landingBlocks/BoxCard/Component').then((m) => m.BoxCardBlock))
-const FormulaCardBlock = dynamic(() => import('./landingBlocks/FormulaCard/Component').then((m) => m.FormulaCardBlock))
-const ResultsCardBlock = dynamic(() => import('./landingBlocks/ResultsCard/Component').then((m) => m.ResultsCardBlock))
-const ReviewCardBlock = dynamic(() => import('./landingBlocks/ReviewCard/Component').then((m) => m.ReviewCardBlock))
-const StepsCardBlock = dynamic(() => import('./landingBlocks/StepsCard/Component').then((m) => m.StepsCardBlock))
-const SymptomsCardBlock = dynamic(() => import('./landingBlocks/SymptomsCard/Component').then((m) => m.SymptomsCardBlock))
-const VideoCardBlock = dynamic(() => import('./landingBlocks/VideoCard/Component').then((m) => m.VideoCardBlock))
 const KeyTakeawaysBlock = dynamic(() => import('@/blocks/KeyTakeways/Component').then((m) => m.KeyTakeawaysBlock))
 const FAQBlockComponent = dynamic(() => import('./FAQ/Component').then((m) => m.FAQBlockComponent))
 const DataTableBlockComponent = dynamic(() => import('@/blocks/DataTable/Component').then((m) => m.DataTableBlockComponent))
@@ -223,13 +216,6 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
   'form-custom': FormCustomBlock,
-  'box-card': BoxCardBlock,
-  'formula-card': FormulaCardBlock,
-  'results-card': ResultsCardBlock,
-  'review-card': ReviewCardBlock,
-  'steps-card': StepsCardBlock,
-  'symptoms-card': SymptomsCardBlock,
-  'video-card': VideoCardBlock,
   keyTakeaways: KeyTakeawaysBlock,
   faq: FAQBlockComponent,
   dataTable: DataTableBlockComponent,

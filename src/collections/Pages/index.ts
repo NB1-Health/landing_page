@@ -51,7 +51,6 @@ import { RdLbAdvancedBlock } from '@/blocks/redesign/LbAdvanced/config'
 import { RdLbBoardBlock } from '@/blocks/redesign/LbBoard/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
-import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
@@ -62,12 +61,6 @@ import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-
 import { costomSlugField } from '@/fields/slug'
 import { chromeFields } from '@/fields/contentDocument'
 import { rejectHubSlugCollision } from './hooks/rejectHubSlugCollision'
-import { FormulaCardBlock } from '@/blocks/landingBlocks/FormulaCard/config'
-import { ResultsCardBlock } from '@/blocks/landingBlocks/ResultsCard/config'
-import { ReviewCardBlock } from '@/blocks/landingBlocks/ReviewCard/config'
-import { StepsCardBlock } from '@/blocks/landingBlocks/StepsCard/config'
-import { SymptomsCardBlock } from '@/blocks/landingBlocks/SymptomsCard/config'
-import { VideoCardBlock } from '@/blocks/landingBlocks/VideoCard/config'
 import { BenefitsBanner } from '@/blocks/newLandingBlocks/BenefitsBanner/config'
 import { StepsBanner } from '@/blocks/newLandingBlocks/StepsBanner/config'
 import { ProductBanner } from '@/blocks/newLandingBlocks/ProductBanner/config'
@@ -301,13 +294,6 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdLbAdvancedBlock,
                 RdLbBoardBlock,
                 Content,
-                BoxCardBlock,
-                FormulaCardBlock,
-                ResultsCardBlock,
-                ReviewCardBlock,
-                StepsCardBlock,
-                SymptomsCardBlock,
-                VideoCardBlock,
                 BenefitsBanner,
                 StepsBanner,
                 ProductBanner,
