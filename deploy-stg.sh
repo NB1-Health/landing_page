@@ -85,22 +85,6 @@ rm -rf -- "$APP_DIR/.next"
 npm run build
 
 echo ">>> Start/Restart PM2"
-# TEMPORARY — REMOVE ONCE THE PUBLISH 500 IS DIAGNOSED.
-#
-# Makes Payload return the real error in the API response instead of a bare 500.
-# Publishing a page returns 500 while a draft save of the SAME document returns
-# 200, and the response body says nothing. The server log is where this would
-# normally be read, but the box is not reachable, so the response is the only
-# channel left.
-#
-# This reaches the already-running process because the restart below already
-# passes --update-env. Without that flag pm2 reuses the environment captured at
-# first start and this line would silently do nothing.
-#
-# Staging is behind basic auth and X-Robots-Tag: noindex, which is the only
-# reason exposing stack traces here is acceptable. Never set for production.
-export PAYLOAD_DEBUG=true
-
 if pm2 list | grep -q "$APP_NAME"; then
   pm2 restart "$APP_NAME" --update-env
 else
