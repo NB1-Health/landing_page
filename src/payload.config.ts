@@ -206,6 +206,57 @@ export default buildConfig({
     hideGlobalFromNonAdmins(FAQ),
   ],
   plugins,
+  /**
+   * TEMPORARY — REMOVE WITH `PAYLOAD_DEBUG` ONCE THE PUBLISH 500 IS DIAGNOSED.
+   *
+   * WHY A HOOK AND NOT JUST `debug: true`. `debug` already works; the problem is
+   * that its JSON never reaches the client. Measured on staging, a failed
+   * publish comes back as `content-type: text/html`, `server: cloudflare`, and a
+   * 2,481-byte body that is NB1's own branded error page ("NB1 · Something went
+   * wrong"). Any 5xx from this origin is repainted at the edge, exactly as the
+   * 403s on write requests were earlier. So Payload's real error is discarded
+   * before anyone can read it, and no amount of extra detail in a 500 body helps.
+   *
+   * The way out is to stop it being an error response at all. `AfterErrorResult`
+   * accepts a `status`, so the error is returned as **200** with the detail in
+   * the body — nothing downstream sees a failure, nothing gets repainted, and
+   * the message arrives intact.
+   *
+   * THE COST, AND IT IS REAL: the admin UI will treat the publish as having
+   * SUCCEEDED, because that is what a 200 means. The document will not be
+   * published and the UI will not say so. That is tolerable for a deliberate
+   * one-off diagnostic on staging and intolerable anywhere else, which is why
+   * this is gated on the same explicit flag and must come out with it.
+   */
+  hooks: {
+    afterError: [
+      ({ error, req }) => {
+        if (process.env.PAYLOAD_DEBUG !== 'true') return
+        req?.payload?.logger?.error({ err: error }, '[debug-relay] error returned as 200')
+        return {
+          status: 200,
+          // `response` is `Partial<ErrorResult> & Record<string, unknown>`, so
+          // extra keys are free BUT the keys ErrorResult declares keep their
+          // declared types. `stack` is `string` there, not `string[]` — hence
+          // the join rather than the array this first returned. `name` and
+          // `message` live inside `errors[]` in that type, so they go there.
+          response: {
+            __payloadDebugRelay: true,
+            errors: [{ message: error?.message, name: error?.name }],
+            // Trimmed: enough frames to place the throw, not the whole runtime.
+            stack: String(error?.stack ?? '')
+              .split('\n')
+              .slice(0, 40)
+              .join('\n'),
+            cause:
+              error && typeof error === 'object' && 'cause' in error
+                ? String((error as { cause?: unknown }).cause).slice(0, 2000)
+                : null,
+          },
+        }
+      },
+    ],
+  },
   onInit: (payload) => {
     // The MCP plugin uses its key hash directly at /mcp. Its generated key
     // collection must not also authenticate against Payload's generic API.
