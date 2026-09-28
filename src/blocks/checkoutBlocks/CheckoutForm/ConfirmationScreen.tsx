@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { persistPostPurchaseSurveyResponse } from '@/lib/checkoutApi'
 import MentionMeTag from '@/components/MentionMe/MentionMeTag'
+import { toMentionMeLocale } from '@/components/MentionMe/locale'
 import { openArminChat } from '@/components/ArminWidget'
 import {
   trackPostPurchaseSurveyAnswered,
@@ -411,13 +412,13 @@ export function ConfirmationScreen({
         </div>
       </div>
 
-      {/* Mention Me — refer a friend (referrer journey). Locale pinned to the demo campaign (en_GB);
-          map to real site locales once live campaigns exist per language. */}
+      {/* Mention Me — refer a friend (referrer journey). Campaign locale follows the page
+          locale (see toMentionMeLocale). */}
       <div style={{ margin: '10px 0 4px' }}>
         <MentionMeTag
           variant="referrer"
           situation="postpurchase"
-          locale="en_GB"
+          locale={toMentionMeLocale(locale)}
           params={{
             email,
             firstname: fn,

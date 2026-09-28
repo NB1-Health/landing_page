@@ -61,6 +61,7 @@ import { suggestEmailDomain } from '@/lib/emailDomainCheck'
 import { getDictionary } from '@/i18n/getDictionary'
 import { ConfirmationScreen } from './ConfirmationScreen'
 import MentionMeRefereeLink from '@/components/MentionMe/MentionMeRefereeLink'
+import { toMentionMeLocale } from '@/components/MentionMe/locale'
 import { PaymentFailedScreen } from './PaymentFailedScreen'
 import {
   getStoredPlanSelection,
@@ -4043,7 +4044,11 @@ function CheckoutFormInner({ backHref, locale }: Props) {
                 volatile props (email/name change on keystroke and would reload the tag); situation +
                 locale are enough, MM's own widget captures the friend. The label is ours and
                 translated; MM's campaign copy is server-side (see MentionMeRefereeLink). */}
-            <MentionMeRefereeLink label={t.referral.beenReferred} situation="checkout" />
+            <MentionMeRefereeLink
+              label={t.referral.beenReferred}
+              situation="checkout"
+              locale={toMentionMeLocale(locale)}
+            />
 
             <div className="nb1-sum-zero">{t.summary.dueToday.replace('{zeroPrice}', zero)}</div>
             <p className="nb1-sum-note">
