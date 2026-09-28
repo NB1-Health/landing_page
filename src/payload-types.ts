@@ -4160,15 +4160,15 @@ export interface RdLbMethodBlock {
    */
   intro?: string | null;
   /**
-   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel.
+   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel. An SVG. It is drawn as an <image> INSIDE the panel's own <svg>, positioned to that svg's viewBox — so a replacement has to use the same 44.5 14.1 245.2 253.8 viewBox or it will not line up. Its alt is the panel's own "figureAlt" field, not the media row's.
    */
   leftFigure?: (number | null) | Media;
   /**
-   * The same gut coloured by what each microbe can do, for the "What each one can do" panel.
+   * The same gut coloured by what each microbe can do, for the "What each one can do" panel. Same viewBox rule as the left figure. The three tappable microbes are NOT in this file — they are drawn by the block over the top, so a replacement should not include them.
    */
   rightFigure?: (number | null) | Media;
   /**
-   * The left card. Its figure is a fixed drawing of 1,250 identical dots shipped as a file — only the words and the alt text are editable.
+   * The left card. Its figure is the uploaded "Left figure" above; these are its words and its alt text.
    */
   left?: {
     eyebrow?: string | null;
@@ -4178,7 +4178,7 @@ export interface RdLbMethodBlock {
     caption?: string | null;
   };
   /**
-   * The right card. Its figure is the same drawing with three tappable microbes over it.
+   * The right card. Its figure is the uploaded "Right figure" above, with three tappable microbes drawn over it by the block.
    */
   right?: {
     eyebrow?: string | null;
@@ -14360,6 +14360,8 @@ export interface RdLbMethodBlockSelect<T extends boolean = true> {
   anchorId?: T;
   heading?: T;
   intro?: T;
+  leftFigure?: T;
+  rightFigure?: T;
   left?:
     | T
     | {
