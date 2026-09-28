@@ -113,6 +113,25 @@ export default buildConfig({
     },
   },
   editor: defaultLexical,
+  /**
+   * Return the real error in API responses instead of a generic 500.
+   *
+   * WHY THIS EXISTS. Publishing a page on staging returns 500 while draft saves
+   * of the SAME document return 200, and the response body says nothing useful.
+   * The server log would name the throw, but the box is not reachable from
+   * here — so the only channel left is the HTTP response itself, which is what
+   * this opens.
+   *
+   * OFF unless `PAYLOAD_DEBUG=true` is explicitly set, and deploy-stg.sh is the
+   * only place that sets it. Two guards, because this prints stack traces to
+   * anyone who can reach the API: an unset variable cannot enable it, and
+   * `'true'` is matched exactly, so `PAYLOAD_DEBUG=false` cannot read as truthy.
+   *
+   * TURN IT OFF once the error is captured. Staging sits behind basic auth and
+   * `X-Robots-Tag: noindex`, which is the only reason this is tolerable there.
+   * It is a diagnostic, not a setting, and it must never reach production.
+   */
+  debug: process.env.PAYLOAD_DEBUG === 'true',
   experimental: {
     localizeStatus: true,
   },
