@@ -124,6 +124,18 @@ const hubBySlug = cache(async (locale: AppLocale, slug: string) =>
 // Public marketing HTML can be cached separately at the CDN.
 export const dynamic = 'force-dynamic'
 
+// Blocks that read live rates from /subscriptions/plans (via usePlansSnapshot). A page
+// with any of these needs the server price snapshot even if its copy has no {{price}} token.
+const PLAN_PRICED_BLOCKS = new Set([
+  'cycleSelector',
+  'cyclesPricingGrid',
+  'planSelector',
+  'planSummaryCard',
+  'plansSection',
+  'ypPlans',
+  'ypBuyBox',
+])
+
 export default async function Page({ params: paramsPromise }: Args) {
   const payload = await getPayload({ config: configPromise })
   const read = await getAuthenticatedDraft(payload)
@@ -210,7 +222,14 @@ export default async function Page({ params: paramsPromise }: Args) {
   const rdFooterId = typeof rdFooter === 'object' ? rdFooter?.id : rdFooter
 
   // All currencies share one public snapshot; visitor preferences stay in the browser.
-  const hasPrices = hasPriceToken(JSON.stringify([hero, layout]))
+  // Blocks that price themselves from the plans API seed their first render from it
+  // too (usePlansSnapshot), so their HTML arrives with real prices, not blanks.
+  const hasPrices =
+    hasPriceToken(JSON.stringify([hero, layout])) ||
+    (Array.isArray(layout) &&
+      layout.some((block: { blockType?: string } | null) =>
+        PLAN_PRICED_BLOCKS.has(block?.blockType ?? ''),
+      ))
   const initialPrices = hasPrices
     ? await getPublicPlanPrices().catch((error) => {
         console.error('[prices] Failed to load public rates', error)

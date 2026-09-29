@@ -14,6 +14,7 @@ const PriceContext = createContext<{
   locale: string
   currency: ReturnType<typeof getDefaultCurrency>
   rates: Record<string, number>
+  plans: RawPlanClient[]
 } | null>(null)
 
 export function PriceTokensProvider({
@@ -58,6 +59,7 @@ export function PriceTokensProvider({
       locale,
       currency,
       rates: buildRateMap(prices, currency),
+      plans: prices,
     }),
     [locale, currency, prices],
   )
@@ -73,3 +75,15 @@ export function usePriceTokens<T>(raw: T): T {
     [raw, context],
   )
 }
+
+/**
+ * Plans known at render time: the server snapshot on the server and the first browser
+ * render (identical, so seeding state from it cannot cause a hydration mismatch), then
+ * the live list once the provider's fetch lands. Empty when the page loaded no snapshot
+ * or the API was down — callers must still handle that.
+ */
+export function usePlansSnapshot(): RawPlanClient[] {
+  return useContext(PriceContext)?.plans ?? EMPTY_PLANS
+}
+
+const EMPTY_PLANS: RawPlanClient[] = []

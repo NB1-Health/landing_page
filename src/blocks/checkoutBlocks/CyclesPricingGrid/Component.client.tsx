@@ -9,6 +9,7 @@ import { getMediaUrl } from '@/utilities/getMediaUrl'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   formatMonthLabel,
@@ -16,6 +17,7 @@ import {
   getBestValueLabel,
   resolveTokens,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 
 type AthleteImage = {
   image?: { url?: string | null } | string | null
@@ -107,32 +109,59 @@ export const CyclesPricingGridClient: React.FC<Props> = ({
   const { ref, revealed } = useReveal()
   const perMonth = getDictionary(locale).plans.perMonth
   const twoCol = Boolean(showSecondPlan && planName2)
-  const [rows, setRows] = useState<PricingRow[]>(rowsProp ?? [])
-  const [rows2, setRows2] = useState<PricingRow[]>(rows2Prop ?? [])
-  const [monthlyNote, setMonthlyNote] = useState<string | null | undefined>(rawMonthlyNote)
-  const [monthlyNote2, setMonthlyNote2] = useState<string | null | undefined>(rawMonthlyNote2)
+  // Everything the grid derives from live plans, in one pure step so the server
+  // snapshot can seed the first render (SSR HTML carries real rates, no blanks).
+  const priced = (
+    plans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    currency: ReturnType<typeof getClientCurrency>,
+  ) => {
+    const rateMap = buildRateMap(plans, currency)
+    const bestValueLabel = getBestValueLabel(locale)
+    const live = planFamily ? computeRows(planFamily, plans, rateMap, currency, locale, bestValueLabel) : []
+    const live2 =
+      showSecondPlan && planFamily2
+        ? computeRows(planFamily2, plans, rateMap, currency, locale, bestValueLabel)
+        : []
+    return {
+      rows: live.length > 0 ? live : (rowsProp ?? []),
+      rows2: live2.length > 0 ? live2 : (rows2Prop ?? []),
+      monthlyNote: resolveTokens(rawMonthlyNote, rateMap, currency, locale),
+      monthlyNote2: resolveTokens(rawMonthlyNote2, rateMap, currency, locale),
+    }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() =>
+    planFamily && snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null,
+  )
+  const [rows, setRows] = useState<PricingRow[]>(seed?.rows ?? rowsProp ?? [])
+  const [rows2, setRows2] = useState<PricingRow[]>(seed?.rows2 ?? rows2Prop ?? [])
+  const [monthlyNote, setMonthlyNote] = useState<string | null | undefined>(seed?.monthlyNote ?? rawMonthlyNote)
+  const [monthlyNote2, setMonthlyNote2] = useState<string | null | undefined>(seed?.monthlyNote2 ?? rawMonthlyNote2)
 
   useEffect(() => {
     let active = true
-    setRows(rowsProp ?? [])
-    setRows2(rows2Prop ?? [])
-    setMonthlyNote(rawMonthlyNote)
-    setMonthlyNote2(rawMonthlyNote2)
-
-    if (!planFamily) return
-    const bestValueLabel = getBestValueLabel(locale)
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
       if (!active || currency !== getClientCurrency(locale)) return
-      const rateMap = buildRateMap(plans, currency)
-      setRows(computeRows(planFamily!, plans, rateMap, currency, locale, bestValueLabel))
-      if (showSecondPlan && planFamily2) {
-        setRows2(computeRows(planFamily2, plans, rateMap, currency, locale, bestValueLabel))
-      }
-      setMonthlyNote(resolveTokens(rawMonthlyNote, rateMap, currency, locale))
-      setMonthlyNote2(resolveTokens(rawMonthlyNote2, rateMap, currency, locale))
+      const next = priced(plans, currency)
+      setRows(next.rows)
+      setRows2(next.rows2)
+      setMonthlyNote(next.monthlyNote)
+      setMonthlyNote2(next.monthlyNote2)
     }
 
+    // Start from the snapshot (or the CMS values) so prop changes still reset the grid,
+    // then replace it with live data when the fetch lands.
+    if (planFamily && snapshot.length > 0) {
+      applyPrices(getClientCurrency(locale), snapshot)
+    } else {
+      setRows(rowsProp ?? [])
+      setRows2(rows2Prop ?? [])
+      setMonthlyNote(rawMonthlyNote)
+      setMonthlyNote2(rawMonthlyNote2)
+    }
+
+    if (!planFamily) return
     const currency = getClientCurrency(locale)
     fetchPlansClient().then((plans) => applyPrices(currency, plans)).catch(() => {})
 

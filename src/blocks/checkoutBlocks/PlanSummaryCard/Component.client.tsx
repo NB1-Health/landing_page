@@ -6,11 +6,13 @@ import { getDictionary } from '@/i18n/getDictionary'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   resolveTokens,
   extractBullets,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 
 type Bullet = { text?: string | null }
 
@@ -49,34 +51,61 @@ export const PlanSummaryCardClient: React.FC<Props> = ({
 }) => {
   const { ref, revealed } = useReveal()
   const perMonth = getDictionary(locale).plans.perMonth
-  const [price, setPrice] = useState<string | null>(null)
-  const [primaryCtaPrice, setPrimaryCtaPrice] = useState<string | null>(null)
-  const [secondaryCtaText, setSecondaryCtaText] = useState<string | null | undefined>(rawSecondaryCtaText)
-  const [bullets, setBullets] = useState<Bullet[]>(bulletsProp ?? [])
+  const family = planVariant === 'advanced' ? 'advanced' : 'core'
+  // 'monthly' is the 1-month standard's cycle key everywhere downstream;
+  // map it (and a null/blank config) to the month=1 rate. Never fall back to
+  // 4 — that would mislabel/mis-price a flexible order as a 4-month commit.
+  const month = cycleMonth === 'monthly' ? 1 : Number(cycleMonth) || 1
+
+  // Live plans → price, CTA price, secondary CTA copy and bullets. Pure, so the server
+  // price snapshot can seed the first render (SSR HTML carries the real price).
+  const priced = (
+    plans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    currency: ReturnType<typeof getClientCurrency>,
+  ) => {
+    const rateMap = buildRateMap(plans, currency)
+    const rate = rateMap[`${family}:${month}`]
+    const formatted = rate != null ? formatPrice(rate, currency, locale) : null
+    const apiBullets = extractBullets(plans, family, locale)
+    return {
+      price: formatted,
+      primaryCtaPrice: formatted ? `${formatted}${perMonth}` : null,
+      secondaryCtaText: resolveTokens(rawSecondaryCtaText, rateMap, currency, locale),
+      bullets: apiBullets.length > 0 ? apiBullets.map((text) => ({ text })) : (bulletsProp ?? []),
+    }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() =>
+    snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null,
+  )
+  const [price, setPrice] = useState<string | null>(seed?.price ?? null)
+  const [primaryCtaPrice, setPrimaryCtaPrice] = useState<string | null>(seed?.primaryCtaPrice ?? null)
+  const [secondaryCtaText, setSecondaryCtaText] = useState<string | null | undefined>(
+    seed ? seed.secondaryCtaText : rawSecondaryCtaText,
+  )
+  const [bullets, setBullets] = useState<Bullet[]>(seed?.bullets ?? bulletsProp ?? [])
 
   useEffect(() => {
     let active = true
-    setSecondaryCtaText(rawSecondaryCtaText)
-    setBullets(bulletsProp ?? [])
-
-    const family = planVariant === 'advanced' ? 'advanced' : 'core'
-    // 'monthly' is the 1-month standard's cycle key everywhere downstream;
-    // map it (and a null/blank config) to the month=1 rate. Never fall back to
-    // 4 — that would mislabel/mis-price a flexible order as a 4-month commit.
-    const month = cycleMonth === 'monthly' ? 1 : Number(cycleMonth) || 1
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
       if (!active || currency !== getClientCurrency(locale)) return
-      const rateMap = buildRateMap(plans, currency)
-      const rate = rateMap[`${family}:${month}`]
-      if (rate != null) {
-        const formatted = formatPrice(rate, currency, locale)
-        setPrice(formatted)
-        setPrimaryCtaPrice(`${formatted}${perMonth}`)
+      const next = priced(plans, currency)
+      // Keep the last good price if this data set has no rate for the family/month.
+      if (next.price) {
+        setPrice(next.price)
+        setPrimaryCtaPrice(next.primaryCtaPrice)
       }
-      setSecondaryCtaText(resolveTokens(rawSecondaryCtaText, rateMap, currency, locale))
-      const apiBullets = extractBullets(plans, family, locale)
-      if (apiBullets.length > 0) setBullets(apiBullets.map((text) => ({ text })))
+      setSecondaryCtaText(next.secondaryCtaText)
+      setBullets(next.bullets)
+    }
+
+    // Start from the snapshot (or the CMS values), then swap in live data.
+    if (snapshot.length > 0) {
+      applyPrices(getClientCurrency(locale), snapshot)
+    } else {
+      setSecondaryCtaText(rawSecondaryCtaText)
+      setBullets(bulletsProp ?? [])
     }
 
     const currency = getClientCurrency(locale)

@@ -8,11 +8,13 @@ import { trackPlanSelectionAndNavigate } from '@/lib/planTracking'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   resolveTokens,
   resolveTokensDeep,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 
 type FeatureItem = { item?: string | null }
 type Guarantee = { iconSvg?: string | null; title?: string | null; description?: string | null }
@@ -90,39 +92,62 @@ export const PlansClient: React.FC<Props> = (props) => {
   const gridRef = useRef<HTMLDivElement>(null)
   const [activeDot, setActiveDot] = useState(0)
   const [visible, setVisible] = useState(false)
-  const [corePrice, setCorePrice] = useState<string | null>(null)
-  const [advPrice, setAdvPrice] = useState<string | null>(null)
-  const coreRateRef = useRef<number | null>(null)
-  const advRateRef = useRef<number | null>(null)
-  const currencyRef = useRef<string>('EUR')
-  const planTitlesRef = useRef<{ core: string; advanced: string }>({ core: 'Core', advanced: 'Advanced' })
-  const [coreMonthly, setCoreMonthly] = useState<string | null | undefined>(rawCoreMonthly)
-  const [coreCommit, setCoreCommit] = useState<string | null | undefined>(rawCoreCommit)
-  const [advCommit, setAdvCommit] = useState<string | null | undefined>(rawAdvCommit)
-  const [compareRowsJson, setCompareRowsJson] = useState<string | null | undefined>(rawCompareRowsJson)
-
-  function applyPlans(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+  // Live plans → headline prices + price-token copy. Pure, so the server price snapshot
+  // can seed the first render (SSR HTML carries the real prices, no empty cards).
+  const priced = (plans: Awaited<ReturnType<typeof fetchPlansClient>>, currency: ReturnType<typeof getClientCurrency>) => {
     const rateMap = buildRateMap(plans, currency)
     // Headline = the 1-month standard price (the new baseline), not the 4-month discount.
-    const coreRate = rateMap['core:1']
-    const advRate = rateMap['advanced:1']
-    if (coreRate != null) { setCorePrice(formatPrice(coreRate, currency, locale)); coreRateRef.current = coreRate }
-    if (advRate != null) { setAdvPrice(formatPrice(advRate, currency, locale)); advRateRef.current = advRate }
+    const coreRate = rateMap['core:1'] ?? null
+    const advRate = rateMap['advanced:1'] ?? null
+    return {
+      coreRate,
+      advRate,
+      corePrice: coreRate != null ? formatPrice(coreRate, currency, locale) : null,
+      advPrice: advRate != null ? formatPrice(advRate, currency, locale) : null,
+      coreMonthly: resolveTokens(rawCoreMonthly, rateMap, currency, locale),
+      coreCommit: resolveTokens(rawCoreCommit, rateMap, currency, locale),
+      advCommit: resolveTokens(rawAdvCommit, rateMap, currency, locale),
+      compareRowsJson: resolveTokensDeep(rawCompareRowsJson, rateMap, currency, locale),
+    }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() => (snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null))
+  const [corePrice, setCorePrice] = useState<string | null>(seed?.corePrice ?? null)
+  const [advPrice, setAdvPrice] = useState<string | null>(seed?.advPrice ?? null)
+  const coreRateRef = useRef<number | null>(seed?.coreRate ?? null)
+  const advRateRef = useRef<number | null>(seed?.advRate ?? null)
+  const currencyRef = useRef<string>('EUR')
+  const planTitlesRef = useRef<{ core: string; advanced: string }>({ core: 'Core', advanced: 'Advanced' })
+  const [coreMonthly, setCoreMonthly] = useState<string | null | undefined>(seed ? seed.coreMonthly : rawCoreMonthly)
+  const [coreCommit, setCoreCommit] = useState<string | null | undefined>(seed ? seed.coreCommit : rawCoreCommit)
+  const [advCommit, setAdvCommit] = useState<string | null | undefined>(seed ? seed.advCommit : rawAdvCommit)
+  const [compareRowsJson, setCompareRowsJson] = useState<string | null | undefined>(seed ? seed.compareRowsJson : rawCompareRowsJson)
+
+  function applyPlans(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
+    const next = priced(plans, currency)
+    if (next.coreRate != null) { setCorePrice(next.corePrice); coreRateRef.current = next.coreRate }
+    if (next.advRate != null) { setAdvPrice(next.advPrice); advRateRef.current = next.advRate }
     const coreTitle = plans.find(p => p.title.toLowerCase() === 'core')?.title ?? 'Core'
     const advTitle = plans.find(p => p.title.toLowerCase() === 'advanced')?.title ?? 'Advanced'
     planTitlesRef.current = { core: coreTitle, advanced: advTitle }
-    setCoreMonthly(resolveTokens(rawCoreMonthly, rateMap, currency, locale))
-    setCoreCommit(resolveTokens(rawCoreCommit, rateMap, currency, locale))
-    setAdvCommit(resolveTokens(rawAdvCommit, rateMap, currency, locale))
-    setCompareRowsJson(resolveTokensDeep(rawCompareRowsJson, rateMap, currency, locale))
+    setCoreMonthly(next.coreMonthly)
+    setCoreCommit(next.coreCommit)
+    setAdvCommit(next.advCommit)
+    setCompareRowsJson(next.compareRowsJson)
   }
 
   useEffect(() => {
     let active = true
-    setCoreMonthly(rawCoreMonthly)
-    setCoreCommit(rawCoreCommit)
-    setAdvCommit(rawAdvCommit)
-    setCompareRowsJson(rawCompareRowsJson)
+    // Start from the snapshot (or the CMS values), then swap in live data.
+    if (snapshot.length > 0) {
+      currencyRef.current = getClientCurrency(locale)
+      applyPlans(currencyRef.current as ReturnType<typeof getClientCurrency>, snapshot)
+    } else {
+      setCoreMonthly(rawCoreMonthly)
+      setCoreCommit(rawCoreCommit)
+      setAdvCommit(rawAdvCommit)
+      setCompareRowsJson(rawCompareRowsJson)
+    }
 
     const currency = getClientCurrency(locale)
     currencyRef.current = currency

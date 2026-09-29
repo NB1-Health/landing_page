@@ -14,7 +14,9 @@ import {
   computeSavings,
   resolveCurrencyTokens,
   type CurrencyCode,
+  type RawPlanClient,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 import {
   buildNb1Item,
   getOrCreateCheckoutId,
@@ -89,6 +91,37 @@ const CheckIcon = () => (
   </svg>
 )
 
+/** Live plans → the family's 1/4/12 tiers. Pure, so it can seed the first render. */
+function computeTiers(
+  plans: RawPlanClient[],
+  planKey: 'core' | 'advanced',
+  currency: CurrencyCode,
+  locale: string,
+  checkoutBasePath: string | null | undefined,
+): Tier[] {
+  const family = planKey === 'advanced' ? 'Advanced' : 'Core'
+  const rateMap = buildRateMap(plans, currency)
+  const familyPlans = plans
+    .filter((p) => p.title === family && [1, 4, 12].includes(p.month))
+    .sort((a, b) => a.month - b.month)
+  // Savings anchor to the 1-month standard rate (the new baseline), so the
+  // commit tiers read "save €20 / €120 per cycle" vs month-to-month — not
+  // vs the old 4-month rate. Mirrors BASELINE_MONTH=1 in lib/plans/api.ts.
+  const baselineRate = rateMap[`${planKey}:1`] ?? 0
+  return familyPlans.map((p) => {
+    const rate = rateMap[`${planKey}:${p.month}`] ?? 0
+    const savings = computeSavings(rate, baselineRate, p.month)
+    return {
+      months: formatMonthLabel(p.month, locale),
+      month: p.month,
+      monthlyRate: formatPrice(rate, currency, locale),
+      saveLabel: formatSavingsLabel(savings, currency, locale),
+      isBestValue: p.is_preferred,
+      checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
+    }
+  })
+}
+
 export const CycleSelectorClient: React.FC<Props> = ({
   planName,
   switchLinkLabel,
@@ -119,7 +152,16 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'flex' | 'commit'>('flex')
   const [commitIdx, setCommitIdx] = useState(1)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [tiers, setTiers] = useState<Tier[]>(tiersProp ?? [])
+  // Seeded from the server price snapshot so the SSR HTML already carries real
+  // rates; the effect below re-applies with the visitor's currency and live data.
+  const snapshot = usePlansSnapshot()
+  const [tiers, setTiers] = useState<Tier[]>(() => {
+    const seeded =
+      planFamily && snapshot.length > 0
+        ? computeTiers(snapshot, planFamily, getDefaultCurrency(locale), locale, checkoutBasePath)
+        : []
+    return seeded.length > 0 ? seeded : (tiersProp ?? [])
+  })
   // Currency is also held in state (not just currencyRef) so free-form copy
   // with amount tokens — e.g. the guarantee strip's "{{0}}" — re-renders when
   // the visitor switches currency. Seeded with the SSR-safe default to keep
@@ -155,36 +197,19 @@ export const CycleSelectorClient: React.FC<Props> = ({
       currency: ReturnType<typeof getClientCurrency>,
       plans: Awaited<ReturnType<typeof fetchPlansClient>>,
     ) {
-      const rateMap = buildRateMap(plans, currency)
-      rateMapRef.current = rateMap
+      rateMapRef.current = buildRateMap(plans, currency)
       currencyRef.current = currency
       setCurrency(currency)
       planTitleRef.current =
         plans.find((p) => p.title.toLowerCase() === planFamily)?.title ?? family
-      const familyPlans = plans
-        .filter((p) => p.title === family && [1, 4, 12].includes(p.month))
-        .sort((a, b) => a.month - b.month)
-      // Savings anchor to the 1-month standard rate (the new baseline), so the
-      // commit tiers read "save €20 / €120 per cycle" vs month-to-month — not
-      // vs the old 4-month rate. Mirrors BASELINE_MONTH=1 in lib/plans/api.ts.
-      const baselineRate = rateMap[`${planKey}:1`] ?? 0
-      setTiers(
-        familyPlans.map((p) => {
-          const rate = rateMap[`${planKey}:${p.month}`] ?? 0
-          const savings = computeSavings(rate, baselineRate, p.month)
-          return {
-            months: formatMonthLabel(p.month, locale),
-            month: p.month,
-            monthlyRate: formatPrice(rate, currency, locale),
-            saveLabel: formatSavingsLabel(savings, currency, locale),
-            isBestValue: p.is_preferred,
-            checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
-          }
-        }),
-      )
+      const next = computeTiers(plans, planKey, currency, locale, checkoutBasePath)
+      if (next.length > 0) setTiers(next)
     }
 
     const currency = getClientCurrency(locale)
+    // Apply the snapshot straight away (visitor currency, refs for ATC tracking),
+    // then replace it with live data when the fetch lands.
+    if (snapshot.length > 0) applyPrices(currency, snapshot)
     fetchPlansClient()
       .then((plans) => applyPrices(currency, plans))
       .catch(() => {})
@@ -197,6 +222,9 @@ export const CycleSelectorClient: React.FC<Props> = ({
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
     return () => window.removeEventListener('nb1:currencychange', onCurrencyChange)
+    // snapshot is deliberately left out: it is only the seed, and re-running on it
+    // would re-fetch after every provider update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planFamily, locale, checkoutBasePath])
 
   const activeTiers = tiers.length > 0 ? tiers : (tiersProp ?? [])
@@ -725,12 +753,17 @@ export const CycleSelectorClient: React.FC<Props> = ({
         {/* Footer */}
         <div className="nb1-cs-foot">
           <div className="nb1-cs-sel">
-            {activeLabel} ·{' '}
-            <b>
-              {activeRate}
-              {perMonth}
-            </b>{' '}
-            ·{' '}
+            {/* No rate (API down and no snapshot): drop the label/price instead of a bare "· /mo". */}
+            {activeRate && (
+              <>
+                {activeLabel} ·{' '}
+                <b>
+                  {activeRate}
+                  {perMonth}
+                </b>{' '}
+                ·{' '}
+              </>
+            )}
             {activeTab === 'flex'
               ? (cancelAnytimeLabel ?? 'cancel anytime')
               : (billedMonthlyShortLabel ?? 'billed monthly')}
@@ -778,8 +811,8 @@ export const CycleSelectorClient: React.FC<Props> = ({
               }
             }}
           >
-            {continuePrefix ?? 'Continue'} · {activeRate}
-            {perMonth} →
+            {continuePrefix ?? 'Continue'}
+            {activeRate ? ` · ${activeRate}${perMonth}` : ''} →
           </a>
         </div>
 

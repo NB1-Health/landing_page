@@ -8,10 +8,12 @@ import { getMediaUrl } from '@/utilities/getMediaUrl'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   resolveTokens,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 
 type BgColorPreset = 'inkDeep' | 'navyDeep' | 'navy' | 'teal' | 'off' | 'paper' | 'cream' | 'custom'
 type BgType = 'color' | 'image'
@@ -81,33 +83,49 @@ export const YpBuyBoxClient: React.FC<YpBuyBoxBlockType> = ({
 }) => {
   const [revealed, setRevealed] = useState(false)
   const sectionRef = useRef<HTMLElement | null>(null)
-  const [options, setOptions] = useState<Option[]>(optionsProp ?? [])
-  const [sub, setSub] = useState<string | null | undefined>(rawSub)
-  const [buyNote, setBuyNote] = useState<string | null | undefined>(rawBuyNote)
+  // Live plans → option prices + price-token copy. Pure, so the server price snapshot
+  // can seed the first render (SSR HTML carries the real prices).
+  const priced = (plans: Awaited<ReturnType<typeof fetchPlansClient>>, currency: ReturnType<typeof getClientCurrency>) => {
+    const rateMap = buildRateMap(plans, currency)
+    return {
+      options: (optionsProp ?? []).map((opt) => {
+        const family = opt.planFamily === 'advanced' ? 'advanced' : 'core'
+        const rate = opt.planFamily ? rateMap[`${family}:1`] : undefined
+        return {
+          ...opt,
+          price: rate != null ? formatPrice(rate, currency, locale) : undefined,
+          altLabel: resolveTokens(opt.altLabel, rateMap, currency, locale) ?? opt.altLabel,
+          description: resolveTokens(opt.description, rateMap, currency, locale) ?? opt.description,
+        }
+      }),
+      sub: resolveTokens(rawSub, rateMap, currency, locale),
+      buyNote: resolveTokens(rawBuyNote, rateMap, currency, locale),
+    }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() => (snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null))
+  const [options, setOptions] = useState<Option[]>(seed?.options ?? optionsProp ?? [])
+  const [sub, setSub] = useState<string | null | undefined>(seed ? seed.sub : rawSub)
+  const [buyNote, setBuyNote] = useState<string | null | undefined>(seed ? seed.buyNote : rawBuyNote)
 
   useEffect(() => {
     let active = true
-    setOptions(optionsProp ?? [])
-    setSub(rawSub)
-    setBuyNote(rawBuyNote)
 
     function applyPrices(currency: ReturnType<typeof getClientCurrency>, plans: Awaited<ReturnType<typeof fetchPlansClient>>) {
       if (!active || currency !== getClientCurrency(locale)) return
-      const rateMap = buildRateMap(plans, currency)
-      setOptions(
-        (optionsProp ?? []).map((opt) => {
-          const family = opt.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = opt.planFamily ? rateMap[`${family}:1`] : undefined
-          return {
-            ...opt,
-            price: rate != null ? formatPrice(rate, currency, locale) : undefined,
-            altLabel: resolveTokens(opt.altLabel, rateMap, currency, locale) ?? opt.altLabel,
-            description: resolveTokens(opt.description, rateMap, currency, locale) ?? opt.description,
-          }
-        }),
-      )
-      setSub(resolveTokens(rawSub, rateMap, currency, locale))
-      setBuyNote(resolveTokens(rawBuyNote, rateMap, currency, locale))
+      const next = priced(plans, currency)
+      setOptions(next.options)
+      setSub(next.sub)
+      setBuyNote(next.buyNote)
+    }
+
+    // Start from the snapshot (or the CMS values), then swap in live data.
+    if (snapshot.length > 0) {
+      applyPrices(getClientCurrency(locale), snapshot)
+    } else {
+      setOptions(optionsProp ?? [])
+      setSub(rawSub)
+      setBuyNote(rawBuyNote)
     }
 
     const currency = getClientCurrency(locale)

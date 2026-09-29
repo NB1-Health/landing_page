@@ -108,6 +108,7 @@ export const fr = {
     savingsPrefix: 'Économise',
     savingsSuffix: '/ cycle',
     bestValue: 'Meilleure offre',
+    mostInformed: 'La mieux informée',
     compareShow: 'Comparer Core et Advanced en détail',
     compareHide: 'Masquer la comparaison',
     guaranteeBilledMonthly: 'Facturé chaque mois.',

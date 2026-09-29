@@ -46,14 +46,24 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://apistg.nb1.c
 let plansRequest: Promise<RawPlanClient[]> | undefined
 let plansExpireAt = 0
 
-/** Share one short-lived request across the page's price components. Failures can retry. */
+function requestPlans(): Promise<RawPlanClient[]> {
+  return fetch(`${BACKEND_URL}/subscriptions/plans?preferred_first=false`).then(async (response) => {
+    if (!response.ok) throw new Error(`plans fetch failed: ${response.status}`)
+    return (await response.json()) as RawPlanClient[]
+  })
+}
+
+/**
+ * Share one short-lived request across the page's price components. A failed request is
+ * retried once after a short pause (a transient blip should not leave prices blank); if
+ * that fails too the error propagates and the next call starts over.
+ */
 export function fetchPlansClient(): Promise<RawPlanClient[]> {
   if (!plansRequest || Date.now() >= plansExpireAt) {
     plansExpireAt = Infinity
-    plansRequest = fetch(`${BACKEND_URL}/subscriptions/plans?preferred_first=false`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`plans fetch failed: ${response.status}`)
-        const plans = await response.json() as RawPlanClient[]
+    plansRequest = requestPlans()
+      .catch(() => new Promise<void>((resolve) => setTimeout(resolve, 1500)).then(requestPlans))
+      .then((plans) => {
         plansExpireAt = Date.now() + 60_000
         return plans
       })
