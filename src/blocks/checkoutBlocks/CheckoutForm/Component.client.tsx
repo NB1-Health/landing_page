@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { loadStripe } from '@stripe/stripe-js'
+import {
+  loadStripe,
+  type StripeExpressCheckoutElementClickEvent,
+  type StripeExpressCheckoutElementConfirmEvent,
+} from '@stripe/stripe-js'
 import {
   Elements,
   CardElement,
@@ -288,14 +292,36 @@ function ExpressLinkRow({
   const stripe = useStripe()
   const elements = useElements()
 
-  const onConfirm = async () => {
-    if (!stripe || !elements) return
+  // Validate before the wallet sheet opens. Not calling resolve() keeps the sheet
+  // closed, so an incomplete form scrolls to the bad step instead of opening a
+  // sheet we would then abandon (Google/Apple report that as REQUEST_TIMEOUT).
+  // resolve() must be called within 1s, so validate() has to stay synchronous.
+  const onClick = (event: StripeExpressCheckoutElementClickEvent) => {
     if (!validate()) return
-    if (!beginSubmit()) return
+    event.resolve()
+  }
+
+  // Every exit before confirmSetup succeeds must call paymentFailed(), otherwise
+  // the wallet sheet waits for an answer and ends in REQUEST_TIMEOUT.
+  const onConfirm = async (event: StripeExpressCheckoutElementConfirmEvent) => {
+    if (!stripe || !elements) {
+      event.paymentFailed({ reason: 'fail' })
+      return
+    }
+    // Another submit is already in flight: close the sheet but leave its state alone.
+    if (!beginSubmit()) {
+      event.paymentFailed({ reason: 'fail' })
+      return
+    }
+    const fail = (message?: string) => {
+      event.paymentFailed({ reason: 'fail' })
+      onError(message)
+    }
+    let setupIntentId: string
     try {
       const { error: submitError } = await elements.submit()
       if (submitError) {
-        onError(submitError.message)
+        fail(submitError.message)
         return
       }
       const intent = await createIntent()
@@ -309,10 +335,17 @@ function ExpressLinkRow({
         redirect: 'if_required',
       })
       if (confirmError) {
-        onError(confirmError.message)
+        fail(confirmError.message)
         return
       }
-      await finalize(intent.setup_intent_id)
+      setupIntentId = intent.setup_intent_id
+    } catch (err) {
+      fail((err as Error)?.message)
+      return
+    }
+    // The sheet has closed once confirmSetup succeeds; from here only the page shows errors.
+    try {
+      await finalize(setupIntentId)
     } catch (err) {
       onError((err as Error)?.message)
     }
@@ -321,6 +354,7 @@ function ExpressLinkRow({
   return (
     <ExpressCheckoutElement
       onReady={({ availablePaymentMethods }) => onReadyChange(!!availablePaymentMethods)}
+      onClick={onClick}
       onConfirm={onConfirm}
       options={{
         paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
@@ -1238,19 +1272,19 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     return e
   }
 
-  function getPayErrors(): Record<string, string> {
+  // includeMethodFields=false skips the card/SEPA inputs (wallet payments bring their
+  // own payment method) but still checks the separate billing address.
+  function getPayErrors(includeMethodFields = true): Record<string, string> {
     const e: Record<string, string> = {}
-    if (payMethod === 'card' && !cardComplete) {
-      e.cardNumber = t.payment.cardNumberInvalid
-    }
-    if (payMethod === 'card') {
+    if (includeMethodFields && payMethod === 'card') {
+      if (!cardComplete) e.cardNumber = t.payment.cardNumberInvalid
       // Stripe treats billing_details.name as optional metadata, so an empty
       // cardholder name would otherwise pass and silently fall back to the
       // shipping name at confirmCardSetup time.
       if (!cardName.trim()) e.cardName = t.required
       else if (!hasLetter(cardName)) e.cardName = t.nameInvalid
     }
-    if (payMethod === 'sepa') {
+    if (includeMethodFields && payMethod === 'sepa') {
       if (iban.replace(/\s/g, '').length < 15) e.iban = t.payment.ibanInvalid
       if (!ibanName.trim()) e.ibanName = t.required
     }
@@ -1275,13 +1309,13 @@ function CheckoutFormInner({ backHref, locale }: Props) {
   /* Full-form gate run before any payment starts. On failure: shows the field
      errors, revokes the done tick of every invalid step, opens the first
      invalid step and scrolls to it. Returns true only when everything is valid. */
-  function validateBeforePay(includePayFields: boolean): boolean {
+  function validateBeforePay(includeMethodFields: boolean): boolean {
     const emailError = getEmailError()
     const addrErrors = getAddrErrors()
-    const payErrors = includePayFields ? getPayErrors() : {}
+    const payErrors = getPayErrors(includeMethodFields)
     setEmailErr(emailError)
     setAddrErr(addrErrors)
-    if (includePayFields) setPayErr(payErrors)
+    setPayErr(payErrors)
 
     const badSteps: number[] = []
     if (emailError) badSteps.push(1)
@@ -3392,7 +3426,9 @@ function CheckoutFormInner({ backHref, locale }: Props) {
               >
                 <ExpressLinkRow
                   onReadyChange={setExpressReady}
-                  validate={() => validateBeforePay(true)}
+                  // false: skip the card/SEPA inputs, the wallet supplies the payment method.
+                  // The separate billing address is still checked.
+                  validate={() => validateBeforePay(false)}
                   beginSubmit={() => {
                     if (checkoutOfferResolving || submittingRef.current) return false
                     submittingRef.current = true
