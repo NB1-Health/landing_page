@@ -322,6 +322,7 @@ export interface Page {
     | RdPrFormulaBlock
     | RdPrArrivesBlock
     | RdPrAdvancedBlock
+    | RdYbPageBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -331,21 +332,7 @@ export interface Page {
     | RdLbFormulaBlock
     | RdLbAdvancedBlock
     | RdLbBoardBlock
-    | ContentBlock
-    | BenefitsBannerBlock
-    | StepsBannerBlock
-    | ProductBannerBlock
-    | AccessBannerBlock
-    | EvolutionBandBlock
     | HeroBannerBlock
-    | OutcomesSectionBlock
-    | ProcessDiagramBlock
-    | StatBreakBlock
-    | ReserveCtaBlock
-    | AthleteBannerBlock
-    | PriceBreakBlock
-    | ScienceBoardBlock
-    | FloatingCTABlock
     | YpHeroBlock
     | YpPlansBlock
     | YpThreeComponentsBlock
@@ -3936,6 +3923,518 @@ export interface RdPrAdvancedBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdYbPageBlock".
+ */
+export interface RdYbPageBlock {
+  hero: {
+    /**
+     * Rendered as the section id. Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * The ↗ glyph is drawn by the button — do not type it into the label.
+     */
+    primaryCta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    /**
+     * The → IS part of the label here, unlike the primary above. Type it.
+     */
+    secondaryCta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    /**
+     * Three overlapping round portraits. The overlap is applied automatically — the first sits flush, every one after it pulls back 6px.
+     */
+    avatars?:
+      | {
+          image?: (number | null) | Media;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The science-board link sits INSIDE this sentence, which is why it is rich text — a translator needs to move it within the clause.
+     */
+    proof?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    /**
+     * Pinned 14px from the top of the artwork, against the outermost circle.
+     */
+    figureLabelTop?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    /**
+     * Pinned 178px down, against the middle circle.
+     */
+    figureLabelMid?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    /**
+     * Pinned 327px down, against the innermost circle.
+     */
+    figureLabelLow?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    /**
+     * The line under the artwork, outside it.
+     */
+    figureCaption?: string | null;
+  };
+  two: {
+    /**
+     * Rendered as the section id. Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * Set in the serif face at a larger size than the standfirst above it — the two are different voices, not two paragraphs. Keep it short; the mockup caps it at roughly 32 characters per line.
+     */
+    pullQuote?: string | null;
+    personAName?: string | null;
+    /**
+     * The small uppercase caption under the name.
+     */
+    personATag?: string | null;
+    personBName?: string | null;
+    /**
+     * The small uppercase caption under the name.
+     */
+    personBTag?: string | null;
+    /**
+     * One row per bacterial group. Each row carries BOTH people's readings, so the two panels always compare the same four groups and a label can never be translated two different ways. Rows render top to bottom in both panels.
+     */
+    bars?:
+      | {
+          /**
+           * Uppercased by the page — type it in sentence case.
+           */
+          label: string;
+          /**
+           * Shown as typed, e.g. "41%".
+           */
+          valueA?: string | null;
+          /**
+           * Shown as typed, e.g. "22%".
+           */
+          valueB?: string | null;
+          /**
+           * The top of this group's normal range, as a number without the % sign. The bar is drawn as the reading against THIS, not against 100 — a reading of 41 on an axis of 50 fills 82% of the track. A reading above the axis fills the whole track and turns orange.
+           */
+          scaleMax: number;
+          id?: string | null;
+        }[]
+      | null;
+    footNote?: string | null;
+  };
+  clearest: {
+    /**
+     * Rendered as the section id. Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * The numbered cards under the standfirst. They are NUMBERED AUTOMATICALLY in the order they appear here — reordering or inserting one renumbers the rest, so there is no numeral to keep in sync. The mockup ships three; the grid takes any number.
+     */
+    cards?:
+      | {
+          /**
+           * Type the full stop — the mockup's titles carry their own ("Absorption.").
+           */
+          title: string;
+          body?: string | null;
+          /**
+           * The smaller, dimmer line under the body. It is what makes the cards bottom-align at equal height, so a card with no note will sit shorter than its neighbours.
+           */
+          note?: string | null;
+          /**
+           * The numbered badge's fill. Each option is mixed at 34% over the page's cool grey, which is the mockup's own recipe — the three choices are its exact three.
+           */
+          accent: 'nb1-blue' | 'nb1-lime' | 'nb1-soft-pink';
+          id?: string | null;
+        }[]
+      | null;
+    closing?: string | null;
+  };
+  reading: {
+    /**
+     * Rendered as the section id. Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * The white card on the left of the equation. Three fixed rows: the mockup's layout is a three-column equation, and the rows sit beside the card title rather than in a list of their own, so they are fields rather than a repeatable array.
+     */
+    readCard: {
+      title: string;
+      r1Label?: string | null;
+      r1Body?: string | null;
+      r2Label?: string | null;
+      r2Body?: string | null;
+      r3Label?: string | null;
+      /**
+       * The small orange pill beside row 3's label. Leave it EMPTY and no pill is drawn at all — it is the only row that has one.
+       */
+      r3Tag?: string | null;
+      r3Body?: string | null;
+    };
+    /**
+     * The gradient card on the right of the equation. Same three-row shape as the left card, plus a closing line pinned to the bottom.
+     */
+    formulaCard: {
+      title: string;
+      r1Label?: string | null;
+      r1Body?: string | null;
+      r2Label?: string | null;
+      r2Body?: string | null;
+      r3Label?: string | null;
+      r3Body?: string | null;
+      /**
+       * Sits on a heavier rule at the very bottom of the card, however tall the rows above it run. Not a fourth row.
+       */
+      footer?: string | null;
+    };
+    disclaimer?: string | null;
+    /**
+     * The → IS part of the label here — type it.
+     */
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+  };
+  why: {
+    /**
+     * Rendered as the section id. Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * The large serif figure. Keep the unit out of it — that is the field below.
+     */
+    statValue?: string | null;
+    /**
+     * The small uppercase line beside the figure.
+     */
+    statUnit?: string | null;
+    /**
+     * The three cards. Each has a short body always on show and a longer passage behind its button. They behave as an ACCORDION — opening one closes the others, and clicking an open one closes it, so all three can be shut.
+     */
+    cards?:
+      | {
+          eyebrow?: string | null;
+          title: string;
+          /**
+           * Always visible. It also sets the cards' shared height, so keep the three roughly even or the shortest card will have a lot of white space.
+           */
+          body?: string | null;
+          /**
+           * Hidden until the reader presses the button.
+           */
+          more?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Type it in sentence case: the page uppercases it in CSS, so READ MORE here would not change how it looks but would fight the styling.
+     */
+    readMoreLabel?: string | null;
+    /**
+     * What the same button reads once its card is expanded. Sentence case, as above.
+     */
+    closeLabel?: string | null;
+    /**
+     * Set in the serif under the rule — a different voice from the line below it.
+     */
+    closingLead?: string | null;
+    closingBody?: string | null;
+    /**
+     * The small uppercase line at the very end.
+     */
+    closingTag?: string | null;
+  };
+  start: {
+    /**
+     * Rendered as the section id. The hero's primary CTA points at "#start". Deliberately NOT localized.
+     */
+    anchorId?: string | null;
+    heading: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    intro?: string | null;
+    /**
+     * The left card, neutral fill.
+     */
+    coreCard: {
+      label: string;
+      /**
+       * The large serif figure only — the period is the field below.
+       */
+      price?: string | null;
+      /**
+       * The small "/mo" beside the price.
+       */
+      period?: string | null;
+      body?: string | null;
+      /**
+       * The ↗ is drawn by the button — do not type it into the label.
+       */
+      cta: {
+        type?: ('reference' | 'custom') | null;
+        newTab?: boolean | null;
+        reference?:
+          | ({
+              relationTo: 'pages';
+              value: number | Page;
+            } | null)
+          | ({
+              relationTo: 'posts';
+              value: number | Post;
+            } | null);
+        /**
+         * Localized: each locale can point at a different destination.
+         */
+        url?: string | null;
+        label: string;
+      };
+    };
+    /**
+     * The right card, lime fill and lime ring. Set apart from Core on purpose, which is why the two are separate fields rather than a repeatable list.
+     */
+    advancedCard: {
+      /**
+       * The pill straddling the top edge of the card. Leave it EMPTY and no pill is drawn.
+       */
+      badge?: string | null;
+      label: string;
+      /**
+       * The large serif figure only — the period is the field below.
+       */
+      price?: string | null;
+      period?: string | null;
+      body?: string | null;
+      /**
+       * The ↗ is drawn by the button — do not type it into the label.
+       */
+      cta: {
+        type?: ('reference' | 'custom') | null;
+        newTab?: boolean | null;
+        reference?:
+          | ({
+              relationTo: 'pages';
+              value: number | Page;
+            } | null)
+          | ({
+              relationTo: 'posts';
+              value: number | Post;
+            } | null);
+        /**
+         * Localized: each locale can point at a different destination.
+         */
+        url?: string | null;
+        label: string;
+      };
+    };
+    /**
+     * The line under the two cards.
+     */
+    note?: string | null;
+    /**
+     * The ticked items on the rule at the foot of the section. The tick is drawn automatically — type only the sentence. The row wraps, so any number works.
+     */
+    assurances?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdYbPage';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "RdLbHeroBlock".
  */
 export interface RdLbHeroBlock {
@@ -4910,404 +5409,6 @@ export interface RdLbBoardBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ContentBlock".
- */
-export interface ContentBlock {
-  columns?:
-    | {
-        size?: ('oneThird' | 'half' | 'twoThirds' | 'full') | null;
-        richText?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        enableLink?: boolean | null;
-        link?: {
-          type?: ('reference' | 'custom') | null;
-          newTab?: boolean | null;
-          reference?:
-            | ({
-                relationTo: 'pages';
-                value: number | Page;
-              } | null)
-            | ({
-                relationTo: 'posts';
-                value: number | Post;
-              } | null);
-          url?: string | null;
-          label: string;
-          /**
-           * Optional translated label. If empty, the default label will be used.
-           */
-          localizedLabel?: string | null;
-          /**
-           * Choose how the link should be rendered.
-           */
-          appearance?: ('default' | 'outline') | null;
-        };
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'content';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BenefitsBannerBlock".
- */
-export interface BenefitsBannerBlock {
-  items: {
-    title: string;
-    icon: number | Media;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'benefitsBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StepsBannerBlock".
- */
-export interface StepsBannerBlock {
-  title: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  subtitle?: string | null;
-  /**
-   * Single shared arrow used between all steps. On mobile it will be rotated 90 degrees.
-   */
-  arrowIcon?: (number | null) | Media;
-  steps: {
-    label: string;
-    icon: number | Media;
-    id?: string | null;
-  }[];
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'stepsBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ProductBannerBlock".
- */
-export interface ProductBannerBlock {
-  title: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  subtitle?: string | null;
-  formText?: string | null;
-  /**
-   * Optional override for the submit button label. If empty, the selected form submit label will be used.
-   */
-  buttonText?: string | null;
-  /**
-   * Select the Form Builder form to submit.
-   */
-  form: number | Form;
-  enableIntro?: boolean | null;
-  introContent?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  carouselText?:
-    | {
-        label: string;
-        id?: string | null;
-      }[]
-    | null;
-  bannerImage?: (number | null) | Media;
-  bannerBackground?: (number | null) | Media;
-  mobileBannerBackground?: (number | null) | Media;
-  /**
-   * Optional logo displayed above the title.
-   */
-  logo?: (number | null) | Media;
-  loginButton?: {
-    show?: boolean | null;
-    label?: string | null;
-    url?: string | null;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'productBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "AccessBannerBlock".
- */
-export interface AccessBannerBlock {
-  title: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  subtitle?: string | null;
-  quote?: string | null;
-  formText?: string | null;
-  /**
-   * Optional override for the submit button label. If empty, the selected form submit label will be used.
-   */
-  buttonText?: string | null;
-  /**
-   * Select the Form Builder form to submit.
-   */
-  form: number | Form;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'accessBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "EvolutionBandBlock".
- */
-export interface EvolutionBandBlock {
-  /**
-   * Small label above the heading. E.g. "Your formula evolves".
-   */
-  eyebrow?: string | null;
-  /**
-   * Main heading. Use teal color for italic highlight spans.
-   */
-  heading?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Supporting paragraph below the heading.
-   */
-  subtext?: string | null;
-  /**
-   * Tab label. E.g. "Cycle 01".
-   */
-  cycle1Tag?: string | null;
-  /**
-   * Sub-label under the tab. E.g. "Baseline".
-   */
-  cycle1Version?: string | null;
-  /**
-   * Card title. E.g. "Your starting formula".
-   */
-  cycle1Name?: string | null;
-  cycle1Items?:
-    | {
-        name?: string | null;
-        /**
-         * Small text next to name. E.g. "5 strains" or "EPA + DHA".
-         */
-        detail?: string | null;
-        /**
-         * Teal benefit label. E.g. "Calmer digestion".
-         */
-        benefit?: string | null;
-        /**
-         * E.g. "50B CFU".
-         */
-        dose?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * E.g. "3 of 6 teams flagged. Protocol targets the gaps.".
-   */
-  cycle1Footer?: string | null;
-  /**
-   * Tab label. E.g. "Cycle 02".
-   */
-  cycle2Tag?: string | null;
-  /**
-   * Sub-label under the tab. E.g. "Re-formulated".
-   */
-  cycle2Version?: string | null;
-  /**
-   * Card title. E.g. "Your formula, updated".
-   */
-  cycle2Name?: string | null;
-  /**
-   * Each group has its own eyebrow label and a set of delta rows shown inside the Cycle 2 card.
-   */
-  biologyGroups?:
-    | {
-        /**
-         * E.g. "Your biology shifted".
-         */
-        eyebrow?: string | null;
-        rows?:
-          | {
-              label?: string | null;
-              /**
-               * E.g. "+22%", "−9%", "New".
-               */
-              delta?: string | null;
-              direction?: ('up' | 'down' | 'new') | null;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  cycle2Items?:
-    | {
-        name?: string | null;
-        /**
-         * Reason note. E.g. "sleep markers shifted".
-         */
-        detail?: string | null;
-        dose?: string | null;
-        status?: ('unchanged' | 'up' | 'down' | 'removed' | 'added') | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * E.g. "Same protocol size. Different composition. Your biology moved.".
-   */
-  cycle2Footer?: string | null;
-  /**
-   * Each entry overrides content when ?v=<key> is present in the URL. Variant 1 can be light mode, Variant 2 dark mode, etc. Leave override fields empty to fall back to the defaults above.
-   */
-  variants?:
-    | {
-        /**
-         * URL param value matched against ?v=. Example: "dark"
-         */
-        variantKey: string;
-        eyebrow?: string | null;
-        heading?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        subtext?: string | null;
-        cycle1Tag?: string | null;
-        cycle1Version?: string | null;
-        cycle1Name?: string | null;
-        cycle1Footer?: string | null;
-        cycle2Tag?: string | null;
-        cycle2Version?: string | null;
-        cycle2Name?: string | null;
-        cycle2Footer?: string | null;
-        /**
-         * Enable dark (navy) background for this variant.
-         */
-        darkMode?: boolean | null;
-        cycle1Items?:
-          | {
-              name?: string | null;
-              detail?: string | null;
-              benefit?: string | null;
-              dose?: string | null;
-              id?: string | null;
-            }[]
-          | null;
-        biologyGroups?:
-          | {
-              eyebrow?: string | null;
-              rows?:
-                | {
-                    label?: string | null;
-                    delta?: string | null;
-                    direction?: ('up' | 'down' | 'new') | null;
-                    id?: string | null;
-                  }[]
-                | null;
-              id?: string | null;
-            }[]
-          | null;
-        cycle2Items?:
-          | {
-              name?: string | null;
-              detail?: string | null;
-              dose?: string | null;
-              status?: ('unchanged' | 'up' | 'down' | 'removed' | 'added') | null;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'evolutionBand';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "HeroBannerBlock".
  */
 export interface HeroBannerBlock {
@@ -5497,705 +5598,6 @@ export interface HeroBannerBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'heroBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "OutcomesSectionBlock".
- */
-export interface OutcomesSectionBlock {
-  backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  /**
-   * Small uppercase label above the heading.
-   */
-  eyebrow?: string | null;
-  /**
-   * Section heading. Apply .ac class to spans for teal italic highlight.
-   */
-  heading?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  subText?: string | null;
-  /**
-   * Up to 4 flip cards. Hover/focus to reveal back face.
-   */
-  outcomeCards?:
-    | {
-        image?: (number | null) | Media;
-        frontName?: string | null;
-        backEyebrow?: string | null;
-        backTitle?: string | null;
-        backBody?: string | null;
-        /**
-         * ← arrow is prepended automatically.
-         */
-        backFoot?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Each entry overrides content when ?v=<key> is present in the URL. Leave override fields empty to fall back to the defaults above.
-   */
-  variants?:
-    | {
-        /**
-         * Value matched against ?v=. Example: "dark".
-         */
-        variantKey: string;
-        backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        eyebrow?: string | null;
-        heading?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        subText?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'outcomesSection';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ProcessDiagramBlock".
- */
-export interface ProcessDiagramBlock {
-  backgroundColor?: ('light' | 'dark' | 'darkNavy' | 'teal' | 'white' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  eyebrow?: string | null;
-  heading: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  steps?:
-    | {
-        number: string;
-        timelineEyebrow: string;
-        timelineName: string;
-        panelTag: string;
-        panelHeading: string;
-        panelBody: string;
-        visualType?: ('image' | 'mockReport') | null;
-        image?: (number | null) | Media;
-        imageUrl?: string | null;
-        imageAlt?: string | null;
-        mockEyebrow?: string | null;
-        mockRows?:
-          | {
-              label: string;
-              percentage: number;
-              status?: ('ok' | 'low') | null;
-              id?: string | null;
-            }[]
-          | null;
-        mockFootLabel?: string | null;
-        mockFootText?: string | null;
-        listItems?:
-          | {
-              marker: string;
-              text: string;
-              /**
-               * Optional sub-line shown below the ingredient name (e.g. strain list)
-               */
-              subLine?: string | null;
-              dose?: string | null;
-              benefit?: string | null;
-              id?: string | null;
-            }[]
-          | null;
-        /**
-         * Optional italic caption between the ingredient list and the pills row
-         */
-        strainCaption?: string | null;
-        pills?:
-          | {
-              label: string;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Overrides when ?v=<key> is present.
-   */
-  variants?:
-    | {
-        variantKey: string;
-        backgroundColor?: ('light' | 'dark' | 'darkNavy' | 'teal' | 'white' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        eyebrow?: string | null;
-        heading?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'processDiagram';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StatBreakBlock".
- */
-export interface StatBreakBlock {
-  /**
-   * Background colour for the section.
-   */
-  backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  /**
-   * The large teal number, e.g. "150".
-   */
-  statNumber: string;
-  /**
-   * Symbol shown smaller after the number, e.g. "×" or "%".
-   */
-  statSuffix?: string | null;
-  /**
-   * First line of the heading, e.g. "more genetic material than your DNA."
-   */
-  headingLine1?: string | null;
-  /**
-   * Second line before the highlighted word, e.g. "All of it in your".
-   */
-  headingLine2?: string | null;
-  /**
-   * Large teal word, e.g. "gut". Rendered larger and in accent colour.
-   */
-  highlightedWord?: string | null;
-  /**
-   * Optional punctuation or text after the word, e.g. ".".
-   */
-  headingAfter?: string | null;
-  /**
-   * Each entry overrides content when ?v=<key> is present in the URL. Leave override fields empty to fall back to the defaults above.
-   */
-  variants?:
-    | {
-        /**
-         * Value matched against ?v=. Example: "dark".
-         */
-        variantKey: string;
-        backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        statNumber?: string | null;
-        statSuffix?: string | null;
-        headingLine1?: string | null;
-        headingLine2?: string | null;
-        highlightedWord?: string | null;
-        headingAfter?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'statBreak';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ReserveCtaBlock".
- */
-export interface ReserveCtaBlock {
-  /**
-   * "White" → light version (form appears in a teal card). "Cream Gradient" → dark version (no form card, white form row).
-   */
-  backgroundColor?: ('white' | 'creamGradient' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  /**
-   * Animated badge above the heading. e.g. "Phase 1 · 1,000 kits".
-   */
-  pillText?: string | null;
-  /**
-   * Main heading. Use teal text color for italic highlighted spans.
-   */
-  heading?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Body text under the heading. e.g. "Phase 1 closes when 1,000 are claimed."
-   */
-  subText?: string | null;
-  /**
-   * Select the Form Builder form to render (typically email-only).
-   */
-  form: number | Form;
-  /**
-   * Submit button label. e.g. "Reserve my kit →".
-   */
-  ctaButtonText?: string | null;
-  /**
-   * Plain portion of the form footer. e.g. "From €99/month".
-   */
-  footNoteText?: string | null;
-  /**
-   * Teal-highlighted portion (shown after "·"). e.g. "Diagnostic included."
-   */
-  footNoteHighlight?: string | null;
-  /**
-   * Body of the success message after submission. Default: "Your kit ships two weeks before public launch."
-   */
-  successMessage?: string | null;
-  /**
-   * Checkmark items shown below the form. e.g. "Diagnostic included".
-   */
-  recapItems?:
-    | {
-        label: string;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Each entry overrides content when ?v=<key> is in the URL. Leave fields empty to fall back to defaults.
-   */
-  variants?:
-    | {
-        /**
-         * Matched against ?v=. Example: "b".
-         */
-        variantKey: string;
-        backgroundColor?: ('white' | 'creamGradient' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        pillText?: string | null;
-        heading?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        subText?: string | null;
-        ctaButtonText?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'reserveCta';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "AthleteBannerBlock".
- */
-export interface AthleteBannerBlock {
-  /**
-   * "Cream" matches the light HTML; "Cream Gradient" matches the dark HTML. USP strip background is derived automatically.
-   */
-  backgroundColor?: ('cream' | 'creamGradient' | 'white' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  /**
-   * Small uppercase label above the heading.
-   */
-  eyebrow?: string | null;
-  /**
-   * Main heading. Use the "ac" text-color class for italic teal highlights.
-   */
-  heading?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Hover/tap a card to reveal the quote. Max 6 cards.
-   */
-  athleteCards?:
-    | {
-        image?: (number | null) | Media;
-        /**
-         * e.g. "2025 World Champion"
-         */
-        tag?: string | null;
-        name: string;
-        /**
-         * e.g. "HYROX Men's Pro · NB¹ athlete"
-         */
-        title?: string | null;
-        quoteBody?: string | null;
-        /**
-         * e.g. "Tim Wenisch · 2025 HYROX World Champion"
-         */
-        quoteAttr?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Feature cells shown in the strip below the athlete cards. Max 5.
-   */
-  uspItems?:
-    | {
-        iconType?: ('checkCircle' | 'pulse' | 'checkSquare' | 'plus' | 'speechBubble') | null;
-        heading: string;
-        subtext?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Each entry overrides content when ?v=<key> is in the URL. Leave fields empty to fall back to defaults.
-   */
-  variants?:
-    | {
-        /**
-         * Matched against ?v=. Example: "b".
-         */
-        variantKey: string;
-        backgroundColor?: ('cream' | 'creamGradient' | 'white' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        eyebrow?: string | null;
-        heading?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        athleteCards?:
-          | {
-              image?: (number | null) | Media;
-              tag?: string | null;
-              name: string;
-              title?: string | null;
-              quoteBody?: string | null;
-              quoteAttr?: string | null;
-              id?: string | null;
-            }[]
-          | null;
-        uspItems?:
-          | {
-              iconType?: ('checkCircle' | 'pulse' | 'checkSquare' | 'plus' | 'speechBubble') | null;
-              heading: string;
-              subtext?: string | null;
-              id?: string | null;
-            }[]
-          | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'athleteBanner';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PriceBreakBlock".
- */
-export interface PriceBreakBlock {
-  /**
-   * Background colour for the section.
-   */
-  backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-  backgroundColorCustom?: string | null;
-  priceNumber: string;
-  /**
-   * Shown after "/" automatically. E.g. "month" → displays as "€99/month".
-   */
-  priceUnit?: string | null;
-  headingLine1?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  headingLine2?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Each variant overrides content when ?v=<key> is present in the URL. Leave override fields empty to fall back to the defaults above.
-   */
-  variants?:
-    | {
-        /**
-         * URL param value matched against ?v=. E.g. "dark".
-         */
-        variantKey: string;
-        backgroundColor?: ('dark' | 'darkNavy' | 'teal' | 'white' | 'cream' | 'custom') | null;
-        backgroundColorCustom?: string | null;
-        priceNumber?: string | null;
-        /**
-         * E.g. "month" → displays as "€99/month".
-         */
-        priceUnit?: string | null;
-        headingLine1?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        headingLine2?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'priceBreak';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ScienceBoardBlock".
- */
-export interface ScienceBoardBlock {
-  eyebrow?: string | null;
-  heading?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  subLead?: string | null;
-  subCredits?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  members?:
-    | {
-        photo?: (number | null) | Media;
-        /**
-         * Used if no uploaded photo. E.g. https://i.ibb.co/...
-         */
-        photoUrl?: string | null;
-        name: string;
-        role?: string | null;
-        meta?: string | null;
-        /**
-         * E.g. "Chief Scientific Officer" or "Science Board"
-         */
-        tag?: string | null;
-        institution?: string | null;
-        bio?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        id?: string | null;
-      }[]
-    | null;
-  stats?:
-    | {
-        target: number;
-        /**
-         * E.g. "+" or leave empty
-         */
-        suffix?: string | null;
-        label: string;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * Enable navy background. Default is white (light).
-   */
-  darkMode?: boolean | null;
-  /**
-   * Each variant overrides darkMode when ?v=<key> is present in the URL.
-   */
-  variants?:
-    | {
-        /**
-         * URL param value matched against ?v=. E.g. "dark".
-         */
-        variantKey: string;
-        /**
-         * Enable navy background for this variant.
-         */
-        darkMode?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'scienceBoard';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FloatingCTABlock".
- */
-export interface FloatingCTABlock {
-  /**
-   * e.g. "Get your kit" — plain text shown before the highlighted part.
-   */
-  text?: string | null;
-  /**
-   * e.g. "2 weeks before anyone else" — displayed in teal accent color.
-   */
-  highlightedText?: string | null;
-  /**
-   * e.g. "Reserve my kit →"
-   */
-  buttonText: string;
-  /**
-   * e.g. "#reserve" (in-page anchor) or "/early-access"
-   */
-  buttonHref: string;
-  /**
-   * e.g. ".hero" or "#hero" — bar appears after this element scrolls out of view.
-   */
-  heroSelector?: string | null;
-  /**
-   * e.g. "#reserve" or ".reserve-cta" — bar hides when this element comes into view.
-   */
-  reserveSelector?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'floatingCTA';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12663,6 +12065,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdPrFormula?: T | RdPrFormulaBlockSelect<T>;
         rdPrArrives?: T | RdPrArrivesBlockSelect<T>;
         rdPrAdvanced?: T | RdPrAdvancedBlockSelect<T>;
+        rdYbPage?: T | RdYbPageBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -12672,21 +12075,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdLbFormula?: T | RdLbFormulaBlockSelect<T>;
         rdLbAdvanced?: T | RdLbAdvancedBlockSelect<T>;
         rdLbBoard?: T | RdLbBoardBlockSelect<T>;
-        content?: T | ContentBlockSelect<T>;
-        benefitsBanner?: T | BenefitsBannerBlockSelect<T>;
-        stepsBanner?: T | StepsBannerBlockSelect<T>;
-        productBanner?: T | ProductBannerBlockSelect<T>;
-        accessBanner?: T | AccessBannerBlockSelect<T>;
-        evolutionBand?: T | EvolutionBandBlockSelect<T>;
         heroBanner?: T | HeroBannerBlockSelect<T>;
-        outcomesSection?: T | OutcomesSectionBlockSelect<T>;
-        processDiagram?: T | ProcessDiagramBlockSelect<T>;
-        statBreak?: T | StatBreakBlockSelect<T>;
-        reserveCta?: T | ReserveCtaBlockSelect<T>;
-        athleteBanner?: T | AthleteBannerBlockSelect<T>;
-        priceBreak?: T | PriceBreakBlockSelect<T>;
-        scienceBoard?: T | ScienceBoardBlockSelect<T>;
-        floatingCTA?: T | FloatingCTABlockSelect<T>;
         ypHero?: T | YpHeroBlockSelect<T>;
         ypPlans?: T | YpPlansBlockSelect<T>;
         ypComponents?: T | YpThreeComponentsBlockSelect<T>;
@@ -13912,6 +13301,202 @@ export interface RdPrAdvancedBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdYbPageBlock_select".
+ */
+export interface RdYbPageBlockSelect<T extends boolean = true> {
+  hero?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        primaryCta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        secondaryCta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        avatars?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+            };
+        proof?: T;
+        figureLabelTop?: T;
+        figureLabelMid?: T;
+        figureLabelLow?: T;
+        figureCaption?: T;
+      };
+  two?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        pullQuote?: T;
+        personAName?: T;
+        personATag?: T;
+        personBName?: T;
+        personBTag?: T;
+        bars?:
+          | T
+          | {
+              label?: T;
+              valueA?: T;
+              valueB?: T;
+              scaleMax?: T;
+              id?: T;
+            };
+        footNote?: T;
+      };
+  clearest?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        cards?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              note?: T;
+              accent?: T;
+              id?: T;
+            };
+        closing?: T;
+      };
+  reading?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        readCard?:
+          | T
+          | {
+              title?: T;
+              r1Label?: T;
+              r1Body?: T;
+              r2Label?: T;
+              r2Body?: T;
+              r3Label?: T;
+              r3Tag?: T;
+              r3Body?: T;
+            };
+        formulaCard?:
+          | T
+          | {
+              title?: T;
+              r1Label?: T;
+              r1Body?: T;
+              r2Label?: T;
+              r2Body?: T;
+              r3Label?: T;
+              r3Body?: T;
+              footer?: T;
+            };
+        disclaimer?: T;
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+      };
+  why?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        statValue?: T;
+        statUnit?: T;
+        cards?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              body?: T;
+              more?: T;
+              id?: T;
+            };
+        readMoreLabel?: T;
+        closeLabel?: T;
+        closingLead?: T;
+        closingBody?: T;
+        closingTag?: T;
+      };
+  start?:
+    | T
+    | {
+        anchorId?: T;
+        heading?: T;
+        intro?: T;
+        coreCard?:
+          | T
+          | {
+              label?: T;
+              price?: T;
+              period?: T;
+              body?: T;
+              cta?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                    label?: T;
+                  };
+            };
+        advancedCard?:
+          | T
+          | {
+              badge?: T;
+              label?: T;
+              price?: T;
+              period?: T;
+              body?: T;
+              cta?:
+                | T
+                | {
+                    type?: T;
+                    newTab?: T;
+                    reference?: T;
+                    url?: T;
+                    label?: T;
+                  };
+            };
+        note?: T;
+        assurances?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "RdLbHeroBlock_select".
  */
 export interface RdLbHeroBlockSelect<T extends boolean = true> {
@@ -14447,213 +14032,6 @@ export interface RdLbBoardBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ContentBlock_select".
- */
-export interface ContentBlockSelect<T extends boolean = true> {
-  columns?:
-    | T
-    | {
-        size?: T;
-        richText?: T;
-        enableLink?: T;
-        link?:
-          | T
-          | {
-              type?: T;
-              newTab?: T;
-              reference?: T;
-              url?: T;
-              label?: T;
-              localizedLabel?: T;
-              appearance?: T;
-            };
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BenefitsBannerBlock_select".
- */
-export interface BenefitsBannerBlockSelect<T extends boolean = true> {
-  items?:
-    | T
-    | {
-        title?: T;
-        icon?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StepsBannerBlock_select".
- */
-export interface StepsBannerBlockSelect<T extends boolean = true> {
-  title?: T;
-  subtitle?: T;
-  arrowIcon?: T;
-  steps?:
-    | T
-    | {
-        label?: T;
-        icon?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ProductBannerBlock_select".
- */
-export interface ProductBannerBlockSelect<T extends boolean = true> {
-  title?: T;
-  subtitle?: T;
-  formText?: T;
-  buttonText?: T;
-  form?: T;
-  enableIntro?: T;
-  introContent?: T;
-  carouselText?:
-    | T
-    | {
-        label?: T;
-        id?: T;
-      };
-  bannerImage?: T;
-  bannerBackground?: T;
-  mobileBannerBackground?: T;
-  logo?: T;
-  loginButton?:
-    | T
-    | {
-        show?: T;
-        label?: T;
-        url?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "AccessBannerBlock_select".
- */
-export interface AccessBannerBlockSelect<T extends boolean = true> {
-  title?: T;
-  subtitle?: T;
-  quote?: T;
-  formText?: T;
-  buttonText?: T;
-  form?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "EvolutionBandBlock_select".
- */
-export interface EvolutionBandBlockSelect<T extends boolean = true> {
-  eyebrow?: T;
-  heading?: T;
-  subtext?: T;
-  cycle1Tag?: T;
-  cycle1Version?: T;
-  cycle1Name?: T;
-  cycle1Items?:
-    | T
-    | {
-        name?: T;
-        detail?: T;
-        benefit?: T;
-        dose?: T;
-        id?: T;
-      };
-  cycle1Footer?: T;
-  cycle2Tag?: T;
-  cycle2Version?: T;
-  cycle2Name?: T;
-  biologyGroups?:
-    | T
-    | {
-        eyebrow?: T;
-        rows?:
-          | T
-          | {
-              label?: T;
-              delta?: T;
-              direction?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  cycle2Items?:
-    | T
-    | {
-        name?: T;
-        detail?: T;
-        dose?: T;
-        status?: T;
-        id?: T;
-      };
-  cycle2Footer?: T;
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        eyebrow?: T;
-        heading?: T;
-        subtext?: T;
-        cycle1Tag?: T;
-        cycle1Version?: T;
-        cycle1Name?: T;
-        cycle1Footer?: T;
-        cycle2Tag?: T;
-        cycle2Version?: T;
-        cycle2Name?: T;
-        cycle2Footer?: T;
-        darkMode?: T;
-        cycle1Items?:
-          | T
-          | {
-              name?: T;
-              detail?: T;
-              benefit?: T;
-              dose?: T;
-              id?: T;
-            };
-        biologyGroups?:
-          | T
-          | {
-              eyebrow?: T;
-              rows?:
-                | T
-                | {
-                    label?: T;
-                    delta?: T;
-                    direction?: T;
-                    id?: T;
-                  };
-              id?: T;
-            };
-        cycle2Items?:
-          | T
-          | {
-              name?: T;
-              detail?: T;
-              dose?: T;
-              status?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "HeroBannerBlock_select".
  */
 export interface HeroBannerBlockSelect<T extends boolean = true> {
@@ -14702,313 +14080,6 @@ export interface HeroBannerBlockSelect<T extends boolean = true> {
         ctaButtonText?: T;
         id?: T;
       };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "OutcomesSectionBlock_select".
- */
-export interface OutcomesSectionBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  eyebrow?: T;
-  heading?: T;
-  subText?: T;
-  outcomeCards?:
-    | T
-    | {
-        image?: T;
-        frontName?: T;
-        backEyebrow?: T;
-        backTitle?: T;
-        backBody?: T;
-        backFoot?: T;
-        id?: T;
-      };
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        eyebrow?: T;
-        heading?: T;
-        subText?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ProcessDiagramBlock_select".
- */
-export interface ProcessDiagramBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  eyebrow?: T;
-  heading?: T;
-  steps?:
-    | T
-    | {
-        number?: T;
-        timelineEyebrow?: T;
-        timelineName?: T;
-        panelTag?: T;
-        panelHeading?: T;
-        panelBody?: T;
-        visualType?: T;
-        image?: T;
-        imageUrl?: T;
-        imageAlt?: T;
-        mockEyebrow?: T;
-        mockRows?:
-          | T
-          | {
-              label?: T;
-              percentage?: T;
-              status?: T;
-              id?: T;
-            };
-        mockFootLabel?: T;
-        mockFootText?: T;
-        listItems?:
-          | T
-          | {
-              marker?: T;
-              text?: T;
-              subLine?: T;
-              dose?: T;
-              benefit?: T;
-              id?: T;
-            };
-        strainCaption?: T;
-        pills?:
-          | T
-          | {
-              label?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        eyebrow?: T;
-        heading?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StatBreakBlock_select".
- */
-export interface StatBreakBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  statNumber?: T;
-  statSuffix?: T;
-  headingLine1?: T;
-  headingLine2?: T;
-  highlightedWord?: T;
-  headingAfter?: T;
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        statNumber?: T;
-        statSuffix?: T;
-        headingLine1?: T;
-        headingLine2?: T;
-        highlightedWord?: T;
-        headingAfter?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ReserveCtaBlock_select".
- */
-export interface ReserveCtaBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  pillText?: T;
-  heading?: T;
-  subText?: T;
-  form?: T;
-  ctaButtonText?: T;
-  footNoteText?: T;
-  footNoteHighlight?: T;
-  successMessage?: T;
-  recapItems?:
-    | T
-    | {
-        label?: T;
-        id?: T;
-      };
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        pillText?: T;
-        heading?: T;
-        subText?: T;
-        ctaButtonText?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "AthleteBannerBlock_select".
- */
-export interface AthleteBannerBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  eyebrow?: T;
-  heading?: T;
-  athleteCards?:
-    | T
-    | {
-        image?: T;
-        tag?: T;
-        name?: T;
-        title?: T;
-        quoteBody?: T;
-        quoteAttr?: T;
-        id?: T;
-      };
-  uspItems?:
-    | T
-    | {
-        iconType?: T;
-        heading?: T;
-        subtext?: T;
-        id?: T;
-      };
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        eyebrow?: T;
-        heading?: T;
-        athleteCards?:
-          | T
-          | {
-              image?: T;
-              tag?: T;
-              name?: T;
-              title?: T;
-              quoteBody?: T;
-              quoteAttr?: T;
-              id?: T;
-            };
-        uspItems?:
-          | T
-          | {
-              iconType?: T;
-              heading?: T;
-              subtext?: T;
-              id?: T;
-            };
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "PriceBreakBlock_select".
- */
-export interface PriceBreakBlockSelect<T extends boolean = true> {
-  backgroundColor?: T;
-  backgroundColorCustom?: T;
-  priceNumber?: T;
-  priceUnit?: T;
-  headingLine1?: T;
-  headingLine2?: T;
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        backgroundColor?: T;
-        backgroundColorCustom?: T;
-        priceNumber?: T;
-        priceUnit?: T;
-        headingLine1?: T;
-        headingLine2?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ScienceBoardBlock_select".
- */
-export interface ScienceBoardBlockSelect<T extends boolean = true> {
-  eyebrow?: T;
-  heading?: T;
-  subLead?: T;
-  subCredits?: T;
-  members?:
-    | T
-    | {
-        photo?: T;
-        photoUrl?: T;
-        name?: T;
-        role?: T;
-        meta?: T;
-        tag?: T;
-        institution?: T;
-        bio?: T;
-        id?: T;
-      };
-  stats?:
-    | T
-    | {
-        target?: T;
-        suffix?: T;
-        label?: T;
-        id?: T;
-      };
-  darkMode?: T;
-  variants?:
-    | T
-    | {
-        variantKey?: T;
-        darkMode?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FloatingCTABlock_select".
- */
-export interface FloatingCTABlockSelect<T extends boolean = true> {
-  text?: T;
-  highlightedText?: T;
-  buttonText?: T;
-  buttonHref?: T;
-  heroSelector?: T;
-  reserveSelector?: T;
   id?: T;
   blockName?: T;
 }

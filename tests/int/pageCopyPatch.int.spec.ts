@@ -81,17 +81,16 @@ function requestFor(current: Record<string, unknown>) {
 
 describe('Page copy edit input', () => {
   it('accepts only the bounded copy allowlist for existing landing blocks', () => {
+    // heroBanner is the whole allowlist now — the other nine blocks this case
+    // used to cover were deleted once verified unused on staging and production.
+    // What is still worth asserting is that EVERY field the allowlist declares
+    // is accepted and round-trips unchanged: the breadth moved from block types
+    // to fields rather than disappearing.
     const copyEdits = [
       heroEdit,
-      { blockID: 'process-1', blockType: 'processDiagram', patch: { eyebrow: 'How it works' } },
-      { blockID: 'stat-1', blockType: 'statBreak', patch: { statNumber: '150' } },
-      { blockID: 'outcomes-1', blockType: 'outcomesSection', patch: { subText: 'Results' } },
-      { blockID: 'evolution-1', blockType: 'evolutionBand', patch: { subtext: 'Evolves' } },
-      { blockID: 'price-1', blockType: 'priceBreak', patch: { headingLine1: 'Simple price' } },
-      { blockID: 'science-1', blockType: 'scienceBoard', patch: { subLead: 'Advisors' } },
-      { blockID: 'athlete-1', blockType: 'athleteBanner', patch: { eyebrow: 'Athletes' } },
-      { blockID: 'reserve-1', blockType: 'reserveCta', patch: { ctaButtonText: 'Reserve' } },
-      { blockID: 'floating-1', blockType: 'floatingCTA', patch: { buttonText: 'Join now' } },
+      { blockID: 'hero-2', blockType: 'heroBanner', patch: { ctaButtonText: 'Reserve' } },
+      { blockID: 'hero-3', blockType: 'heroBanner', patch: { description: 'Standfirst copy' } },
+      { blockID: 'hero-4', blockType: 'heroBanner', patch: { pillText: 'New pill' } },
     ]
 
     expect(parsePagePatch(JSON.stringify({ copyEdits }))).toEqual({ copyEdits })
@@ -116,15 +115,9 @@ describe('Page copy edit input', () => {
       { copyEdits: [{ ...heroEdit, patch: { backgroundImage: 12 } }] },
       { copyEdits: [{ ...heroEdit, patch: { id: 'replacement' } }] },
       { copyEdits: [{ ...heroEdit, patch: { order: 0 } }] },
-      {
-        copyEdits: [
-          {
-            blockID: 'floating-1',
-            blockType: 'floatingCTA',
-            patch: { buttonHref: 'https://example.com' },
-          },
-        ],
-      },
+      // a field the allowlist does not declare, on a block it DOES declare —
+      // deliberately distinct from the unknown-blockType case above
+      { copyEdits: [{ ...heroEdit, patch: { buttonHref: 'https://example.com' } }] },
       { copyEdits: [{ ...heroEdit, patch: { heading: 'x'.repeat(301) } }] },
       { copyEdits: [{ ...heroEdit, patch: { heading: '   ' } }] },
     ]
@@ -180,11 +173,10 @@ describe('Page copy edit application', () => {
           variants: [{ heading: { existing: 'variant copy' }, id: 'variant-1' }],
         },
         {
-          blockType: 'statBreak',
-          headingLine1: 'Old stat heading',
-          id: 'stat-1',
-          statNumber: '100',
-          variants: [{ id: 'variant-2', statNumber: '200' }],
+          blockType: 'heroBanner',
+          ctaButtonText: 'Old second CTA',
+          id: 'hero-2',
+          variants: [{ ctaButtonText: 'Old variant CTA', id: 'variant-2' }],
         },
         {
           blockType: 'checkoutForm',
@@ -208,9 +200,9 @@ describe('Page copy edit application', () => {
             },
           },
           {
-            blockID: 'stat-1',
-            blockType: 'statBreak',
-            patch: { headingLine1: 'New stat heading' },
+            blockID: 'hero-2',
+            blockType: 'heroBanner',
+            patch: { ctaButtonText: 'New second CTA' },
           },
         ],
       }),
@@ -234,7 +226,7 @@ describe('Page copy edit application', () => {
           ctaButtonText: 'Reserve now',
           heading: richText('<script>alert(1)</script>'),
         },
-        { ...originalLayout[1], headingLine1: 'New stat heading' },
+        { ...originalLayout[1], ctaButtonText: 'New second CTA' },
         originalLayout[2],
       ],
     })
@@ -248,13 +240,13 @@ describe('Page copy edit application', () => {
   it('rejects a stale block ID or blockType without writing', async () => {
     const current = {
       id: 10,
-      layout: [{ blockType: 'statBreak', id: 'stat-1', statNumber: '100' }],
+      layout: [{ blockType: 'twoModels', id: 'two-1' }],
       updatedAt: '2026-08-27T12:00:00.000Z',
     }
 
     for (const edit of [
       { ...heroEdit, blockID: 'missing' },
-      { ...heroEdit, blockID: 'stat-1' },
+      { ...heroEdit, blockID: 'two-1' },
     ]) {
       const { req, update } = requestFor(current)
       await expect(

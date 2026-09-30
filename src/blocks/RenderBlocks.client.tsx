@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic'
 import type { Page } from '@/payload-types'
 import type { AppLocale } from '@/i18n/config'
 
-const ContentBlock = dynamic(() => import('@/blocks/Content/Component').then((m) => m.ContentBlock))
 const RdHeroComponent = dynamic(() => import('@/blocks/redesign/Hero/Component').then((m) => m.RdHeroComponent))
 const RdProtocolComponent = dynamic(() => import('@/blocks/redesign/Protocol/Component').then((m) => m.RdProtocolComponent))
 const RdFormulaComponent = dynamic(() => import('@/blocks/redesign/Formula/Component').then((m) => m.RdFormulaComponent))
@@ -37,6 +36,7 @@ const RdPrAnalyseComponent = dynamic(() => import('@/blocks/redesign/PrAnalyse/C
 const RdPrFormulaComponent = dynamic(() => import('@/blocks/redesign/PrFormula/Component').then((m) => m.RdPrFormulaComponent))
 const RdPrArrivesComponent = dynamic(() => import('@/blocks/redesign/PrArrives/Component').then((m) => m.RdPrArrivesComponent))
 const RdPrAdvancedComponent = dynamic(() => import('@/blocks/redesign/PrAdvanced/Component').then((m) => m.RdPrAdvancedComponent))
+const RdYbPageComponent = dynamic(() => import('@/blocks/redesign/YbPage/Component').then((m) => m.RdYbPageComponent))
 const RdLbHeroComponent = dynamic(() => import('@/blocks/redesign/LbHero/Component').then((m) => m.RdLbHeroComponent))
 const RdLbNotComponent = dynamic(() => import('@/blocks/redesign/LbNot/Component').then((m) => m.RdLbNotComponent))
 const RdLbReadsComponent = dynamic(() => import('@/blocks/redesign/LbReads/Component').then((m) => m.RdLbReadsComponent))
@@ -57,21 +57,8 @@ const BulletListBlockComponent = dynamic(() => import('@/blocks/BulletList/Compo
 const ContactFormBlock = dynamic(() => import('@/blocks/contactBlocks/ContactForm/Component').then((m) => m.ContactFormBlock))
 const ContactInfoBlock = dynamic(() => import('@/blocks/contactBlocks/ContactInfo/Component').then((m) => m.ContactInfoBlock))
 const ContactSectionBlock = dynamic(() => import('@/blocks/contactBlocks/ContactSection/Component').then((m) => m.ContactSectionBlock))
-const BenefitsBannerComponent = dynamic(() => import('./newLandingBlocks/BenefitsBanner/Component').then((m) => m.BenefitsBannerComponent))
-const StepsBannerComponent = dynamic(() => import('./newLandingBlocks/StepsBanner/Component').then((m) => m.StepsBannerComponent))
-const ProductBannerComponent = dynamic(() => import('./newLandingBlocks/ProductBanner/Component').then((m) => m.ProductBannerComponent))
-const AccessBannerComponent = dynamic(() => import('./newLandingBlocks/AccessBanner/Component').then((m) => m.AccessBannerComponent))
 const EarlyAccessBlockComponent = dynamic(() => import('./EarlyAccessBlock/Component').then((m) => m.EarlyAccessBlockComponent))
-const EvolutionBandBlockComponent = dynamic(() => import('./EvolutionBandBlock/Component').then((m) => m.EvolutionBandBlockComponent))
 const HeroBannerComponent = dynamic(() => import('./newLandingBlocks/HeroBanner/Component').then((m) => m.HeroBannerComponent))
-const OutcomesSectionComponent = dynamic(() => import('./newLandingBlocks/OutcomesSection/Component').then((m) => m.OutcomesSectionComponent))
-const ProcessDiagramComponent = dynamic(() => import('./newLandingBlocks/ProcessDiagram/Component').then((m) => m.ProcessDiagramComponent))
-const StatBreakComponent = dynamic(() => import('./newLandingBlocks/StatBreak/Component').then((m) => m.StatBreakComponent))
-const ReserveCtaComponent = dynamic(() => import('./newLandingBlocks/ReserveCta/Component').then((m) => m.ReserveCtaComponent))
-const AthleteBannerComponent = dynamic(() => import('./newLandingBlocks/AthleteBanner/Component').then((m) => m.AthleteBannerComponent))
-const PriceBreakBlockComponent = dynamic(() => import('./PriceBreakBlock/Component').then((m) => m.PriceBreakBlockComponent))
-const ScienceBoardBlockComponent = dynamic(() => import('./ScienceBoardBlock/Component').then((m) => m.ScienceBoardBlockComponent))
-const FloatingCTABlockComponent = dynamic(() => import('./FloatingCTA/Component').then((m) => m.FloatingCTABlockComponent))
 const YpHeroComponent = dynamic(() => import('./yourPlanBlocks/Hero/Component').then((m) => m.YpHeroComponent))
 const YpPlansComponent = dynamic(() => import('./yourPlanBlocks/Plans/Component').then((m) => m.YpPlansComponent))
 const YpThreeComponentsComponent = dynamic(() => import('./yourPlanBlocks/ThreeComponents/Component').then((m) => m.YpThreeComponentsComponent))
@@ -203,6 +190,7 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdPrFormula: RdPrFormulaComponent,
   rdPrArrives: RdPrArrivesComponent,
   rdPrAdvanced: RdPrAdvancedComponent,
+  rdYbPage: RdYbPageComponent,
   rdLbHero: RdLbHeroComponent,
   rdLbNot: RdLbNotComponent,
   rdLbReads: RdLbReadsComponent,
@@ -212,7 +200,6 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdLbFormula: RdLbFormulaComponent,
   rdLbAdvanced: RdLbAdvancedComponent,
   rdLbBoard: RdLbBoardComponent,
-  content: ContentBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
   'form-custom': FormCustomBlock,
@@ -224,21 +211,8 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   'contact-form': ContactFormBlock,
   'contact-info': ContactInfoBlock,
   'contact-section': ContactSectionBlock,
-  benefitsBanner: BenefitsBannerComponent,
-  stepsBanner: StepsBannerComponent,
-  productBanner: ProductBannerComponent,
-  accessBanner: AccessBannerComponent,
   earlyAccess: EarlyAccessBlockComponent,
-  evolutionBand: EvolutionBandBlockComponent,
   heroBanner: HeroBannerComponent,
-  outcomesSection: OutcomesSectionComponent,
-  processDiagram: ProcessDiagramComponent,
-  statBreak: StatBreakComponent,
-  athleteBanner: AthleteBannerComponent,
-  reserveCta: ReserveCtaComponent,
-  priceBreak: PriceBreakBlockComponent,
-  scienceBoard: ScienceBoardBlockComponent,
-  floatingCTA: FloatingCTABlockComponent,
   ypHero: YpHeroComponent,
   ypPlans: YpPlansComponent,
   ypComponents: YpThreeComponentsComponent,

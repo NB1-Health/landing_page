@@ -60,59 +60,27 @@ type PageCopyField = {
   richText?: boolean
 }
 
+/**
+ * What an agent is allowed to change, per block, and how much of it.
+ *
+ * This was ten blocks. Nine — athleteBanner, evolutionBand, floatingCTA,
+ * outcomesSection, priceBreak, processDiagram, reserveCta, scienceBoard and
+ * statBreak — were deleted on 2026-09-30 after being verified unused on staging
+ * and production, across published pages, drafts and full version history.
+ * Their entries went with them: an allowlist naming a block that can no longer
+ * exist would accept an edit which then matches nothing, and would tell the next
+ * reader this system supports something it does not.
+ *
+ * That leaves heroBanner. If agent copy editing is wanted on the redesign blocks
+ * the pages are actually built from now, here is where it gets declared — a
+ * field list and a byte budget per block, never a blanket allowance.
+ */
 const PAGE_COPY_FIELDS: Record<string, Record<string, PageCopyField>> = {
-  athleteBanner: {
-    eyebrow: { maxBytes: 80 },
-    heading: { maxBytes: 300, richText: true },
-  },
-  evolutionBand: {
-    eyebrow: { maxBytes: 80 },
-    heading: { maxBytes: 300, richText: true },
-    subtext: { maxBytes: 1_000 },
-  },
-  floatingCTA: {
-    buttonText: { maxBytes: 80, required: true },
-    highlightedText: { maxBytes: 120 },
-    text: { maxBytes: 120 },
-  },
   heroBanner: {
     ctaButtonText: { maxBytes: 80 },
     description: { maxBytes: 1_000, richText: true },
     heading: { maxBytes: 300, required: true, richText: true },
     pillText: { maxBytes: 120, richText: true },
-  },
-  outcomesSection: {
-    eyebrow: { maxBytes: 80 },
-    heading: { maxBytes: 300, richText: true },
-    subText: { maxBytes: 500 },
-  },
-  priceBreak: {
-    headingLine1: { maxBytes: 300, richText: true },
-    headingLine2: { maxBytes: 300, richText: true },
-  },
-  processDiagram: {
-    eyebrow: { maxBytes: 80 },
-    heading: { maxBytes: 300, required: true, richText: true },
-  },
-  reserveCta: {
-    ctaButtonText: { maxBytes: 80 },
-    heading: { maxBytes: 300, richText: true },
-    pillText: { maxBytes: 120 },
-    subText: { maxBytes: 500 },
-  },
-  scienceBoard: {
-    eyebrow: { maxBytes: 80 },
-    heading: { maxBytes: 300, richText: true },
-    subCredits: { maxBytes: 500, richText: true },
-    subLead: { maxBytes: 1_000 },
-  },
-  statBreak: {
-    headingAfter: { maxBytes: 80 },
-    headingLine1: { maxBytes: 200 },
-    headingLine2: { maxBytes: 200 },
-    highlightedWord: { maxBytes: 80 },
-    statNumber: { maxBytes: 40, required: true },
-    statSuffix: { maxBytes: 20 },
   },
 }
 
@@ -780,11 +748,24 @@ export async function patchPageDraft({
   })
 }
 
+// The PNG magic bytes as a plain Uint8Array rather than a Buffer.
+//
+// This was `data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))`,
+// which stopped typechecking once `Buffer` became generic in @types/node and
+// TypeScript 5.7 made `Uint8Array` generic over its backing buffer: `.equals()`
+// wants a `Uint8Array<ArrayBufferLike>` and will not take a `Buffer` whose
+// buffer might be a SharedArrayBuffer.
+//
+// Comparing bytes sidesteps the variance entirely, and reads as what it is. A
+// short `data` is handled for free — `data[index]` is undefined and the compare
+// fails — so the explicit length guard the other signatures need is not needed.
+const PNG_MAGIC = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+
 const MEDIA_SIGNATURES: Record<string, (data: Buffer) => boolean> = {
   'image/gif': (data) => ['GIF87a', 'GIF89a'].includes(data.subarray(0, 6).toString('ascii')),
   'image/jpeg': (data) =>
     data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff,
-  'image/png': (data) => data.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')),
+  'image/png': (data) => PNG_MAGIC.every((byte, index) => data[index] === byte),
   'image/webp': (data) =>
     data.subarray(0, 4).toString('ascii') === 'RIFF' &&
     data.subarray(8, 12).toString('ascii') === 'WEBP',

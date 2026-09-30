@@ -40,6 +40,7 @@ import { RdPrAnalyseBlock } from '@/blocks/redesign/PrAnalyse/config'
 import { RdPrFormulaBlock } from '@/blocks/redesign/PrFormula/config'
 import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
 import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
+import { RdYbPageBlock } from '@/blocks/redesign/YbPage/config'
 import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
 import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
 import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
@@ -49,7 +50,6 @@ import { RdLbReadingBlock } from '@/blocks/redesign/LbReading/config'
 import { RdLbFormulaBlock } from '@/blocks/redesign/LbFormula/config'
 import { RdLbAdvancedBlock } from '@/blocks/redesign/LbAdvanced/config'
 import { RdLbBoardBlock } from '@/blocks/redesign/LbBoard/config'
-import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
@@ -61,20 +61,7 @@ import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-
 import { costomSlugField } from '@/fields/slug'
 import { chromeFields } from '@/fields/contentDocument'
 import { rejectHubSlugCollision } from './hooks/rejectHubSlugCollision'
-import { BenefitsBanner } from '@/blocks/newLandingBlocks/BenefitsBanner/config'
-import { StepsBanner } from '@/blocks/newLandingBlocks/StepsBanner/config'
-import { ProductBanner } from '@/blocks/newLandingBlocks/ProductBanner/config'
-import { AccessBanner } from '@/blocks/newLandingBlocks/AccessBanner/config'
-import { EvolutionBandBlock } from '@/blocks/EvolutionBandBlock/config'
 import { HeroBannerBlock } from '@/blocks/newLandingBlocks/HeroBanner/config'
-import { OutcomesSectionBlock } from '@/blocks/newLandingBlocks/OutcomesSection/config'
-import { ProcessDiagramBlock } from '@/blocks/newLandingBlocks/ProcessDiagram/config'
-import { StatBreakBlock } from '@/blocks/newLandingBlocks/StatBreak/config'
-import { ReserveCtaBlock } from '@/blocks/newLandingBlocks/ReserveCta/config'
-import { AthleteBannerBlock } from '@/blocks/newLandingBlocks/AthleteBanner/config'
-import { PriceBreakBlock } from '@/blocks/PriceBreakBlock/config'
-import { ScienceBoardBlock } from '@/blocks/ScienceBoardBlock/config'
-import { FloatingCTABlock } from '@/blocks/FloatingCTA/config'
 import { YpHeroBlock } from '@/blocks/yourPlanBlocks/Hero/config'
 import { YpPlansBlock } from '@/blocks/yourPlanBlocks/Plans/config'
 import { YpThreeComponentsBlock } from '@/blocks/yourPlanBlocks/ThreeComponents/config'
@@ -284,6 +271,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdPrFormulaBlock,
                 RdPrArrivesBlock,
                 RdPrAdvancedBlock,
+                RdYbPageBlock,
                 RdLbHeroBlock,
                 RdLbNotBlock,
                 RdLbReadsBlock,
@@ -293,21 +281,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdLbFormulaBlock,
                 RdLbAdvancedBlock,
                 RdLbBoardBlock,
-                Content,
-                BenefitsBanner,
-                StepsBanner,
-                ProductBanner,
-                AccessBanner,
-                EvolutionBandBlock,
                 HeroBannerBlock,
-                OutcomesSectionBlock,
-                ProcessDiagramBlock,
-                StatBreakBlock,
-                ReserveCtaBlock,
-                AthleteBannerBlock,
-                PriceBreakBlock,
-                ScienceBoardBlock,
-                FloatingCTABlock,
                 YpHeroBlock,
                 YpPlansBlock,
                 YpThreeComponentsBlock,

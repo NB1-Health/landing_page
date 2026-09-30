@@ -38,6 +38,14 @@ import './rd-pr.css'
 // --paper) plus its own --nb1-sphere-soft. They sit on `.rd-lb`, so they inherit
 // to this page's blocks and reach no other page.
 import './rd-lb.css'
+// `rd-yb.css` is the Your Biology mockup's own layout, scoped to `.rd-yb` on the
+// same reasoning. It carries the two tokens that mockup resolves differently
+// from the shipped `:root` — `--nb1-bubble-size` (44px, not 72px) and `--tint`,
+// which the shipped tokens do not define at all. It also carries the page
+// wrapper that names the `nb1page` CONTAINER: this mockup is mobile-first and
+// every desktop layout is a container query, so without this file the page
+// renders as a phone at every width.
+import './rd-yb.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

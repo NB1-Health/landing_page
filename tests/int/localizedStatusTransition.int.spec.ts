@@ -122,7 +122,7 @@ describeTransition('legacy localized-status transition (Postgres)', () => {
         data: {
           ...published.en,
           hero: { type: 'lowImpact' },
-          layout: [{ blockType: 'content', columns: [] }],
+          layout: [{ blockType: 'twoModels' }],
         },
       })
       pageID = page.id
@@ -160,8 +160,8 @@ describeTransition('legacy localized-status transition (Postgres)', () => {
           _status: 'draft',
           title: draftTitle,
           layout: [
-            { blockType: 'content', columns: [] },
-            { blockType: 'content', columns: [] },
+            { blockType: 'twoModels' },
+            { blockType: 'twoModels' },
           ],
         },
       })
@@ -176,7 +176,7 @@ describeTransition('legacy localized-status transition (Postgres)', () => {
           slug: `legacy-draft-only-${suffix}`,
           title: 'Legacy draft only',
           hero: { type: 'lowImpact' },
-          layout: [{ blockType: 'content', columns: [] }],
+          layout: [{ blockType: 'twoModels' }],
         },
       })
       draftOnlyPageID = draftOnlyPage.id
@@ -192,7 +192,7 @@ describeTransition('legacy localized-status transition (Postgres)', () => {
           slug: `legacy-unpublished-en-${suffix}`,
           title: 'Legacy unpublished EN',
           hero: { type: 'lowImpact' },
-          layout: [{ blockType: 'content', columns: [] }],
+          layout: [{ blockType: 'twoModels' }],
         },
       })
       unpublishedPageID = unpublishedPage.id
