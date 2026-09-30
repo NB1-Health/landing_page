@@ -46,6 +46,17 @@ import './rd-lb.css'
 // every desktop layout is a container query, so without this file the page
 // renders as a phone at every width.
 import './rd-yb.css'
+// `rd-lg.css` is the four legal/policy mockups' own layout, scoped to `.rd-lg`
+// on the same reasoning. Those four pages are ONE block — Terms, Privacy,
+// Imprint and Cookie are the same two sections with different words — so one
+// stylesheet serves all of them. It carries `--tint`, which the shipped tokens
+// do not define at all and which the title band's background reads; the page
+// wrapper that names the `nb1page` CONTAINER, without which the contents rail
+// stays `display:none` at every width because these mockups are mobile-first;
+// and the rules for what a Lexical run cannot carry — the mockup's <strong>
+// and <a> styles, and the paragraph style for richText that renders its own
+// <p>. Every value in it is read from the rendered mockups, not retyped.
+import './rd-lg.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'
