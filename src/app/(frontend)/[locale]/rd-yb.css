@@ -1,0 +1,144 @@
+/*
+ * rd-yb — the Your Biology mockup's layout rules, scoped to `.rd-yb`.
+ *
+ * GENERATED from the RENDERED mockup's stylesheets, not retyped. The mockup is
+ * a client-side bundle: its <style> blocks are injected at runtime, so the CSS
+ * was read from `document.styleSheets` in a real browser.
+ *
+ * Scoped to `.rd-yb`, never `.rd-block`: these rules are written against bare
+ * tags and the SHARED `data-d` / `data-m` tokens, so on `.rd-block` they would
+ * rewrite every other converted page. Every block from this mockup carries
+ * `rd-yb rd-yb<name>` and NOT `rd-block`, so no page reaches the other way.
+ *
+ * The `.nb1-*` component library is NOT repeated here — rd-toolkit.css already
+ * ships it verbatim for every page.
+ */
+
+/* The tokens this mockup resolves DIFFERENTLY from the shipped :root, measured
+ * as computed values on documentElement rather than parsed from source.
+ * Custom properties inherit, so defining them here beats :root for this page's
+ * blocks and leaves every other page exactly as it shipped.
+ *
+ *   --nb1-bubble-size  the shipped :root says 72px; this mockup draws 44px
+ *   --tint             the shipped :root does not define it AT ALL, so every
+ *                      `var(--tint)` on this page resolved to nothing
+ */
+.rd-yb {
+  --nb1-bubble-size: 44px;
+  --tint: color-mix(in oklab,#B3E7F3 34%,#F0F5FF);
+}
+
+/* Base rules ported from the mockup's global <style>, rescoped from `body`
+ * because the app's <body> belongs to the wider site.
+ *
+ * `color` is the load-bearing one: without it this page's headings inherit the
+ * app's own body colour instead of the mockup's, which is how the hero shipped
+ * near-invisible. `margin` and `background` are NOT here — they are not
+ * inherited properties and belong to the wrapper rule below. */
+.rd-yb {
+  font-family: var(--nb1-font-secondary);
+  font-weight: 350;
+  -webkit-font-smoothing: antialiased;
+  color: var(--nb1-dark-brown);
+}
+
+/* the mockup's bare `*` — the block ROOT is included on purpose, because a
+ * padded max-width <section> measures too wide without border-box */
+.rd-yb,
+.rd-yb *,
+.rd-yb *::before,
+.rd-yb *::after { box-sizing: border-box; }
+
+.rd-yb h1, .rd-yb h2, .rd-yb h3,
+.rd-yb h4, .rd-yb p, .rd-yb ul, .rd-yb li { margin: 0px; padding: 0px; }
+.rd-yb li { list-style: none; }
+.rd-yb a { color: inherit; text-decoration: none; }
+.rd-yb a:hover { color: var(--nb1-dark-brown); opacity: 0.72; }
+.rd-yb [data-m="rail"]::-webkit-scrollbar { display: none; }
+
+/*
+ * The page wrapper — the mockup's `#nb1bio`, reconstructed.
+ *
+ * RenderBlocks wraps every block in a plain <div> that already spans the
+ * viewport. Two things must live here and cannot live on the block root:
+ *
+ * 1. the page fill — `background` does not inherit, so on the block it is
+ *    clipped to that section's own box;
+ * 2. the named CONTAINER — this mockup's responsive system is CONTAINER
+ *    queries, and a section that sets `max-width: 1240px` would otherwise
+ *    become its own container and answer every query against 1240px instead
+ *    of the viewport. That is why `(min-width: 900px)` never fired.
+ *
+ * `:not(.rd-yb *)` keeps this to the outermost wrapper.
+ */
+div:not(.rd-yb *):has(> .rd-yb) {
+  background-color: var(--nb1-cool-grey);
+  container-type: inline-size;
+  container-name: nb1page;
+  overflow-x: clip;
+}
+
+/*
+ * The mockup's responsive layout, rescoped from `#nb1bio` to `.rd-yb`.
+ *
+ * Both selector forms are emitted per rule: a `data-d` token can sit on a
+ * descendant OR on the block root itself, and a descendant-only rewrite
+ * silently stops matching the root.
+ *
+ * This mockup is MOBILE-FIRST: the inline declarations in each Component are
+ * the PHONE values, and every desktop layout is an override in here. Without
+ * this file the page renders as a phone at every width.
+ */
+@container nb1page (max-width: 999px) {
+  .rd-yb [data-m="navcta"], .rd-yb:is([data-m="navcta"]),
+  .rd-yb [data-m="navextra"], .rd-yb:is([data-m="navextra"]) { display: none !important; }
+  .rd-yb [data-m="burger"], .rd-yb:is([data-m="burger"]) { display: flex !important; }
+}
+
+@container nb1page (max-width: 899px) {
+  .rd-yb [data-m="scalebar"], .rd-yb:is([data-m="scalebar"]) { height: 26px !important; }
+  .rd-yb [data-m="abgrid"], .rd-yb:is([data-m="abgrid"]) { grid-template-columns: 1fr 1fr !important; gap: 14px !important; }
+}
+
+@container nb1page (min-width: 1000px) {
+  .rd-yb [data-d~="navlinks"], .rd-yb:is([data-d~="navlinks"]) { display: flex !important; }
+}
+
+@container nb1page (min-width: 900px) {
+  .rd-yb [data-d~="pad"], .rd-yb:is([data-d~="pad"]) { padding-left: 48px !important; padding-right: 48px !important; }
+  .rd-yb [data-d~="bigpad"], .rd-yb:is([data-d~="bigpad"]) { padding-top: 104px !important; padding-bottom: 104px !important; }
+  .rd-yb [data-d~="side"], .rd-yb:is([data-d~="side"]) { grid-template-columns: 1fr 1fr !important; gap: 56px !important; }
+  .rd-yb [data-m="ledger"], .rd-yb:is([data-m="ledger"]) { padding: 12px 36px 30px !important; }
+  .rd-yb [data-m="ledgerhead"], .rd-yb:is([data-m="ledgerhead"]),
+  .rd-yb [data-m="ledgerrow"], .rd-yb:is([data-m="ledgerrow"]) { display: grid !important; grid-template-columns: minmax(0px, 1fr) 44px minmax(0px, 1fr) !important; gap: 0px 12px !important; }
+  .rd-yb [data-m="ledgerarrow"], .rd-yb:is([data-m="ledgerarrow"]) { display: block !important; }
+  .rd-yb [data-m="equation"], .rd-yb:is([data-m="equation"]) { grid-template-columns: minmax(0px, 1fr) 72px minmax(0px, 1fr) !important; gap: 0px !important; }
+  .rd-yb [data-d~="bigh"], .rd-yb:is([data-d~="bigh"]) { font-size: clamp(40px, 4.6cqi, 62px) !important; }
+  .rd-yb [data-m="reads3"], .rd-yb:is([data-m="reads3"]),
+  .rd-yb [data-m="why3"], .rd-yb:is([data-m="why3"]) { grid-template-columns: repeat(3, 1fr) !important; }
+  .rd-yb [data-m="plans2"], .rd-yb:is([data-m="plans2"]),
+  .rd-yb [data-m="seals3"], .rd-yb:is([data-m="seals3"]) { grid-template-columns: repeat(2, 1fr) !important; }
+  .rd-yb [data-m="seals3"], .rd-yb:is([data-m="seals3"]) { grid-template-columns: repeat(3, 1fr) !important; }
+  .rd-yb [data-m="abgrid"], .rd-yb:is([data-m="abgrid"]) { gap: 24px !important; }
+}
+
+/*
+ * The science-board link inside the hero's proof sentence.
+ *
+ * The mockup styles that anchor with an inline `style` attribute. A lexical
+ * link has nowhere to carry one — and should not: an editor who added a second
+ * link to the sentence would get an unstyled one. A rule is the right shape.
+ *
+ * Values MEASURED on the mockup's own anchor at `#top p a`, not chosen here:
+ *   border-bottom: 1.5px solid var(--nb1-blue-grey); padding-bottom: 1px;
+ *
+ * NOT VERIFIED BY THE HARNESS. `payload-richtext` is a class the real RichText
+ * puts on its wrapper; the harness's stub deliberately omits that wrapper so the
+ * two trees stay alignable, so this selector cannot match there and the harness
+ * still reports `padding-bottom: 1px -> 0px` on the anchor. That one difference
+ * is the harness's, not the page's — confirm it in the browser after seeding.
+ */
+.rd-yb .payload-richtext a {
+  border-bottom: 1.5px solid var(--nb1-blue-grey);
+  padding-bottom: 1px;
+}

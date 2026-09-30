@@ -1,0 +1,1054 @@
+/* =============================================================================
+   Landing Blocks — CSS Template
+   Based on: BoxCard, StepsCard, ResultsCard, SymptomsCard,
+             VideoCard, FormulaCard, ReviewCard
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   Design Tokens
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Colors */
+  --lc-bg-white:         #ffffff;
+  --lc-bg-black:         rgba(0, 0, 0, 1);
+  --lc-bg-dark:          rgba(29, 29, 29, 1);
+  --lc-bg-gray:          rgba(242, 242, 242, 1);
+  --lc-bg-gray-alt:      rgba(239, 239, 239, 1);
+  --lc-bg-blue-gray:     rgba(220, 228, 232, 1);
+  --lc-bg-pill-warm:     rgba(255, 244, 221, 1);
+  --lc-bg-pill-light:    rgba(248, 248, 248, 1);
+  --lc-bg-btn-light:     rgba(255, 249, 249, 1);
+  --lc-accent:           rgba(0, 194, 224, 1);
+  --lc-brand:            rgb(0, 168, 194);
+
+  --lc-text-primary:     rgba(0, 0, 0, 1);
+  --lc-text-dark:        rgba(36, 39, 43, 1);
+  --lc-text-near-black:  rgba(38, 38, 38, 1);
+  --lc-text-white:       rgba(255, 255, 255, 1);
+  --lc-text-light:       rgba(244, 244, 244, 1);
+  --lc-text-muted:       rgba(0, 0, 0, 0.8);
+  --lc-border:           rgba(0, 0, 0, 0.12);
+
+  /* Typography — Headings */
+  --lc-font-heading:             'Instrument Sans', sans-serif;
+  --lc-heading-weight:           500;
+  --lc-heading-size-desktop:     64px;
+  --lc-heading-size-mobile:      40px;
+  --lc-heading-size-mobile-sm:   30px;
+  --lc-heading-lh-desktop:       70px;
+  --lc-heading-lh-desktop-lg:    74px;
+  --lc-heading-lh-mobile:        44px;
+  --lc-heading-lh-mobile-sm:     34px;
+  --lc-heading-letter-spacing:   -0.03em;
+
+  /* Typography — Card sub-title (ResultsCard) */
+  --lc-card-title-size:    32px;
+  --lc-card-title-lh:      38px;
+  --lc-card-title-weight:  400;
+
+  /* Typography — Body */
+  --lc-font-body:        'Inter', sans-serif;
+  --lc-body-weight:      400;
+  --lc-body-size-lg:     20px;
+  --lc-body-lh-lg:       32px;
+  --lc-body-size:        16px;
+  --lc-body-size-sm:     14px;
+  --lc-body-lh:          24px;
+  --lc-meta-size:        13px;
+  --lc-meta-lh:          20px;
+
+  /* Spacing */
+  --lc-outer-padding:      20px 40px;
+  --lc-outer-padding-mob:  0 20px 20px;
+  --lc-inner-padding:      40px 0;
+  --lc-inner-padding-mob:  24px 0;
+  --lc-section-padding:    0 40px;
+  --lc-section-padding-mob:0 12px;
+  --lc-gap:                24px;
+  --lc-gap-lg:             56px;
+
+  /* Shape */
+  --lc-radius:      20px;
+  --lc-radius-sm:   16px;
+  --lc-radius-pill: 999px;
+  --lc-radius-btn:  100px;
+
+  /* Buttons */
+  --lc-btn-height:        60px;
+  --lc-btn-padding:       15px 30px;
+  --lc-btn-size-desktop:  20px;
+  --lc-btn-size-mobile:   16px;
+
+  /* Icons */
+  --lc-icon-size:     50px;
+  --lc-icon-size-mob: 35px;
+
+  /* Cards */
+  --lc-result-min-h:       520px;
+  --lc-result-min-h-mob:   420px;
+  --lc-media-height:       280px;
+  --lc-review-min-h:       200px;
+  --lc-review-min-h-mob:   220px;
+
+  /* Image panel */
+  --lc-panel-width: min(39vw, 500px);
+}
+
+/* ---------------------------------------------------------------------------
+   Outer Wrapper
+   --------------------------------------------------------------------------- */
+
+/* White-background wrapper — BoxCard, SymptomsCard, VideoCard, ReviewCard */
+.lc-wrapper {
+  padding: var(--lc-outer-padding);
+  background-color: var(--lc-bg-white);
+}
+
+@media (max-width: 768px) {
+  .lc-wrapper {
+    padding: var(--lc-outer-padding-mob);
+  }
+}
+
+/* Dark rounded wrapper — StepsCard */
+.lc-wrapper--dark {
+  margin: 20px 40px;
+  padding: var(--lc-inner-padding);
+  border-radius: var(--lc-radius);
+  background-color: var(--lc-bg-dark);
+}
+
+@media (max-width: 768px) {
+  .lc-wrapper--dark {
+    margin: 0 20px;
+    padding: var(--lc-inner-padding-mob);
+  }
+}
+
+/* Horizontal padding strip inside a wrapper (StepsCard sections) */
+.lc-section {
+  padding: var(--lc-section-padding);
+}
+
+@media (max-width: 768px) {
+  .lc-section {
+    padding: var(--lc-section-padding-mob);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Block Header  — title + description left, nav arrows right
+   --------------------------------------------------------------------------- */
+
+.lc-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: var(--lc-gap);
+}
+
+@media (max-width: 768px) {
+  .lc-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.lc-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Typography — Title
+   --------------------------------------------------------------------------- */
+
+.lc-title {
+  font-family: var(--lc-font-heading);
+  font-weight: var(--lc-heading-weight);
+  font-size: var(--lc-heading-size-desktop);
+  line-height: var(--lc-heading-lh-desktop);
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-text-primary);
+}
+
+@media (max-width: 768px) {
+  .lc-title {
+    font-size: var(--lc-heading-size-mobile);
+    line-height: var(--lc-heading-lh-mobile);
+  }
+}
+
+/* Compact mobile variant — VideoCard, ReviewCard (30px / 34px) */
+.lc-title--compact {
+  font-size: var(--lc-heading-size-desktop);
+  line-height: var(--lc-heading-lh-desktop);
+}
+
+@media (max-width: 768px) {
+  .lc-title--compact {
+    font-size: var(--lc-heading-size-mobile-sm);
+    line-height: var(--lc-heading-lh-mobile-sm);
+  }
+}
+
+/* StepsCard — taller line height, centered, bottom margin */
+.lc-title--steps {
+  line-height: var(--lc-heading-lh-desktop-lg);
+  text-align: center;
+  margin-bottom: var(--lc-gap);
+}
+
+@media (max-width: 768px) {
+  .lc-title--steps {
+    font-size: var(--lc-heading-size-mobile-sm);
+    line-height: 36px;
+  }
+}
+
+.lc-title--on-dark {
+  color: var(--lc-text-white);
+}
+
+@media (max-width: 768px) {
+  .lc-title--center-mobile {
+    text-align: center;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Typography — Description
+   --------------------------------------------------------------------------- */
+
+.lc-description {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-text-primary);
+}
+
+@media (max-width: 768px) {
+  .lc-description {
+    font-size: var(--lc-body-size-sm);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Typography — Note / Meta
+   --------------------------------------------------------------------------- */
+
+/* Small disclaimer below a button */
+.lc-note {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-meta-size);
+  line-height: var(--lc-meta-lh);
+  color: var(--lc-text-muted);
+  text-align: center;
+}
+
+/* Accent note — cyan (StepsCard bottom) */
+.lc-note--accent {
+  font-family: var(--lc-font-heading);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-lg);
+  line-height: 100%;
+  color: var(--lc-accent);
+}
+
+@media (max-width: 768px) {
+  .lc-note--accent {
+    font-size: var(--lc-body-size-sm);
+    margin-top: 12px;
+  }
+}
+
+/* Inline note with icon — ReviewCard */
+.lc-note-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.lc-note-row__text {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-lg);
+  line-height: var(--lc-body-lh);
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Accent Divider  (StepsCard horizontal cyan line)
+   --------------------------------------------------------------------------- */
+
+.lc-divider {
+  height: 2px;
+  background-color: var(--lc-accent);
+  margin-bottom: 18px;
+}
+
+/* ---------------------------------------------------------------------------
+   Two-Column Layout
+   --------------------------------------------------------------------------- */
+
+.lc-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--lc-gap);
+}
+
+.lc-row--lg-gap {
+  gap: var(--lc-gap-lg);
+}
+
+@media (max-width: 768px) {
+  .lc-row {
+    flex-direction: column;
+    gap: 32px;
+  }
+}
+
+.lc-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Fixed-width image panel — SymptomsCard, FormulaCard */
+.lc-col--panel {
+  flex: 0 0 var(--lc-panel-width);
+  width: var(--lc-panel-width);
+  max-width: 500px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .lc-col--panel {
+    flex: unset;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Image Panel  (SymptomsCard right side, FormulaCard right side)
+   --------------------------------------------------------------------------- */
+
+.lc-panel {
+  width: 100%;
+  border-radius: var(--lc-radius);
+  overflow: hidden;
+  align-self: stretch;
+}
+
+/* Gray bg + centered — FormulaCard */
+.lc-panel--bg {
+  background-color: var(--lc-bg-gray-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lc-panel__img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* object-contain for product image */
+.lc-panel__img--contain {
+  object-fit: contain;
+  height: auto;
+}
+
+/* Fixed height — SymptomsCard mobile */
+.lc-panel__img--fixed-h {
+  height: 307px;
+  object-fit: cover;
+}
+
+/* ---------------------------------------------------------------------------
+   Icon List  (BoxCard, ResultsCard)
+   --------------------------------------------------------------------------- */
+
+.lc-icon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lc-icon-list__item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.lc-icon-list__icon {
+  width: var(--lc-icon-size);
+  height: var(--lc-icon-size);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .lc-icon-list__icon {
+    width: var(--lc-icon-size-mob);
+    height: var(--lc-icon-size-mob);
+  }
+}
+
+.lc-icon-list__label {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-lg);
+  line-height: var(--lc-body-lh);
+  color: var(--lc-text-primary);
+}
+
+@media (max-width: 768px) {
+  .lc-icon-list__label {
+    font-size: var(--lc-body-size-sm);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Pill Tags  (SymptomsCard)
+   --------------------------------------------------------------------------- */
+
+.lc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lc-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: var(--lc-radius-pill);
+  background-color: var(--lc-bg-pill-warm);
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-sm);
+  line-height: 30px;
+  color: var(--lc-text-dark);
+  white-space: nowrap;
+}
+
+/* "And more" expand button */
+.lc-tag--more {
+  background-color: var(--lc-bg-pill-light);
+  border: none;
+  cursor: pointer;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------------------------
+   CTA Buttons
+   --------------------------------------------------------------------------- */
+
+/* Primary — black pill */
+.lc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--lc-radius-btn);
+  background-color: var(--lc-bg-black);
+  color: var(--lc-text-white);
+  height: var(--lc-btn-height);
+  padding: var(--lc-btn-padding);
+  font-family: var(--lc-font-heading);
+  font-weight: var(--lc-heading-weight);
+  font-size: var(--lc-btn-size-desktop);
+  cursor: pointer;
+  border: none;
+  width: fit-content;
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .lc-btn {
+    font-size: var(--lc-btn-size-mobile);
+  }
+}
+
+/* Light variant — StepsCard */
+.lc-btn--light {
+  background-color: var(--lc-bg-btn-light);
+  color: var(--lc-bg-black);
+}
+
+/* Full-width link variant — FormulaCard */
+.lc-btn--full {
+  width: 100%;
+  min-height: 58px;
+  height: auto;
+  padding: 16px 32px;
+  font-size: 20px;
+  line-height: 28px;
+  border-radius: var(--lc-radius-pill);
+}
+
+@media (max-width: 768px) {
+  .lc-btn--full {
+    min-height: 56px;
+    padding: 16px 20px;
+    font-size: 18px;
+    line-height: 24px;
+  }
+}
+
+/* CTA group: button + note stacked */
+.lc-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Steps  (StepsCard)
+   --------------------------------------------------------------------------- */
+
+.lc-steps {
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+  padding: var(--lc-section-padding);
+}
+
+@media (max-width: 768px) {
+  .lc-steps {
+    flex-direction: column;
+    gap: var(--lc-gap);
+    padding: var(--lc-section-padding-mob);
+  }
+}
+
+.lc-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-gap);
+  width: calc(100% / 4);
+}
+
+@media (max-width: 768px) {
+  .lc-step {
+    width: 100%;
+  }
+}
+
+/* Row: step-number icon + step title */
+.lc-step__header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 13px;
+  height: 90px;
+}
+
+@media (max-width: 768px) {
+  .lc-step__header {
+    height: auto;
+  }
+}
+
+.lc-step__number {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.lc-step__title {
+  font-family: var(--lc-font-heading);
+  font-weight: var(--lc-body-weight);
+  font-size: 24px;
+  line-height: 100%;
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-accent);
+}
+
+@media (max-width: 768px) {
+  .lc-step__title {
+    font-size: var(--lc-body-size-lg);
+  }
+}
+
+.lc-step__icon {
+  width: 100px;
+  height: 100px;
+}
+
+@media (max-width: 768px) {
+  .lc-step__icon {
+    width: 44px;
+    height: 50px;
+  }
+}
+
+.lc-step__description {
+  font-family: var(--lc-font-body);
+  font-weight: 300;
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  color: var(--lc-text-light);
+}
+
+/* ---------------------------------------------------------------------------
+   Results Cards  (ResultsCard — photo cards)
+   --------------------------------------------------------------------------- */
+
+/* 4-column desktop grid */
+.lc-results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 32px;
+  margin-top: 48px;
+}
+
+/* Mobile: horizontal scroll carousel */
+@media (max-width: 768px) {
+  .lc-results-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 16px;
+    padding: 0 28px 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+.lc-result-card {
+  position: relative;
+  min-height: var(--lc-result-min-h);
+  border-radius: var(--lc-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--lc-gap);
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .lc-result-card {
+    min-height: var(--lc-result-min-h-mob);
+    flex: 0 0 calc(100vw - 72px);
+    width: calc(100vw - 72px);
+    scroll-snap-align: center;
+  }
+}
+
+/* Image gradient overlay */
+.lc-result-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.18) 100%);
+  pointer-events: none;
+}
+
+.lc-result-card__content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+/* Text-mode layout */
+.lc-result-card__content--text {
+  margin-top: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-gap);
+  height: 100%;
+}
+
+.lc-result-card__title {
+  font-family: var(--lc-font-heading);
+  font-weight: var(--lc-card-title-weight);
+  font-size: var(--lc-card-title-size);
+  line-height: var(--lc-card-title-lh);
+  letter-spacing: var(--lc-heading-letter-spacing);
+  max-width: 220px;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .lc-result-card__title {
+    font-size: 34px;
+  }
+}
+
+.lc-result-card__title--on-photo { color: var(--lc-text-white); }
+.lc-result-card__title--on-light { color: var(--lc-text-dark); }
+
+.lc-result-card__desc {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size);
+  line-height: 1.55;
+  color: var(--lc-text-dark);
+  max-width: 260px;
+  overflow-wrap: break-word;
+}
+
+/* Photo/text mode toggle */
+.lc-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+  width: 38px;
+  height: 22px;
+  border-radius: var(--lc-radius-pill);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.lc-toggle__knob {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+/* Carousel dot indicators */
+.lc-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--lc-radius-pill);
+  background-color: rgba(217, 217, 217, 1);
+  transition: all 0.2s ease;
+}
+
+.lc-dot--active {
+  width: 10px;
+  height: 10px;
+  background-color: var(--lc-text-dark);
+}
+
+/* ---------------------------------------------------------------------------
+   Carousel / Slider  (VideoCard, ReviewCard)
+   --------------------------------------------------------------------------- */
+
+.lc-carousel {
+  overflow: hidden;
+  width: 100%;
+}
+
+.lc-carousel__track {
+  display: flex;
+  transition: transform 0.35s ease;
+  width: 100%;
+}
+
+/* 3-up desktop / 1-up mobile */
+.lc-carousel__item {
+  flex-shrink: 0;
+  width: calc(100% / 3);
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .lc-carousel__item {
+    width: 100%;
+    padding-right: 0;
+  }
+}
+
+/* Desktop arrow navigation */
+.lc-carousel-nav {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.lc-carousel-nav__btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lc-carousel-nav__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Round white circle nav (mobile) */
+.lc-carousel-nav__btn--round {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--lc-radius-pill);
+  background-color: var(--lc-bg-white);
+}
+
+/* Mobile counter + nav row */
+.lc-carousel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 4px;
+  gap: 12px;
+}
+
+.lc-carousel-footer__counter {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-sm);
+  line-height: 20px;
+  color: var(--lc-text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Media Card  (VideoCard — video thumbnail)
+   --------------------------------------------------------------------------- */
+
+.lc-media {
+  position: relative;
+  width: 100%;
+  height: var(--lc-media-height);
+  border-radius: var(--lc-radius);
+  overflow: hidden;
+  background-color: var(--lc-bg-gray);
+}
+
+@media (max-width: 768px) {
+  .lc-media {
+    border-radius: var(--lc-radius-sm);
+  }
+}
+
+.lc-media__img,
+.lc-media__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Play button overlay */
+.lc-media__play {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  width: 68px;
+  height: 68px;
+  border-radius: var(--lc-radius-pill);
+  border: 3px solid var(--lc-text-white);
+  background-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .lc-media__play {
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Reviewer info below video */
+.lc-reviewer__name {
+  font-family: var(--lc-font-heading);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-text-primary);
+}
+
+@media (max-width: 768px) {
+  .lc-reviewer__name {
+    line-height: 26px;
+  }
+}
+
+.lc-reviewer__tag {
+  font-family: var(--lc-font-body);
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 26px;
+  color: var(--lc-text-primary);
+}
+
+@media (max-width: 768px) {
+  .lc-reviewer__tag {
+    font-size: var(--lc-body-size);
+    text-transform: uppercase;
+  }
+}
+
+.lc-reviewer__quote {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size-sm);
+  line-height: var(--lc-body-lh);
+  letter-spacing: var(--lc-heading-letter-spacing);
+  color: var(--lc-text-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Review Card  (ReviewCard — text review box)
+   --------------------------------------------------------------------------- */
+
+.lc-review {
+  position: relative;
+  width: 100%;
+  min-height: var(--lc-review-min-h);
+  border-radius: var(--lc-radius);
+  overflow: hidden;
+  background-color: var(--lc-bg-gray);
+  padding: 24px 28px;
+  gap: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (max-width: 768px) {
+  .lc-review {
+    min-height: var(--lc-review-min-h-mob);
+    border-radius: var(--lc-radius-sm);
+    padding: 24px 20px;
+  }
+}
+
+.lc-review__quote {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  color: var(--lc-text-near-black);
+  flex: 1;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .lc-review__quote {
+    font-size: 15px;
+  }
+}
+
+.lc-review__author {
+  font-family: var(--lc-font-body);
+  font-weight: 500;
+  font-size: var(--lc-body-size);
+  line-height: 20px;
+  color: var(--lc-text-near-black);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------------------
+   Formula Table  (FormulaCard — ingredient rows)
+   --------------------------------------------------------------------------- */
+
+.lc-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.lc-table__row {
+  border-bottom: 1px solid var(--lc-border);
+  padding: 18px 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .lc-table__row {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+.lc-table__cell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+}
+
+.lc-table__label {
+  font-family: var(--lc-font-body);
+  font-weight: 700;
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  color: var(--lc-text-primary);
+}
+
+.lc-table__sublabel {
+  font-family: var(--lc-font-body);
+  font-weight: var(--lc-body-weight);
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.lc-table__value {
+  flex-shrink: 0;
+  min-width: 120px;
+  font-family: var(--lc-font-body);
+  font-weight: 700;
+  font-size: var(--lc-body-size);
+  line-height: var(--lc-body-lh);
+  color: var(--lc-text-primary);
+  text-align: right;
+  align-self: center;
+}
+
+@media (max-width: 768px) {
+  .lc-table__value {
+    min-width: auto;
+    text-align: left;
+    align-self: flex-start;
+  }
+}

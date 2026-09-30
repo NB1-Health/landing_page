@@ -224,6 +224,8 @@ import * as migration_20260925_030000_rd_lb_board_block from './20260925_030000_
 import * as migration_20260925_040000_rd_pg_buy_lab_variant from './20260925_040000_rd_pg_buy_lab_variant'
 import * as migration_20260925_050000_rd_lb_method_figures from './20260925_050000_rd_lb_method_figures'
 import * as migration_20260925_060000_rd_footers_variants from './20260925_060000_rd_footers_variants'
+import * as migration_20260929_170000_rd_yb_page_block from './20260929_170000_rd_yb_page_block'
+import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
   {
@@ -1355,5 +1357,15 @@ export const migrations = [
     up: migration_20260925_060000_rd_footers_variants.up,
     down: migration_20260925_060000_rd_footers_variants.down,
     name: '20260925_060000_rd_footers_variants',
+  },
+  {
+    up: migration_20260929_170000_rd_yb_page_block.up,
+    down: migration_20260929_170000_rd_yb_page_block.down,
+    name: '20260929_170000_rd_yb_page_block',
+  },
+  {
+    up: migration_20260930_100000_drop_unused_landing_blocks.up,
+    down: migration_20260930_100000_drop_unused_landing_blocks.down,
+    name: '20260930_100000_drop_unused_landing_blocks',
   },
 ]
