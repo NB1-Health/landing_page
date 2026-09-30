@@ -3,6 +3,7 @@
 import React, { useRef } from 'react'
 import { useReveal } from '@/hooks/useReveal'
 import MentionMeTag from '@/components/MentionMe/MentionMeTag'
+import { toMentionMeLocale } from '@/components/MentionMe/locale'
 import type { AppLocale } from '@/i18n/config'
 
 export type ReferralWidgetBlockType = {
@@ -12,10 +13,6 @@ export type ReferralWidgetBlockType = {
   showPlaceholder?: boolean | null
   locale?: AppLocale
 }
-
-// Map site locale → Mention Me locale (lang_REGION). Extend as live MM campaigns
-// are added per language.
-const MM_LOCALE: Record<string, string> = { en: 'en_GB', de: 'de_DE', fr: 'fr_FR' }
 
 // NEXT_PUBLIC_* is inlined at build time and readable client-side — used only to
 // decide whether to show the placeholder (MentionMeTag itself no-ops without it).
@@ -30,7 +27,7 @@ export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
   const ref = useRef<HTMLElement>(null)
   useReveal(ref, '[data-rv]')
 
-  const mmLocale = localeOverride || MM_LOCALE[locale ?? 'en'] || 'en_GB'
+  const mmLocale = localeOverride || toMentionMeLocale(locale)
   const showPh = (showPlaceholder ?? true) && !PARTNER_CONFIGURED
 
   return (

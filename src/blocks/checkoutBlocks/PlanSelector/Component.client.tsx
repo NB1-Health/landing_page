@@ -8,12 +8,14 @@ import { resolvePlanSelectionRate, trackPlanSelectionAndNavigate } from '@/lib/p
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   resolveTokens,
   resolveTokensDeep,
   extractBullets,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 import { getStoredPlanSelection, storePlanSelection } from '@/lib/plans/selectionStore'
 
 type Plan = {
@@ -57,12 +59,29 @@ type Props = {
 
 function parseGuaranteeText(text: string) {
   const match = text.match(/^\*\*(.+?)\*\*(.*)$/)
-  if (match) return <><strong>{match[1]}</strong>{match[2]}</>
+  if (match)
+    return (
+      <>
+        <strong>{match[1]}</strong>
+        {match[2]}
+      </>
+    )
   return <>{text}</>
 }
 
 const CheckIcon = () => (
-  <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="#0a8fb0" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+  <svg
+    viewBox="0 0 16 16"
+    width={16}
+    height={16}
+    fill="none"
+    stroke="#0a8fb0"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+    style={{ flexShrink: 0 }}
+  >
     <path d="M3 8l3 3 7-7" />
   </svg>
 )
@@ -82,10 +101,46 @@ export const PlanSelectorClient: React.FC<Props> = ({
   const rateMapRef = useRef<Record<string, number>>({})
   const currencyRef = useRef<string>('EUR')
   const planTitlesRef = useRef<Record<string, string>>({})
-  const [plans, setPlans] = useState<Plan[]>(plansProp ?? [])
-  const [comparisonRows, setComparisonRows] = useState<ComparisonRow[] | null | undefined>(comparisonRowsProp)
+  // Live plans → card prices/bullets + comparison copy. Pure, so the server price
+  // snapshot can seed the first render (SSR HTML carries real rates, no placeholders).
+  const priced = (
+    apiPlans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    currency: ReturnType<typeof getClientCurrency>,
+  ) => {
+    const rateMap = buildRateMap(apiPlans, currency)
+    return {
+      rateMap,
+      plans: (plansProp ?? []).map((plan) => {
+        const family = plan.planKey === 'advanced' ? 'advanced' : 'core'
+        // Headline shows the 1-month standard price (€99 / €149), not the 4-month
+        // discount rate — longer-term discounts live at the cycle step.
+        const rate = rateMap[`${family}:1`]
+        const apiBullets = extractBullets(apiPlans, family, locale)
+        return {
+          ...plan,
+          price: rate != null ? formatPrice(rate, currency, locale) : plan.price,
+          strikePrice:
+            resolveTokens(plan.strikePrice, rateMap, currency, locale) ?? plan.strikePrice,
+          minNote: resolveTokens(plan.minNote, rateMap, currency, locale) ?? plan.minNote,
+          monthlyLinkText:
+            resolveTokens(plan.monthlyLinkText, rateMap, currency, locale) ??
+            plan.monthlyLinkText,
+          bullets: apiBullets.length > 0 ? apiBullets.map((text) => ({ text })) : plan.bullets,
+        }
+      }),
+      comparisonRows: resolveTokensDeep(comparisonRowsProp, rateMap, currency, locale),
+    }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() =>
+    plansProp?.length && snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null,
+  )
+  const [plans, setPlans] = useState<Plan[]>(seed?.plans ?? plansProp ?? [])
+  const [comparisonRows, setComparisonRows] = useState<ComparisonRow[] | null | undefined>(
+    seed ? seed.comparisonRows : comparisonRowsProp,
+  )
   const [selectedKey, setSelectedKey] = useState<string>(
-    plansProp?.find(p => p.isRecommended)?.planKey ?? plansProp?.[1]?.planKey ?? 'advanced'
+    plansProp?.find((p) => p.isRecommended)?.planKey ?? plansProp?.[1]?.planKey ?? 'advanced',
   )
   const [cmpOpen, setCmpOpen] = useState(false)
 
@@ -99,7 +154,7 @@ export const PlanSelectorClient: React.FC<Props> = ({
     if (storedPlanAtMount && plansProp?.some((p) => p.planKey === storedPlanAtMount)) {
       setSelectedKey(storedPlanAtMount)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -118,52 +173,50 @@ export const PlanSelectorClient: React.FC<Props> = ({
 
   useEffect(() => {
     let active = true
-    setPlans(plansProp ?? [])
-    setComparisonRows(comparisonRowsProp)
+
+    function applyPrices(
+      currency: ReturnType<typeof getClientCurrency>,
+      apiPlans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    ) {
+      if (!active || currency !== getClientCurrency(locale)) return
+      const next = priced(apiPlans, currency)
+      rateMapRef.current = next.rateMap
+      currencyRef.current = currency
+      apiPlans.forEach((p) => {
+        planTitlesRef.current[p.title.toLowerCase()] = p.title
+      })
+      setPlans(next.plans)
+      setComparisonRows(next.comparisonRows)
+    }
+
+    // Start from the snapshot (or the CMS values), then swap in live data.
+    if (plansProp?.length && snapshot.length > 0) {
+      applyPrices(getClientCurrency(locale), snapshot)
+    } else {
+      setPlans(plansProp ?? [])
+      setComparisonRows(comparisonRowsProp)
+    }
 
     if (!plansProp?.length) return
 
-    function applyPrices(currency: ReturnType<typeof getClientCurrency>, apiPlans: Awaited<ReturnType<typeof fetchPlansClient>>) {
-      if (!active || currency !== getClientCurrency(locale)) return
-      const rateMap = buildRateMap(apiPlans, currency)
-      rateMapRef.current = rateMap
-      currencyRef.current = currency
-      apiPlans.forEach(p => { planTitlesRef.current[p.title.toLowerCase()] = p.title })
-      setPlans(
-        plansProp!.map((plan) => {
-          const family = plan.planKey === 'advanced' ? 'advanced' : 'core'
-          // Headline shows the 1-month standard price (€99 / €149), not the 4-month
-          // discount rate — longer-term discounts live at the cycle step.
-          const rate = rateMap[`${family}:1`]
-          const apiBullets = extractBullets(apiPlans, family, locale)
-          return {
-            ...plan,
-            price: rate != null ? formatPrice(rate, currency, locale) : plan.price,
-            strikePrice: resolveTokens(plan.strikePrice, rateMap, currency, locale) ?? plan.strikePrice,
-            minNote: resolveTokens(plan.minNote, rateMap, currency, locale) ?? plan.minNote,
-            monthlyLinkText: resolveTokens(plan.monthlyLinkText, rateMap, currency, locale) ?? plan.monthlyLinkText,
-            bullets: apiBullets.length > 0
-              ? apiBullets.map((text) => ({ text }))
-              : plan.bullets,
-          }
-        }),
-      )
-      setComparisonRows(resolveTokensDeep(comparisonRowsProp, rateMap, currency, locale))
-    }
-
     const currency = getClientCurrency(locale)
-    fetchPlansClient().then((apiPlans) => applyPrices(currency, apiPlans)).catch(() => {})
+    fetchPlansClient()
+      .then((apiPlans) => applyPrices(currency, apiPlans))
+      .catch(() => {})
 
     const onCurrencyChange = (e: Event) => {
       const cur = (e as CustomEvent<string>).detail as ReturnType<typeof getClientCurrency>
-      fetchPlansClient().then((apiPlans) => applyPrices(cur, apiPlans)).catch(() => {})
+      fetchPlansClient()
+        .then((apiPlans) => applyPrices(cur, apiPlans))
+        .catch(() => {})
     }
     window.addEventListener('nb1:currencychange', onCurrencyChange)
     return () => {
       active = false
       window.removeEventListener('nb1:currencychange', onCurrencyChange)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // snapshot is only the seed; re-running on it would re-fetch after every provider update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, plansProp, comparisonRowsProp])
 
   if (!plans?.length) return null
@@ -206,7 +259,10 @@ export const PlanSelectorClient: React.FC<Props> = ({
           font-size: 13.5px;
           color: rgba(18, 49, 77, 0.7);
         }
-        .nb1-ps-gi :global(strong) { color: #0e2740; font-weight: 600; }
+        .nb1-ps-gi :global(strong) {
+          color: #0e2740;
+          font-weight: 600;
+        }
         .nb1-ps-gdiv {
           width: 1px;
           height: 22px;
@@ -228,7 +284,10 @@ export const PlanSelectorClient: React.FC<Props> = ({
           display: flex;
           flex-direction: column;
           cursor: pointer;
-          transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+          transition:
+            border-color 0.18s,
+            box-shadow 0.18s,
+            transform 0.18s;
         }
         .nb1-ps-card:hover {
           transform: translateY(-2px);
@@ -327,7 +386,9 @@ export const PlanSelectorClient: React.FC<Props> = ({
           text-decoration: none;
           cursor: default;
         }
-        .nb1-ps-monthly-ghost { visibility: hidden; }
+        .nb1-ps-monthly-ghost {
+          visibility: hidden;
+        }
         .nb1-ps-bullets {
           list-style: none;
           margin: 18px 0 22px;
@@ -367,27 +428,40 @@ export const PlanSelectorClient: React.FC<Props> = ({
           text-align: center;
           text-wrap: balance;
           text-decoration: none;
-          transition: transform 0.18s, background 0.18s, border-color 0.18s;
+          transition:
+            transform 0.18s,
+            background 0.18s,
+            border-color 0.18s;
         }
-        .nb1-ps-cta-label { text-align: center; }
+        .nb1-ps-cta-label {
+          text-align: center;
+        }
         .nb1-ps-cta-arrow {
           flex: none;
           line-height: 1;
           transition: transform 0.18s;
         }
-        .nb1-ps-cta:hover { transform: translateY(-1px); }
-        .nb1-ps-cta:hover .nb1-ps-cta-arrow { transform: translateX(2px); }
+        .nb1-ps-cta:hover {
+          transform: translateY(-1px);
+        }
+        .nb1-ps-cta:hover .nb1-ps-cta-arrow {
+          transform: translateX(2px);
+        }
         .nb1-ps-cta.advanced {
           background: #c6ff5b;
           color: #0e2740;
         }
-        .nb1-ps-cta.advanced:hover { background: #aaea42; }
+        .nb1-ps-cta.advanced:hover {
+          background: #aaea42;
+        }
         .nb1-ps-cta.core {
           background: transparent;
           color: #12314d;
           border: 1.5px solid rgba(18, 49, 77, 0.2);
         }
-        .nb1-ps-cta.core:hover { border-color: #12314d; }
+        .nb1-ps-cta.core:hover {
+          border-color: #12314d;
+        }
 
         /* Comparison toggle */
         .nb1-cmp-wrap {
@@ -405,7 +479,11 @@ export const PlanSelectorClient: React.FC<Props> = ({
              its auto margins to 0 and overflows right instead of centering. */
           min-width: min(330px, 100%);
           max-width: 100%;
-          background: linear-gradient(180deg, rgba(10,143,176,0.10) 0%, rgba(10,143,176,0.035) 100%);
+          background: linear-gradient(
+            180deg,
+            rgba(10, 143, 176, 0.1) 0%,
+            rgba(10, 143, 176, 0.035) 100%
+          );
           border: 1.5px solid rgba(10, 143, 176, 0.2);
           border-radius: 14px;
           padding: 15px 26px;
@@ -414,10 +492,16 @@ export const PlanSelectorClient: React.FC<Props> = ({
           font-size: 15px;
           color: #0a8fb0;
           cursor: pointer;
-          transition: background 0.18s, border-color 0.15s;
+          transition:
+            background 0.18s,
+            border-color 0.15s;
         }
         .nb1-cmp-toggle:hover {
-          background: linear-gradient(180deg, rgba(10,143,176,0.16) 0%, rgba(10,143,176,0.07) 100%);
+          background: linear-gradient(
+            180deg,
+            rgba(10, 143, 176, 0.16) 0%,
+            rgba(10, 143, 176, 0.07) 100%
+          );
           border-color: rgba(10, 143, 176, 0.42);
         }
         .nb1-cmp-arr {
@@ -432,14 +516,20 @@ export const PlanSelectorClient: React.FC<Props> = ({
           flex-shrink: 0;
           transition: transform 0.25s;
         }
-        .nb1-cmp-arr.open { transform: rotate(180deg); }
+        .nb1-cmp-arr.open {
+          transform: rotate(180deg);
+        }
         .nb1-cmp-body {
           overflow: hidden;
           max-height: 0;
           transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .nb1-cmp-body.open { max-height: 1200px; }
-        .nb1-cmp-inner { padding-top: 28px; }
+        .nb1-cmp-body.open {
+          max-height: 1200px;
+        }
+        .nb1-cmp-inner {
+          padding-top: 28px;
+        }
         .nb1-comp {
           width: 100%;
           border-collapse: collapse;
@@ -484,7 +574,9 @@ export const PlanSelectorClient: React.FC<Props> = ({
           color: #12314d;
           font-weight: 600;
         }
-        .nb1-comp .val-no { color: rgba(18, 49, 77, 0.4); }
+        .nb1-comp .val-no {
+          color: rgba(18, 49, 77, 0.4);
+        }
 
         /* Science board badge */
         .nb1-sb-badge {
@@ -511,8 +603,11 @@ export const PlanSelectorClient: React.FC<Props> = ({
           margin-left: -12px;
           box-shadow: 0 2px 8px rgba(18, 49, 77, 0.18);
         }
-        .nb1-sb-faces img:first-child { margin-left: 0; }
-        .nb1-sb-text {}
+        .nb1-sb-faces img:first-child {
+          margin-left: 0;
+        }
+        .nb1-sb-text {
+        }
         .nb1-sb-label {
           font-size: 14px;
           font-weight: 600;
@@ -525,16 +620,84 @@ export const PlanSelectorClient: React.FC<Props> = ({
         }
 
         @media (max-width: 720px) {
-          .nb1-ps-grid { grid-template-columns: 1fr; }
-          .nb1-ps-gdiv { display: none; }
+          .nb1-ps-grid {
+            grid-template-columns: 1fr;
+          }
+          .nb1-ps-gdiv {
+            display: none;
+          }
         }
         @media (max-width: 560px) {
           /* Narrower gutters so the label keeps one line for longer. */
-          .nb1-cmp-toggle { padding: 15px 18px; gap: 8px; font-size: 14.5px; }
-          .nb1-ps-guarantee { gap: 12px 16px; padding: 14px 16px; justify-content: flex-start; }
-          .nb1-ps-card { padding: 26px 22px; }
-          .nb1-comp th, .nb1-comp td { padding: 11px 8px; font-size: 12.5px; }
-          .nb1-comp .col-plan { width: 72px; }
+          .nb1-cmp-toggle {
+            padding: 15px 18px;
+            gap: 8px;
+            font-size: 14.5px;
+          }
+          .nb1-ps-guarantee {
+            gap: 12px 16px;
+            padding: 14px 16px;
+            justify-content: flex-start;
+          }
+          .nb1-ps-card {
+            padding: 26px 22px;
+          }
+          /* Three columns don't fit a phone once the copy is German/French (long,
+             unbreakable words push the table off-screen). Stack instead: the feature
+             label takes a full-width line and the Core / Advanced values sit 50/50
+             beneath it, aligned under a two-column header. CSS-only, same markup. */
+          .nb1-cmp-body.open {
+            max-height: 4000px; /* stacked rows are taller; 1200px would clip them */
+          }
+          .nb1-comp,
+          .nb1-comp thead,
+          .nb1-comp tbody {
+            display: block;
+            width: 100%;
+          }
+          .nb1-comp tr {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border-bottom: 1px solid rgba(18, 49, 77, 0.07);
+          }
+          .nb1-comp th,
+          .nb1-comp td {
+            display: block;
+            width: auto;
+            padding: 10px 10px;
+            font-size: 13px;
+            border-bottom: 0;
+            overflow-wrap: anywhere;
+            hyphens: auto;
+          }
+          .nb1-comp thead tr {
+            border-bottom: 1px solid #12314d;
+          }
+          .nb1-comp thead th {
+            border-bottom: 0;
+            font-size: 15px;
+          }
+          .nb1-comp thead th:first-child {
+            display: none;
+          }
+          .nb1-comp .col-plan {
+            width: auto;
+          }
+          /* Feature label: full-width line above its two values. */
+          .nb1-comp tbody tr:not(.row-section) td:first-child {
+            grid-column: 1 / -1;
+            padding: 12px 2px 2px;
+            font-weight: 600;
+          }
+          .nb1-comp tbody tr:not(.row-section) td.col-plan {
+            padding-top: 6px;
+            padding-bottom: 12px;
+          }
+          .nb1-comp .row-section td {
+            grid-column: 1 / -1;
+            padding: 20px 2px 8px;
+            border-bottom: 0;
+          }
         }
       `}</style>
 
@@ -568,10 +731,12 @@ export const PlanSelectorClient: React.FC<Props> = ({
                 role="radio"
                 aria-checked={isSelected}
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedKey(key) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setSelectedKey(key)
+                }}
               >
                 <span className="nb1-ps-radio" aria-hidden="true" />
-                {isRec && <span className="nb1-ps-badge">Most informed</span>}
+                {isRec && <span className="nb1-ps-badge">{dict.plans.mostInformed}</span>}
 
                 <div className="nb1-ps-name">{plan.name}</div>
 
@@ -617,9 +782,7 @@ export const PlanSelectorClient: React.FC<Props> = ({
                     })
                   }}
                 >
-                  <span className="nb1-ps-cta-label">
-                    {plan.ctaText}
-                  </span>
+                  <span className="nb1-ps-cta-label">{plan.ctaText}</span>
                   <span className="nb1-ps-cta-arrow" aria-hidden="true">
                     →
                   </span>
@@ -634,12 +797,21 @@ export const PlanSelectorClient: React.FC<Props> = ({
             <button
               type="button"
               className="nb1-cmp-toggle"
-              onClick={() => setCmpOpen(o => !o)}
+              onClick={() => setCmpOpen((o) => !o)}
               aria-expanded={cmpOpen}
             >
               <span>{cmpOpen ? dict.plans.compareHide : dict.plans.compareShow}</span>
               <span className={`nb1-cmp-arr${cmpOpen ? ' open' : ''}`} aria-hidden="true">
-                <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width={13}
+                  height={13}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </span>
@@ -652,9 +824,10 @@ export const PlanSelectorClient: React.FC<Props> = ({
                     {scienceBoardImages && scienceBoardImages.length > 0 && (
                       <span className="nb1-sb-faces">
                         {scienceBoardImages.map((item, i) => {
-                          const src = typeof item.image === 'object' && item.image?.url
-                            ? getMediaUrl(item.image.url)
-                            : null
+                          const src =
+                            typeof item.image === 'object' && item.image?.url
+                              ? getMediaUrl(item.image.url)
+                              : null
                           return src ? <img key={i} src={src} alt={item.alt || ''} /> : null
                         })}
                       </span>
@@ -686,10 +859,14 @@ export const PlanSelectorClient: React.FC<Props> = ({
                       return (
                         <tr key={i}>
                           <td>{row.label}</td>
-                          <td className={`col-plan${row.corePositive ? ' val-yes' : row.coreValue === '—' ? ' val-no' : ''}`}>
+                          <td
+                            className={`col-plan${row.corePositive ? ' val-yes' : row.coreValue === '—' ? ' val-no' : ''}`}
+                          >
                             {row.coreValue}
                           </td>
-                          <td className={`col-plan col-adv${row.advancedPositive ? ' val-yes' : row.advancedValue === '—' ? ' val-no' : ''}`}>
+                          <td
+                            className={`col-plan col-adv${row.advancedPositive ? ' val-yes' : row.advancedValue === '—' ? ' val-no' : ''}`}
+                          >
                             {row.advancedValue}
                           </td>
                         </tr>

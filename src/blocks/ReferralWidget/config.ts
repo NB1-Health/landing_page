@@ -25,7 +25,7 @@ export const ReferralWidgetBlock: Block = {
       localized: true,
       admin: {
         description:
-          'Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (en→en_GB, de→de_DE, fr→fr_FR).',
+          'Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (de/ch→de_DE, everything else→en_GB).',
       },
     },
     {

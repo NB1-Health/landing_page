@@ -2,8 +2,54 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 
-const retryableStatuses = new Set([502, 503, 504])
+/**
+ * A status worth trying again rather than failing the deploy over.
+ *
+ * 429 and 500 were added after staging failed a build on each in turn. Both were
+ * transient and both came from the same cause — this check asking a 1-vCPU box
+ * for every page in its sitemaps, each of which is an uncached dynamic render.
+ * The route that 500'd rendered fine seconds later by hand.
+ *
+ * This does NOT let a broken page through: a status that persists across all
+ * `attempts` still throws and still fails the build. It only stops a single
+ * blip from doing so.
+ */
+const retryableStatuses = new Set([429, 500, 502, 503, 504])
 const deploymentEnvironments = new Set(['production', 'staging'])
+
+/**
+ * How hard to push the site being checked.
+ *
+ * Staging is one small instance, and every marketing route is `force-dynamic`
+ * with the edge cache switched off — so each page this check fetches is a full
+ * uncached render, not a file. Measured on stg, that origin serialises requests
+ * at roughly 600ms each; at concurrency 8 a request therefore waits behind
+ * seven others before it even starts, and the 15s abort fires on work that was
+ * always going to arrive. Fewer requests in flight is FASTER here, not slower:
+ * against a serialising origin, concurrency buys no throughput and spends the
+ * whole timeout budget on queueing.
+ *
+ * Production is a different machine with caching in front of it and keeps the
+ * original settings. Every value is overridable so CI can tune without a code
+ * change.
+ */
+function readLimits(deploymentEnvironment) {
+  const staging = deploymentEnvironment === 'staging'
+  const number = (value, fallback) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+  }
+  return {
+    attempts: number(process.env.SEO_CHECK_ATTEMPTS, 5),
+    pageConcurrency: number(process.env.SEO_CHECK_CONCURRENCY, staging ? 3 : 8),
+    // Sitemap discovery used to fan out with an uncapped `Promise.all`. With
+    // seven sitemap kinds across nine locales that is a burst the box takes all
+    // at once, before the throttled page phase has even begun — and it is what
+    // leaves the queue deep enough for the first page fetches to time out.
+    sitemapConcurrency: number(process.env.SEO_CHECK_SITEMAP_CONCURRENCY, staging ? 3 : 8),
+    timeoutMs: number(process.env.SEO_CHECK_TIMEOUT_MS, staging ? 45_000 : 15_000),
+  }
+}
 const require = createRequire(import.meta.url)
 const localeConfig = require('../src/i18n/localeConfig.json')
 const localeByPrefix = new Map(
@@ -217,21 +263,27 @@ export async function checkInternationalSEO({
   const expectedOrigin = site.origin
   const authorization = basicAuthorization(username, password)
   const pageCache = new Map()
+  const { attempts, pageConcurrency, sitemapConcurrency, timeoutMs } =
+    readLimits(deploymentEnvironment)
 
   async function request(url, acceptedType) {
     const target = new URL(url, site)
     assert.equal(target.origin, expectedOrigin, `Cross-host URL found: ${target}`)
     let lastError
 
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
       let response
       try {
         response = await fetchImpl(target, {
           headers: authorization ? { Authorization: authorization } : undefined,
           redirect: 'manual',
-          signal: AbortSignal.timeout(15_000),
+          signal: AbortSignal.timeout(timeoutMs),
         })
       } catch (error) {
+        // A timeout lands here as an AbortError, leaving `response` undefined —
+        // which falls through to the retry below rather than being mistaken for
+        // a bad status. That is deliberate; don't "simplify" it into the
+        // `if (response)` branch.
         lastError = error
       }
 
@@ -251,7 +303,10 @@ export async function checkInternationalSEO({
         await response.arrayBuffer()
       }
 
-      if (attempt < 5) await wait(2_000)
+      // Back off rather than hammering: an origin that just timed out or 500'd
+      // is busy, and retrying at a fixed 2s adds to exactly the queue that
+      // caused the failure. 2s, 4s, 8s, 16s.
+      if (attempt < attempts) await wait(2_000 * 2 ** (attempt - 1))
     }
 
     throw lastError
@@ -268,8 +323,8 @@ export async function checkInternationalSEO({
     if (sitemap.kind === 'urls') return sitemap.locations.map(normalizeURL)
     assert(sitemap.locations.length > 0, `${normalized} sitemap index is empty`)
 
-    const nested = await Promise.all(
-      sitemap.locations.map((location) => discoverPages(location, new Set(seen))),
+    const nested = await mapWithConcurrency(sitemap.locations, sitemapConcurrency, (location) =>
+      discoverPages(location, new Set(seen)),
     )
     return nested.flat()
   }
@@ -415,8 +470,10 @@ export async function checkInternationalSEO({
   const sitemapPages = [...new Set(await discoverPages(new URL('/sitemap.xml', site)))]
   const sitemapPageSet = new Set(sitemapPages)
   // Keep the deploy check gentle on the same small staging instance it is
-  // validating. Sitemaps are intentionally uncapped, so page reads must not be.
-  const pages = await mapWithConcurrency(sitemapPages, 8, readPage)
+  // validating. Sitemap discovery is throttled too now — see `readLimits`; it
+  // used to fan out uncapped, which front-loaded a burst onto the box and left
+  // this phase timing out behind it.
+  const pages = await mapWithConcurrency(sitemapPages, pageConcurrency, readPage)
 
   for (const page of pages) {
     for (const alternateURL of new Set([...page.alternates.values()].map(normalizeURL))) {

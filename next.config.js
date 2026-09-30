@@ -17,6 +17,18 @@ const NEXT_PUBLIC_SERVER_URL =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Next re-runs sharp whenever an optimised variant falls out of its cache,
+    // and the default TTL is 60 SECONDS. On a 1-vCPU box serving a media-heavy
+    // site that means the same handful of images being re-encoded all day to
+    // produce byte-identical output — pure CPU spent on nothing.
+    //
+    // 1 day rather than the 30 you might expect, because Payload media URLs are
+    // `/cms/api/media/file/<filename>`: replacing an image in the admin under
+    // the SAME filename keeps the same URL, so the TTL is also the worst-case
+    // window in which an editor sees their old picture. A day is 1440x better
+    // than the default and still bounded. Raise it if replace-in-place stops
+    // being a thing editors do.
+    minimumCacheTTL: 86400,
     remotePatterns: [
       ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {
         const url = new URL(item)

@@ -12,6 +12,32 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { draftMode } from 'next/headers'
 
 import './globals.css'
+// Redesign stylesheets. `fonts.css` self-hosts the three brand faces;
+// `rd-toolkit.css` is the designer's component library verbatim; `rd-tokens.css`
+// holds the tokens, the `.rd-block` base rules and the page's container-query
+// layout. Ported by scripts/mockup-to-block/tools/port_css.py, not retyped.
+import './fonts.css'
+import './rd-toolkit.css'
+import './rd-tokens.css'
+// `rd-pg.css` is the Our Plans mockup's own layout, scoped to `.rd-pg` rather
+// than `.rd-block`. Both mockups style bare tags and the same data-d tokens, so
+// on one scope the second page rewrites the first — measured at 559 changed
+// elements on the homepage. Loaded globally, it applies only where a block root
+// carries `rd-pg`.
+import './rd-pg.css'
+// `rd-pr.css` is The Protocol mockup's own layout, scoped to `.rd-pr` on the
+// same reasoning. It also carries the five design tokens that mockup resolves
+// differently from the shipped `:root` — bubble size and colours, radius-sm,
+// and `--tint`, which the shipped tokens do not define at all. They sit on
+// `.rd-pr` so they inherit to this page's blocks and reach no other page.
+import './rd-pr.css'
+// `rd-lb.css` is The Lab mockup's own layout, scoped to `.rd-lb` on the same
+// reasoning. It carries the twelve tokens that mockup resolves differently from
+// the shipped `:root` — eleven semantic aliases it introduces (--nb1-accent,
+// the --nb1-bg-*/--nb1-fg-* pair, --nb1-hero, the three --nb1-weight-* and
+// --paper) plus its own --nb1-sphere-soft. They sit on `.rd-lb`, so they inherit
+// to this page's blocks and reach no other page.
+import './rd-lb.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

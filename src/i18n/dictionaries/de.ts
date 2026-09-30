@@ -110,6 +110,7 @@ export const de = {
     savingsPrefix: '',
     savingsSuffix: 'pro Zyklus sparen',
     bestValue: 'Bester Wert',
+    mostInformed: 'Am besten informiert',
     compareShow: 'Core & Advanced im Vergleich',
     compareHide: 'Vergleich ausblenden',
     guaranteeBilledMonthly: 'Monatliche Abrechnung.',

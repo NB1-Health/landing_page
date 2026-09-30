@@ -10,11 +10,13 @@ import { getDictionary } from '@/i18n/getDictionary'
 import {
   fetchPlansClient,
   getClientCurrency,
+  getDefaultCurrency,
   formatPrice,
   buildRateMap,
   resolveTokens,
   resolveTokensDeep,
 } from '@/lib/plans/clientUtils'
+import { usePlansSnapshot } from '@/lib/plans/PriceTokensProvider'
 
 type BgColorPreset = 'cream' | 'paper' | 'off' | 'navy' | 'navyDeep' | 'teal' | 'custom'
 type BgType = 'color' | 'image'
@@ -162,53 +164,73 @@ export const YpPlansClient: React.FC<YpPlansBlockType> = ({
   const [revealed, setRevealed] = useState(false)
   const [activeDot, setActiveDot] = useState(0)
   const [compareOpen, setCompareOpen] = useState(false)
-  const [planCards, setPlanCards] = useState<PlanCard[]>(planCardsProp ?? [])
-  const [comparison, setComparison] = useState<Comparison | null | undefined>(comparisonProp)
   const priceMonths = influencerOffer ? 4 : 1
+
+  // Live plans → card prices + comparison copy. Pure, so the server price snapshot
+  // can seed the first render (SSR HTML carries the real prices).
+  const priced = (
+    plans: Awaited<ReturnType<typeof fetchPlansClient>>,
+    currency: ReturnType<typeof getClientCurrency>,
+  ) => {
+    // getDictionary's toDictLocale maps regional locales (ch→de, be→nl,
+    // uk/uae→en); a lookup keyed by the raw locale only has en/de/fr/nl
+    // keys and so wrongly falls back to "/mo" on ch/be.
+    const perMonth = getDictionary(locale).plans.perMonth
+    const rateMap = buildRateMap(plans, currency)
+    const cards = (planCardsProp ?? []).map((card) => {
+      const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
+      const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
+      return {
+        ...card,
+        price: rate != null ? formatPrice(rate, currency, locale) : card.price,
+        pricePeriod: rate != null ? perMonth : card.pricePeriod,
+        monthly: resolveTokens(card.monthly, rateMap, currency, locale) ?? card.monthly,
+        commit: resolveTokens(card.commit, rateMap, currency, locale) ?? card.commit,
+      }
+    })
+    const resolvedComparison = resolveTokensDeep(comparisonProp, rateMap, currency, locale)
+    const comparison = resolvedComparison
+      ? {
+          ...resolvedComparison,
+          cards: resolvedComparison.cards?.map((card: CompareCard) => {
+            const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
+            const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
+            return {
+              ...card,
+              price: rate != null ? formatPrice(rate, currency, locale) : card.price,
+              pricePeriod: rate != null ? perMonth : card.pricePeriod,
+            }
+          }),
+        }
+      : resolvedComparison
+    return { cards, comparison }
+  }
+  const snapshot = usePlansSnapshot()
+  const [seed] = useState(() => (snapshot.length > 0 ? priced(snapshot, getDefaultCurrency(locale)) : null))
+  const [planCards, setPlanCards] = useState<PlanCard[]>(seed?.cards ?? planCardsProp ?? [])
+  const [comparison, setComparison] = useState<Comparison | null | undefined>(
+    seed ? seed.comparison : comparisonProp,
+  )
 
   useEffect(() => {
     let active = true
-    setPlanCards(planCardsProp ?? [])
-    setComparison(comparisonProp)
 
     function applyPrices(
       currency: ReturnType<typeof getClientCurrency>,
       plans: Awaited<ReturnType<typeof fetchPlansClient>>,
     ) {
-      // getDictionary's toDictLocale maps regional locales (ch→de, be→nl,
-      // uk/uae→en); a lookup keyed by the raw locale only has en/de/fr/nl
-      // keys and so wrongly falls back to "/mo" on ch/be.
-      const perMonth = getDictionary(locale).plans.perMonth
       if (!active || currency !== getClientCurrency(locale)) return
-      const rateMap = buildRateMap(plans, currency)
-      setPlanCards(
-        (planCardsProp ?? []).map((card) => {
-          const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
-          return {
-            ...card,
-            price: rate != null ? formatPrice(rate, currency, locale) : card.price,
-            pricePeriod: rate != null ? perMonth : card.pricePeriod,
-            monthly: resolveTokens(card.monthly, rateMap, currency, locale) ?? card.monthly,
-            commit: resolveTokens(card.commit, rateMap, currency, locale) ?? card.commit,
-          }
-        }),
-      )
-      const resolvedComparison = resolveTokensDeep(comparisonProp, rateMap, currency, locale)
-      if (resolvedComparison) {
-        const resolvedCards = resolvedComparison.cards?.map((card: CompareCard) => {
-          const family = card.planFamily === 'advanced' ? 'advanced' : 'core'
-          const rate = card.planFamily ? rateMap[`${family}:${priceMonths}`] : undefined
-          return {
-            ...card,
-            price: rate != null ? formatPrice(rate, currency, locale) : card.price,
-            pricePeriod: rate != null ? perMonth : card.pricePeriod,
-          }
-        })
-        setComparison({ ...resolvedComparison, cards: resolvedCards })
-      } else {
-        setComparison(resolvedComparison)
-      }
+      const next = priced(plans, currency)
+      setPlanCards(next.cards)
+      setComparison(next.comparison)
+    }
+
+    // Start from the snapshot (or the CMS values), then swap in live data.
+    if (snapshot.length > 0) {
+      applyPrices(getClientCurrency(locale), snapshot)
+    } else {
+      setPlanCards(planCardsProp ?? [])
+      setComparison(comparisonProp)
     }
 
     const currency = getClientCurrency(locale)

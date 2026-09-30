@@ -79,6 +79,8 @@ export interface Config {
     authors: Author;
     headers: Header;
     footers: Footer;
+    'rd-headers': RdHeader;
+    'rd-footers': RdFooter;
     'agent-operations': AgentOperation;
     hubs: Hub;
     pillars: Pillar;
@@ -117,6 +119,8 @@ export interface Config {
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     headers: HeadersSelect<false> | HeadersSelect<true>;
     footers: FootersSelect<false> | FootersSelect<true>;
+    'rd-headers': RdHeadersSelect<false> | RdHeadersSelect<true>;
+    'rd-footers': RdFootersSelect<false> | RdFootersSelect<true>;
     'agent-operations': AgentOperationsSelect<false> | AgentOperationsSelect<true>;
     hubs: HubsSelect<false> | HubsSelect<true>;
     pillars: PillarsSelect<false> | PillarsSelect<true>;
@@ -232,6 +236,14 @@ export interface Page {
    * Do not render any footer on this page.
    */
   hideFooter?: boolean | null;
+  /**
+   * Use the redesign nav on this page instead of the site header. Leave empty for the normal one.
+   */
+  rdHeader?: (number | null) | RdHeader;
+  /**
+   * Use the redesign footer on this page instead of the site footer. Leave empty for the normal one.
+   */
+  rdFooter?: (number | null) | RdFooter;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
     richText?: {
@@ -280,14 +292,46 @@ export interface Page {
     media?: (number | null) | Media;
   };
   layout: (
+    | RdHeroBlock
+    | RdProtocolBlock
+    | RdFormulaBlock
+    | RdProofBlock
+    | RdBiologyBlock
+    | RdLabBlock
+    | RdReviewsBlock
+    | RdPlansBlock
+    | RdCloseBlock
+    | RdPgHeroBlock
+    | RdPgPlansBlock
+    | RdPgAdvancedBlock
+    | RdPgWordsBlock
+    | RdPgDataBlock
+    | RdPgBoardStripBlock
+    | RdPgTimelineBlock
+    | RdPgBoardBlock
+    | RdPgAthletesBlock
+    | RdPgQuietBlock
+    | RdPgGuaranteeBlock
+    | RdPgFaqBlock
+    | RdPgBuyBlock
+    | RdPrHeroBlock
+    | RdPrJourneyBlock
+    | RdPrKitBlock
+    | RdPrBloodKitBlock
+    | RdPrAnalyseBlock
+    | RdPrFormulaBlock
+    | RdPrArrivesBlock
+    | RdPrAdvancedBlock
+    | RdLbHeroBlock
+    | RdLbNotBlock
+    | RdLbReadsBlock
+    | RdLbMethodBlock
+    | RdLbLabBlock
+    | RdLbReadingBlock
+    | RdLbFormulaBlock
+    | RdLbAdvancedBlock
+    | RdLbBoardBlock
     | ContentBlock
-    | BoxCardBlock
-    | FormulaCardBlock
-    | ResultsCardBlock
-    | ReviewCardBlock
-    | StepsCardBlock
-    | SymptomsCardBlock
-    | VideoCardBlock
     | BenefitsBannerBlock
     | StepsBannerBlock
     | ProductBannerBlock
@@ -1245,6 +1289,3626 @@ export interface Form {
   createdAt: string;
 }
 /**
+ * Header for the redesign pages. A page picks one; otherwise the default is used.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-headers".
+ */
+export interface RdHeader {
+  id: number;
+  /**
+   * Shown in the admin list only. Never rendered.
+   */
+  name?: string | null;
+  isDefault?: boolean | null;
+  /**
+   * For a light nav. The mockup carries both and swaps them by breakpoint.
+   */
+  logo?: (number | null) | Media;
+  /**
+   * For a dark nav, and in the mobile sheet.
+   */
+  logoLight?: (number | null) | Media;
+  /**
+   * The faint mark behind the mobile menu. Decorative, 14% opacity.
+   */
+  sheetWatermark?: (number | null) | Media;
+  homeUrl?: string | null;
+  /**
+   * The links across the nav. They are ALSO the mobile sheet's first group — one list, two places.
+   */
+  navItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  discoverLabel?: string | null;
+  /**
+   * The desktop dropdown. NOT the sheet's second group — that is a separate list, because the mockup gives them different members and different destinations.
+   */
+  discoverItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  primaryLabel?: string | null;
+  moreLabel?: string | null;
+  /**
+   * Mobile only. Below 1120px the sheet is the only route to these, so it is not a duplicate of the Discover menu.
+   */
+  moreItems?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  languageLabel?: string | null;
+  applyLabel?: string | null;
+  loginLabel?: string | null;
+  loginUrl?: string | null;
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Read by screen readers; the button shows three bars.
+   */
+  menuLabel?: string | null;
+  /**
+   * Read by screen readers; the button shows a cross.
+   */
+  closeLabel?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Footer for the redesign pages. A page picks one; otherwise the default is used.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-footers".
+ */
+export interface RdFooter {
+  id: number;
+  /**
+   * Shown in the admin list only. Never rendered.
+   */
+  name?: string | null;
+  isDefault?: boolean | null;
+  /**
+   * Which footer this row draws. `full` is the homepage's — newsletter, blurb, three link columns, legal strip. `slim` is Our Plans' single row: logo, a row of links, copyright. `stack` is The Protocol's and The Lab's: logo, tagline, a link row under a hairline, copyright. The three share a root element and nothing else, which is why this is a layout switch rather than a set of toggles.
+   */
+  variant?: ('full' | 'slim' | 'stack') | null;
+  logo?: (number | null) | Media;
+  tagline?: string | null;
+  signupLabel?: string | null;
+  signupPlaceholder?: string | null;
+  /**
+   * Read by screen readers; the input shows the placeholder.
+   */
+  signupInputLabel?: string | null;
+  /**
+   * The arrow glyph is drawn by the button — do not type it.
+   */
+  signupButtonLabel?: string | null;
+  signupNote?: string | null;
+  columnOneTitle?: string | null;
+  /**
+   * First footer column.
+   */
+  columnOneLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  columnTwoTitle?: string | null;
+  /**
+   * Second footer column.
+   */
+  columnTwoLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  columnThreeTitle?: string | null;
+  /**
+   * Third footer column.
+   */
+  columnThreeLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  copyright?: string | null;
+  /**
+   * The row beside the copyright.
+   */
+  legalLinks?:
+    | {
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The arrow is part of the label in the mockup, so it is typed here rather than drawn.
+   */
+  social?: {
+    label?: string | null;
+    url?: string | null;
+  };
+  disclaimer?: string | null;
+  /**
+   * THESE EXIST BECAUSE THE TWO MOCKUPS DRIFTED, not because the design has a tone system. The Protocol and The Lab draw the same footer with three values different: the tagline at .78 against .72, the copyright at rgba(240,245,255,.62) against .72, and the link row set by `color` on one page and by `opacity` on the other — a different CSS property, which is the clearest sign it is drift. Recreating both exactly was a deliberate call; normalising them is a one-line change here if that is revisited.
+   */
+  tone?: {
+    /**
+     * The Protocol: 0.78. The Lab: 0.72.
+     */
+    taglineOpacity?: string | null;
+    /**
+     * Set on The Protocol (rgba(240,245,255,.78)). Leave EMPTY to fall back to the opacity below, which is how The Lab draws the same row.
+     */
+    linkRowColor?: string | null;
+    /**
+     * Used only when the colour above is empty. The Lab: 0.75.
+     */
+    linkRowOpacity?: string | null;
+    /**
+     * The Protocol: rgba(240,245,255,.62). The Lab: rgba(240,245,255,.72).
+     */
+    copyrightColor?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdHeroBlock".
+ */
+export interface RdHeroBlock {
+  /**
+   * Rendered as the section id so in-page links like "#top" land here. Deliberately NOT localized — the fragment must be identical in every locale or the links break on translated pages.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Full-bleed behind the headline. A scrim is applied over it in CSS.
+   */
+  heroImage?: (number | null) | Media;
+  primaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  secondaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The five orbs over the photograph, in order: gut, energy, resilience, immunity, sleep. Position and colour are fixed in the design — only the label is editable, and there are always exactly five.
+   */
+  bubbles?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Lead the trust strip with the live Trustpilot rating. The localized widget source is resolved from the page locale in code.
+   */
+  showTrustpilotRating?: boolean | null;
+  /**
+   * The short claims beside the rating, separated by dots.
+   */
+  claims?:
+    | {
+        body: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Below 760px the strip shows one item at a time and advances on this interval; above it, all items are visible at once and this is unused. Measured from the mockup: 3400ms. Set 0 to stop cycling.
+   */
+  trustCycleMs?: number | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdProtocolBlock".
+ */
+export interface RdProtocolBlock {
+  /**
+   * Rendered as the section id so in-page links like "#protocol" land here. Deliberately NOT localized — the fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The boxed note beside the steps.
+   */
+  callout?: {
+    label?: string | null;
+    /**
+     * The large numeral. The dot beside it is part of the design.
+     */
+    marker?: string | null;
+    body?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * The four stages, in order. Exactly four: each has its own icon and the connector rail between them is drawn per position, so rows cannot be added or removed without changing the design.
+   */
+  steps?:
+    | {
+        /**
+         * e.g. "Week 0". Rich text so a word can take a palette colour.
+         */
+        week: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdProtocol';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFormulaBlock".
+ */
+export interface RdFormulaBlock {
+  /**
+   * Which page’s proportions to use. The markup is the same either way — this only changes the type scale, the gutters and the column split. Leave it on Homepage for every page that is not Our Plans.
+   */
+  variant?: ('homepage' | 'ourPlans') | null;
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  replacesLabel?: string | null;
+  /**
+   * The products this subscription stands in for.
+   */
+  replaces?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  kitImage?: (number | null) | Media;
+  imageCaption?: string | null;
+  /**
+   * Tab "Activate" and the panel it shows.
+   */
+  morning: {
+    tabLabel: string;
+    heading?: string | null;
+    itemName?: string | null;
+    itemMeta?: string | null;
+    whyLabel?: string | null;
+    whyBody?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    strains?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    extras?:
+      | {
+          name: string;
+          meta?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Tab "Restore" and the panel it shows.
+   */
+  evening: {
+    tabLabel: string;
+    heading?: string | null;
+    /**
+     * Tick "Left out" to show an item as assessed and excluded — it renders struck through and dimmed, which is the design's way of saying nothing is added by default.
+     */
+    items?:
+      | {
+          name: string;
+          meta?: string | null;
+          leftOut?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  /**
+   * Tab "Nourish" and the panel it shows.
+   */
+  living: {
+    tabLabel: string;
+    heading?: string | null;
+    itemName?: string | null;
+    itemMeta?: string | null;
+    whyLabel?: string | null;
+    whyBody?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    chips?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdFormula';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdProofBlock".
+ */
+export interface RdProofBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading?: string | null;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The example retest score. `value` and `prior` are numbers; the arrow, the delta pill and the "up from" line are computed from them, so they cannot drift out of step with each other.
+   */
+  score: {
+    value: number;
+    prior: number;
+    scale?: string | null;
+    deltaUnit?: string | null;
+    priorPrefix?: string | null;
+    caption?: string | null;
+  };
+  availability?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * A horizontal snap rail below 900px and a grid above it. Tapping a card flips it to the explanation on the back.
+   */
+  cards?:
+    | {
+        image?: (number | null) | Media;
+        metric: string;
+        goal?: string | null;
+        from: number;
+        to: number;
+        scaleMax: number;
+        /**
+         * Flips which end of the bar counts as progress.
+         */
+        higherIsBetter?: boolean | null;
+        scaleSuffix?: string | null;
+        scaleLow?: string | null;
+        scaleHigh?: string | null;
+        /**
+         * The blob that sits on the bar at the after value.
+         */
+        orb?: (number | null) | Media;
+        /**
+         * Says the movement in words. It restates Before/After, so change it when you change them.
+         */
+        summary?: string | null;
+        backLabel?: string | null;
+        backBody?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  footnote?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdProof';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBiologyBlock".
+ */
+export interface RdBiologyBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The caption under the nucleus, inside the diagram.
+   */
+  centreLabel?: string | null;
+  /**
+   * Exactly six, in clockwise order from the top. Each one is pinned to a rail drawn into the diagram, so rows cannot be added, removed or reordered — only relabelled.
+   */
+  bubbles?:
+    | {
+        label: string;
+        /**
+         * Shown in the panel that opens when this orb is tapped.
+         */
+        revealBody?: string | null;
+        /**
+         * The markers line at the foot of that panel.
+         */
+        readFrom?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The panel that opens over the page when an orb is tapped. Its title and body come from the orb itself; only the fixed chrome lives here.
+   */
+  modal?: {
+    eyebrow?: string | null;
+    readFromLabel?: string | null;
+    /**
+     * Read by screen readers; the button itself shows ✕.
+     */
+    closeLabel?: string | null;
+  };
+  /**
+   * The pill under the diagram.
+   */
+  hint?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdBiology';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLabBlock".
+ */
+export interface RdLabBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each row is one card in the rail AND the panel it opens. Exactly three: the panels are laid out individually because they do not all have the same number of paragraphs.
+   */
+  scientists?:
+    | {
+        photo?: (number | null) | Media;
+        name: string;
+        /**
+         * The line under the name ON THE CARD.
+         */
+        role?: string | null;
+        /**
+         * The small print on the card.
+         */
+        credentials?: string | null;
+        /**
+         * The outlined pill at the top of the panel.
+         */
+        panelEyebrow?: string | null;
+        /**
+         * The uppercase line under the name IN THE PANEL.
+         */
+        panelCredentials?: string | null;
+        bio?: string | null;
+        /**
+         * Optional. The paragraph is not rendered at all when empty.
+         */
+        bioExtra?: string | null;
+        /**
+         * Rendered with the blue rule down its left edge.
+         */
+        quote?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  readBioLabel?: string | null;
+  /**
+   * Read by screen readers; the button itself shows ✕.
+   */
+  closeLabel?: string | null;
+  /**
+   * Exactly three: each has its own icon drawn into the component.
+   */
+  assurances?:
+    | {
+        label: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLab';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdReviewsBlock".
+ */
+export interface RdReviewsBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The fixed prefix before each reviewer's tenure.
+   */
+  customerLabel?: string | null;
+  /**
+   * A swipeable rail. Reproduced in full from Trustpilot — write the whole review into Body; the card clips it and "See more" reveals the rest.
+   */
+  reviews?:
+    | {
+        image?: (number | null) | Media;
+        /**
+         * Vertical framing of the square crop, as a percentage: 0 is the top of the photograph, 50 the middle. Raise it if the face sits low in frame.
+         */
+        focalY?: number | null;
+        name: string;
+        /**
+         * Follows the customer label, e.g. " · 4 months in". The LEADING SPACE is the mockup's own and is the only space between this and the label — without it the byline reads "nb1 customer· 4 months in".
+         */
+        tenure?: string | null;
+        /**
+         * The quotation marks are drawn by the card — do not type them.
+         */
+        quote?: string | null;
+        /**
+         * The card clips this to roughly 150 characters until "See more".
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  seeMoreLabel?: string | null;
+  seeLessLabel?: string | null;
+  /**
+   * Read by screen readers; the button shows ←.
+   */
+  prevLabel?: string | null;
+  /**
+   * Read by screen readers; the button shows →.
+   */
+  nextLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdReviews';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPlansBlock".
+ */
+export interface RdPlansBlock {
+  /**
+   * Rendered as the section id so in-page links like "#plans" land here. Deliberately NOT localized — the fragment must be identical in every locale or the links break on translated pages.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  core: {
+    name: string;
+    tagline?: string | null;
+    price?: string | null;
+    /**
+     * Follows the price in smaller type. The LEADING SPACE is the mockup's own and is the only space between this and the price — without it the line reads "€99/mo".
+     */
+    priceSuffix?: string | null;
+    /**
+     * The line under the price.
+     */
+    priceNote?: string | null;
+    /**
+     * The small heading above the feature list.
+     */
+    listLabel?: string | null;
+    /**
+     * The ✓ badge on each row is drawn by the card — do not type it.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    /**
+     * The reassurance line under the button.
+     */
+    ctaNote?: string | null;
+  };
+  advanced: {
+    /**
+     * The pill on the Advanced card. Leave empty to hide it.
+     */
+    badge?: string | null;
+    name: string;
+    tagline?: string | null;
+    price?: string | null;
+    /**
+     * Follows the price in smaller type. The LEADING SPACE is the mockup's own and is the only space between this and the price — without it the line reads "€99/mo".
+     */
+    priceSuffix?: string | null;
+    /**
+     * The line under the price.
+     */
+    priceNote?: string | null;
+    /**
+     * The small heading above the feature list.
+     */
+    listLabel?: string | null;
+    /**
+     * The ✓ badge on each row is drawn by the card — do not type it.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    /**
+     * The reassurance line under the button.
+     */
+    ctaNote?: string | null;
+  };
+  /**
+   * The three items under the plan cards. Each one has its own hand-drawn icon fixed in the design, so rows cannot be added or removed.
+   */
+  assurances?:
+    | {
+        label: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * What the button says while the table is hidden.
+   */
+  compareOpenLabel?: string | null;
+  /**
+   * What the button says while the table is showing.
+   */
+  compareCloseLabel?: string | null;
+  /**
+   * Sections of the full comparison, in order. The two plan columns take their name and price from the cards above.
+   */
+  compare?:
+    | {
+        title: string;
+        rows?:
+          | {
+              label: string;
+              /**
+               * How this cell is drawn. "Text" uses the field below.
+               */
+              coreKind?: ('included' | 'excluded' | 'text') | null;
+              coreText?: string | null;
+              /**
+               * How this cell is drawn. "Text" uses the field below.
+               */
+              advancedKind?: ('included' | 'excluded' | 'text') | null;
+              advancedText?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The two buttons in the last row of the table.
+   */
+  compareCta?: {
+    coreUrl?: string | null;
+    coreLabel?: string | null;
+    advancedUrl?: string | null;
+    advancedLabel?: string | null;
+  };
+  /**
+   * The line under the table.
+   */
+  compareFootnote?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPlans';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCloseBlock".
+ */
+export interface RdCloseBlock {
+  /**
+   * Rendered as the section id. Every "#close" link on the page lands here, including the nav CTA, so changing it breaks them. Deliberately NOT localized — the fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The ↗ glyph is drawn by the button — do not type it into the label.
+   */
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdClose';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgHeroBlock".
+ */
+export interface RdPgHeroBlock {
+  /**
+   * Rendered as the section id, for linking to this section. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The line break is yours to place — it is what keeps the second line from widowing.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The ↗ glyph is drawn by the button — do not type it into the label.
+   */
+  primaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Here the arrow IS part of the label — the mockup types it into the text rather than drawing it, so it travels with the translation.
+   */
+  secondaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The overlapping faces beside the science-board line. Three is the mockup's count; the overlap is applied from the second row on, so adding or removing one still reads as a stack.
+   */
+  trustAvatars?:
+    | {
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  trustHeadline?: string | null;
+  trustDetail?: string | null;
+  image?: (number | null) | Media;
+  imageBadge?: string | null;
+  scoreLabel?: string | null;
+  /**
+   * Text, not a number: the decimal separator differs by locale.
+   */
+  scoreValue?: string | null;
+  scoreRating?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgPlansBlock".
+ */
+export interface RdPgPlansBlock {
+  /**
+   * Rendered as the section id. The page's own nav and the footer link to "#plans", so changing it breaks them. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The line break is yours to place — it is what keeps "One difference." on its own line.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  core: {
+    name: string;
+    tagline?: string | null;
+    /**
+     * The amount only. The "/mo" beside it is a separate field so it can be translated on its own.
+     */
+    price?: string | null;
+    priceSuffix?: string | null;
+    terms?: string | null;
+    listLabel?: string | null;
+    /**
+     * Each row is drawn with a ✓ disc; the disc is part of the row, not something you type.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The card's own button. The comparison table has its own pair of buttons below.
+     */
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    note?: string | null;
+  };
+  advanced: {
+    /**
+     * The lime tag hung off the top edge of the card. Leave empty and no badge is drawn.
+     */
+    badge?: string | null;
+    name: string;
+    tagline?: string | null;
+    /**
+     * The amount only. The "/mo" beside it is a separate field so it can be translated on its own.
+     */
+    price?: string | null;
+    priceSuffix?: string | null;
+    terms?: string | null;
+    listLabel?: string | null;
+    /**
+     * Each row is drawn with a ✓ disc; the disc is part of the row, not something you type.
+     */
+    features?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The card's own button. The comparison table has its own pair of buttons below.
+     */
+    cta: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+    note?: string | null;
+  };
+  compareOpenLabel?: string | null;
+  /**
+   * The mockup only ever shows the closed wording; this is the text once the table is open.
+   */
+  compareCloseLabel?: string | null;
+  /**
+   * One entry per section of the table. Sections and rows both render in this order.
+   */
+  compare?:
+    | {
+        title: string;
+        rows?:
+          | {
+              label: string;
+              /**
+               * "included" draws the disc, "excluded" a dimmed dash, "text" shows the wording beside it.
+               */
+              coreKind?: ('included' | 'excluded' | 'text') | null;
+              /**
+               * Only used when Core is set to "text".
+               */
+              coreText?: string | null;
+              /**
+               * "included" draws the disc, "excluded" a dimmed dash, "text" shows the wording beside it.
+               */
+              advancedKind?: ('included' | 'excluded' | 'text') | null;
+              /**
+               * Only used when Advanced is set to "text".
+               */
+              advancedText?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  compareCta?: {
+    coreUrl?: string | null;
+    coreLabel?: string | null;
+    advancedUrl?: string | null;
+    advancedLabel?: string | null;
+  };
+  /**
+   * The three notes under the cards.
+   */
+  assurances?:
+    | {
+        /**
+         * A single character drawn inside the disc — ◔, ↻, ◉ in the mockup. Not an upload: it takes the section's own colour and scales with the text.
+         */
+        glyph?: string | null;
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgPlans';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAdvancedBlock".
+ */
+export interface RdPgAdvancedBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The orange chip under the paragraph. Leave empty and no chip is drawn.
+   */
+  tagLabel?: string | null;
+  /**
+   * Exactly three. Each is drawn with its own icon, which is part of the design rather than a field — a fourth row would save but never appear.
+   */
+  cards?:
+    | {
+        /**
+         * The small label beside the icon — "Every cycle", "From cycle one".
+         */
+        chip?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * Each row is drawn with its own dot.
+         */
+        points?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Bold marks the clause that carries the promise; the rest is plain.
+   */
+  footnote?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgAdvanced';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgWordsBlock".
+ */
+export interface RdPgWordsBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The words before the tenure — "nb1 customer" in the mockup. The tenure itself is per review.
+   */
+  customerLabel?: string | null;
+  /**
+   * Four across at desktop; below the breakpoint the row scrolls and snaps.
+   */
+  reviews?:
+    | {
+        image?: (number | null) | Media;
+        /**
+         * Where the portrait is anchored vertically, as a percentage. 50 is the middle; lower numbers pull the face up.
+         */
+        focalY?: number | null;
+        name: string;
+        /**
+         * Shown after the byline prefix, including its separator — " · 4 months in".
+         */
+        tenure?: string | null;
+        quote?: string | null;
+        /**
+         * The full text. The card shows the first 150 characters and reveals the rest on See more, so write it in full.
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  seeMoreLabel?: string | null;
+  seeLessLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgWords';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgDataBlock".
+ */
+export interface RdPgDataBlock {
+  /**
+   * Rendered as the section id. The page's footer links to "#data". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * Exactly four, in order. Each is its own button in the markup, so a fifth would never appear.
+   */
+  tabs?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Exactly four, matched to the tabs by position.
+   */
+  panels?:
+    | {
+        title: string;
+        /**
+         * Three per panel. The numbers come from the order, not from a field.
+         */
+        steps?:
+          | {
+              title: string;
+              body?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The face in the sample report's header, drawn at 30x30. Localized: leave it empty in a locale and that locale shows the default locale's image. The rest of the phone is a fixed illustration and has no fields.
+   */
+  reportAvatar?: (number | null) | Media;
+  /**
+   * The ↗ glyph is drawn by the link — do not type it into the label.
+   */
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgData';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardStripBlock".
+ */
+export interface RdPgBoardStripBlock {
+  /**
+   * Rendered as the element id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * The science board members shown as an overlapping stack. Any number works; the first sits flush and every one after it laps 14px over the one before.
+   */
+  avatars?:
+    | {
+        /**
+         * Cropped to a circle and anchored to the top of the frame, as in the mockup.
+         */
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sentence before the link. It ends with a space — that space is what separates it from the link, so keep it when translating.
+   */
+  note?: string | null;
+  /**
+   * Sits inline at the end of the note, underlined in blue.
+   */
+  cta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBoardStrip';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgTimelineBlock".
+ */
+export interface RdPgTimelineBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The word before the number on every card — "Month" in the mockup. One field for the section, because it is the same word on all four.
+   */
+  monthLabel?: string | null;
+  /**
+   * Four columns at desktop. The first column's rule is accented automatically — that marks where the timeline starts, so it follows whichever card is first.
+   */
+  months?:
+    | {
+        /**
+         * The second half of the chip. Text rather than a number so a locale can write it its own way.
+         */
+        number?: string | null;
+        /**
+         * An optional third chip after the number — "Advanced" on the retest month. Leave empty and no chip is rendered.
+         */
+        tag?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * How much of the dot above the card is solid, 0–100. The mockup runs 62, 40, 26, 8 across the four months; the rest of the dot's gradient is derived from this one number.
+         */
+        dial?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Fills the band under the four columns, behind a left-to-right dark gradient that keeps the figures readable.
+   */
+  image?: (number | null) | Media;
+  bannerLabel?: string | null;
+  /**
+   * A 2×2 grid inside the banner. The design is built for exactly four — a fifth row will not render.
+   */
+  stats?:
+    | {
+        /**
+         * The large number, exactly as it should read. The mockup writes bare numerals with no unit.
+         */
+        value?: string | null;
+        /**
+         * The first part of the line under the figure.
+         */
+        caption?: string | null;
+        /**
+         * The end of the caption. Three of the four keep it on one line so the phrase never breaks in the middle, and their value starts with a space; the third breaks the line before it instead, and its value does not.
+         */
+        tail?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgTimeline';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardBlock".
+ */
+export interface RdPgBoardBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each row is one card in the rail AND the panel it opens. Exactly three: the panels are laid out individually because they do not all have the same number of paragraphs.
+   */
+  scientists?:
+    | {
+        photo?: (number | null) | Media;
+        name: string;
+        /**
+         * The line under the name ON THE CARD.
+         */
+        role?: string | null;
+        /**
+         * The small print on the card.
+         */
+        credentials?: string | null;
+        /**
+         * The outlined pill at the top of the panel.
+         */
+        panelEyebrow?: string | null;
+        /**
+         * The uppercase line under the name IN THE PANEL.
+         */
+        panelCredentials?: string | null;
+        bio?: string | null;
+        /**
+         * Optional. The paragraph is not rendered at all when empty.
+         */
+        bioExtra?: string | null;
+        /**
+         * Rendered with the blue rule down its left edge.
+         */
+        quote?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  readBioLabel?: string | null;
+  /**
+   * Read by screen readers; the button itself shows ✕.
+   */
+  closeLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBoard';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAthletesBlock".
+ */
+export interface RdPgAthletesBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  intro?: string | null;
+  /**
+   * Two cards side by side. The grid is 1.18fr / 1fr, so the FIRST card is the wider one and carries the larger quote — that follows position, not the person. The design is built for exactly two; a third has no column.
+   */
+  athletes?:
+    | {
+        /**
+         * Fills the card, behind a bottom-up dark gradient that keeps the quote readable.
+         */
+        photo?: (number | null) | Media;
+        /**
+         * Include the quotation marks — they are part of the text in the mockup, not drawn by the design.
+         */
+        quote?: string | null;
+        /**
+         * Name and title, separated by the interpunct as in the mockup.
+         */
+        attribution?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The uppercase line to the left of the time.
+   */
+  recordLabel?: string | null;
+  /**
+   * The large figure between the two captions.
+   */
+  recordValue?: string | null;
+  /**
+   * The uppercase line to the right of the time.
+   */
+  recordPlace?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgAthletes';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgQuietBlock".
+ */
+export interface RdPgQuietBlock {
+  /**
+   * Rendered as the section id. The mockup gives this band none; set one only if something needs to link to it. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * One sentence over a hairline rule. The closing clause is coloured with the Blue grey token from the editor's colour menu — it is a colour, not bold, so it stays a colour in every locale and a translator can move where it starts.
+   */
+  statement?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgQuiet';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgGuaranteeBlock".
+ */
+export interface RdPgGuaranteeBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each is one numbered row: a number, an eyebrow, a heading, a paragraph and a row of chips. The mockup has two; any number works, since the rows are identical in style.
+   */
+  points?:
+    | {
+        /**
+         * Written, not counted — "01", "02". Adding a row in the middle means renumbering the ones after it.
+         */
+        number?: string | null;
+        /**
+         * The small uppercase line above the heading.
+         */
+        eyebrow?: string | null;
+        title: string;
+        body?: string | null;
+        /**
+         * The pills under the paragraph. They wrap, so any number fits.
+         */
+        chips?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgGuarantee';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgFaqBlock".
+ */
+export interface RdPgFaqBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * Each row opens and closes on its own. Any number works; the last row automatically closes the stack with a bottom rule, so that follows whichever row is last.
+   */
+  faqs?:
+    | {
+        /**
+         * Written, not counted — "01", "02". Adding a question in the middle means renumbering the ones after it.
+         */
+        number?: string | null;
+        question: string;
+        answer?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBuyBlock".
+ */
+export interface RdPgBuyBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized — a fragment must be identical in every locale.
+   */
+  anchorId?: string | null;
+  /**
+   * Which page this instance belongs to. Each page has its own stylesheet and they are not interchangeable — Our Plans is desktop-first where the other two are mobile-first, and The Lab and The Protocol size the big heading differently. Leave as Our Plans unless this block is on The Protocol or The Lab.
+   */
+  variant?: ('plans' | 'protocol' | 'lab') | null;
+  heading: string;
+  intro?: string | null;
+  /**
+   * The cards at the end of the page. The mockup has two; the grid takes any number.
+   */
+  plans?:
+    | {
+        /**
+         * The pill above the card. Giving a plan a badge is what makes it the highlighted one — it also switches the card's border, its ticks and its button to the accent colour. Leave empty for a plain card.
+         */
+        badge?: string | null;
+        /**
+         * The small uppercase line at the top of the card.
+         */
+        name: string;
+        /**
+         * The sentence under the name.
+         */
+        summary?: string | null;
+        /**
+         * Including the currency symbol, exactly as it should read.
+         */
+        price?: string | null;
+        /**
+         * The smaller text beside the price — "/mo" in the mockup.
+         */
+        priceSuffix?: string | null;
+        /**
+         * The small print under the price.
+         */
+        note?: string | null;
+        /**
+         * The uppercase line above the ticks — it differs per card in the mockup ("What's inside" and "Everything in Core, plus").
+         */
+        featuresLabel?: string | null;
+        /**
+         * One tick each. Any number; the cards do not have to match.
+         */
+        features?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        cta: {
+          type?: ('reference' | 'custom') | null;
+          newTab?: boolean | null;
+          reference?:
+            | ({
+                relationTo: 'pages';
+                value: number | Page;
+              } | null)
+            | ({
+                relationTo: 'posts';
+                value: number | Post;
+              } | null);
+          /**
+           * Localized: each locale can point at a different destination.
+           */
+          url?: string | null;
+          label: string;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Three short blocks under the cards.
+   */
+  seals?:
+    | {
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The last line on the page, under everything.
+   */
+  smallPrint?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPgBuy';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrHeroBlock".
+ */
+export interface RdPrHeroBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#top". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The ↗ glyph is drawn by the button — do not type it into the label.
+   */
+  primaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The → IS part of the label here, unlike the primary above. Type it.
+   */
+  secondaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Three in the mockup. They overlap by 6px, and the overlap follows the count, so a fourth stacks correctly.
+   */
+  trustAvatars?:
+    | {
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The link to the science board lives inside this sentence — set it in the editor, not in a separate field, so a translator can move it.
+   */
+  trustText?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The wide photograph beside the copy.
+   */
+  image?: (number | null) | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrJourneyBlock".
+ */
+export interface RdPrJourneyBlock {
+  /**
+   * Rendered as the section id. The hero's secondary link points at "#journey". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The small uppercase line above the payment note.
+   */
+  payLabel?: string | null;
+  /**
+   * The first sentence. The lime dot after it is drawn by the design, not typed here.
+   */
+  payLead?: string | null;
+  /**
+   * The closing run is heavier in the mockup (weight 500, same colour). Use bold for it, not a colour.
+   */
+  payBody?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The timing line that closes the card.
+   */
+  payFooter?: string | null;
+  /**
+   * Exactly three, in order. Each has its own icon drawn into the markup, so a fourth row would store fine and render nothing.
+   */
+  steps?:
+    | {
+        /**
+         * The small uppercase line, e.g. "You · about ten minutes".
+         */
+        meta?: string | null;
+        /**
+         * One line.
+         */
+        title: string;
+        /**
+         * Two or three lines.
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrJourney';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrKitBlock".
+ */
+export interface RdPrKitBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The larger of the two — its type scales with the container.
+   */
+  intro?: string | null;
+  /**
+   * Set smaller than the first in the mockup. That is the design, not an accident.
+   */
+  detail?: string | null;
+  /**
+   * Four in the mockup, label left and value right. A fifth renders fine — these are genuinely repeated, unlike the journey steps.
+   */
+  facts?:
+    | {
+        /**
+         * Left side.
+         */
+        label: string;
+        /**
+         * Right side, uppercase. Kept on one line by the design, so keep it short.
+         */
+        value?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The → IS part of the label here — type it. Destination not yet decided; currently "#".
+   */
+  guideLink: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The labelled photograph of the kit contents.
+   */
+  image?: (number | null) | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrKit';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrBloodKitBlock".
+ */
+export interface RdPrBloodKitBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The lime pill above the heading. Names a plan, so it is editorial.
+   */
+  tag?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The larger of the two — its type scales with the container.
+   */
+  intro?: string | null;
+  /**
+   * Set smaller than the first in the mockup. That is the design.
+   */
+  detail?: string | null;
+  /**
+   * Five in the mockup, label left and value right. A sixth renders correctly.
+   */
+  facts?:
+    | {
+        /**
+         * Left side.
+         */
+        label: string;
+        /**
+         * Right side, uppercase. Kept on one line by the design, so keep it short.
+         */
+        value?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The → IS part of the label — type it. Destination not yet decided; currently "#".
+   */
+  guideLink: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Read by screen readers in place of the missing photograph.
+   */
+  placeholderAria?: string | null;
+  /**
+   * The mockup has no photograph here yet — this is the caption inside the empty box. It disappears when the section gets a real image, which needs a code change.
+   */
+  placeholderLabel?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrBloodKit';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrAnalyseBlock".
+ */
+export interface RdPrAnalyseBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * Five in the mockup, shown as a row. A sixth renders correctly — the row is a genuine repeat.
+   */
+  people?:
+    | {
+        /**
+         * Drawn as a CSS background on a 4:5 box, which is the mockup's own construction — not an <img>.
+         */
+        photo?: (number | null) | Media;
+        /**
+         * A CSS background-position, e.g. "center 24%". Move it if a new portrait cuts the face. NOT localized — it is a crop, not copy.
+         */
+        focal?: string | null;
+        /**
+         * The small uppercase line above the name.
+         */
+        role?: string | null;
+        /**
+         * Also used as the portrait's screen-reader label, so there is one place to fix a spelling.
+         */
+        name: string;
+        /**
+         * One line. The full biography lives on The Lab, which this section links to.
+         */
+        credentials?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Exactly three. Each has its own icon drawn into the markup, so a fourth would store and render nothing. The 01/02/03 numbers come from the order, not from a field.
+   */
+  steps?:
+    | {
+        /**
+         * One line.
+         */
+        title: string;
+        /**
+         * Two or three lines.
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sentence beside the link.
+   */
+  footerText?: string | null;
+  /**
+   * The → IS part of the label — type it. Destination not yet decided; currently "#".
+   */
+  boardLink: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrAnalyse';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrFormulaBlock".
+ */
+export interface RdPrFormulaBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * Eight ingredients. The row is DRAWN three times to make the drift seamless — add eight more and you get a longer loop, not a fourth copy.
+   */
+  railTop?:
+    | {
+        /**
+         * Also the photo's screen-reader label.
+         */
+        name: string;
+        /**
+         * Drawn as a CSS background in a 116px circle.
+         */
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Eight more. This row drifts the other way and slightly slower.
+   */
+  railBottom?:
+    | {
+        /**
+         * Also the photo's screen-reader label.
+         */
+        name: string;
+        /**
+         * Drawn as a CSS background in a 116px circle.
+         */
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Exactly four. Each is its own row in the markup, so a fifth would store fine and render nothing. The counts in the labels are typed, not calculated from the rail.
+   */
+  groups?:
+    | {
+        /**
+         * e.g. "19 × live-culture strains". The +/– is drawn by the button.
+         */
+        label: string;
+        /**
+         * Shown when the row is opened. One at a time.
+         */
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sentence beside the link.
+   */
+  footerText?: string | null;
+  /**
+   * The → IS part of the label — type it. Destination not yet decided; currently "#".
+   */
+  libraryLink: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrFormula';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrArrivesBlock".
+ */
+export interface RdPrArrivesBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * Three in the mockup. Genuinely repeated — a fourth renders correctly, bullets and all.
+   */
+  packs?:
+    | {
+        /**
+         * e.g. Activate.
+         */
+        name: string;
+        /**
+         * e.g. Morning. The · between this and the next is drawn by the design.
+         */
+        timing?: string | null;
+        /**
+         * e.g. Pre-packed.
+         */
+        form?: string | null;
+        /**
+         * One line under the header.
+         */
+        body?: string | null;
+        /**
+         * Picks the orb's fill out of the brand tokens. A typo here fails silently, as an orb with no colour — which is why it is a list.
+         */
+        domain?: ('gut' | 'energy' | 'resilience' | 'immunity' | 'sleep') | null;
+        /**
+         * The orb's halo AND the bullet dots. One choice drives both, so they cannot drift apart. Not derivable from the domain — the two use different palettes.
+         */
+        accent?: ('lime' | 'blue-grey' | 'blue' | 'soft-pink' | 'orange') | null;
+        /**
+         * Three on the morning pack, two on the others. Any number works.
+         */
+        items?:
+          | {
+              /**
+               * The lime dot is drawn by the design.
+               */
+              text: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The sentence between the packs and the before/after pair.
+   */
+  midline?: string | null;
+  /**
+   * Two photographs. The order is the before/after reading — nothing in the markup says which is which, only the captions.
+   */
+  shots?:
+    | {
+        /**
+         * Drawn as a CSS background, as elsewhere on this page.
+         */
+        image?: (number | null) | Media;
+        /**
+         * Read by screen readers. NOT the caption — the caption is a label, this describes the picture.
+         */
+        alt?: string | null;
+        /**
+         * Printed under the photograph.
+         */
+        caption?: string | null;
+        /**
+         * The colour behind the photograph while it loads. The mockup uses a different one for each of the two.
+         */
+        plate?: ('cool-grey' | 'tint') | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Three in the mockup. Genuinely repeated.
+   */
+  benefits?:
+    | {
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Drawn as a CSS background.
+   */
+  proofImage?: (number | null) | Media;
+  /**
+   * Read by screen readers.
+   */
+  proofAlt?: string | null;
+  /**
+   * The curly quotation marks are part of the text — they are typography, not marks the component adds.
+   */
+  quote?: string | null;
+  /**
+   * The line under the quote.
+   */
+  attribution?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrArrives';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrAdvancedBlock".
+ */
+export interface RdPrAdvancedBlock {
+  /**
+   * Rendered as the section id. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The lime pill under the standfirst.
+   */
+  tag?: string | null;
+  /**
+   * Exactly three. Each has its own icon and badge colour drawn into the markup, so a fourth would store fine and render nothing.
+   */
+  cards?:
+    | {
+        /**
+         * The small uppercase line beside the icon.
+         */
+        meta?: string | null;
+        /**
+         * One line.
+         */
+        title: string;
+        /**
+         * Two or three lines.
+         */
+        body?: string | null;
+        /**
+         * Three per card in the mockup. Any number works — these repeat properly.
+         */
+        rows?:
+          | {
+              /**
+               * The dot is drawn by the design.
+               */
+              text: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The heavier run at the end is bold in the mockup at weight 500, which is what this page renders bold as.
+   */
+  footerText?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The → IS part of the label — type it. The mockup points at the Our Plans page; currently "#".
+   */
+  footerLink: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdPrAdvanced';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbHeroBlock".
+ */
+export interface RdLbHeroBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#top". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The small monospaced line above the headline. The · is typed into the text, not drawn by the page.
+   */
+  eyebrow?: string | null;
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  intro?: string | null;
+  /**
+   * The ↗ glyph is drawn by the button — do not type it into the label.
+   */
+  primaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The → IS part of the label here, unlike the primary above. Type it.
+   */
+  secondaryCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * The sentence on the rule under the buttons. The link beside it is its own field, so this text can be translated without touching it.
+   */
+  boardNote?: string | null;
+  /**
+   * Sits beside the note as a separate underlined link. The → is part of the label.
+   */
+  boardCta: {
+    type?: ('reference' | 'custom') | null;
+    newTab?: boolean | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'posts';
+          value: number | Post;
+        } | null);
+    /**
+     * Localized: each locale can point at a different destination.
+     */
+    url?: string | null;
+    label: string;
+  };
+  /**
+   * Fills the whole hero behind the copy on a wide screen; on a phone it moves above the text as a square. Needs alt text either way.
+   */
+  backgroundImage?: (number | null) | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbHero';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbNotBlock".
+ */
+export interface RdLbNotBlock {
+  /**
+   * Rendered as the section id. The mockup gives this section NO id, so it is empty by default and no id attribute is rendered. Fill it only if something needs to link here. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The line under the headline that sets up the list.
+   */
+  intro?: string | null;
+  /**
+   * Three in the mockup, each a hairline-ruled row. The count is free — a fourth stacks correctly. The closing "What it is." row below is NOT one of these: it has a heavier rule and no dimmed body, so it has its own fields.
+   */
+  notRows?:
+    | {
+        title: string;
+        body?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The closing row, drawn differently from the three above on purpose: a 1.5px dark rule instead of a hairline, more space above, and full-strength body text. It always renders, even empty.
+   */
+  conclusion?: {
+    title?: string | null;
+    body?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbNot';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbReadsBlock".
+ */
+export interface RdLbReadsBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#reads". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The small monospaced line above the quote band.
+   */
+  eyebrow?: string | null;
+  /**
+   * The pull quote in the band. Plain text — the band gives it its size and measure.
+   */
+  quote: string;
+  /**
+   * Fills the left half of the quote band. Its ALT TEXT is what screen readers announce for the band, because the mockup draws it as a CSS background on a role="img" element rather than as an <img> — so set the alt on the media row, not here.
+   */
+  quoteImage?: (number | null) | Media;
+  /**
+   * The line under the rule in the band.
+   */
+  authorName?: string | null;
+  /**
+   * The uppercase line under the name. The · is typed into the text.
+   */
+  authorRole?: string | null;
+  /**
+   * EXACTLY THREE. Each card carries its own icon, its own plan-pill colour and — on the first — a dimming the other two do not have, all drawn into the markup. A fourth row would save fine and render nothing.
+   */
+  cards?:
+    | {
+        name: string;
+        body?: string | null;
+        planLabel?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The pill beside the FIRST card's name. The mockup gates it on that card alone, so it appears there and nowhere else. Clear it and the pill is removed rather than hidden.
+   */
+  deepTag?: string | null;
+  /**
+   * The words in the pill the three lines converge on. The dot beside them is drawn by the design.
+   */
+  formulaLabel?: string | null;
+  /**
+   * The centred line under the diagram.
+   */
+  conclusion?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbReads';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbMethodBlock".
+ */
+export interface RdLbMethodBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#method". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The line under the headline.
+   */
+  intro?: string | null;
+  /**
+   * The grey gut drawn as 1,250 identical dots, for the "Who's there" panel. An SVG. It is drawn as an <image> INSIDE the panel's own <svg>, positioned to that svg's viewBox — so a replacement has to use the same 44.5 14.1 245.2 253.8 viewBox or it will not line up. Its alt is the panel's own "figureAlt" field, not the media row's.
+   */
+  leftFigure?: (number | null) | Media;
+  /**
+   * The same gut coloured by what each microbe can do, for the "What each one can do" panel. Same viewBox rule as the left figure. The three tappable microbes are NOT in this file — they are drawn by the block over the top, so a replacement should not include them.
+   */
+  rightFigure?: (number | null) | Media;
+  /**
+   * The left card. Its figure is the uploaded "Left figure" above; these are its words and its alt text.
+   */
+  left?: {
+    eyebrow?: string | null;
+    title?: string | null;
+    meta?: string | null;
+    figureAlt?: string | null;
+    caption?: string | null;
+  };
+  /**
+   * The right card. Its figure is the uploaded "Right figure" above, with three tappable microbes drawn over it by the block.
+   */
+  right?: {
+    eyebrow?: string | null;
+    title?: string | null;
+    meta?: string | null;
+    figureAlt?: string | null;
+  };
+  /**
+   * EXACTLY THREE, in the order they are drawn: top-left, right, bottom-left. Their positions and colours are part of the figure, so a fourth row would save fine and render nothing — and deleting one leaves a circle that opens an empty popover.
+   */
+  microbes?:
+    | {
+        name: string;
+        job?: string | null;
+        status?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The lime pill under the figure, before anything is tapped.
+   */
+  hintIdle?: string | null;
+  /**
+   * What the same pill says once a microbe is open.
+   */
+  hintActive?: string | null;
+  /**
+   * The numbered two-by-two list. The count is free — these repeat properly. The numbers are typed, not counted by the design.
+   */
+  reads?:
+    | {
+        number?: string | null;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * EXACTLY THREE, matching the three microbes above in order: Active, Low, Missing. Each swatch is its own drawing — a lime disc, an orange disc, and a dashed one — so only the labels are editable and a fourth row renders nothing.
+   */
+  stateKey?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The two lines under the cards. The right-hand one is set bolder by the design, not by the editor — there is no way to make the left one bold, and that is deliberate.
+   */
+  footer?: {
+    leftEyebrow?: string | null;
+    leftText?: string | null;
+    rightEyebrow?: string | null;
+    rightText?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbMethod';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbLabBlock".
+ */
+export interface RdLbLabBlock {
+  /**
+   * Rendered as the section id. The mockup gives this section NO id, so it is empty by default and no id attribute is rendered. Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The paragraph under the headline.
+   */
+  intro?: string | null;
+  /**
+   * Five in the mockup. The count is free — these repeat properly, and each row draws its own hairline above it. The value is set in uppercase by the design, so type it in normal case.
+   */
+  facts?:
+    | {
+        label: string;
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The large serif line under the table. A paragraph in the mockup, not a heading.
+   */
+  closing?: string | null;
+  /**
+   * The square picture beside the copy. Its ALT TEXT is what screen readers announce, because the mockup draws it as a CSS background on a role="img" element rather than as an <img> — so set the alt on the media row, not here.
+   */
+  image?: (number | null) | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbLab';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbReadingBlock".
+ */
+export interface RdLbReadingBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#reading". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The paragraph under the headline.
+   */
+  intro?: string | null;
+  /**
+   * The dimmed card on the left: a label, a sample species list, the "and 390 more" line and a closing note. The species list is illustrative, not a real reading.
+   */
+  inventory?: {
+    label?: string | null;
+    species?:
+      | {
+          name: string;
+          value?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    moreLabel?: string | null;
+    note?: string | null;
+  };
+  /**
+   * The column beside the card: its own heading, a paragraph, and the three numbered passes. The numbers are typed, not counted by the design.
+   */
+  analysis?: {
+    heading?: string | null;
+    intro?: string | null;
+    passes?:
+      | {
+          number?: string | null;
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The heading and line that introduce the symptom cards.
+   */
+  mechanisms?: {
+    heading?: string | null;
+    intro?: string | null;
+  };
+  /**
+   * Eight in the mockup, one per card, and the count is free — every card is the same button. Selecting one drives the whole panel below: the name, the explanation, every slider, the score dial and the phone. The three number lists must line up WITH the definitions further down: teams matches Team definitions, ratios matches Ratio definitions, pillars matches Pillar names. A short list leaves a slider reading zero.
+   */
+  archetypes?:
+    | {
+        cardLabel: string;
+        name: string;
+        whats?: string | null;
+        focus?: string | null;
+        score?: number | null;
+        band?: string | null;
+        note?: string | null;
+        teams?:
+          | {
+              value?: number | null;
+              id?: string | null;
+            }[]
+          | null;
+        ratios?:
+          | {
+              value?: number | null;
+              id?: string | null;
+            }[]
+          | null;
+        pillars?:
+          | {
+              value?: number | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The small line above the selected pattern's name.
+   */
+  resultLabel?: string | null;
+  /**
+   * The first tab and the paragraph at the top of its panel.
+   */
+  teamsTab?: {
+    label?: string | null;
+    blurb?: string | null;
+  };
+  /**
+   * The second tab and its paragraph. There are exactly two tabs and each has its own panel, so a third cannot be added here.
+   */
+  ratiosTab?: {
+    label?: string | null;
+    blurb?: string | null;
+  };
+  /**
+   * Six teams, in the order every pattern's `teams` numbers are read. `low` and `high` are the healthy range: they draw the band on the track, print the "Healthy 30–50%" line, and decide whether a reading is in, over or under range. The slider's maximum is derived from them, so nothing has to be kept in step by hand. Each team's colour is the design's and is not a field.
+   */
+  teamDefs?:
+    | {
+        name: string;
+        sub?: string | null;
+        low?: number | null;
+        high?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Four ratios, in the order every pattern's `ratios` numbers are read. Each number is a percentage along the track from the bad end to the good one.
+   */
+  ratioDefs?:
+    | {
+        name: string;
+        bad?: string | null;
+        good?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Five pillars, in the order every pattern's `pillars` numbers are read. The lowest one is highlighted automatically.
+   */
+  pillarNames?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The words the sliders share: the reading label, the "Healthy" prefix, and the three verdicts. Changing a verdict here changes it on every row.
+   */
+  sliderLabels?: {
+    thisReading?: string | null;
+    healthyPrefix?: string | null;
+    inRange?: string | null;
+    overRange?: string | null;
+    underRange?: string | null;
+  };
+  /**
+   * The bolded lead-in to the selected pattern's focus line.
+   */
+  focusLabel?: string | null;
+  /**
+   * The phone beside the panel. Its score, band, pillars and note come from the selected pattern; only these labels are set here. The status glyphs in the corner are drawn by the design.
+   */
+  phone?: {
+    time?: string | null;
+    scoreLabel?: string | null;
+    outOfLabel?: string | null;
+    caption?: string | null;
+  };
+  /**
+   * The small nb1 mark in the mock-up's header.
+   */
+  phoneLogo?: (number | null) | Media;
+  /**
+   * The round portrait in the mock-up's header. Decorative: it renders with an EMPTY alt whatever the media row says, because in a phone mock-up it is a picture of an account, not information. Seeded from the same file the homepage's science board uses, so it reuses that media row.
+   */
+  phoneAvatar?: (number | null) | Media;
+  /**
+   * Three in the mockup. Each has a LONG line and a SHORT one: the long one shows while the three sit side by side, the short one replaces it when they stack, so both are real copy rather than one truncated.
+   */
+  seals?:
+    | {
+        number: string;
+        long?: string | null;
+        short?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbReading';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbFormulaBlock".
+ */
+export interface RdLbFormulaBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#formula". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The small line above the headline.
+   */
+  eyebrow?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The paragraph under the headline.
+   */
+  intro?: string | null;
+  /**
+   * FOUR, in order: the numbered marker and its label on each step of the rail. Each step's body is written out separately below, so a fifth row would add a header with nothing under it. The numbers are typed, not counted by the design.
+   */
+  steps?:
+    | {
+        number?: string | null;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The body line, the diagram's alt text, and the three definitions under it. EXACTLY THREE definitions: each carries its own colour dot, which is a drawing, so a fourth would save fine and render the first one's colour.
+   */
+  basics?: {
+    body?: string | null;
+    figureAlt?: string | null;
+    defs?:
+      | {
+          name: string;
+          desc?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The heading, the intro, and the library card's label, title and closing note. The intro is RICH TEXT because its emphasis is on one word inside the sentence.
+   */
+  cultures?: {
+    heading?: string | null;
+    intro?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    libraryLabel?: string | null;
+    libraryTitle?: string | null;
+    note?: string | null;
+  };
+  /**
+   * THREE genera with their species, and the counts are fixed by the markup: three genus headers and ten species rows are written out flat, in that order, each genus header with its own colour dot. Adding a species here renders nothing — the row has to exist in the block first.
+   */
+  genera?:
+    | {
+        genus: string;
+        species?:
+          | {
+              name: string;
+              codes?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The heading, the intro, the library card's label and title, the dose-window label, the three words under the dose bars, and the closing note. The note is split into a bold lead sentence and the rest, because the design sets the lead at full strength against a dimmed paragraph.
+   */
+  prebiotics?: {
+    heading?: string | null;
+    intro?: string | null;
+    libraryLabel?: string | null;
+    libraryTitle?: string | null;
+    doseLabel?: string | null;
+    doseTooLittle?: string | null;
+    doseRight?: string | null;
+    doseTooMuch?: string | null;
+    noteLead?: string | null;
+    noteRest?: string | null;
+  };
+  /**
+   * Thirteen in the mockup. The count is FREE — these repeat properly. The code on the right is optional; several fibres have none.
+   */
+  fibres?:
+    | {
+        name: string;
+        code?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The readable stand-in for the dose chart, shown when the chart is too narrow to read. `at` is where the handle sits on the track, as a percentage from 0 to 100 — the shaded band runs from 28% to 72%, so a value outside that reads as out of range.
+   */
+  doseFibres?:
+    | {
+        name: string;
+        at?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The heading, the intro, and the whole supplement card: its label, title and body, the two counts, the example chips, the three things that decide the layer,. The Advanced callout below it is its own group, because in the mockup it sits OUTSIDE this card as a sibling.
+   */
+  layer?: {
+    heading?: string | null;
+    intro?: string | null;
+    chosenLabel?: string | null;
+    title?: string | null;
+    body?: string | null;
+    stats?:
+      | {
+          number: string;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    chipsLabel?: string | null;
+    chips?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    driversLabel?: string | null;
+    drivers?:
+      | {
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The orange-outlined tag and the line beside it, under the supplement card. The link is its own field rather than part of the sentence: it is a call to action after the full stop, and keeping it separate preserves the underline the mockup draws on it.
+   */
+  advanced: {
+    tag?: string | null;
+    text?: string | null;
+    link: {
+      type?: ('reference' | 'custom') | null;
+      newTab?: boolean | null;
+      reference?:
+        | ({
+            relationTo: 'pages';
+            value: number | Page;
+          } | null)
+        | ({
+            relationTo: 'posts';
+            value: number | Post;
+          } | null);
+      /**
+       * Localized: each locale can point at a different destination.
+       */
+      url?: string | null;
+      label: string;
+    };
+  };
+  /**
+   * The last line of the section, up to the bold sentence.
+   */
+  closingLead?: string | null;
+  /**
+   * The bold sentence that ends it. Set at full strength against the dimmed line before it, which is why it is its own field rather than rich-text emphasis.
+   */
+  closingEmphasis?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbFormula';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbAdvancedBlock".
+ */
+export interface RdLbAdvancedBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#advanced". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The paragraph under the headline.
+   */
+  intro?: string | null;
+  /**
+   * The orange pill under the standfirst.
+   */
+  tag?: string | null;
+  /**
+   * EXACTLY THREE. Each card carries its own icon and its own chip colour, both drawn into the markup, so a fourth row would save fine and render nothing. The bullet lists inside them DO repeat — the mockup has four, three and three, and any count works.
+   */
+  cards?:
+    | {
+        cadence?: string | null;
+        title: string;
+        body?: string | null;
+        points?:
+          | {
+              text: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The last line of the section. Rich text, because its bold clause sits in the middle of the sentence rather than at either end.
+   */
+  closing?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbAdvanced';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbBoardBlock".
+ */
+export interface RdLbBoardBlock {
+  /**
+   * Rendered as the section id. The page's own links point at "#board". Deliberately NOT localized.
+   */
+  anchorId?: string | null;
+  /**
+   * The section headline.
+   */
+  heading: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * The paragraph under the headline.
+   */
+  intro?: string | null;
+  /**
+   * Four in the mockup, in a two-by-two grid. The count is FREE — every card is the same card and nothing in it is drawn per row.
+   */
+  stats?:
+    | {
+        number: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The small line above the team block.
+   */
+  teamLabel?: string | null;
+  /**
+   * The paragraph under it.
+   */
+  teamIntro?: string | null;
+  /**
+   * Its ALT TEXT is what screen readers announce, because the mockup draws it as a CSS background on a role="img" element rather than an <img> — so set the alt on the media row, not here.
+   */
+  leadPhoto?: (number | null) | Media;
+  /**
+   * The one person given the full-width treatment. Written out on its own in the mockup rather than being the first row of the rail, so it is its own group.
+   */
+  lead?: {
+    role?: string | null;
+    name?: string | null;
+    cred?: string | null;
+    quote?: string | null;
+    pills?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Four in the mockup. The count is FREE — every cell is the same card and the only thing that varies is the photograph, which is a field. Each portrait's alt is read off its media row.
+   */
+  team?:
+    | {
+        photo?: (number | null) | Media;
+        field?: string | null;
+        name: string;
+        cred?: string | null;
+        quote?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The blue band at the foot of the section: its eyebrow, heading, paragraph, and the tag that appears on every validator.
+   */
+  checked?: {
+    label?: string | null;
+    title?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
+    intro?: string | null;
+    validatorTag?: string | null;
+  };
+  /**
+   * Two in the mockup, and the count is free. Each carries its own pill list, which is also free.
+   */
+  validators?:
+    | {
+        photo?: (number | null) | Media;
+        name: string;
+        cred?: string | null;
+        quote?: string | null;
+        pills?:
+          | {
+              label: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLbBoard';
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentBlock".
  */
@@ -1297,369 +4961,6 @@ export interface ContentBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'content';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BoxCardBlock".
- */
-export interface BoxCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  itemsList?:
-    | {
-        textLabel?: string | null;
-        icon?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  button?: {
-    label?: string | null;
-    redirect?: string | null;
-  };
-  note?: string | null;
-  backgroundImage?: {
-    web?: (number | null) | Media;
-    mobile?: (number | null) | Media;
-  };
-  boxImage?: {
-    web?: (number | null) | Media;
-    mobile?: (number | null) | Media;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'box-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FormulaCardBlock".
- */
-export interface FormulaCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  kitImage?: (number | null) | Media;
-  itemsList?:
-    | {
-        textLabel1?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        textLabel2?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        textLabel3?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        id?: string | null;
-      }[]
-    | null;
-  button?: {
-    buttonText?: string | null;
-    buttonLink?: string | null;
-  };
-  note?: string | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'formula-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ResultsCardBlock".
- */
-export interface ResultsCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  itemsList?:
-    | {
-        itemTitle?: string | null;
-        icon?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  resultsCards?:
-    | {
-        resultTitle?: string | null;
-        resultDescription?: string | null;
-        resultImage?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'results-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ReviewCardBlock".
- */
-export interface ReviewCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  description?: string | null;
-  reviews?:
-    | {
-        reviewTitle?: string | null;
-        reviewerName?: string | null;
-        reviewerCountry?: string | null;
-        reviewIcon?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  navigation?: {
-    right?: (number | null) | Media;
-    left?: (number | null) | Media;
-  };
-  note?: {
-    noteText?: string | null;
-    noteIcon?: (number | null) | Media;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'review-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StepsCardBlock".
- */
-export interface StepsCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  steps?:
-    | {
-        stepTitle?: string | null;
-        stepNumber?: (number | null) | Media;
-        icon?: (number | null) | Media;
-        stepDescription?: {
-          root: {
-            type: string;
-            children: {
-              type: any;
-              version: number;
-              [k: string]: unknown;
-            }[];
-            direction: ('ltr' | 'rtl') | null;
-            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-            indent: number;
-            version: number;
-          };
-          [k: string]: unknown;
-        } | null;
-        id?: string | null;
-      }[]
-    | null;
-  note?: string | null;
-  button?: {
-    label?: string | null;
-    redirectUrl?: string | null;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'steps-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "SymptomsCardBlock".
- */
-export interface SymptomsCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  symptoms?:
-    | {
-        symptom?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  moreButton?: string | null;
-  description?: string | null;
-  testButton?: {
-    buttonText?: string | null;
-    buttonLink?: string | null;
-  };
-  symptomsImage?: (number | null) | Media;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'symptoms-card';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "VideoCardBlock".
- */
-export interface VideoCardBlock {
-  title?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  description?: string | null;
-  reviews?:
-    | {
-        name?: string | null;
-        description?: string | null;
-        review?: string | null;
-        video?: (number | null) | Media;
-        thumbnail?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  navigation?: {
-    right?: (number | null) | Media;
-    left?: (number | null) | Media;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'video-card';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -7378,7 +10679,7 @@ export interface ReferralWidgetBlock {
    */
   situation?: string | null;
   /**
-   * Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (en→en_GB, de→de_DE, fr→fr_FR).
+   * Optional Mention Me locale override, e.g. en_GB. Leave blank to map the page locale (de/ch→de_DE, everything else→en_GB).
    */
   localeOverride?: string | null;
   /**
@@ -9175,6 +12476,14 @@ export interface PayloadLockedDocument {
         value: number | Footer;
       } | null)
     | ({
+        relationTo: 'rd-headers';
+        value: number | RdHeader;
+      } | null)
+    | ({
+        relationTo: 'rd-footers';
+        value: number | RdFooter;
+      } | null)
+    | ({
         relationTo: 'agent-operations';
         value: number | AgentOperation;
       } | null)
@@ -9296,6 +12605,8 @@ export interface PagesSelect<T extends boolean = true> {
   hideHeader?: T;
   footer?: T;
   hideFooter?: T;
+  rdHeader?: T;
+  rdFooter?: T;
   hero?:
     | T
     | {
@@ -9322,14 +12633,46 @@ export interface PagesSelect<T extends boolean = true> {
   layout?:
     | T
     | {
+        rdHero?: T | RdHeroBlockSelect<T>;
+        rdProtocol?: T | RdProtocolBlockSelect<T>;
+        rdFormula?: T | RdFormulaBlockSelect<T>;
+        rdProof?: T | RdProofBlockSelect<T>;
+        rdBiology?: T | RdBiologyBlockSelect<T>;
+        rdLab?: T | RdLabBlockSelect<T>;
+        rdReviews?: T | RdReviewsBlockSelect<T>;
+        rdPlans?: T | RdPlansBlockSelect<T>;
+        rdClose?: T | RdCloseBlockSelect<T>;
+        rdPgHero?: T | RdPgHeroBlockSelect<T>;
+        rdPgPlans?: T | RdPgPlansBlockSelect<T>;
+        rdPgAdvanced?: T | RdPgAdvancedBlockSelect<T>;
+        rdPgWords?: T | RdPgWordsBlockSelect<T>;
+        rdPgData?: T | RdPgDataBlockSelect<T>;
+        rdPgBoardStrip?: T | RdPgBoardStripBlockSelect<T>;
+        rdPgTimeline?: T | RdPgTimelineBlockSelect<T>;
+        rdPgBoard?: T | RdPgBoardBlockSelect<T>;
+        rdPgAthletes?: T | RdPgAthletesBlockSelect<T>;
+        rdPgQuiet?: T | RdPgQuietBlockSelect<T>;
+        rdPgGuarantee?: T | RdPgGuaranteeBlockSelect<T>;
+        rdPgFaq?: T | RdPgFaqBlockSelect<T>;
+        rdPgBuy?: T | RdPgBuyBlockSelect<T>;
+        rdPrHero?: T | RdPrHeroBlockSelect<T>;
+        rdPrJourney?: T | RdPrJourneyBlockSelect<T>;
+        rdPrKit?: T | RdPrKitBlockSelect<T>;
+        rdPrBloodKit?: T | RdPrBloodKitBlockSelect<T>;
+        rdPrAnalyse?: T | RdPrAnalyseBlockSelect<T>;
+        rdPrFormula?: T | RdPrFormulaBlockSelect<T>;
+        rdPrArrives?: T | RdPrArrivesBlockSelect<T>;
+        rdPrAdvanced?: T | RdPrAdvancedBlockSelect<T>;
+        rdLbHero?: T | RdLbHeroBlockSelect<T>;
+        rdLbNot?: T | RdLbNotBlockSelect<T>;
+        rdLbReads?: T | RdLbReadsBlockSelect<T>;
+        rdLbMethod?: T | RdLbMethodBlockSelect<T>;
+        rdLbLab?: T | RdLbLabBlockSelect<T>;
+        rdLbReading?: T | RdLbReadingBlockSelect<T>;
+        rdLbFormula?: T | RdLbFormulaBlockSelect<T>;
+        rdLbAdvanced?: T | RdLbAdvancedBlockSelect<T>;
+        rdLbBoard?: T | RdLbBoardBlockSelect<T>;
         content?: T | ContentBlockSelect<T>;
-        'box-card'?: T | BoxCardBlockSelect<T>;
-        'formula-card'?: T | FormulaCardBlockSelect<T>;
-        'results-card'?: T | ResultsCardBlockSelect<T>;
-        'review-card'?: T | ReviewCardBlockSelect<T>;
-        'steps-card'?: T | StepsCardBlockSelect<T>;
-        'symptoms-card'?: T | SymptomsCardBlockSelect<T>;
-        'video-card'?: T | VideoCardBlockSelect<T>;
         benefitsBanner?: T | BenefitsBannerBlockSelect<T>;
         stepsBanner?: T | StepsBannerBlockSelect<T>;
         productBanner?: T | ProductBannerBlockSelect<T>;
@@ -9450,6 +12793,1660 @@ export interface PagesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdHeroBlock_select".
+ */
+export interface RdHeroBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  heroImage?: T;
+  primaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  secondaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  bubbles?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  showTrustpilotRating?: T;
+  claims?:
+    | T
+    | {
+        body?: T;
+        id?: T;
+      };
+  trustCycleMs?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdProtocolBlock_select".
+ */
+export interface RdProtocolBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  callout?:
+    | T
+    | {
+        label?: T;
+        marker?: T;
+        body?: T;
+      };
+  steps?:
+    | T
+    | {
+        week?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFormulaBlock_select".
+ */
+export interface RdFormulaBlockSelect<T extends boolean = true> {
+  variant?: T;
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  replacesLabel?: T;
+  replaces?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  kitImage?: T;
+  imageCaption?: T;
+  morning?:
+    | T
+    | {
+        tabLabel?: T;
+        heading?: T;
+        itemName?: T;
+        itemMeta?: T;
+        whyLabel?: T;
+        whyBody?: T;
+        strains?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        extras?:
+          | T
+          | {
+              name?: T;
+              meta?: T;
+              id?: T;
+            };
+      };
+  evening?:
+    | T
+    | {
+        tabLabel?: T;
+        heading?: T;
+        items?:
+          | T
+          | {
+              name?: T;
+              meta?: T;
+              leftOut?: T;
+              id?: T;
+            };
+        note?: T;
+      };
+  living?:
+    | T
+    | {
+        tabLabel?: T;
+        heading?: T;
+        itemName?: T;
+        itemMeta?: T;
+        whyLabel?: T;
+        whyBody?: T;
+        chips?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdProofBlock_select".
+ */
+export interface RdProofBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  score?:
+    | T
+    | {
+        value?: T;
+        prior?: T;
+        scale?: T;
+        deltaUnit?: T;
+        priorPrefix?: T;
+        caption?: T;
+      };
+  availability?: T;
+  cards?:
+    | T
+    | {
+        image?: T;
+        metric?: T;
+        goal?: T;
+        from?: T;
+        to?: T;
+        scaleMax?: T;
+        higherIsBetter?: T;
+        scaleSuffix?: T;
+        scaleLow?: T;
+        scaleHigh?: T;
+        orb?: T;
+        summary?: T;
+        backLabel?: T;
+        backBody?: T;
+        id?: T;
+      };
+  footnote?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBiologyBlock_select".
+ */
+export interface RdBiologyBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  centreLabel?: T;
+  bubbles?:
+    | T
+    | {
+        label?: T;
+        revealBody?: T;
+        readFrom?: T;
+        id?: T;
+      };
+  modal?:
+    | T
+    | {
+        eyebrow?: T;
+        readFromLabel?: T;
+        closeLabel?: T;
+      };
+  hint?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLabBlock_select".
+ */
+export interface RdLabBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  scientists?:
+    | T
+    | {
+        photo?: T;
+        name?: T;
+        role?: T;
+        credentials?: T;
+        panelEyebrow?: T;
+        panelCredentials?: T;
+        bio?: T;
+        bioExtra?: T;
+        quote?: T;
+        id?: T;
+      };
+  readBioLabel?: T;
+  closeLabel?: T;
+  assurances?:
+    | T
+    | {
+        label?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdReviewsBlock_select".
+ */
+export interface RdReviewsBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  customerLabel?: T;
+  reviews?:
+    | T
+    | {
+        image?: T;
+        focalY?: T;
+        name?: T;
+        tenure?: T;
+        quote?: T;
+        body?: T;
+        id?: T;
+      };
+  seeMoreLabel?: T;
+  seeLessLabel?: T;
+  prevLabel?: T;
+  nextLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPlansBlock_select".
+ */
+export interface RdPlansBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  core?:
+    | T
+    | {
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        priceNote?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        ctaNote?: T;
+      };
+  advanced?:
+    | T
+    | {
+        badge?: T;
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        priceNote?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        ctaNote?: T;
+      };
+  assurances?:
+    | T
+    | {
+        label?: T;
+        body?: T;
+        id?: T;
+      };
+  compareOpenLabel?: T;
+  compareCloseLabel?: T;
+  compare?:
+    | T
+    | {
+        title?: T;
+        rows?:
+          | T
+          | {
+              label?: T;
+              coreKind?: T;
+              coreText?: T;
+              advancedKind?: T;
+              advancedText?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  compareCta?:
+    | T
+    | {
+        coreUrl?: T;
+        coreLabel?: T;
+        advancedUrl?: T;
+        advancedLabel?: T;
+      };
+  compareFootnote?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCloseBlock_select".
+ */
+export interface RdCloseBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgHeroBlock_select".
+ */
+export interface RdPgHeroBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  primaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  secondaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  trustAvatars?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  trustHeadline?: T;
+  trustDetail?: T;
+  image?: T;
+  imageBadge?: T;
+  scoreLabel?: T;
+  scoreValue?: T;
+  scoreRating?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgPlansBlock_select".
+ */
+export interface RdPgPlansBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  core?:
+    | T
+    | {
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        terms?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        note?: T;
+      };
+  advanced?:
+    | T
+    | {
+        badge?: T;
+        name?: T;
+        tagline?: T;
+        price?: T;
+        priceSuffix?: T;
+        terms?: T;
+        listLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        note?: T;
+      };
+  compareOpenLabel?: T;
+  compareCloseLabel?: T;
+  compare?:
+    | T
+    | {
+        title?: T;
+        rows?:
+          | T
+          | {
+              label?: T;
+              coreKind?: T;
+              coreText?: T;
+              advancedKind?: T;
+              advancedText?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  compareCta?:
+    | T
+    | {
+        coreUrl?: T;
+        coreLabel?: T;
+        advancedUrl?: T;
+        advancedLabel?: T;
+      };
+  assurances?:
+    | T
+    | {
+        glyph?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAdvancedBlock_select".
+ */
+export interface RdPgAdvancedBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tagLabel?: T;
+  cards?:
+    | T
+    | {
+        chip?: T;
+        title?: T;
+        body?: T;
+        points?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  footnote?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgWordsBlock_select".
+ */
+export interface RdPgWordsBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  customerLabel?: T;
+  reviews?:
+    | T
+    | {
+        image?: T;
+        focalY?: T;
+        name?: T;
+        tenure?: T;
+        quote?: T;
+        body?: T;
+        id?: T;
+      };
+  seeMoreLabel?: T;
+  seeLessLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgDataBlock_select".
+ */
+export interface RdPgDataBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tabs?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  panels?:
+    | T
+    | {
+        title?: T;
+        steps?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  reportAvatar?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardStripBlock_select".
+ */
+export interface RdPgBoardStripBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  avatars?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  note?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgTimelineBlock_select".
+ */
+export interface RdPgTimelineBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  monthLabel?: T;
+  months?:
+    | T
+    | {
+        number?: T;
+        tag?: T;
+        title?: T;
+        body?: T;
+        dial?: T;
+        id?: T;
+      };
+  image?: T;
+  bannerLabel?: T;
+  stats?:
+    | T
+    | {
+        value?: T;
+        caption?: T;
+        tail?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBoardBlock_select".
+ */
+export interface RdPgBoardBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  scientists?:
+    | T
+    | {
+        photo?: T;
+        name?: T;
+        role?: T;
+        credentials?: T;
+        panelEyebrow?: T;
+        panelCredentials?: T;
+        bio?: T;
+        bioExtra?: T;
+        quote?: T;
+        id?: T;
+      };
+  readBioLabel?: T;
+  closeLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgAthletesBlock_select".
+ */
+export interface RdPgAthletesBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  athletes?:
+    | T
+    | {
+        photo?: T;
+        quote?: T;
+        attribution?: T;
+        id?: T;
+      };
+  recordLabel?: T;
+  recordValue?: T;
+  recordPlace?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgQuietBlock_select".
+ */
+export interface RdPgQuietBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  statement?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgGuaranteeBlock_select".
+ */
+export interface RdPgGuaranteeBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  points?:
+    | T
+    | {
+        number?: T;
+        eyebrow?: T;
+        title?: T;
+        body?: T;
+        chips?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgFaqBlock_select".
+ */
+export interface RdPgFaqBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  faqs?:
+    | T
+    | {
+        number?: T;
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPgBuyBlock_select".
+ */
+export interface RdPgBuyBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  variant?: T;
+  heading?: T;
+  intro?: T;
+  plans?:
+    | T
+    | {
+        badge?: T;
+        name?: T;
+        summary?: T;
+        price?: T;
+        priceSuffix?: T;
+        note?: T;
+        featuresLabel?: T;
+        features?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        cta?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+        id?: T;
+      };
+  seals?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  smallPrint?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrHeroBlock_select".
+ */
+export interface RdPrHeroBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  primaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  secondaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  trustAvatars?:
+    | T
+    | {
+        photo?: T;
+        id?: T;
+      };
+  trustText?: T;
+  image?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrJourneyBlock_select".
+ */
+export interface RdPrJourneyBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  payLabel?: T;
+  payLead?: T;
+  payBody?: T;
+  payFooter?: T;
+  steps?:
+    | T
+    | {
+        meta?: T;
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrKitBlock_select".
+ */
+export interface RdPrKitBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  detail?: T;
+  facts?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  guideLink?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  image?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrBloodKitBlock_select".
+ */
+export interface RdPrBloodKitBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  tag?: T;
+  heading?: T;
+  intro?: T;
+  detail?: T;
+  facts?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  guideLink?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  placeholderAria?: T;
+  placeholderLabel?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrAnalyseBlock_select".
+ */
+export interface RdPrAnalyseBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  people?:
+    | T
+    | {
+        photo?: T;
+        focal?: T;
+        role?: T;
+        name?: T;
+        credentials?: T;
+        id?: T;
+      };
+  steps?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  footerText?: T;
+  boardLink?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrFormulaBlock_select".
+ */
+export interface RdPrFormulaBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  railTop?:
+    | T
+    | {
+        name?: T;
+        photo?: T;
+        id?: T;
+      };
+  railBottom?:
+    | T
+    | {
+        name?: T;
+        photo?: T;
+        id?: T;
+      };
+  groups?:
+    | T
+    | {
+        label?: T;
+        body?: T;
+        id?: T;
+      };
+  footerText?: T;
+  libraryLink?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrArrivesBlock_select".
+ */
+export interface RdPrArrivesBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  packs?:
+    | T
+    | {
+        name?: T;
+        timing?: T;
+        form?: T;
+        body?: T;
+        domain?: T;
+        accent?: T;
+        items?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  midline?: T;
+  shots?:
+    | T
+    | {
+        image?: T;
+        alt?: T;
+        caption?: T;
+        plate?: T;
+        id?: T;
+      };
+  benefits?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  proofImage?: T;
+  proofAlt?: T;
+  quote?: T;
+  attribution?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdPrAdvancedBlock_select".
+ */
+export interface RdPrAdvancedBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tag?: T;
+  cards?:
+    | T
+    | {
+        meta?: T;
+        title?: T;
+        body?: T;
+        rows?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  footerText?: T;
+  footerLink?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbHeroBlock_select".
+ */
+export interface RdLbHeroBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  eyebrow?: T;
+  heading?: T;
+  intro?: T;
+  primaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  secondaryCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  boardNote?: T;
+  boardCta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  backgroundImage?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbNotBlock_select".
+ */
+export interface RdLbNotBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  notRows?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  conclusion?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbReadsBlock_select".
+ */
+export interface RdLbReadsBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  eyebrow?: T;
+  quote?: T;
+  quoteImage?: T;
+  authorName?: T;
+  authorRole?: T;
+  cards?:
+    | T
+    | {
+        name?: T;
+        body?: T;
+        planLabel?: T;
+        id?: T;
+      };
+  deepTag?: T;
+  formulaLabel?: T;
+  conclusion?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbMethodBlock_select".
+ */
+export interface RdLbMethodBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  leftFigure?: T;
+  rightFigure?: T;
+  left?:
+    | T
+    | {
+        eyebrow?: T;
+        title?: T;
+        meta?: T;
+        figureAlt?: T;
+        caption?: T;
+      };
+  right?:
+    | T
+    | {
+        eyebrow?: T;
+        title?: T;
+        meta?: T;
+        figureAlt?: T;
+      };
+  microbes?:
+    | T
+    | {
+        name?: T;
+        job?: T;
+        status?: T;
+        id?: T;
+      };
+  hintIdle?: T;
+  hintActive?: T;
+  reads?:
+    | T
+    | {
+        number?: T;
+        text?: T;
+        id?: T;
+      };
+  stateKey?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  footer?:
+    | T
+    | {
+        leftEyebrow?: T;
+        leftText?: T;
+        rightEyebrow?: T;
+        rightText?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbLabBlock_select".
+ */
+export interface RdLbLabBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  facts?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        id?: T;
+      };
+  closing?: T;
+  image?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbReadingBlock_select".
+ */
+export interface RdLbReadingBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  inventory?:
+    | T
+    | {
+        label?: T;
+        species?:
+          | T
+          | {
+              name?: T;
+              value?: T;
+              id?: T;
+            };
+        moreLabel?: T;
+        note?: T;
+      };
+  analysis?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        passes?:
+          | T
+          | {
+              number?: T;
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+      };
+  mechanisms?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  archetypes?:
+    | T
+    | {
+        cardLabel?: T;
+        name?: T;
+        whats?: T;
+        focus?: T;
+        score?: T;
+        band?: T;
+        note?: T;
+        teams?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        ratios?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        pillars?:
+          | T
+          | {
+              value?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  resultLabel?: T;
+  teamsTab?:
+    | T
+    | {
+        label?: T;
+        blurb?: T;
+      };
+  ratiosTab?:
+    | T
+    | {
+        label?: T;
+        blurb?: T;
+      };
+  teamDefs?:
+    | T
+    | {
+        name?: T;
+        sub?: T;
+        low?: T;
+        high?: T;
+        id?: T;
+      };
+  ratioDefs?:
+    | T
+    | {
+        name?: T;
+        bad?: T;
+        good?: T;
+        id?: T;
+      };
+  pillarNames?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  sliderLabels?:
+    | T
+    | {
+        thisReading?: T;
+        healthyPrefix?: T;
+        inRange?: T;
+        overRange?: T;
+        underRange?: T;
+      };
+  focusLabel?: T;
+  phone?:
+    | T
+    | {
+        time?: T;
+        scoreLabel?: T;
+        outOfLabel?: T;
+        caption?: T;
+      };
+  phoneLogo?: T;
+  phoneAvatar?: T;
+  seals?:
+    | T
+    | {
+        number?: T;
+        long?: T;
+        short?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbFormulaBlock_select".
+ */
+export interface RdLbFormulaBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  eyebrow?: T;
+  heading?: T;
+  intro?: T;
+  steps?:
+    | T
+    | {
+        number?: T;
+        label?: T;
+        id?: T;
+      };
+  basics?:
+    | T
+    | {
+        body?: T;
+        figureAlt?: T;
+        defs?:
+          | T
+          | {
+              name?: T;
+              desc?: T;
+              id?: T;
+            };
+      };
+  cultures?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        libraryLabel?: T;
+        libraryTitle?: T;
+        note?: T;
+      };
+  genera?:
+    | T
+    | {
+        genus?: T;
+        species?:
+          | T
+          | {
+              name?: T;
+              codes?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  prebiotics?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        libraryLabel?: T;
+        libraryTitle?: T;
+        doseLabel?: T;
+        doseTooLittle?: T;
+        doseRight?: T;
+        doseTooMuch?: T;
+        noteLead?: T;
+        noteRest?: T;
+      };
+  fibres?:
+    | T
+    | {
+        name?: T;
+        code?: T;
+        id?: T;
+      };
+  doseFibres?:
+    | T
+    | {
+        name?: T;
+        at?: T;
+        id?: T;
+      };
+  layer?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        chosenLabel?: T;
+        title?: T;
+        body?: T;
+        stats?:
+          | T
+          | {
+              number?: T;
+              label?: T;
+              id?: T;
+            };
+        chipsLabel?: T;
+        chips?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        driversLabel?: T;
+        drivers?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+      };
+  advanced?:
+    | T
+    | {
+        tag?: T;
+        text?: T;
+        link?:
+          | T
+          | {
+              type?: T;
+              newTab?: T;
+              reference?: T;
+              url?: T;
+              label?: T;
+            };
+      };
+  closingLead?: T;
+  closingEmphasis?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbAdvancedBlock_select".
+ */
+export interface RdLbAdvancedBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  tag?: T;
+  cards?:
+    | T
+    | {
+        cadence?: T;
+        title?: T;
+        body?: T;
+        points?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  closing?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLbBoardBlock_select".
+ */
+export interface RdLbBoardBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  heading?: T;
+  intro?: T;
+  stats?:
+    | T
+    | {
+        number?: T;
+        label?: T;
+        id?: T;
+      };
+  teamLabel?: T;
+  teamIntro?: T;
+  leadPhoto?: T;
+  lead?:
+    | T
+    | {
+        role?: T;
+        name?: T;
+        cred?: T;
+        quote?: T;
+        pills?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+      };
+  team?:
+    | T
+    | {
+        photo?: T;
+        field?: T;
+        name?: T;
+        cred?: T;
+        quote?: T;
+        id?: T;
+      };
+  checked?:
+    | T
+    | {
+        label?: T;
+        title?: T;
+        intro?: T;
+        validatorTag?: T;
+      };
+  validators?:
+    | T
+    | {
+        photo?: T;
+        name?: T;
+        cred?: T;
+        quote?: T;
+        pills?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ContentBlock_select".
  */
 export interface ContentBlockSelect<T extends boolean = true> {
@@ -9471,198 +14468,6 @@ export interface ContentBlockSelect<T extends boolean = true> {
               appearance?: T;
             };
         id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "BoxCardBlock_select".
- */
-export interface BoxCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  itemsList?:
-    | T
-    | {
-        textLabel?: T;
-        icon?: T;
-        id?: T;
-      };
-  button?:
-    | T
-    | {
-        label?: T;
-        redirect?: T;
-      };
-  note?: T;
-  backgroundImage?:
-    | T
-    | {
-        web?: T;
-        mobile?: T;
-      };
-  boxImage?:
-    | T
-    | {
-        web?: T;
-        mobile?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "FormulaCardBlock_select".
- */
-export interface FormulaCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  kitImage?: T;
-  itemsList?:
-    | T
-    | {
-        textLabel1?: T;
-        textLabel2?: T;
-        textLabel3?: T;
-        id?: T;
-      };
-  button?:
-    | T
-    | {
-        buttonText?: T;
-        buttonLink?: T;
-      };
-  note?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ResultsCardBlock_select".
- */
-export interface ResultsCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  itemsList?:
-    | T
-    | {
-        itemTitle?: T;
-        icon?: T;
-        id?: T;
-      };
-  resultsCards?:
-    | T
-    | {
-        resultTitle?: T;
-        resultDescription?: T;
-        resultImage?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ReviewCardBlock_select".
- */
-export interface ReviewCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  reviews?:
-    | T
-    | {
-        reviewTitle?: T;
-        reviewerName?: T;
-        reviewerCountry?: T;
-        reviewIcon?: T;
-        id?: T;
-      };
-  navigation?:
-    | T
-    | {
-        right?: T;
-        left?: T;
-      };
-  note?:
-    | T
-    | {
-        noteText?: T;
-        noteIcon?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "StepsCardBlock_select".
- */
-export interface StepsCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  steps?:
-    | T
-    | {
-        stepTitle?: T;
-        stepNumber?: T;
-        icon?: T;
-        stepDescription?: T;
-        id?: T;
-      };
-  note?: T;
-  button?:
-    | T
-    | {
-        label?: T;
-        redirectUrl?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "SymptomsCardBlock_select".
- */
-export interface SymptomsCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  symptoms?:
-    | T
-    | {
-        symptom?: T;
-        id?: T;
-      };
-  moreButton?: T;
-  description?: T;
-  testButton?:
-    | T
-    | {
-        buttonText?: T;
-        buttonLink?: T;
-      };
-  symptomsImage?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "VideoCardBlock_select".
- */
-export interface VideoCardBlockSelect<T extends boolean = true> {
-  title?: T;
-  description?: T;
-  reviews?:
-    | T
-    | {
-        name?: T;
-        description?: T;
-        review?: T;
-        video?: T;
-        thumbnail?: T;
-        id?: T;
-      };
-  navigation?:
-    | T
-    | {
-        right?: T;
-        left?: T;
       };
   id?: T;
   blockName?: T;
@@ -13024,6 +17829,124 @@ export interface FootersSelect<T extends boolean = true> {
         linkColor?: T;
         logo?: T;
         id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-headers_select".
+ */
+export interface RdHeadersSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  logo?: T;
+  logoLight?: T;
+  sheetWatermark?: T;
+  homeUrl?: T;
+  navItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  discoverLabel?: T;
+  discoverItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  primaryLabel?: T;
+  moreLabel?: T;
+  moreItems?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  languageLabel?: T;
+  applyLabel?: T;
+  loginLabel?: T;
+  loginUrl?: T;
+  cta?:
+    | T
+    | {
+        type?: T;
+        newTab?: T;
+        reference?: T;
+        url?: T;
+        label?: T;
+      };
+  menuLabel?: T;
+  closeLabel?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rd-footers_select".
+ */
+export interface RdFootersSelect<T extends boolean = true> {
+  name?: T;
+  isDefault?: T;
+  variant?: T;
+  logo?: T;
+  tagline?: T;
+  signupLabel?: T;
+  signupPlaceholder?: T;
+  signupInputLabel?: T;
+  signupButtonLabel?: T;
+  signupNote?: T;
+  columnOneTitle?: T;
+  columnOneLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  columnTwoTitle?: T;
+  columnTwoLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  columnThreeTitle?: T;
+  columnThreeLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  copyright?: T;
+  legalLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  social?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+      };
+  disclaimer?: T;
+  tone?:
+    | T
+    | {
+        taglineOpacity?: T;
+        linkRowColor?: T;
+        linkRowOpacity?: T;
+        copyrightColor?: T;
       };
   updatedAt?: T;
   createdAt?: T;

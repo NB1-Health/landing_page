@@ -108,6 +108,7 @@ export const nl = {
     savingsPrefix: 'Bespaar',
     savingsSuffix: '/ cyclus',
     bestValue: 'Beste keuze',
+    mostInformed: 'Best geïnformeerd',
     compareShow: 'Core & Advanced uitgebreid vergelijken',
     compareHide: 'Vergelijking verbergen',
     guaranteeBilledMonthly: 'Maandelijkse rekening.',

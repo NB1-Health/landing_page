@@ -97,7 +97,10 @@ export const OrderTimelineComponent: React.FC<Props> = ({
           text-transform: uppercase;
           color: rgba(18, 49, 77, 0.4);
           text-align: left;
-          white-space: nowrap;
+          line-height: 1.3;
+          /* Fixed-width column: longer labels ("SEMAINES 1–2") wrap onto a second
+             line instead of running into the dot. */
+          overflow-wrap: break-word;
         }
         .nb1-dot {
           width: 10px;

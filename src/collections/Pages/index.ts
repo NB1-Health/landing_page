@@ -8,9 +8,49 @@ import {
   enforceAgentDraftOperation,
 } from '../../access/roles'
 
+import { RdHeroBlock } from '@/blocks/redesign/Hero/config'
+import { RdProtocolBlock } from '@/blocks/redesign/Protocol/config'
+import { RdFormulaBlock } from '@/blocks/redesign/Formula/config'
+import { RdProofBlock } from '@/blocks/redesign/Proof/config'
+import { RdBiologyBlock } from '@/blocks/redesign/Biology/config'
+import { RdLabBlock } from '@/blocks/redesign/Lab/config'
+import { RdReviewsBlock } from '@/blocks/redesign/Reviews/config'
+import { RdPlansBlock } from '@/blocks/redesign/Plans/config'
+import { RdCloseBlock } from '@/blocks/redesign/Close/config'
+// Our Plans blocks. A separate family from the nine above: same pipeline, a
+// different mockup, and `rd-pg`-scoped styles so the two cannot collide.
+import { RdPgHeroBlock } from '@/blocks/redesign/PgHero/config'
+import { RdPgPlansBlock } from '@/blocks/redesign/PgPlans/config'
+import { RdPgAdvancedBlock } from '@/blocks/redesign/PgAdvanced/config'
+import { RdPgWordsBlock } from '@/blocks/redesign/PgWords/config'
+import { RdPgDataBlock } from '@/blocks/redesign/PgData/config'
+import { RdPgBoardStripBlock } from '@/blocks/redesign/PgBoardStrip/config'
+import { RdPgTimelineBlock } from '@/blocks/redesign/PgTimeline/config'
+import { RdPgBoardBlock } from '@/blocks/redesign/PgBoard/config'
+import { RdPgAthletesBlock } from '@/blocks/redesign/PgAthletes/config'
+import { RdPgQuietBlock } from '@/blocks/redesign/PgQuiet/config'
+import { RdPgGuaranteeBlock } from '@/blocks/redesign/PgGuarantee/config'
+import { RdPgFaqBlock } from '@/blocks/redesign/PgFaq/config'
+import { RdPgBuyBlock } from '@/blocks/redesign/PgBuy/config'
+import { RdPrHeroBlock } from '@/blocks/redesign/PrHero/config'
+import { RdPrJourneyBlock } from '@/blocks/redesign/PrJourney/config'
+import { RdPrKitBlock } from '@/blocks/redesign/PrKit/config'
+import { RdPrBloodKitBlock } from '@/blocks/redesign/PrBloodKit/config'
+import { RdPrAnalyseBlock } from '@/blocks/redesign/PrAnalyse/config'
+import { RdPrFormulaBlock } from '@/blocks/redesign/PrFormula/config'
+import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
+import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
+import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
+import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
+import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
+import { RdLbMethodBlock } from '@/blocks/redesign/LbMethod/config'
+import { RdLbLabBlock } from '@/blocks/redesign/LbLab/config'
+import { RdLbReadingBlock } from '@/blocks/redesign/LbReading/config'
+import { RdLbFormulaBlock } from '@/blocks/redesign/LbFormula/config'
+import { RdLbAdvancedBlock } from '@/blocks/redesign/LbAdvanced/config'
+import { RdLbBoardBlock } from '@/blocks/redesign/LbBoard/config'
 import { Content } from '../../blocks/Content/config'
 import { hero } from '@/heros/config'
-import { BoxCardBlock } from '@/blocks/landingBlocks/BoxCard/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
@@ -21,12 +61,6 @@ import { MetaImageField, OverviewField, PreviewField } from '@payloadcms/plugin-
 import { costomSlugField } from '@/fields/slug'
 import { chromeFields } from '@/fields/contentDocument'
 import { rejectHubSlugCollision } from './hooks/rejectHubSlugCollision'
-import { FormulaCardBlock } from '@/blocks/landingBlocks/FormulaCard/config'
-import { ResultsCardBlock } from '@/blocks/landingBlocks/ResultsCard/config'
-import { ReviewCardBlock } from '@/blocks/landingBlocks/ReviewCard/config'
-import { StepsCardBlock } from '@/blocks/landingBlocks/StepsCard/config'
-import { SymptomsCardBlock } from '@/blocks/landingBlocks/SymptomsCard/config'
-import { VideoCardBlock } from '@/blocks/landingBlocks/VideoCard/config'
 import { BenefitsBanner } from '@/blocks/newLandingBlocks/BenefitsBanner/config'
 import { StepsBanner } from '@/blocks/newLandingBlocks/StepsBanner/config'
 import { ProductBanner } from '@/blocks/newLandingBlocks/ProductBanner/config'
@@ -179,6 +213,33 @@ export const Pages: CollectionConfig<'pages'> = {
 
     ...chromeFields({ noun: 'page' }),
 
+    // Redesign chrome. Added HERE rather than in chromeFields() because that
+    // helper is shared with every other content collection, and only pages are
+    // being redesigned. Leave both empty and the page keeps the site header and
+    // footer exactly as before — this is additive, and nothing existing moves.
+    {
+      name: 'rdHeader',
+      type: 'relationship',
+      relationTo: 'rd-headers',
+      label: 'Redesign header',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Use the redesign nav on this page instead of the site header. Leave empty for the normal one.',
+      },
+    },
+    {
+      name: 'rdFooter',
+      type: 'relationship',
+      relationTo: 'rd-footers',
+      label: 'Redesign footer',
+      admin: {
+        position: 'sidebar',
+        description:
+          'Use the redesign footer on this page instead of the site footer. Leave empty for the normal one.',
+      },
+    },
+
     {
       type: 'tabs',
       tabs: [
@@ -193,14 +254,46 @@ export const Pages: CollectionConfig<'pages'> = {
               name: 'layout',
               type: 'blocks',
               blocks: [
+                RdHeroBlock,
+                RdProtocolBlock,
+                RdFormulaBlock,
+                RdProofBlock,
+                RdBiologyBlock,
+                RdLabBlock,
+                RdReviewsBlock,
+                RdPlansBlock,
+                RdCloseBlock,
+                RdPgHeroBlock,
+                RdPgPlansBlock,
+                RdPgAdvancedBlock,
+                RdPgWordsBlock,
+                RdPgDataBlock,
+                RdPgBoardStripBlock,
+                RdPgTimelineBlock,
+                RdPgBoardBlock,
+                RdPgAthletesBlock,
+                RdPgQuietBlock,
+                RdPgGuaranteeBlock,
+                RdPgFaqBlock,
+                RdPgBuyBlock,
+                RdPrHeroBlock,
+                RdPrJourneyBlock,
+                RdPrKitBlock,
+                RdPrBloodKitBlock,
+                RdPrAnalyseBlock,
+                RdPrFormulaBlock,
+                RdPrArrivesBlock,
+                RdPrAdvancedBlock,
+                RdLbHeroBlock,
+                RdLbNotBlock,
+                RdLbReadsBlock,
+                RdLbMethodBlock,
+                RdLbLabBlock,
+                RdLbReadingBlock,
+                RdLbFormulaBlock,
+                RdLbAdvancedBlock,
+                RdLbBoardBlock,
                 Content,
-                BoxCardBlock,
-                FormulaCardBlock,
-                ResultsCardBlock,
-                ReviewCardBlock,
-                StepsCardBlock,
-                SymptomsCardBlock,
-                VideoCardBlock,
                 BenefitsBanner,
                 StepsBanner,
                 ProductBanner,
@@ -438,7 +531,16 @@ export const Pages: CollectionConfig<'pages'> = {
 
   versions: {
     drafts: {
-      autosave: { interval: 5000 },
+      // 5s -> 15s. Autosave is debounced, so this is the shortest gap between
+      // writes while someone is actively typing — it does NOT fire on an idle
+      // form (measured: an untouched edit view makes no autosave requests at
+      // all). Each write is a full document save across 9 locales into both
+      // `pages` and `_pages_v`, so on the 1-vCPU staging box a save every 5s
+      // while an editor types is real load.
+      //
+      // 15 rather than 30: 30s of unsaved work is a long time to lose to a
+      // crashed tab, and the win from 15->30 is half the win from 5->15.
+      autosave: { interval: 15000 },
       localizeStatus: true,
       schedulePublish: true,
     },

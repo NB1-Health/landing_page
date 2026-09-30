@@ -23,6 +23,15 @@ export default async function ProductPage({ params }: Props) {
     collection: 'products',
     where: { slug: { equals: slug } },
     limit: 1,
+    // `payload.config.ts` sets no `defaultDepth`, so an omitted depth is 2.
+    // This page reads three scalars off the result — `jsonLd`, `name` and
+    // `description` — so those two levels of relationship resolution were
+    // bought and thrown away on every render.
+    //
+    // Raise this if the page starts rendering a related document, a product
+    // image being the obvious one. At depth 0 a relationship arrives as a bare
+    // id and renders as nothing, which fails silently rather than throwing.
+    depth: 0,
   })
 
   const product = res.docs?.[0]

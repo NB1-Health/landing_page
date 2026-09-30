@@ -1,0 +1,12 @@
+/*
+ * Self-hosted webfaces.
+ *
+ * The mockup declares each face with `local()` first, so on the designer's
+ * machine it renders from installed fonts and the woff2 is never fetched.
+ * Ship the files: a synthesised weight is the one difference no amount of
+ * verbatim CSS copying can close, and `document.fonts.check()` returns true
+ * for a weight the browser is faking.
+ */
+@font-face{font-family:"Martina Plantijn";src:local("Martina Plantijn"),url("/fonts/martina-plantijn-400.woff2") format("woff2");font-weight:400;font-display:swap;}
+  @font-face{font-family:"F37 Zagma";src:local("F37 Zagma"),url("/fonts/f37-zagma-350.woff2") format("woff2");font-weight:350;font-display:swap;}
+  @font-face{font-family:"OO Theran";src:local("OO Theran"),url("/fonts/oo-theran-300.woff2") format("woff2");font-weight:300;font-display:swap;}

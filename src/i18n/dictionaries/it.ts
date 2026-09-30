@@ -65,6 +65,7 @@ export const it = {
     savingsPrefix: 'Risparmia',
     savingsSuffix: '/ ciclo',
     bestValue: 'Più conveniente',
+    mostInformed: 'La più informata',
     compareShow: 'Confronta Core e Advanced nel dettaglio',
     compareHide: 'Nascondi confronto completo',
     guaranteeBilledMonthly: 'Fatturazione mensile.',
