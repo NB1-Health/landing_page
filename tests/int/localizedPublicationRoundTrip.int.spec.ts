@@ -170,7 +170,7 @@ describeWithDatabase('localized publication round trip (Postgres)', () => {
         data: {
           ...localized.en,
           hero: { type: 'lowImpact' },
-          layout: [{ blockType: 'content', columns: [] }],
+          layout: [{ blockType: 'twoModels' }],
         },
       })
       pageID = page.id
