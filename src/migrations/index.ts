@@ -231,6 +231,7 @@ import * as migration_20260930_180000_rd_dur_block from './20260930_180000_rd_du
 import * as migration_20260930_190000_rd_order_reconcile from './20260930_190000_rd_order_reconcile'
 import * as migration_20260930_200000_rd_dur_steps from './20260930_200000_rd_dur_steps'
 import * as migration_20261001_100000_rd_chk_block from './20261001_100000_rd_chk_block'
+import * as migration_20261001_110000_rd_faq_block from './20261001_110000_rd_faq_block'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
@@ -1403,5 +1404,10 @@ export const migrations = [
     up: migration_20261001_100000_rd_chk_block.up,
     down: migration_20261001_100000_rd_chk_block.down,
     name: '20261001_100000_rd_chk_block',
+  },
+  {
+    up: migration_20261001_110000_rd_faq_block.up,
+    down: migration_20261001_110000_rd_faq_block.down,
+    name: '20261001_110000_rd_faq_block',
   },
 ]

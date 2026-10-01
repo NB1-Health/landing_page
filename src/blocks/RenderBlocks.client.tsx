@@ -41,6 +41,7 @@ const RdLegalComponent = dynamic(() => import('@/blocks/redesign/LegalPage/Compo
 const RdOrderComponent = dynamic(() => import('@/blocks/redesign/OrderPage/Component').then((m) => m.RdOrderComponent))
 const RdDurComponent = dynamic(() => import('@/blocks/redesign/DurationPage/Component').then((m) => m.RdDurComponent))
 const RdChkComponent = dynamic(() => import('@/blocks/redesign/CheckoutPage/Component').then((m) => m.RdChkComponent))
+const RdFaqComponent = dynamic(() => import('@/blocks/redesign/FaqPage/Component').then((m) => m.RdFaqComponent))
 const RdLbHeroComponent = dynamic(() => import('@/blocks/redesign/LbHero/Component').then((m) => m.RdLbHeroComponent))
 const RdLbNotComponent = dynamic(() => import('@/blocks/redesign/LbNot/Component').then((m) => m.RdLbNotComponent))
 const RdLbReadsComponent = dynamic(() => import('@/blocks/redesign/LbReads/Component').then((m) => m.RdLbReadsComponent))
@@ -199,6 +200,7 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdOrder: RdOrderComponent,
   rdDur: RdDurComponent,
   rdChk: RdChkComponent,
+  rdFaq: RdFaqComponent,
   rdLbHero: RdLbHeroComponent,
   rdLbNot: RdLbNotComponent,
   rdLbReads: RdLbReadsComponent,

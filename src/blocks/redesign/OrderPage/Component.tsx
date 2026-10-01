@@ -1720,7 +1720,7 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                 maxWidth: "22ch",
                 margin: "0px auto"
               }}>{faq?.closingHeading}</h2>
-              <button style={{
+              <a style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "1.1em",
@@ -1737,13 +1737,13 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                 padding: "1.1em 1.7em",
                 whiteSpace: "nowrap",
                 flexShrink: "0"
-              }}>
+              }} href={path(nextSlug())}>
                 <span>{ctaLabel()}</span>
                 <span style={{
                   fontSize: "1.05em",
                   lineHeight: "1"
                 }}>{"\u2197"}</span>
-              </button>
+              </a>
             </div>
           </section>
           <div style={{

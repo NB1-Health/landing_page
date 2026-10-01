@@ -68,6 +68,18 @@ import './rd-lg.css'
 // header's labels and the two-up plan grid are both `display:none` / one column
 // in the inline styles, because the mockup is mobile-first.
 import './rd-or.css'
+
+// The FAQ page's own stylesheet, on the same reasoning as rd-or.css above.
+// GENERATED from the FAQ mockup's RENDERED stylesheets, so nothing in it is
+// retyped. It is scoped to `.rd-faq` and `.rd-faq-hero` and NOT to `.rd-block`,
+// because the rules it carries are written against bare tags and on a shared
+// root they would rewrite every other converted page. It declares `--tint`, the
+// one token this markup reads that rd-tokens.css does not define; names the
+// `nb1page` CONTAINER, so every inline `cqi` answers against the box the design
+// measured; and ports two container rules off `#nb1ab`. That selector is the
+// PAGE WRAPPER, not site chrome — without those two the hero draws 20px of side
+// padding where the design has 48, and a 60px heading where it has 62.
+import './rd-faq.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

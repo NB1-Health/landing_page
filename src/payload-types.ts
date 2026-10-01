@@ -327,6 +327,7 @@ export interface Page {
     | RdOrderBlock
     | RdDurBlock
     | RdChkBlock
+    | RdFaqBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -5234,6 +5235,51 @@ export interface RdChkBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdChk';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFaqBlock".
+ */
+export interface RdFaqBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  groups?:
+    | {
+        label: string;
+        items?:
+          | {
+              question: string;
+              answer?: {
+                root: {
+                  type: string;
+                  children: {
+                    type: any;
+                    version: number;
+                    [k: string]: unknown;
+                  }[];
+                  direction: ('ltr' | 'rtl') | null;
+                  format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                  indent: number;
+                  version: number;
+                };
+                [k: string]: unknown;
+              } | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  calloutHeading?: string | null;
+  calloutBody?: string | null;
+  calloutCtaLabel?: string | null;
+  calloutCtaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdFaq';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12872,6 +12918,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdOrder?: T | RdOrderBlockSelect<T>;
         rdDur?: T | RdDurBlockSelect<T>;
         rdChk?: T | RdChkBlockSelect<T>;
+        rdFaq?: T | RdFaqBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -14810,6 +14857,38 @@ export interface RdChkBlockSelect<T extends boolean = true> {
         helpEmail?: T;
         helpEmailUrl?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFaqBlock_select".
+ */
+export interface RdFaqBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  groups?:
+    | T
+    | {
+        label?: T;
+        items?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  calloutHeading?: T;
+  calloutBody?: T;
+  calloutCtaLabel?: T;
+  calloutCtaHref?: T;
   id?: T;
   blockName?: T;
 }
