@@ -328,6 +328,7 @@ export interface Page {
     | RdDurBlock
     | RdChkBlock
     | RdFaqBlock
+    | RdCtBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -5280,6 +5281,65 @@ export interface RdFaqBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCtBlock".
+ */
+export interface RdCtBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  methodsLabel?: string | null;
+  methods?:
+    | {
+        title: string;
+        body?: string | null;
+        linkLabel?: string | null;
+        linkHref?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  legalLinks?:
+    | {
+        label: string;
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  formHeading?: string | null;
+  formNote?: string | null;
+  recipientEmail?: string | null;
+  nameLabel?: string | null;
+  namePlaceholder?: string | null;
+  emailLabel?: string | null;
+  emailPlaceholder?: string | null;
+  topicLabel?: string | null;
+  topics?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  orderLabel?: string | null;
+  orderPlaceholder?: string | null;
+  messageLabel?: string | null;
+  messagePlaceholder?: string | null;
+  submitLabel?: string | null;
+  formHint?: string | null;
+  showName?: boolean | null;
+  showEmail?: boolean | null;
+  showTopic?: boolean | null;
+  showOrder?: boolean | null;
+  calloutHeading?: string | null;
+  calloutBody?: string | null;
+  calloutCtaLabel?: string | null;
+  calloutCtaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdCt';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12919,6 +12979,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdDur?: T | RdDurBlockSelect<T>;
         rdChk?: T | RdChkBlockSelect<T>;
         rdFaq?: T | RdFaqBlockSelect<T>;
+        rdCt?: T | RdCtBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -14885,6 +14946,66 @@ export interface RdFaqBlockSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  calloutHeading?: T;
+  calloutBody?: T;
+  calloutCtaLabel?: T;
+  calloutCtaHref?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCtBlock_select".
+ */
+export interface RdCtBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  methodsLabel?: T;
+  methods?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        linkLabel?: T;
+        linkHref?: T;
+        id?: T;
+      };
+  legalLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  formHeading?: T;
+  formNote?: T;
+  recipientEmail?: T;
+  nameLabel?: T;
+  namePlaceholder?: T;
+  emailLabel?: T;
+  emailPlaceholder?: T;
+  topicLabel?: T;
+  topics?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  orderLabel?: T;
+  orderPlaceholder?: T;
+  messageLabel?: T;
+  messagePlaceholder?: T;
+  submitLabel?: T;
+  formHint?: T;
+  showName?: T;
+  showEmail?: T;
+  showTopic?: T;
+  showOrder?: T;
   calloutHeading?: T;
   calloutBody?: T;
   calloutCtaLabel?: T;
