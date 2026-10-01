@@ -10,7 +10,27 @@ import RdFooter from './Footer'
 /** See HeaderServer for why this wrapper exists and why it is display:contents. */
 const SCOPE: React.CSSProperties = { display: 'contents' }
 
-type Link = { label?: string | null; url?: string | null }
+/**
+ * The shape RdFooter's column arrays actually want.
+ *
+ * BOTH FIELDS ARE REQUIRED, and that is not a guess — `label` and `url` are
+ * `required: true` on the RdFooters column arrays, so payload-types generates
+ * them as plain `string`. The first version of this file typed them
+ * `string | null | undefined`, mirroring how Payload types an OPTIONAL array
+ * field, and `next build` rejected the spread:
+ *
+ *   Type 'string | null | undefined' is not assignable to type 'string'.
+ *
+ * Wrong in the direction that matters: a looser type here would have had to be
+ * narrowed at the call site, and there is no call site — the array goes
+ * straight into the component. The two sources both give plain strings
+ * (`dict.footer.journal`, and `HubLink` is `{ title: string; path: string }`),
+ * so the honest type is the strict one.
+ *
+ * `id` is optional on the generated type and simply absent here; a column built
+ * at render has no row id, and the component does not read one.
+ */
+type Link = { label: string; url: string }
 
 /**
  * The content tree, as footer links: a Journal link, then every hub that has a
@@ -33,10 +53,8 @@ async function hubColumn(locale: string): Promise<Link[]> {
   const appLocale = isAppLocale(locale) ? locale : 'en'
   if (!isJournalLocale(appLocale)) return []
 
-  const [dict, hubs] = await Promise.all([
-    Promise.resolve(getDictionary(appLocale)),
-    getCachedHubLinks(appLocale)(),
-  ])
+  const dict = getDictionary(appLocale)
+  const hubs = await getCachedHubLinks(appLocale)()
 
   return [
     { label: dict.footer.journal, url: `/${appLocale}/journal` },
@@ -80,16 +98,20 @@ export async function RdFooterServer({
   const pick = (data as { contentColumn?: string | null }).contentColumn
   let generated: Partial<Record<'columnOneLinks' | 'columnTwoLinks' | 'columnThreeLinks', Link[]>> = {}
 
+  // Three branches rather than a computed key. `{ [field]: links }` with a
+  // union-typed key widens to `{ [x: string]: Link[] }`, which does not satisfy
+  // the Partial<Record<…>> above — the same class of error as the one that
+  // broke the build on `Link` itself. Spelled out, each assignment is checked.
+  //
+  // Anything unrecognised falls through and the authored column renders.
+  // `contentColumn` is a select so that is unreachable from the admin, but a
+  // seed or a script writes the raw string, and a typo there should cost a
+  // generated column rather than the whole column.
   if (pick && pick !== 'none') {
     const links = await hubColumn(locale)
-    const field = (
-      { one: 'columnOneLinks', two: 'columnTwoLinks', three: 'columnThreeLinks' } as const
-    )[pick as 'one' | 'two' | 'three']
-    // An unrecognised value renders the authored column rather than an empty
-    // one. `contentColumn` is a select, so this is unreachable through the
-    // admin — but a seed or a script writes the raw string, and a typo there
-    // should cost a generated column, not the whole column.
-    if (field) generated = { [field]: links }
+    if (pick === 'one') generated = { columnOneLinks: links }
+    else if (pick === 'two') generated = { columnTwoLinks: links }
+    else if (pick === 'three') generated = { columnThreeLinks: links }
   }
 
   return (
