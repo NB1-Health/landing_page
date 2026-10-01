@@ -4,6 +4,7 @@ import {
   clearInfluencerOffer,
   INFLUENCER_OFFER_MAX_AGE_MS,
   INFLUENCER_OFFER_STORAGE_KEY,
+  readCheckoutOffer,
   readInfluencerOffer,
   storeInfluencerOffer,
 } from '@/lib/influencerOffer'
@@ -11,6 +12,7 @@ import {
 describe('influencer offer session handoff', () => {
   beforeEach(() => {
     window.sessionStorage.clear()
+    document.cookie = 'nb1_discount=; Path=/; Max-Age=0'
   })
 
   afterEach(() => {
@@ -74,5 +76,30 @@ describe('influencer offer session handoff', () => {
 
     expect(storeInfluencerOffer({ code: '20OFF', sourceSlug: 'creator' })).toBeNull()
     setItem.mockRestore()
+  })
+
+  it('falls back to an ad link code, and a creator handoff wins over it', () => {
+    expect(readCheckoutOffer()).toBeNull()
+
+    document.cookie = 'nb1_discount=%20spring_20; Path=/'
+    expect(readCheckoutOffer()).toEqual({ code: 'SPRING_20', source: 'link' })
+
+    storeInfluencerOffer({ code: '20OFF', sourceSlug: 'creator-example' })
+    expect(readCheckoutOffer()).toMatchObject({
+      code: '20OFF',
+      sourceSlug: 'creator-example',
+      source: 'influencer',
+    })
+  })
+
+  it('ignores a malformed link code and clears a valid one with the creator offer', () => {
+    document.cookie = 'nb1_discount=%3Cscript%3E; Path=/'
+    expect(readCheckoutOffer()).toBeNull()
+
+    document.cookie = 'nb1_discount=SPRING20; Path=/'
+    storeInfluencerOffer({ code: '20OFF', sourceSlug: 'creator-example' })
+    clearInfluencerOffer()
+    expect(readCheckoutOffer()).toBeNull()
+    expect(document.cookie).not.toContain('nb1_discount')
   })
 })
