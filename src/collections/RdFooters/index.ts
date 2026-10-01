@@ -47,6 +47,32 @@ export const RdFooters: CollectionConfig = {
       defaultValue: true,
     },
     {
+      name: 'contentColumn',
+      type: 'select',
+      options: [
+        { label: 'None — all three columns are authored', value: 'none' },
+        { label: 'Column one', value: 'one' },
+        { label: 'Column two', value: 'two' },
+        { label: 'Column three', value: 'three' },
+      ],
+      defaultValue: 'none',
+      label: 'Generate a column from the hubs',
+      admin: {
+        description:
+          "Replaces that column's links with the content tree — a Journal link "
+          + "followed by every hub that has a slug in this locale. Its TITLE is "
+          + "still the one you type above.\n\n"
+          + "This exists so the journal can wear this footer without losing its "
+          + "own navigation. The site footer builds the same column the same way "
+          + "(Footer/Component.tsx), and it is generated rather than typed for a "
+          + "reason: create a hub with a slug and it appears here, remove the "
+          + "slug and it goes. A typed copy would freeze today's four hubs and "
+          + "quietly rot in the other eight locales.\n\n"
+          + "The links you author in that column are kept, not deleted — set "
+          + "this back to None and they return.",
+      },
+    },
+    {
       name: 'variant',
       type: 'select',
       options: ['full', 'slim', 'stack'],

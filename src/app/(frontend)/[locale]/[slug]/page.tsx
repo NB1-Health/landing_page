@@ -35,6 +35,9 @@ import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i1
 import { HubPage } from '@/components/HubPage'
 import { buildHubMetadata } from '@/utilities/hubMetadata'
 import { getCachedHubBySlug } from '@/utilities/hubQueries'
+import { JournalReskin } from '@/components/JournalReskin'
+import { JournalFooter } from '@/components/JournalFooter'
+
 const PAGE_RENDER_POPULATE = {
   headers: { name: true },
   footers: { name: true },
@@ -255,6 +258,7 @@ export default async function Page({ params: paramsPromise }: Args) {
 
   return (
     <>
+      <JournalReskin />
       <JsonLd data={pageJsonLd} />
 
       {!hideHeader &&
@@ -305,7 +309,7 @@ export default async function Page({ params: paramsPromise }: Args) {
         (rdFooterId ? (
           <RdFooterServer locale={locale} id={rdFooterId} />
         ) : (
-          <Footer locale={locale} id={footerId} />
+          <JournalFooter locale={locale} id={footerId} />
         ))}
     </>
   )

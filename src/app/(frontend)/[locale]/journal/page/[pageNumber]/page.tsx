@@ -22,7 +22,9 @@ import { buildJournalTrail } from '@/utilities/journalTrail'
 import PageClient from './page.client'
 import { isJournalLocale } from '@/utilities/journalEnabled'
 import { journalIndexLocalizedDocument } from '@/Header/localizedDocument'
+import { JournalReskin } from '@/components/JournalReskin'
 
+import { JournalFooter } from '@/components/JournalFooter'
 export const revalidate = 600
 
 type Args = {
@@ -67,6 +69,7 @@ export default async function Page({ params: paramsPromise }: Args) {
           localizedDocument={journalIndexLocalizedDocument()}
         />
       )}
+      <JournalReskin />
       <div className="jr-page">
         <PageClient />
 
@@ -113,7 +116,7 @@ export default async function Page({ params: paramsPromise }: Args) {
           {totalPages > 1 && <Pagination basePath="/journal" page={page} totalPages={totalPages} />}
         </div>
       </div>
-      {!copy.footer.hide && <Footer id={copy.footer.id} locale={localeParam} />}
+      {!copy.footer.hide && <JournalFooter id={copy.footer.id} locale={localeParam} />}
     </>
   )
 }

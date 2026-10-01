@@ -1395,6 +1395,14 @@ export interface RdFooter {
   name?: string | null;
   isDefault?: boolean | null;
   /**
+   * Replaces that column's links with the content tree — a Journal link followed by every hub that has a slug in this locale. Its TITLE is still the one you type above.
+   *
+   * This exists so the journal can wear this footer without losing its own navigation. The site footer builds the same column the same way (Footer/Component.tsx), and it is generated rather than typed for a reason: create a hub with a slug and it appears here, remove the slug and it goes. A typed copy would freeze today's four hubs and quietly rot in the other eight locales.
+   *
+   * The links you author in that column are kept, not deleted — set this back to None and they return.
+   */
+  contentColumn?: ('none' | 'one' | 'two' | 'three') | null;
+  /**
    * Which footer this row draws. `full` is the homepage's — newsletter, blurb, three link columns, legal strip. `slim` is Our Plans' single row: logo, a row of links, copyright. `stack` is The Protocol's and The Lab's: logo, tagline, a link row under a hairline, copyright. The three share a root element and nothing else, which is why this is a layout switch rather than a set of toggles.
    */
   variant?: ('full' | 'slim' | 'stack') | null;
@@ -18492,6 +18500,7 @@ export interface RdHeadersSelect<T extends boolean = true> {
 export interface RdFootersSelect<T extends boolean = true> {
   name?: T;
   isDefault?: T;
+  contentColumn?: T;
   variant?: T;
   logo?: T;
   tagline?: T;
@@ -19190,6 +19199,10 @@ export interface SiteSetting {
      */
     footer?: (number | null) | Footer;
     /**
+     * Use a redesign footer across the whole Journal — the index, the paginated pages, every article, and the hub, pillar, term and research pages. Leave empty and each of those keeps whichever site footer it already chooses, unchanged. This overrides the Footer field above wherever it is set. If the footer you pick has "Generate a column from the hubs" set, the journal keeps its Journal / Microbiome / Research / Lexicon links; without it, those links are not in the redesign footer at all.
+     */
+    rdFooter?: (number | null) | RdFooter;
+    /**
      * Do not render any footer on the Journal index.
      */
     hideFooter?: boolean | null;
@@ -19263,6 +19276,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         header?: T;
         hideHeader?: T;
         footer?: T;
+        rdFooter?: T;
         hideFooter?: T;
       };
   updatedAt?: T;
