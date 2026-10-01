@@ -15,6 +15,22 @@ const GEO_LOCALES: Record<string, string> = {
   AE: 'uae',
 }
 const LOCALE_COOKIE = 'nb1_locale'
+// Same cookie try.nb1.com writes for ?discount=CODE; the checkout auto-applies it.
+const DISCOUNT_COOKIE = 'nb1_discount'
+const DISCOUNT_MAX_AGE = 30 * 24 * 60 * 60
+
+function setLinkDiscountCookie(req: NextRequest, res: NextResponse) {
+  const code = req.nextUrl.searchParams.get('discount')?.trim().toUpperCase()
+  if (!code || !/^[A-Z0-9_-]{1,64}$/.test(code)) return
+  const host = req.headers.get('host')?.split(':')[0] || req.nextUrl.hostname
+  const shared = /(^|\.)nb1\.com$/.test(host)
+  res.cookies.set(DISCOUNT_COOKIE, code, {
+    path: '/',
+    maxAge: DISCOUNT_MAX_AGE,
+    sameSite: 'lax',
+    ...(shared ? { domain: '.nb1.com', secure: true } : {}),
+  })
+}
 
 function geoLocale(req: NextRequest): string {
   const country = (
@@ -157,6 +173,8 @@ export async function middleware(req: NextRequest) {
     if (!canCacheMarketingRequest(req)) res.headers.set('Cloudflare-CDN-Cache-Control', 'no-store')
     // The URL supplies the default currency. Only an explicit switcher choice
     // needs a cookie; country/currency Set-Cookie would prevent shared caching.
+    // ?discount= is safe: any query string already makes the request uncacheable.
+    setLinkDiscountCookie(req, res)
     return res
   }
 

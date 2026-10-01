@@ -176,3 +176,22 @@ describe('Next raw request cache grant', () => {
     expect(getMarketingCachePaths(['en', 'de'])).toEqual(['/en'])
   })
 })
+
+describe('ad link discount handoff', () => {
+  it('stores a valid ?discount= code in the shared nb1_discount cookie, uncached', async () => {
+    const response = await middleware(request('/en/our-plans?discount=%20spring_20%20'))
+    const cookie = response.headers.get('set-cookie') ?? ''
+
+    expect(cookie).toContain('nb1_discount=SPRING_20')
+    expect(cookie).toContain('Domain=.nb1.com')
+    expect(cookie).toContain('Max-Age=2592000')
+    expect(response.headers.get('Cloudflare-CDN-Cache-Control')).toBe('no-store')
+  })
+
+  it('ignores malformed codes and requests without one', async () => {
+    for (const path of ['/en/our-plans?discount=bad%3Bcode', '/en/our-plans?discount=', '/en']) {
+      const response = await middleware(request(path))
+      expect(response.headers.get('set-cookie') ?? '').not.toContain('nb1_discount')
+    }
+  })
+})
