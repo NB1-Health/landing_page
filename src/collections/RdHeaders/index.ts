@@ -46,6 +46,50 @@ export const RdHeaders: CollectionConfig = {
       label: 'Use when a page picks none',
       defaultValue: true,
     },
+    // ── Appearance ───────────────────────────────────────────────────────
+    //
+    // TWO CHECKBOXES, NOT A THEME LIST, because the spec's three pictures are
+    // only two headers. "Dark over a dark hero" and "see-through over a photo"
+    // are the SAME header — transparent, cool-grey wordmark and links, lime CTA
+    // — and what differs between those two pictures is only what sits behind
+    // it. A `light | dark | photo` select would have made the editor choose
+    // between two names for one thing.
+    //
+    // Neither of these describes the SCROLLED header. They say how it starts,
+    // over the hero; once the hero has passed, the solid light bar takes over,
+    // which is the behaviour already shipped and is why the CTA and both logos
+    // are still needed whatever is set here.
+    {
+      name: 'transparent',
+      type: 'checkbox',
+      label: 'See-through over the hero',
+      defaultValue: false,
+      admin: {
+        description:
+          'No bar, no blur, no hairline — the header sits straight on the hero, for a '
+          + 'full-bleed photo or a dark block. Off is the solid pale bar, which is the '
+          + 'default on every page that does not need otherwise.',
+      },
+    },
+    {
+      name: 'lightText',
+      type: 'checkbox',
+      label: 'Light text',
+      defaultValue: false,
+      admin: {
+        // Offered ONLY on a see-through header, and that is a guard rather than
+        // tidiness. Two checkboxes make four combinations and one of them is
+        // unusable: light text on the solid pale bar is pale on pale, an
+        // invisible nav. Hidden here, it cannot be saved.
+        condition: (_data, siblingData) => Boolean(siblingData?.transparent),
+        description:
+          'Cool-grey wordmark, links and menu icon, for a dark hero or a dark photo. '
+          + 'A soft dark fade across the top 140px comes with it, so they stay readable '
+          + 'on any image. Leave this off over a PALE photo, where dark type reads '
+          + 'better. The lime CTA never changes colour in either.',
+      },
+    },
+
     {
       name: 'logo',
       type: 'upload',

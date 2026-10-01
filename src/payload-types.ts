@@ -1295,6 +1295,14 @@ export interface RdHeader {
   name?: string | null;
   isDefault?: boolean | null;
   /**
+   * No bar, no blur, no hairline — the header sits straight on the hero, for a full-bleed photo or a dark block. Off is the solid pale bar, which is the default on every page that does not need otherwise.
+   */
+  transparent?: boolean | null;
+  /**
+   * Cool-grey wordmark, links and menu icon, for a dark hero or a dark photo. A soft dark fade across the top 140px comes with it, so they stay readable on any image. Leave this off over a PALE photo, where dark type reads better. The lime CTA never changes colour in either.
+   */
+  lightText?: boolean | null;
+  /**
    * For a light nav. The mockup carries both and swaps them by breakpoint.
    */
   logo?: (number | null) | Media;
@@ -18429,6 +18437,8 @@ export interface FootersSelect<T extends boolean = true> {
 export interface RdHeadersSelect<T extends boolean = true> {
   name?: T;
   isDefault?: T;
+  transparent?: T;
+  lightText?: T;
   logo?: T;
   logoLight?: T;
   sheetWatermark?: T;

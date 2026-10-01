@@ -233,6 +233,7 @@ import * as migration_20260930_200000_rd_dur_steps from './20260930_200000_rd_du
 import * as migration_20261001_100000_rd_chk_block from './20261001_100000_rd_chk_block'
 import * as migration_20261001_110000_rd_faq_block from './20261001_110000_rd_faq_block'
 import * as migration_20261001_120000_rd_ct_block from './20261001_120000_rd_ct_block'
+import * as migration_20261001_130000_rd_header_appearance from './20261001_130000_rd_header_appearance'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
@@ -1415,5 +1416,10 @@ export const migrations = [
     up: migration_20261001_120000_rd_ct_block.up,
     down: migration_20261001_120000_rd_ct_block.down,
     name: '20261001_120000_rd_ct_block',
+  },
+  {
+    up: migration_20261001_130000_rd_header_appearance.up,
+    down: migration_20261001_130000_rd_header_appearance.down,
+    name: '20261001_130000_rd_header_appearance',
   },
 ]
