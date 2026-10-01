@@ -41,6 +41,7 @@ import { RdPrFormulaBlock } from '@/blocks/redesign/PrFormula/config'
 import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
 import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
 import { RdYbPageBlock } from '@/blocks/redesign/YbPage/config'
+import { RdLegalBlock } from '@/blocks/redesign/LegalPage/config'
 import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
 import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
 import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
@@ -272,6 +273,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdPrArrivesBlock,
                 RdPrAdvancedBlock,
                 RdYbPageBlock,
+                RdLegalBlock,
                 RdLbHeroBlock,
                 RdLbNotBlock,
                 RdLbReadsBlock,

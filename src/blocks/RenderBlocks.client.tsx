@@ -37,6 +37,7 @@ const RdPrFormulaComponent = dynamic(() => import('@/blocks/redesign/PrFormula/C
 const RdPrArrivesComponent = dynamic(() => import('@/blocks/redesign/PrArrives/Component').then((m) => m.RdPrArrivesComponent))
 const RdPrAdvancedComponent = dynamic(() => import('@/blocks/redesign/PrAdvanced/Component').then((m) => m.RdPrAdvancedComponent))
 const RdYbPageComponent = dynamic(() => import('@/blocks/redesign/YbPage/Component').then((m) => m.RdYbPageComponent))
+const RdLegalComponent = dynamic(() => import('@/blocks/redesign/LegalPage/Component').then((m) => m.RdLegalComponent))
 const RdLbHeroComponent = dynamic(() => import('@/blocks/redesign/LbHero/Component').then((m) => m.RdLbHeroComponent))
 const RdLbNotComponent = dynamic(() => import('@/blocks/redesign/LbNot/Component').then((m) => m.RdLbNotComponent))
 const RdLbReadsComponent = dynamic(() => import('@/blocks/redesign/LbReads/Component').then((m) => m.RdLbReadsComponent))
@@ -191,6 +192,7 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdPrArrives: RdPrArrivesComponent,
   rdPrAdvanced: RdPrAdvancedComponent,
   rdYbPage: RdYbPageComponent,
+  rdLegal: RdLegalComponent,
   rdLbHero: RdLbHeroComponent,
   rdLbNot: RdLbNotComponent,
   rdLbReads: RdLbReadsComponent,

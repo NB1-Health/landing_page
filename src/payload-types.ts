@@ -323,6 +323,7 @@ export interface Page {
     | RdPrArrivesBlock
     | RdPrAdvancedBlock
     | RdYbPageBlock
+    | RdLegalBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -4432,6 +4433,227 @@ export interface RdYbPageBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdYbPage';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLegalBlock".
+ */
+export interface RdLegalBlock {
+  /**
+   * The page heading and the sentence under it. Identical in shape on all four legal pages.
+   */
+  top: {
+    /**
+     * The id this section gets in the page, for links that point at it. Leave as `top`.
+     */
+    anchorId?: string | null;
+    title: string;
+    /**
+     * One or two sentences saying what this document governs.
+     */
+    intro?: string | null;
+  };
+  /**
+   * The id of the policy section. Leave as `policy`.
+   */
+  anchorId?: string | null;
+  /**
+   * The small label above the rail. `On this page` on all four mockups.
+   */
+  tocLabel?: string | null;
+  /**
+   * The white summary panel above the clauses. It is a convenience, not part of the contract — say so in the intro, as all four mockups do.
+   */
+  glance?: {
+    heading?: string | null;
+    intro?: string | null;
+    /**
+     * One bullet each. Bold carries the emphasis; no other formatting is styled here.
+     */
+    points?:
+      | {
+          body: {
+            root: {
+              type: string;
+              children: {
+                type: any;
+                version: number;
+                [k: string]: unknown;
+              }[];
+              direction: ('ltr' | 'rtl') | null;
+              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+              indent: number;
+              version: number;
+            };
+            [k: string]: unknown;
+          };
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The numbered clauses, in order. The contents rail is built from this list, so nothing needs keeping in step by hand.
+   */
+  clauses?:
+    | {
+        /**
+         * The id used by the contents rail and by any link from another page — `s1`, `s2`, `s6a`. Changing it breaks existing links to this clause.
+         */
+        anchorId: string;
+        /**
+         * Shown beside the title — `01`, `02`. Typed, not counted, so an inserted clause does not silently renumber the ones after it. Terms' annex reads `6 — Annex`.
+         */
+        number?: string | null;
+        title: string;
+        /**
+         * A shorter label for the rail when the full title is too long. Left empty, the rail shows the title.
+         */
+        tocLabel?: string | null;
+        /**
+         * Off for a clause the rail should skip — Terms' annex is the one case in the mockups.
+         */
+        showInToc?: boolean | null;
+        /**
+         * The clause body, part by part, in the order they appear.
+         */
+        parts?:
+          | {
+              /**
+               * Numbered item is the default and covers almost everything. Panel is the white box; Card grid is the row of small cards; Prose is a run of plain paragraphs.
+               */
+              kind?: ('item' | 'panel' | 'grid' | 'prose') | null;
+              /**
+               * For a numbered item — `1.1`, `6.6`. Typed, like the clause number.
+               */
+              number?: string | null;
+              title?: string | null;
+              /**
+               * The item's paragraph, the panel's intro, or the whole of a prose part.
+               */
+              body?: {
+                root: {
+                  type: string;
+                  children: {
+                    type: any;
+                    version: number;
+                    [k: string]: unknown;
+                  }[];
+                  direction: ('ltr' | 'rtl') | null;
+                  format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                  indent: number;
+                  version: number;
+                };
+                [k: string]: unknown;
+              } | null;
+              /**
+               * Only the Cookie page uses a table. Fill this and the column headings below, and the rows become table rows instead of label/value rows.
+               */
+              caption?: string | null;
+              /**
+               * Fill the first to make this panel a table. Two or three columns; an empty third gives a two-column table.
+               */
+              cols?: {
+                c1?: string | null;
+                c2?: string | null;
+                c3?: string | null;
+              };
+              /**
+               * One array, three jobs, decided by the part's kind and by whether a column heading is set: a numbered item's lettered sub-list (a, b); a panel's label/value rows, or its table rows; a card grid's cards.
+               */
+              rows?:
+                | {
+                    /**
+                     * The letter, the row label, or the card heading. Leave empty in a table row.
+                     */
+                    label?: string | null;
+                    /**
+                     * Leave empty in a table row.
+                     */
+                    body?: {
+                      root: {
+                        type: string;
+                        children: {
+                          type: any;
+                          version: number;
+                          [k: string]: unknown;
+                        }[];
+                        direction: ('ltr' | 'rtl') | null;
+                        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                        indent: number;
+                        version: number;
+                      };
+                      [k: string]: unknown;
+                    } | null;
+                    /**
+                     * Table rows only.
+                     */
+                    c1?: string | null;
+                    /**
+                     * Table rows only.
+                     */
+                    c2?: string | null;
+                    /**
+                     * Table rows only; leave empty in a two-column table.
+                     */
+                    c3?: string | null;
+                    id?: string | null;
+                  }[]
+                | null;
+              after?: {
+                root: {
+                  type: string;
+                  children: {
+                    type: any;
+                    version: number;
+                    [k: string]: unknown;
+                  }[];
+                  direction: ('ltr' | 'rtl') | null;
+                  format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                  indent: number;
+                  version: number;
+                };
+                [k: string]: unknown;
+              } | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The dark card that closes the page.
+   */
+  contact?: {
+    heading?: string | null;
+    body?: string | null;
+    /**
+     * Label and value pairs. A value may hold a link — the mockups link the email addresses.
+     */
+    details?:
+      | {
+          label: string;
+          value: {
+            root: {
+              type: string;
+              children: {
+                type: any;
+                version: number;
+                [k: string]: unknown;
+              }[];
+              direction: ('ltr' | 'rtl') | null;
+              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+              indent: number;
+              version: number;
+            };
+            [k: string]: unknown;
+          };
+          id?: string | null;
+        }[]
+      | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLegal';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12066,6 +12288,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdPrArrives?: T | RdPrArrivesBlockSelect<T>;
         rdPrAdvanced?: T | RdPrAdvancedBlockSelect<T>;
         rdYbPage?: T | RdYbPageBlockSelect<T>;
+        rdLegal?: T | RdLegalBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -13489,6 +13712,86 @@ export interface RdYbPageBlockSelect<T extends boolean = true> {
           | T
           | {
               text?: T;
+              id?: T;
+            };
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLegalBlock_select".
+ */
+export interface RdLegalBlockSelect<T extends boolean = true> {
+  top?:
+    | T
+    | {
+        anchorId?: T;
+        title?: T;
+        intro?: T;
+      };
+  anchorId?: T;
+  tocLabel?: T;
+  glance?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        points?:
+          | T
+          | {
+              body?: T;
+              id?: T;
+            };
+      };
+  clauses?:
+    | T
+    | {
+        anchorId?: T;
+        number?: T;
+        title?: T;
+        tocLabel?: T;
+        showInToc?: T;
+        parts?:
+          | T
+          | {
+              kind?: T;
+              number?: T;
+              title?: T;
+              body?: T;
+              caption?: T;
+              cols?:
+                | T
+                | {
+                    c1?: T;
+                    c2?: T;
+                    c3?: T;
+                  };
+              rows?:
+                | T
+                | {
+                    label?: T;
+                    body?: T;
+                    c1?: T;
+                    c2?: T;
+                    c3?: T;
+                    id?: T;
+                  };
+              after?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  contact?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        details?:
+          | T
+          | {
+              label?: T;
+              value?: T;
               id?: T;
             };
       };
