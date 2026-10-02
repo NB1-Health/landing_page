@@ -332,6 +332,7 @@ export interface Page {
     | RdSbBlock
     | RdAbBlock
     | RdStBlock
+    | RdLiBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -5749,6 +5750,146 @@ export interface RdStBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdSt';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLiBlock".
+ */
+export interface RdLiBlock {
+  /**
+   * Optional. Gives the section an id so another page can link straight to it.
+   */
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * Three figures. These are claims rather than counts, so they are typed — unlike the numbers on the chips and tiles below, which are counted from the library.
+     */
+    stats?:
+      | {
+          value: string;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  fam: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * Four. The count on each is COUNTED from the library below, not typed — that is what the Family field is for.
+     */
+    groups?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          label: string;
+          /**
+           * Which bucket this tile counts.
+           */
+          family?: ('strains' | 'fibres' | 'vitamins' | 'actives') | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The stack beside the science-board line.
+     */
+    avatars?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The sentence before the link. Mind the trailing space.
+     */
+    noteLead?: string | null;
+    noteTail?: string | null;
+    ctaLabel?: string | null;
+    /**
+     * A page slug such as science-board-v2 — the locale is added when the page renders.
+     */
+    ctaHref?: string | null;
+  };
+  browse: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * Just the word. The count after it is the length of the library and is added at render.
+     */
+    allLabel?: string | null;
+    /**
+     * Four, one per family, after the All chip.
+     */
+    filters?:
+      | {
+          label: string;
+          /**
+           * Which components this chip shows.
+           */
+          family?: ('strains' | 'fibres' | 'vitamins' | 'actives') | null;
+          id?: string | null;
+        }[]
+      | null;
+    searchPlaceholder?: string | null;
+    searchLabel?: string | null;
+    /**
+     * The library. Each needs a Family — it decides which chip shows the card AND the tint behind its picture.
+     */
+    items?:
+      | {
+          image?: (number | null) | Media;
+          name: string;
+          /**
+           * The small word under the name — Vitamin, Live culture, Botanical. Finer than the family, and shown rather than filtered on.
+           */
+          label?: string | null;
+          /**
+           * One of the four filter buckets. Also picks the card's tint: lime, orange, blue-grey, soft-pink.
+           */
+          family?: ('strains' | 'fibres' | 'vitamins' | 'actives') | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Use {shown} and {total} where this language wants the numbers. Both are filled in at render.
+     */
+    showing?: string | null;
+    /**
+     * The same line for every component — the mockup writes it once and uses it 96 times.
+     */
+    modalBody?: string | null;
+    /**
+     * The × on the dialog.
+     */
+    closeLabel?: string | null;
+  };
+  chosen: {
+    heading: string;
+    steps?:
+      | {
+          num?: string | null;
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    noteLead?: string | null;
+    /**
+     * Usually just the full stop.
+     */
+    noteTail?: string | null;
+    ctaLabel?: string | null;
+    /**
+     * A page slug such as the-protocol-v2 — the locale is added when the page renders.
+     */
+    ctaHref?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdLi';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -13392,6 +13533,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdSb?: T | RdSbBlockSelect<T>;
         rdAb?: T | RdAbBlockSelect<T>;
         rdSt?: T | RdStBlockSelect<T>;
+        rdLi?: T | RdLiBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -15746,6 +15888,99 @@ export interface RdStBlockSelect<T extends boolean = true> {
               id?: T;
             };
         note?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdLiBlock_select".
+ */
+export interface RdLiBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        stats?:
+          | T
+          | {
+              value?: T;
+              label?: T;
+              id?: T;
+            };
+      };
+  fam?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        groups?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              label?: T;
+              family?: T;
+              id?: T;
+            };
+        avatars?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              id?: T;
+            };
+        noteLead?: T;
+        noteTail?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
+      };
+  browse?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        allLabel?: T;
+        filters?:
+          | T
+          | {
+              label?: T;
+              family?: T;
+              id?: T;
+            };
+        searchPlaceholder?: T;
+        searchLabel?: T;
+        items?:
+          | T
+          | {
+              image?: T;
+              name?: T;
+              label?: T;
+              family?: T;
+              id?: T;
+            };
+        showing?: T;
+        modalBody?: T;
+        closeLabel?: T;
+      };
+  chosen?:
+    | T
+    | {
+        heading?: T;
+        steps?:
+          | T
+          | {
+              num?: T;
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        noteLead?: T;
+        noteTail?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
       };
   id?: T;
   blockName?: T;
