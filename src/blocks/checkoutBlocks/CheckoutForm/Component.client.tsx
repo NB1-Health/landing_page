@@ -74,8 +74,8 @@ import {
 } from '@/lib/plans/selectionStore'
 import {
   clearInfluencerOffer,
-  readInfluencerOffer,
-  type InfluencerOffer,
+  readCheckoutOffer,
+  type CheckoutOffer,
 } from '@/lib/influencerOffer'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
@@ -248,8 +248,13 @@ function rePrefixPhone(value: string, from: Country, next: Country): string | nu
 /* ─── Types ─────────────────────────────────────────────────────────── */
 
 type PayMethod = 'card' | 'paypal' | 'klarna' | 'sepa'
-type PromoSource = 'manual' | 'influencer'
+type PromoSource = 'manual' | CheckoutOffer['source']
 type InfluencerOfferStatus = 'checking' | 'pending' | 'applying' | 'settled'
+
+/** Creator attribution for an auto-applied code; link codes carry none. */
+function offerAnalytics(offer: CheckoutOffer) {
+  return offer.source === 'influencer' ? { influencer_slug: offer.sourceSlug } : {}
+}
 
 type Props = { backHref?: string | null; locale?: string }
 
@@ -993,7 +998,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     }
   }, [])
 
-  const [influencerOffer, setInfluencerOffer] = useState<InfluencerOffer | null>(null)
+  const [influencerOffer, setInfluencerOffer] = useState<CheckoutOffer | null>(null)
   const [influencerOfferStatus, setInfluencerOfferStatus] =
     useState<InfluencerOfferStatus>('checking')
   const influencerOfferResolving =
@@ -1009,7 +1014,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       setInfluencerOfferStatus('settled')
       return
     }
-    const offer = readInfluencerOffer()
+    const offer = readCheckoutOffer()
     setInfluencerOffer(offer)
     setInfluencerOfferStatus(offer ? 'pending' : 'settled')
   }, [isProviderConfirmationReturn])
@@ -1034,7 +1039,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       checkout_id: checkoutId,
       entry_reason: searchParams?.get('redirect_status') ? 'provider_return' : 'initial_entry',
       ...(promoApplied && influencerOffer
-        ? { offer_source: 'influencer', influencer_slug: influencerOffer.sourceSlug }
+        ? { offer_source: influencerOffer.source, ...offerAnalytics(influencerOffer) }
         : {}),
       ecommerce: {
         currency,
@@ -1094,12 +1099,12 @@ function CheckoutFormInner({ backHref, locale }: Props) {
 
   function rejectStaleInfluencerOffer(error: unknown): boolean {
     const activeCode =
-      promoSource === 'influencer'
+      promoSource && promoSource !== 'manual'
         ? promoApplied
         : isProviderConfirmationReturn
           ? readCheckoutRedirectContext()?.coupon
           : null
-    const creatorCode = influencerOffer?.code ?? readInfluencerOffer()?.code
+    const creatorCode = influencerOffer?.code ?? readCheckoutOffer()?.code
     if (!activeCode || activeCode !== creatorCode || !isDiscountCheckoutRejection(error)) {
       return false
     }
@@ -1196,7 +1201,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     if (!promoApplied) return
     const key = promoContextKey(promoApplied)
     if (lastPromoPreviewKeyRef.current === key) return
-    if (promoSource === 'influencer') autoOfferAttemptKeyRef.current = key
+    if (promoSource && promoSource !== 'manual') autoOfferAttemptKeyRef.current = key
     void applyPromo(promoApplied, promoSource ?? 'manual', false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promoApplied, promoSource, planKey, cycleKey, shipping, currency, uiLanguage])
@@ -1867,7 +1872,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
     const controller = new AbortController()
     promoAbortRef.current = controller
     setPromoLoading(true)
-    if (source === 'influencer') {
+    if (source !== 'manual') {
       setInfluencerOfferStatus('applying')
       setCreatorOfferFailure(null)
     }
@@ -1905,9 +1910,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           pushEvent('add_voucher', {
             event_id: mintEventId(),
             voucher_source: source,
-            ...(source === 'influencer' && influencerOffer
-              ? { influencer_slug: influencerOffer.sourceSlug }
-              : {}),
+            ...(source !== 'manual' && influencerOffer ? offerAnalytics(influencerOffer) : {}),
             ecommerce: {
               coupon: code,
               currency,
@@ -1961,8 +1964,16 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         const errMsg = excludedFromMonthly
           ? t.promoUi.excludeOneMonth
           : translateDiscountMessage(data.discount_message, dict, dict.promo.invalid)
-        setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
-        if (source === 'influencer') setCreatorOfferFailure(errMsg)
+        // A link code the visitor never typed is dropped quietly, unless a longer plan
+        // would make it valid; then it stays and the switch is offered like a creator offer.
+        if (source === 'link' && !excludedFromMonthly) {
+          clearInfluencerOffer()
+          setInfluencerOffer(null)
+          setPromoMsg(null)
+        } else {
+          setPromoMsg({ text: errMsg, ok: false, offerSwitch: excludedFromMonthly })
+          if (source !== 'manual') setCreatorOfferFailure(errMsg)
+        }
         const errorKey = `error:${source}:${contextKey}`
         if (!trackedVoucherRef.current.has(errorKey)) {
           trackedVoucherRef.current.add(errorKey)
@@ -1970,9 +1981,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
           pushEvent('add_voucher_error', {
             event_id: mintEventId(),
             voucher_source: source,
-            ...(source === 'influencer' && influencerOffer
-              ? { influencer_slug: influencerOffer.sourceSlug }
-              : {}),
+            ...(source !== 'manual' && influencerOffer ? offerAnalytics(influencerOffer) : {}),
             error: errMsg,
             ecommerce: {
               coupon: code,
@@ -1993,7 +2002,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         setPromoPreview(null)
       }
       const errMsg = (err as Error)?.message || dict.promo.invalid
-      setPromoMsg({ text: dict.promo.invalid, ok: false })
+      if (source !== 'link') setPromoMsg({ text: dict.promo.invalid, ok: false })
       if (source === 'influencer') setCreatorOfferFailure(dict.promo.invalid)
       const errorKey = `error:${source}:${contextKey}`
       if (!trackedVoucherRef.current.has(errorKey)) {
@@ -2002,9 +2011,7 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         pushEvent('add_voucher_error', {
           event_id: mintEventId(),
           voucher_source: source,
-          ...(source === 'influencer' && influencerOffer
-            ? { influencer_slug: influencerOffer.sourceSlug }
-            : {}),
+          ...(source !== 'manual' && influencerOffer ? offerAnalytics(influencerOffer) : {}),
           error: errMsg,
           ecommerce: {
             coupon: code,
@@ -2018,19 +2025,19 @@ function CheckoutFormInner({ backHref, locale }: Props) {
       if (promoAbortRef.current === controller) {
         promoAbortRef.current = null
         setPromoLoading(false)
-        if (source === 'influencer') setInfluencerOfferStatus('settled')
+        if (source !== 'manual') setInfluencerOfferStatus('settled')
       }
     }
   }
 
   useEffect(() => {
     if (!influencerOffer || !hasValidSelection || !currencyResolved) return
-    if (promoSource === 'influencer' && promoApplied === influencerOffer.code) return
+    if (promoSource === influencerOffer.source && promoApplied === influencerOffer.code) return
 
     const key = promoContextKey(influencerOffer.code)
     if (autoOfferAttemptKeyRef.current === key) return
     autoOfferAttemptKeyRef.current = key
-    void applyPromo(influencerOffer.code, 'influencer')
+    void applyPromo(influencerOffer.code, influencerOffer.source)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     influencerOffer,

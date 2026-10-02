@@ -183,6 +183,7 @@ describe('checkout influencer offer', () => {
   afterEach(() => {
     act(() => root.unmount())
     container.remove()
+    document.cookie = 'nb1_discount=; Path=/; Max-Age=0'
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -251,6 +252,63 @@ describe('checkout influencer offer', () => {
 
     expect(checkoutApi.checkoutPreview).not.toHaveBeenCalled()
     expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
+    expect(
+      window.dataLayer.find((entry) => entry.canonical_event === 'begin_checkout'),
+    ).not.toHaveProperty('ecommerce.coupon')
+  })
+
+  it('applies an ad link code from the nb1_discount cookie when no creator offer is stored', async () => {
+    window.sessionStorage.removeItem('nb1_influencer_offer')
+    document.cookie = 'nb1_discount=SPRING20; Path=/'
+    checkoutApi.checkoutPreview.mockResolvedValueOnce(validPreview({ discount_code: 'SPRING20' }))
+
+    await act(async () => {
+      root.render(<CheckoutFormClient locale="en" />)
+      await flushEffects()
+    })
+
+    expect(checkoutApi.checkoutPreview).toHaveBeenCalledTimes(1)
+    expect(checkoutApi.checkoutPreview.mock.calls[0][0]).toMatchObject({
+      discount_code: 'SPRING20',
+    })
+    expect(container.textContent).not.toContain('Creator offer applied')
+    const voucherEvent = window.dataLayer.find((entry) => entry.event === 'add_voucher')
+    expect(voucherEvent).toMatchObject({
+      voucher_source: 'link',
+      ecommerce: { coupon: 'SPRING20' },
+    })
+    expect(voucherEvent).not.toHaveProperty('influencer_slug')
+    expect(
+      window.dataLayer.find((entry) => entry.canonical_event === 'begin_checkout'),
+    ).toMatchObject({ offer_source: 'link', ecommerce: { coupon: 'SPRING20' } })
+  })
+
+  it('drops an invalid ad link code quietly and forgets it', async () => {
+    window.sessionStorage.removeItem('nb1_influencer_offer')
+    document.cookie = 'nb1_discount=EXPIRED; Path=/'
+    checkoutApi.checkoutPreview.mockResolvedValueOnce(
+      validPreview({
+        promo_discount: 0,
+        first_month_price: 99,
+        discount_code: 'EXPIRED',
+        discount_code_valid: false,
+        discount_message: 'Discount code not found',
+      }),
+    )
+
+    await act(async () => {
+      root.render(<CheckoutFormClient locale="en" />)
+      await flushEffects()
+    })
+
+    expect(container.querySelector('.nb1-creator-offer-alert')).toBeNull()
+    expect(container.textContent).not.toContain('Discount code not found')
+    expect(container.querySelector<HTMLButtonElement>('.nb1-confirm-btn')?.disabled).toBe(false)
+    expect(document.cookie).not.toContain('nb1_discount')
+    expect(window.dataLayer.find((entry) => entry.event === 'add_voucher_error')).toMatchObject({
+      voucher_source: 'link',
+      ecommerce: { coupon: 'EXPIRED' },
+    })
     expect(
       window.dataLayer.find((entry) => entry.canonical_event === 'begin_checkout'),
     ).not.toHaveProperty('ecommerce.coupon')
