@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone } from '../../access/anyone'
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor } from '../../access/roles'
 import { costomSlugField } from '@/fields/slug'
 import { chromeFields } from '@/fields/contentDocument'
 import { revalidateHub } from './hooks/revalidateHub'
@@ -35,10 +35,10 @@ import { rejectPageSlugCollision } from './hooks/rejectPageSlugCollision'
 export const Hubs: CollectionConfig = {
   slug: 'hubs',
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: adminOrEditor,
+    delete: adminOrEditor,
     read: anyone,
-    update: authenticated,
+    update: adminOrEditor,
   },
   admin: {
     useAsTitle: 'title',

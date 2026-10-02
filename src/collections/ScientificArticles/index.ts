@@ -2,12 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 import { lexicalEditor, FixedToolbarFeature, InlineToolbarFeature } from '@payloadcms/richtext-lexical'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor, contentEditor, enforceAgentDraftOperation } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import { costomSlugField } from '@/fields/slug'
 import { requiredOnPublish } from '@/collections/Posts/hooks/requiredOnPublish'
 import {
   authorsField,
+  metaField,
   noindexField,
   publishedAtField,
   referencesField,
@@ -49,11 +50,15 @@ const revalidation = createHubDocumentRevalidation({
 export const ScientificArticles: CollectionConfig = {
   slug: 'scientific-articles',
   labels: { singular: 'Scientific article', plural: 'Scientific articles' },
+  // Same model as Pages and Posts: humans with an editor role, and agent editors
+  // only through the MCP tools and only as drafts (`enforceAgentDraftOperation`
+  // below). This was `authenticated`, which let any signed-in user — an agent key
+  // over REST included — publish or permanently delete.
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: contentEditor,
+    delete: adminOrEditor,
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: contentEditor,
   },
   // A Research hub listing of 408 records must not pull seven rich-text bodies
   // per row. Cards need six fields; this is the difference between a listing
@@ -157,6 +162,7 @@ export const ScientificArticles: CollectionConfig = {
         'Optional but expected on study summaries. Renders the "Reviewed by" line — the strongest E-E-A-T signal this collection has.',
     }),
     reviewedAtField(),
+    metaField({ fallback: 'standfirst' }),
     {
       // Source study identity. A summary that does not say what it summarises is
       // not a summary, and `Person`/`ScholarlyArticle` structured data needs a
@@ -207,7 +213,7 @@ export const ScientificArticles: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeOperation: [revalidation.capture],
+    beforeOperation: [enforceAgentDraftOperation, revalidation.capture],
     afterChange: [revalidation.afterChange],
     afterDelete: [revalidation.afterDelete],
   },
