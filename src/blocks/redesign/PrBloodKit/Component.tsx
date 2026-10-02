@@ -30,7 +30,9 @@ import type { RdPrBloodKitBlock as Props } from '@/payload-types'
 //     plus an aria-label describes a box standing in for a picture, and an
 //     <img> with its own alt would otherwise be announced twice;
 //   * the `mediaUrl` / `mediaAlt` helpers, which tools/block_component.py emits
-//     on its own for any block that binds an upload.
+//     on its own for any block that binds an upload;
+//   * `aspectRatio: "1 / 1"` on the box, which is NOT the mockup's 4:5 — see
+//     the note on it.
 
 
 const mediaUrl = (m: unknown): string | undefined =>
@@ -154,7 +156,20 @@ export const RdPrBloodKit: React.FC<Props> = ({ anchorId, detail, facts, guideLi
           </div>
           <div style={{
             width: "100%",
-            aspectRatio: "4 / 5",
+            // 1:1, NOT the mockup's 4:5.
+            //
+            // The mockup drew an empty box and picked a portrait ratio for it;
+            // the photograph that box is for is SQUARE — 1200x1200, a flatlay
+            // of the five kit parts with their captions, measured off the file
+            // rather than guessed. At 4:5 `object-fit: cover` would have
+            // cropped 20% off the sides of it, taking the return bag and part
+            // of the collection card with them, and the placeholder would have
+            // gone on reserving a shape nothing was ever going to fill.
+            //
+            // So the box matches the picture, and the empty state matches the
+            // box. `cover` stays: it crops nothing while the two agree, and it
+            // is still the right behaviour for a photograph that does not.
+            aspectRatio: "1 / 1",
             borderRadius: "20px",
             background: "rgba(240, 245, 255, 0.06)",
             boxShadow: "rgba(240, 245, 255, 0.2) 0px 0px 0px 1px inset",

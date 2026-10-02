@@ -45,6 +45,7 @@ const RdFaqComponent = dynamic(() => import('@/blocks/redesign/FaqPage/Component
 const RdCtComponent = dynamic(() => import('@/blocks/redesign/ContactPage/Component').then((m) => m.RdCtComponent))
 const RdSbComponent = dynamic(() => import('@/blocks/redesign/ScienceBoard/Component').then((m) => m.RdSbComponent))
 const RdAbComponent = dynamic(() => import('@/blocks/redesign/AboutPage/Component').then((m) => m.RdAbComponent))
+const RdStComponent = dynamic(() => import('@/blocks/redesign/StandardsPage/Component').then((m) => m.RdStComponent))
 const RdLbHeroComponent = dynamic(() => import('@/blocks/redesign/LbHero/Component').then((m) => m.RdLbHeroComponent))
 const RdLbNotComponent = dynamic(() => import('@/blocks/redesign/LbNot/Component').then((m) => m.RdLbNotComponent))
 const RdLbReadsComponent = dynamic(() => import('@/blocks/redesign/LbReads/Component').then((m) => m.RdLbReadsComponent))
@@ -207,6 +208,7 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdCt: RdCtComponent,
   rdSb: RdSbComponent,
   rdAb: RdAbComponent,
+  rdSt: RdStComponent,
   rdLbHero: RdLbHeroComponent,
   rdLbNot: RdLbNotComponent,
   rdLbReads: RdLbReadsComponent,
