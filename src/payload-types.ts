@@ -329,6 +329,7 @@ export interface Page {
     | RdChkBlock
     | RdFaqBlock
     | RdCtBlock
+    | RdSbBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -5356,6 +5357,78 @@ export interface RdCtBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdCt';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdSbBlock".
+ */
+export interface RdSbBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+    stats?:
+      | {
+          value: string;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  leads: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  board: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  team: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  close: {
+    heading: string;
+    body?: string | null;
+    ctaLabel?: string | null;
+    ctaHref?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdSb';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12996,6 +13069,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdChk?: T | RdChkBlockSelect<T>;
         rdFaq?: T | RdFaqBlockSelect<T>;
         rdCt?: T | RdCtBlockSelect<T>;
+        rdSb?: T | RdSbBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -15026,6 +15100,87 @@ export interface RdCtBlockSelect<T extends boolean = true> {
   calloutBody?: T;
   calloutCtaLabel?: T;
   calloutCtaHref?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdSbBlock_select".
+ */
+export interface RdSbBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        stats?:
+          | T
+          | {
+              value?: T;
+              label?: T;
+              id?: T;
+            };
+      };
+  leads?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  board?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  team?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  close?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
+      };
   id?: T;
   blockName?: T;
 }
