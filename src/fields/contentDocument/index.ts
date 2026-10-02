@@ -21,10 +21,11 @@
  * - `hub` — only documents that live under a hub have one, and each filters
  *   `filterOptions` to a different key. Sharing it would mean passing the whole
  *   definition in as options.
- * - SEO meta — it comes from the `@payloadcms/plugin-seo` field group, which is
- *   already a shared generator.
+ * - SEO meta on Pages and Posts — it comes from the `@payloadcms/plugin-seo` field
+ *   group. The hub documents use the lighter `metaField` here instead.
  */
 export { chromeFields } from './chrome'
+export { metaField, META_DESCRIPTION_MAX, META_TITLE_MAX } from './meta'
 export {
   authorsField,
   noindexField,

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor } from '../../access/roles'
 import { normalizeSlug } from '@/fields/slug'
 import {
   revalidateContentLibrary,
@@ -30,11 +30,11 @@ export const Disclaimers: CollectionConfig = {
   slug: 'disclaimers',
   labels: { singular: 'Disclaimer', plural: 'Disclaimers' },
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: adminOrEditor,
+    delete: adminOrEditor,
     // Public: the renderer resolves these on the server for anonymous visitors.
     read: () => true,
-    update: authenticated,
+    update: adminOrEditor,
   },
   admin: {
     useAsTitle: 'name',

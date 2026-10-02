@@ -11962,7 +11962,8 @@ export interface AgentOperation {
   status: 'planned' | 'running' | 'succeeded' | 'failed';
   actor: number | User;
   locale?: string | null;
-  targetCollection?: ('pages' | 'posts' | 'media') | null;
+  targetCollection?:
+    ('pages' | 'posts' | 'media' | 'pillars' | 'scientific-articles' | 'lexicon-terms' | 'lexicon-categories') | null;
   targetIDs?:
     | {
         [k: string]: unknown;
@@ -12129,6 +12130,19 @@ export interface Pillar {
    * Optional manual picks for the "Related topics" strip. Left empty, the strip fills itself.
    */
   relatedPillars?: (number | Pillar)[] | null;
+  /**
+   * Optional. Left empty, the title tag uses the title and the description uses the standfirst.
+   */
+  meta?: {
+    /**
+     * Max 60 characters. " | NB1" is added automatically.
+     */
+    title?: string | null;
+    /**
+     * Max 155 characters.
+     */
+    description?: string | null;
+  };
   publishedAt?: string | null;
   noindex?: boolean | null;
   /**
@@ -12393,6 +12407,19 @@ export interface ScientificArticle {
    * Set when the reviewer actually re-checked the content. Not the last edit date.
    */
   reviewedAt?: string | null;
+  /**
+   * Optional. Left empty, the title tag uses the title and the description uses the standfirst.
+   */
+  meta?: {
+    /**
+     * Max 60 characters. " | NB1" is added automatically.
+     */
+    title?: string | null;
+    /**
+     * Max 155 characters.
+     */
+    description?: string | null;
+  };
   /**
    * Title of the study being summarised.
    */
@@ -12681,6 +12708,19 @@ export interface LexiconTerm {
    * Set when the reviewer actually re-checked the content. Not the last edit date.
    */
   reviewedAt?: string | null;
+  /**
+   * Optional. Left empty, the title tag uses the title and the description uses the definition.
+   */
+  meta?: {
+    /**
+     * Max 60 characters. " | NB1" is added automatically.
+     */
+    title?: string | null;
+    /**
+     * Max 155 characters.
+     */
+    description?: string | null;
+  };
   publishedAt?: string | null;
   noindex?: boolean | null;
   /**
@@ -12792,11 +12832,11 @@ export interface PayloadMcpApiKey {
   description?: string | null;
   'payload-mcp-tool'?: {
     /**
-     * Find Pages or Posts in one explicit locale. Returns compact draft-aware results; never returns trashed content.
+     * Find Pages, Posts, or content library documents (pillars, scientific-articles, lexicon-terms, lexicon-categories) in one explicit locale. Returns compact draft-aware results; never returns trashed content. Library results also carry externalId and the public path, and page up to 100 at a time for building internal links.
      */
     findContent?: boolean | null;
     /**
-     * Read one Page or Post draft in one explicit locale before editing it. Use its updatedAt value for optimistic locking.
+     * Read one Page, Post, or content library draft in one explicit locale before editing it. Use its updatedAt value for optimistic locking.
      */
     getContent?: boolean | null;
     /**
@@ -12827,6 +12867,10 @@ export interface PayloadMcpApiKey {
      * Atomically execute an approved, unexpired bulk draft plan. Every item remains a draft and failures roll back the batch.
      */
     commitBulkDrafts?: boolean | null;
+    /**
+     * Create or update up to 25 content library drafts, matched on externalId. Cannot publish. The batch is all-or-nothing and counts as one write. itemsJson is a JSON array of {externalId, expectedUpdatedAt?, fields?, locales: {en: {...}, de: {...}}}. One item is one document with all its locales. `fields` holds non-translated values; categories by key, authors and reviewer by author slug. The hub is set from the collection. Rich-text fields (pillar content, article lead and section bodies, lexicon section bodies) take markdown; lists must be "- **Lead-in.** Body" and become bullet-list blocks. Creating requires title and slug in every locale. Updating an existing record requires the updatedAt you last read as expectedUpdatedAt.
+     */
+    upsertDrafts?: boolean | null;
     /**
      * Soft-trash one draft Page or Post, or one unused, unmodified Media document uploaded through MCP, with an updatedAt check. Published Pages and Posts and other Media require an admin workflow; nothing is permanently deleted.
      */
@@ -19006,6 +19050,12 @@ export interface PillarsSelect<T extends boolean = true> {
   reviewedAt?: T;
   relatedResearch?: T;
   relatedPillars?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+      };
   publishedAt?: T;
   noindex?: T;
   externalId?: T;
@@ -19115,6 +19165,12 @@ export interface ScientificArticlesSelect<T extends boolean = true> {
   authors?: T;
   reviewer?: T;
   reviewedAt?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+      };
   sourceTitle?: T;
   sourceJournal?: T;
   studyYear?: T;
@@ -19181,6 +19237,12 @@ export interface LexiconTermsSelect<T extends boolean = true> {
   isCondition?: T;
   reviewer?: T;
   reviewedAt?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+      };
   publishedAt?: T;
   noindex?: T;
   externalId?: T;
@@ -19402,6 +19464,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         uploadMedia?: T;
         planBulkDrafts?: T;
         commitBulkDrafts?: T;
+        upsertDrafts?: T;
         trashContent?: T;
         restoreContent?: T;
       };

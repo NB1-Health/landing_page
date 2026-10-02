@@ -238,6 +238,7 @@ import * as migration_20261001_140000_journal_rd_footer from './20261001_140000_
 import * as migration_20261001_150000_rd_sb_block from './20261001_150000_rd_sb_block'
 import * as migration_20261002_100000_rd_ab_block from './20261002_100000_rd_ab_block'
 import * as migration_20261002_110000_rd_pr_blood_kit_image from './20261002_110000_rd_pr_blood_kit_image'
+import * as migration_20261002_170000_mcp_content_library from './20261002_170000_mcp_content_library'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
@@ -1445,5 +1446,10 @@ export const migrations = [
     up: migration_20261002_110000_rd_pr_blood_kit_image.up,
     down: migration_20261002_110000_rd_pr_blood_kit_image.down,
     name: '20261002_110000_rd_pr_blood_kit_image',
+  },
+  {
+    up: migration_20261002_170000_mcp_content_library.up,
+    down: migration_20261002_170000_mcp_content_library.down,
+    name: '20261002_170000_mcp_content_library',
   },
 ]
