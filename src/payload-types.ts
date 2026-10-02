@@ -324,6 +324,12 @@ export interface Page {
     | RdPrAdvancedBlock
     | RdYbPageBlock
     | RdLegalBlock
+    | RdOrderBlock
+    | RdDurBlock
+    | RdChkBlock
+    | RdFaqBlock
+    | RdCtBlock
+    | RdSbBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -1290,6 +1296,14 @@ export interface RdHeader {
   name?: string | null;
   isDefault?: boolean | null;
   /**
+   * No bar, no blur, no hairline — the header sits straight on the hero, for a full-bleed photo or a dark block. Off is the solid pale bar, which is the default on every page that does not need otherwise.
+   */
+  transparent?: boolean | null;
+  /**
+   * Cool-grey wordmark, links and menu icon, for a dark hero or a dark photo. A soft dark fade across the top 140px comes with it, so they stay readable on any image. Leave this off over a PALE photo, where dark type reads better. The lime CTA never changes colour in either.
+   */
+  lightText?: boolean | null;
+  /**
    * For a light nav. The mockup carries both and swaps them by breakpoint.
    */
   logo?: (number | null) | Media;
@@ -1381,6 +1395,14 @@ export interface RdFooter {
    */
   name?: string | null;
   isDefault?: boolean | null;
+  /**
+   * Replaces that column's links with the content tree — a Journal link followed by every hub that has a slug in this locale. Its TITLE is still the one you type above.
+   *
+   * This exists so the journal can wear this footer without losing its own navigation. The site footer builds the same column the same way (Footer/Component.tsx), and it is generated rather than typed for a reason: create a hub with a slug and it appears here, remove the slug and it goes. A typed copy would freeze today's four hubs and quietly rot in the other eight locales.
+   *
+   * The links you author in that column are kept, not deleted — set this back to None and they return.
+   */
+  contentColumn?: ('none' | 'one' | 'two' | 'three') | null;
   /**
    * Which footer this row draws. `full` is the homepage's — newsletter, blurb, three link columns, legal strip. `slim` is Our Plans' single row: logo, a row of links, copyright. `stack` is The Protocol's and The Lab's: logo, tagline, a link row under a hairline, copyright. The three share a root element and nothing else, which is why this is a layout switch rather than a set of toggles.
    */
@@ -4654,6 +4676,759 @@ export interface RdLegalBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdLegal';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdOrderBlock".
+ */
+export interface RdOrderBlock {
+  /**
+   * The id this block gets on the page, so another page can link straight to it.
+   */
+  anchorId?: string | null;
+  /**
+   * The sticky header above the page. Three steps: Plan, Duration, Checkout.
+   */
+  steps?: {
+    /**
+     * The nb1 mark in the header. Links to the homepage.
+     */
+    logo?: (number | null) | Media;
+    logoAlt?: string | null;
+    /**
+     * Where the wordmark goes. Leave empty for the locale's homepage; the locale prefix is added automatically.
+     */
+    homeSlug?: string | null;
+    /**
+     * Repeated in order and numbered by position. This block is always the first one, so none of them is a link here.
+     */
+    items?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Sends the visitor back in their browser history.
+     */
+    backLabel?: string | null;
+  };
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  proof?: {
+    quote?: string | null;
+    portrait?: (number | null) | Media;
+    attribution?: string | null;
+    attributionNote?: string | null;
+    /**
+     * The label does not change when the panel opens; the chevron turns instead.
+     */
+    revealLabel?: string | null;
+    image?: (number | null) | Media;
+    caption?: string | null;
+  };
+  plans?: {
+    heading?: string | null;
+    subheading?: string | null;
+    /**
+     * The struck-through figure. Editorial, not from the plans API.
+     */
+    wasPrice?: string | null;
+    nowPrice?: string | null;
+    /**
+     * The value strip above the cards, with its struck-through total.
+     */
+    items?:
+      | {
+          label: string;
+          price?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * TWO cards, bound by position: card 1 is Core's markup and card 2 is Advanced's. A third card will not render — see the block's notes.
+     */
+    cards?:
+      | {
+          /**
+           * Which backend plan this card sells. The price is fetched against it; the card will show its seeded price if this is unset.
+           */
+          key: 'core' | 'advanced';
+          /**
+           * The flag above the card. Only the second card has one in the design.
+           */
+          badge?: string | null;
+          name: string;
+          meta?: string | null;
+          /**
+           * Shown after the price, e.g. /mo.
+           */
+          perLabel?: string | null;
+          /**
+           * Shown until the live price arrives, and kept if the request fails. Not what the visitor is charged.
+           */
+          seededPrice?: string | null;
+          eyebrow?: string | null;
+          /**
+           * Below the feature list. Leave empty to omit the line entirely.
+           */
+          foot?: string | null;
+          icon?: (number | null) | Media;
+          /**
+           * Advanced only — the blood panel's icon beside the gut one.
+           */
+          icon2?: (number | null) | Media;
+          /**
+           * The sentence in the nb1 card beside the cost table, when this plan is chosen.
+           */
+          blurb?: string | null;
+          /**
+           * The ticked lines under it. Two of the three differ between the plans.
+           */
+          ticks?:
+            | {
+                label: string;
+                id?: string | null;
+              }[]
+            | null;
+          /**
+           * Shown under the retest row of the timeline, when this plan is chosen.
+           */
+          retestNote?: string | null;
+          feats?:
+            | {
+                text: string;
+                id?: string | null;
+              }[]
+            | null;
+          id?: string | null;
+        }[]
+      | null;
+    noteHeading?: string | null;
+    note?: string | null;
+    trustLabel?: string | null;
+    trustName?: string | null;
+  };
+  cost?: {
+    heading?: string | null;
+    intro?: string | null;
+    columnLabel?: string | null;
+    /**
+     * One list. Each row's Variant decides how it is drawn and whether it shows at all.
+     */
+    rows?:
+      | {
+          label: string;
+          detail?: string | null;
+          value?: string | null;
+          /**
+           * Row is an ordinary line. Sum is the total — heavier rule, larger figure. Advanced only shows the row when the Advanced card is selected.
+           */
+          variant?: ('row' | 'sum' | 'advancedOnly') | null;
+          /**
+           * Tick when the value is words rather than a price, e.g. "Your time". Sets the secondary face.
+           */
+          softValue?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    howLabel?: string | null;
+    /**
+     * The two labels are separate so a translator writes both.
+     */
+    howLabelOpen?: string | null;
+    howRows?:
+      | {
+          label: string;
+          detail?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+    /**
+     * 'nb1', then the chosen plan's name.
+     */
+    asideBrand?: string | null;
+    asidePerMonth?: string | null;
+    asideImage?: (number | null) | Media;
+    asideName?: string | null;
+    asideNote?: string | null;
+    figureImage?: (number | null) | Media;
+    figureName?: string | null;
+    figureNote?: string | null;
+    figureQuote?: string | null;
+  };
+  timeline?: {
+    heading?: string | null;
+    rows?:
+      | {
+          week: string;
+          title?: string | null;
+          detail?: string | null;
+          /**
+           * Fills the row lime. One row only.
+           */
+          isPayment?: boolean | null;
+          /**
+           * The row that carries the chosen plan's retest note.
+           */
+          isRetest?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+    changesHeading?: string | null;
+    /**
+     * The before/after bars.
+     */
+    changes?:
+      | {
+          label: string;
+          /**
+           * On the 1-10 scale the members rated. The bar is drawn from this, not stored as a width.
+           */
+          from?: number | null;
+          to?: number | null;
+          id?: string | null;
+        }[]
+      | null;
+    scoreValue?: string | null;
+    scoreLabel?: string | null;
+    scoreDelta?: string | null;
+    scoreSource?: string | null;
+    scaleMin?: string | null;
+    scaleMax?: string | null;
+    barsLabel?: string | null;
+    figureImage?: (number | null) | Media;
+    figureQuote?: string | null;
+    figureAttribution?: string | null;
+    /**
+     * The trailing row appears only when the Advanced card is selected.
+     */
+    advancedBadge?: string | null;
+    advancedCadence?: string | null;
+    advancedNote?: string | null;
+    advancedLead?: string | null;
+  };
+  faq?: {
+    heading?: string | null;
+    rows?:
+      | {
+          q: string;
+          a?: {
+            root: {
+              type: string;
+              children: {
+                type: any;
+                version: number;
+                [k: string]: unknown;
+              }[];
+              direction: ('ltr' | 'rtl') | null;
+              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+              indent: number;
+              version: number;
+            };
+            [k: string]: unknown;
+          } | null;
+          /**
+           * Which answers a visitor sees without clicking.
+           */
+          openByDefault?: boolean | null;
+          id?: string | null;
+        }[]
+      | null;
+    closingHeading?: string | null;
+    closingBody?: string | null;
+    stories?:
+      | {
+          image?: (number | null) | Media;
+          name: string;
+          quote?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * The bar pinned to the bottom of the screen.
+   */
+  sticky?: {
+    /**
+     * Keep the trailing space — it is the gap before the name.
+     */
+    selectedPrefix?: string | null;
+    /**
+     * Keep the leading space — it is the gap after the name.
+     */
+    selectedSuffix?: string | null;
+    /**
+     * Flips between Core and Advanced.
+     */
+    switchLabel?: string | null;
+    note?: string | null;
+    /**
+     * The selected plan's name is appended to this.
+     */
+    ctaPrefix?: string | null;
+    /**
+     * Where the CTA goes when the Core card is selected. The locale prefix is added automatically.
+     */
+    nextSlugCore?: string | null;
+    /**
+     * Where the CTA goes when the Advanced card is selected.
+     */
+    nextSlugAdvanced?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdOrder';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdDurBlock".
+ */
+export interface RdDurBlock {
+  /**
+   * The id this block gets on the page.
+   */
+  anchorId?: string | null;
+  steps?: {
+    logo?: (number | null) | Media;
+    logoAlt?: string | null;
+    homeSlug?: string | null;
+    items?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    backLabel?: string | null;
+  };
+  /**
+   * Which plan this page sells. Core and Advanced are two pages of the same block.
+   */
+  plan: 'core' | 'advanced';
+  heading: string;
+  intro?: string | null;
+  pick?: {
+    /**
+     * Keep the trailing space — it is the gap before the name.
+     */
+    planPrefix?: string | null;
+    /**
+     * To the other plan's duration page.
+     */
+    switchLabel?: string | null;
+    /**
+     * The other page's slug. The locale prefix is added automatically.
+     */
+    switchSlug?: string | null;
+    /**
+     * Flexible and Commit & save.
+     */
+    modes?:
+      | {
+          title?: string | null;
+          subtitle?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * A NUMBER, not a price. Shown until the live rate arrives and kept if it fails. Not what the visitor is charged.
+     */
+    seededBase?: number | null;
+    flexNote?: string | null;
+    /**
+     * After the big flexible price. Keep the leading space.
+     */
+    perMonthLarge?: string | null;
+    /**
+     * After each tier's price. No leading space.
+     */
+    perMonth?: string | null;
+    /**
+     * Two, in order.
+     */
+    tiers?:
+      | {
+          /**
+           * Drives the price lookup and the saving.
+           */
+          months: number;
+          label?: string | null;
+          /**
+           * Keep the trailing space.
+           */
+          saveLabel?: string | null;
+          /**
+           * '/ cycle' on the shorter tier, '/ year' on the longer.
+           */
+          saveSuffix?: string | null;
+          bestLabel?: string | null;
+          /**
+           * Shows the badge above the card.
+           */
+          best?: boolean | null;
+          /**
+           * A NUMBER. See the monthly fallback above.
+           */
+          seededRate?: number | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  perks?:
+    | {
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  go?: {
+    footFlex?: string | null;
+    /**
+     * The tier's own name is put in front of this. Keep the leading space.
+     */
+    footCommit?: string | null;
+    /**
+     * The chosen rate is appended.
+     */
+    ctaPrefix?: string | null;
+    /**
+     * Where the button goes. The locale prefix is added automatically.
+     */
+    nextSlug?: string | null;
+  };
+  faqHeading?: string | null;
+  /**
+   * One opens at a time; clicking the open one closes it.
+   */
+  faq?:
+    | {
+        q: string;
+        a?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdDur';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdChkBlock".
+ */
+export interface RdChkBlock {
+  anchorId?: string | null;
+  steps?: {
+    logo?: (number | null) | Media;
+    logoAlt?: string | null;
+    homeSlug?: string | null;
+    items?:
+      | {
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+    backLabel?: string | null;
+    backLabelDone?: string | null;
+  };
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  sum?: {
+    toggleLabel?: string | null;
+    planLabel?: string | null;
+    billingLabel?: string | null;
+    billingFlex?: string | null;
+    billingSuffix?: string | null;
+    analysisLabel?: string | null;
+    analysisValue?: string | null;
+    shipLabel?: string | null;
+    shipValue?: string | null;
+    perLabel?: string | null;
+    discountLabel?: string | null;
+    referralLabel?: string | null;
+    noteHeading?: string | null;
+    note?: string | null;
+    secureLabel?: string | null;
+  };
+  acc?: {
+    items?:
+      | {
+          title: string;
+          id?: string | null;
+        }[]
+      | null;
+    nextLabel?: string | null;
+    editLabel?: string | null;
+  };
+  eml?: {
+    label?: string | null;
+    help?: string | null;
+    placeholder?: string | null;
+  };
+  adr?: {
+    fields?:
+      | {
+          label: string;
+          placeholder?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+  };
+  pay?: {
+    orLabel?: string | null;
+    cardLabel?: string | null;
+    cardMeta?: string | null;
+    cardFields?:
+      | {
+          label: string;
+          placeholder?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    methods?:
+      | {
+          key: 'card' | 'klarna' | 'paypal' | 'dd';
+          label: string;
+          meta?: string | null;
+          note?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    billingSame?: string | null;
+    cta?: string | null;
+    terms?: string | null;
+  };
+  next?: {
+    heading?: string | null;
+    rows?:
+      | {
+          text: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  done: {
+    orderPrefix?: string | null;
+    headPrefix: string;
+    headSuffix?: string | null;
+    intro?: string | null;
+    acctHeading?: string | null;
+    acctBody?: string | null;
+    acctCta?: string | null;
+    acctSlug?: string | null;
+    survHeading?: string | null;
+    survIntro?: string | null;
+    survOther?: string | null;
+    timeHeading?: string | null;
+    timeRows?:
+      | {
+          when: string;
+          title?: string | null;
+          badge?: string | null;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    sumHeading?: string | null;
+    sumPlanLabel?: string | null;
+    sumCycleLabel?: string | null;
+    sumDelivLabel?: string | null;
+    sumDelivValue?: string | null;
+    sumPerLabel?: string | null;
+    chargedToday?: string | null;
+    chargePrefix?: string | null;
+    chargeBold?: string | null;
+    chargeSuffix?: string | null;
+    helpChat?: string | null;
+    helpChatUrl?: string | null;
+    helpOr?: string | null;
+    helpEmail?: string | null;
+    helpEmailUrl?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdChk';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFaqBlock".
+ */
+export interface RdFaqBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  groups?:
+    | {
+        label: string;
+        items?:
+          | {
+              question: string;
+              answer?: {
+                root: {
+                  type: string;
+                  children: {
+                    type: any;
+                    version: number;
+                    [k: string]: unknown;
+                  }[];
+                  direction: ('ltr' | 'rtl') | null;
+                  format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                  indent: number;
+                  version: number;
+                };
+                [k: string]: unknown;
+              } | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  calloutHeading?: string | null;
+  calloutBody?: string | null;
+  calloutCtaLabel?: string | null;
+  calloutCtaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdFaq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCtBlock".
+ */
+export interface RdCtBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  methodsLabel?: string | null;
+  methods?:
+    | {
+        title: string;
+        body?: string | null;
+        linkLabel?: string | null;
+        linkHref?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  legalLinks?:
+    | {
+        label: string;
+        url?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  formHeading?: string | null;
+  formNote?: string | null;
+  recipientEmail?: string | null;
+  nameLabel?: string | null;
+  namePlaceholder?: string | null;
+  emailLabel?: string | null;
+  emailPlaceholder?: string | null;
+  topicLabel?: string | null;
+  topics?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  orderLabel?: string | null;
+  orderPlaceholder?: string | null;
+  messageLabel?: string | null;
+  messagePlaceholder?: string | null;
+  submitLabel?: string | null;
+  formHint?: string | null;
+  showName?: boolean | null;
+  showEmail?: boolean | null;
+  showTopic?: boolean | null;
+  showOrder?: boolean | null;
+  calloutHeading?: string | null;
+  calloutBody?: string | null;
+  calloutCtaLabel?: string | null;
+  calloutCtaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdCt';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdSbBlock".
+ */
+export interface RdSbBlock {
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+    stats?:
+      | {
+          value: string;
+          label: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  leads: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  board: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  team: {
+    heading: string;
+    intro?: string | null;
+    people?:
+      | {
+          photo?: (number | null) | Media;
+          role?: string | null;
+          name: string;
+          credential?: string | null;
+          bio?: string | null;
+          tags?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  close: {
+    heading: string;
+    body?: string | null;
+    ctaLabel?: string | null;
+    ctaHref?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdSb';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -12289,6 +13064,12 @@ export interface PagesSelect<T extends boolean = true> {
         rdPrAdvanced?: T | RdPrAdvancedBlockSelect<T>;
         rdYbPage?: T | RdYbPageBlockSelect<T>;
         rdLegal?: T | RdLegalBlockSelect<T>;
+        rdOrder?: T | RdOrderBlockSelect<T>;
+        rdDur?: T | RdDurBlockSelect<T>;
+        rdChk?: T | RdChkBlockSelect<T>;
+        rdFaq?: T | RdFaqBlockSelect<T>;
+        rdCt?: T | RdCtBlockSelect<T>;
+        rdSb?: T | RdSbBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -13794,6 +14575,611 @@ export interface RdLegalBlockSelect<T extends boolean = true> {
               value?: T;
               id?: T;
             };
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdOrderBlock_select".
+ */
+export interface RdOrderBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  steps?:
+    | T
+    | {
+        logo?: T;
+        logoAlt?: T;
+        homeSlug?: T;
+        items?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        backLabel?: T;
+      };
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  proof?:
+    | T
+    | {
+        quote?: T;
+        portrait?: T;
+        attribution?: T;
+        attributionNote?: T;
+        revealLabel?: T;
+        image?: T;
+        caption?: T;
+      };
+  plans?:
+    | T
+    | {
+        heading?: T;
+        subheading?: T;
+        wasPrice?: T;
+        nowPrice?: T;
+        items?:
+          | T
+          | {
+              label?: T;
+              price?: T;
+              id?: T;
+            };
+        cards?:
+          | T
+          | {
+              key?: T;
+              badge?: T;
+              name?: T;
+              meta?: T;
+              perLabel?: T;
+              seededPrice?: T;
+              eyebrow?: T;
+              foot?: T;
+              icon?: T;
+              icon2?: T;
+              blurb?: T;
+              ticks?:
+                | T
+                | {
+                    label?: T;
+                    id?: T;
+                  };
+              retestNote?: T;
+              feats?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              id?: T;
+            };
+        noteHeading?: T;
+        note?: T;
+        trustLabel?: T;
+        trustName?: T;
+      };
+  cost?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        columnLabel?: T;
+        rows?:
+          | T
+          | {
+              label?: T;
+              detail?: T;
+              value?: T;
+              variant?: T;
+              softValue?: T;
+              id?: T;
+            };
+        howLabel?: T;
+        howLabelOpen?: T;
+        howRows?:
+          | T
+          | {
+              label?: T;
+              detail?: T;
+              id?: T;
+            };
+        note?: T;
+        asideBrand?: T;
+        asidePerMonth?: T;
+        asideImage?: T;
+        asideName?: T;
+        asideNote?: T;
+        figureImage?: T;
+        figureName?: T;
+        figureNote?: T;
+        figureQuote?: T;
+      };
+  timeline?:
+    | T
+    | {
+        heading?: T;
+        rows?:
+          | T
+          | {
+              week?: T;
+              title?: T;
+              detail?: T;
+              isPayment?: T;
+              isRetest?: T;
+              id?: T;
+            };
+        note?: T;
+        changesHeading?: T;
+        changes?:
+          | T
+          | {
+              label?: T;
+              from?: T;
+              to?: T;
+              id?: T;
+            };
+        scoreValue?: T;
+        scoreLabel?: T;
+        scoreDelta?: T;
+        scoreSource?: T;
+        scaleMin?: T;
+        scaleMax?: T;
+        barsLabel?: T;
+        figureImage?: T;
+        figureQuote?: T;
+        figureAttribution?: T;
+        advancedBadge?: T;
+        advancedCadence?: T;
+        advancedNote?: T;
+        advancedLead?: T;
+      };
+  faq?:
+    | T
+    | {
+        heading?: T;
+        rows?:
+          | T
+          | {
+              q?: T;
+              a?: T;
+              openByDefault?: T;
+              id?: T;
+            };
+        closingHeading?: T;
+        closingBody?: T;
+        stories?:
+          | T
+          | {
+              image?: T;
+              name?: T;
+              quote?: T;
+              id?: T;
+            };
+      };
+  sticky?:
+    | T
+    | {
+        selectedPrefix?: T;
+        selectedSuffix?: T;
+        switchLabel?: T;
+        note?: T;
+        ctaPrefix?: T;
+        nextSlugCore?: T;
+        nextSlugAdvanced?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdDurBlock_select".
+ */
+export interface RdDurBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  steps?:
+    | T
+    | {
+        logo?: T;
+        logoAlt?: T;
+        homeSlug?: T;
+        items?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        backLabel?: T;
+      };
+  plan?: T;
+  heading?: T;
+  intro?: T;
+  pick?:
+    | T
+    | {
+        planPrefix?: T;
+        switchLabel?: T;
+        switchSlug?: T;
+        modes?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              id?: T;
+            };
+        seededBase?: T;
+        flexNote?: T;
+        perMonthLarge?: T;
+        perMonth?: T;
+        tiers?:
+          | T
+          | {
+              months?: T;
+              label?: T;
+              saveLabel?: T;
+              saveSuffix?: T;
+              bestLabel?: T;
+              best?: T;
+              seededRate?: T;
+              id?: T;
+            };
+      };
+  perks?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  go?:
+    | T
+    | {
+        footFlex?: T;
+        footCommit?: T;
+        ctaPrefix?: T;
+        nextSlug?: T;
+      };
+  faqHeading?: T;
+  faq?:
+    | T
+    | {
+        q?: T;
+        a?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdChkBlock_select".
+ */
+export interface RdChkBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  steps?:
+    | T
+    | {
+        logo?: T;
+        logoAlt?: T;
+        homeSlug?: T;
+        items?:
+          | T
+          | {
+              label?: T;
+              id?: T;
+            };
+        backLabel?: T;
+        backLabelDone?: T;
+      };
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  sum?:
+    | T
+    | {
+        toggleLabel?: T;
+        planLabel?: T;
+        billingLabel?: T;
+        billingFlex?: T;
+        billingSuffix?: T;
+        analysisLabel?: T;
+        analysisValue?: T;
+        shipLabel?: T;
+        shipValue?: T;
+        perLabel?: T;
+        discountLabel?: T;
+        referralLabel?: T;
+        noteHeading?: T;
+        note?: T;
+        secureLabel?: T;
+      };
+  acc?:
+    | T
+    | {
+        items?:
+          | T
+          | {
+              title?: T;
+              id?: T;
+            };
+        nextLabel?: T;
+        editLabel?: T;
+      };
+  eml?:
+    | T
+    | {
+        label?: T;
+        help?: T;
+        placeholder?: T;
+      };
+  adr?:
+    | T
+    | {
+        fields?:
+          | T
+          | {
+              label?: T;
+              placeholder?: T;
+              id?: T;
+            };
+        note?: T;
+      };
+  pay?:
+    | T
+    | {
+        orLabel?: T;
+        cardLabel?: T;
+        cardMeta?: T;
+        cardFields?:
+          | T
+          | {
+              label?: T;
+              placeholder?: T;
+              id?: T;
+            };
+        methods?:
+          | T
+          | {
+              key?: T;
+              label?: T;
+              meta?: T;
+              note?: T;
+              id?: T;
+            };
+        billingSame?: T;
+        cta?: T;
+        terms?: T;
+      };
+  next?:
+    | T
+    | {
+        heading?: T;
+        rows?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+            };
+      };
+  done?:
+    | T
+    | {
+        orderPrefix?: T;
+        headPrefix?: T;
+        headSuffix?: T;
+        intro?: T;
+        acctHeading?: T;
+        acctBody?: T;
+        acctCta?: T;
+        acctSlug?: T;
+        survHeading?: T;
+        survIntro?: T;
+        survOther?: T;
+        timeHeading?: T;
+        timeRows?:
+          | T
+          | {
+              when?: T;
+              title?: T;
+              badge?: T;
+              body?: T;
+              id?: T;
+            };
+        sumHeading?: T;
+        sumPlanLabel?: T;
+        sumCycleLabel?: T;
+        sumDelivLabel?: T;
+        sumDelivValue?: T;
+        sumPerLabel?: T;
+        chargedToday?: T;
+        chargePrefix?: T;
+        chargeBold?: T;
+        chargeSuffix?: T;
+        helpChat?: T;
+        helpChatUrl?: T;
+        helpOr?: T;
+        helpEmail?: T;
+        helpEmailUrl?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdFaqBlock_select".
+ */
+export interface RdFaqBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  groups?:
+    | T
+    | {
+        label?: T;
+        items?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  calloutHeading?: T;
+  calloutBody?: T;
+  calloutCtaLabel?: T;
+  calloutCtaHref?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdCtBlock_select".
+ */
+export interface RdCtBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  methodsLabel?: T;
+  methods?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        linkLabel?: T;
+        linkHref?: T;
+        id?: T;
+      };
+  legalLinks?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  formHeading?: T;
+  formNote?: T;
+  recipientEmail?: T;
+  nameLabel?: T;
+  namePlaceholder?: T;
+  emailLabel?: T;
+  emailPlaceholder?: T;
+  topicLabel?: T;
+  topics?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  orderLabel?: T;
+  orderPlaceholder?: T;
+  messageLabel?: T;
+  messagePlaceholder?: T;
+  submitLabel?: T;
+  formHint?: T;
+  showName?: T;
+  showEmail?: T;
+  showTopic?: T;
+  showOrder?: T;
+  calloutHeading?: T;
+  calloutBody?: T;
+  calloutCtaLabel?: T;
+  calloutCtaHref?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdSbBlock_select".
+ */
+export interface RdSbBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        stats?:
+          | T
+          | {
+              value?: T;
+              label?: T;
+              id?: T;
+            };
+      };
+  leads?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  board?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  team?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        people?:
+          | T
+          | {
+              photo?: T;
+              role?: T;
+              name?: T;
+              credential?: T;
+              bio?: T;
+              tags?: T;
+              id?: T;
+            };
+      };
+  close?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
       };
   id?: T;
   blockName?: T;
@@ -17214,6 +18600,8 @@ export interface FootersSelect<T extends boolean = true> {
 export interface RdHeadersSelect<T extends boolean = true> {
   name?: T;
   isDefault?: T;
+  transparent?: T;
+  lightText?: T;
   logo?: T;
   logoLight?: T;
   sheetWatermark?: T;
@@ -17267,6 +18655,7 @@ export interface RdHeadersSelect<T extends boolean = true> {
 export interface RdFootersSelect<T extends boolean = true> {
   name?: T;
   isDefault?: T;
+  contentColumn?: T;
   variant?: T;
   logo?: T;
   tagline?: T;
@@ -17965,6 +19354,10 @@ export interface SiteSetting {
      */
     footer?: (number | null) | Footer;
     /**
+     * Use a redesign footer across the whole Journal — the index, the paginated pages, every article, and the hub, pillar, term and research pages. Leave empty and each of those keeps whichever site footer it already chooses, unchanged. This overrides the Footer field above wherever it is set. If the footer you pick has "Generate a column from the hubs" set, the journal keeps its Journal / Microbiome / Research / Lexicon links; without it, those links are not in the redesign footer at all.
+     */
+    rdFooter?: (number | null) | RdFooter;
+    /**
      * Do not render any footer on the Journal index.
      */
     hideFooter?: boolean | null;
@@ -18038,6 +19431,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         header?: T;
         hideHeader?: T;
         footer?: T;
+        rdFooter?: T;
         hideFooter?: T;
       };
   updatedAt?: T;

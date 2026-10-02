@@ -226,6 +226,16 @@ import * as migration_20260925_050000_rd_lb_method_figures from './20260925_0500
 import * as migration_20260925_060000_rd_footers_variants from './20260925_060000_rd_footers_variants'
 import * as migration_20260929_170000_rd_yb_page_block from './20260929_170000_rd_yb_page_block'
 import * as migration_20260930_140000_rd_legal_page_block from './20260930_140000_rd_legal_page_block'
+import * as migration_20260930_170000_rd_order_block from './20260930_170000_rd_order_block'
+import * as migration_20260930_180000_rd_dur_block from './20260930_180000_rd_dur_block'
+import * as migration_20260930_190000_rd_order_reconcile from './20260930_190000_rd_order_reconcile'
+import * as migration_20260930_200000_rd_dur_steps from './20260930_200000_rd_dur_steps'
+import * as migration_20261001_100000_rd_chk_block from './20261001_100000_rd_chk_block'
+import * as migration_20261001_110000_rd_faq_block from './20261001_110000_rd_faq_block'
+import * as migration_20261001_120000_rd_ct_block from './20261001_120000_rd_ct_block'
+import * as migration_20261001_130000_rd_header_appearance from './20261001_130000_rd_header_appearance'
+import * as migration_20261001_140000_journal_rd_footer from './20261001_140000_journal_rd_footer'
+import * as migration_20261001_150000_rd_sb_block from './20261001_150000_rd_sb_block'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
@@ -1373,5 +1383,55 @@ export const migrations = [
     up: migration_20260930_140000_rd_legal_page_block.up,
     down: migration_20260930_140000_rd_legal_page_block.down,
     name: '20260930_140000_rd_legal_page_block',
+  },
+  {
+    up: migration_20260930_170000_rd_order_block.up,
+    down: migration_20260930_170000_rd_order_block.down,
+    name: '20260930_170000_rd_order_block',
+  },
+  {
+    up: migration_20260930_180000_rd_dur_block.up,
+    down: migration_20260930_180000_rd_dur_block.down,
+    name: '20260930_180000_rd_dur_block',
+  },
+  {
+    up: migration_20260930_190000_rd_order_reconcile.up,
+    down: migration_20260930_190000_rd_order_reconcile.down,
+    name: '20260930_190000_rd_order_reconcile',
+  },
+  {
+    up: migration_20260930_200000_rd_dur_steps.up,
+    down: migration_20260930_200000_rd_dur_steps.down,
+    name: '20260930_200000_rd_dur_steps',
+  },
+  {
+    up: migration_20261001_100000_rd_chk_block.up,
+    down: migration_20261001_100000_rd_chk_block.down,
+    name: '20261001_100000_rd_chk_block',
+  },
+  {
+    up: migration_20261001_110000_rd_faq_block.up,
+    down: migration_20261001_110000_rd_faq_block.down,
+    name: '20261001_110000_rd_faq_block',
+  },
+  {
+    up: migration_20261001_120000_rd_ct_block.up,
+    down: migration_20261001_120000_rd_ct_block.down,
+    name: '20261001_120000_rd_ct_block',
+  },
+  {
+    up: migration_20261001_130000_rd_header_appearance.up,
+    down: migration_20261001_130000_rd_header_appearance.down,
+    name: '20261001_130000_rd_header_appearance',
+  },
+  {
+    up: migration_20261001_140000_journal_rd_footer.up,
+    down: migration_20261001_140000_journal_rd_footer.down,
+    name: '20261001_140000_journal_rd_footer',
+  },
+  {
+    up: migration_20261001_150000_rd_sb_block.up,
+    down: migration_20261001_150000_rd_sb_block.down,
+    name: '20261001_150000_rd_sb_block',
   },
 ]

@@ -30,7 +30,9 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import PageClient from './page.client'
 import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 import { journalIndexLocalizedDocument } from '@/Header/localizedDocument'
+import { JournalReskin } from '@/components/JournalReskin'
 
+import { JournalFooter } from '@/components/JournalFooter'
 export const dynamic = 'force-static'
 // Backstop only. `revalidatePost` invalidates this path on publish, so a new
 // card appears immediately rather than waiting out this window.
@@ -83,6 +85,7 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
           localizedDocument={journalIndexLocalizedDocument()}
         />
       )}
+      <JournalReskin />
       <div className="jr-page">
         <PageClient />
         <JsonLd data={jsonLd} />
@@ -116,7 +119,7 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
           {totalPages > 1 && <Pagination basePath="/journal" page={page} totalPages={totalPages} />}
         </div>
       </div>
-      {!copy.footer.hide && <Footer id={copy.footer.id} locale={locale} />}
+      {!copy.footer.hide && <JournalFooter id={copy.footer.id} locale={locale} />}
     </>
   )
 }

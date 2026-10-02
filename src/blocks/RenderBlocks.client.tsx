@@ -38,6 +38,12 @@ const RdPrArrivesComponent = dynamic(() => import('@/blocks/redesign/PrArrives/C
 const RdPrAdvancedComponent = dynamic(() => import('@/blocks/redesign/PrAdvanced/Component').then((m) => m.RdPrAdvancedComponent))
 const RdYbPageComponent = dynamic(() => import('@/blocks/redesign/YbPage/Component').then((m) => m.RdYbPageComponent))
 const RdLegalComponent = dynamic(() => import('@/blocks/redesign/LegalPage/Component').then((m) => m.RdLegalComponent))
+const RdOrderComponent = dynamic(() => import('@/blocks/redesign/OrderPage/Component').then((m) => m.RdOrderComponent))
+const RdDurComponent = dynamic(() => import('@/blocks/redesign/DurationPage/Component').then((m) => m.RdDurComponent))
+const RdChkComponent = dynamic(() => import('@/blocks/redesign/CheckoutPage/Component').then((m) => m.RdChkComponent))
+const RdFaqComponent = dynamic(() => import('@/blocks/redesign/FaqPage/Component').then((m) => m.RdFaqComponent))
+const RdCtComponent = dynamic(() => import('@/blocks/redesign/ContactPage/Component').then((m) => m.RdCtComponent))
+const RdSbComponent = dynamic(() => import('@/blocks/redesign/ScienceBoard/Component').then((m) => m.RdSbComponent))
 const RdLbHeroComponent = dynamic(() => import('@/blocks/redesign/LbHero/Component').then((m) => m.RdLbHeroComponent))
 const RdLbNotComponent = dynamic(() => import('@/blocks/redesign/LbNot/Component').then((m) => m.RdLbNotComponent))
 const RdLbReadsComponent = dynamic(() => import('@/blocks/redesign/LbReads/Component').then((m) => m.RdLbReadsComponent))
@@ -193,6 +199,12 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdPrAdvanced: RdPrAdvancedComponent,
   rdYbPage: RdYbPageComponent,
   rdLegal: RdLegalComponent,
+  rdOrder: RdOrderComponent,
+  rdDur: RdDurComponent,
+  rdChk: RdChkComponent,
+  rdFaq: RdFaqComponent,
+  rdCt: RdCtComponent,
+  rdSb: RdSbComponent,
   rdLbHero: RdLbHeroComponent,
   rdLbNot: RdLbNotComponent,
   rdLbReads: RdLbReadsComponent,

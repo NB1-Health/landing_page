@@ -42,7 +42,9 @@ import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailabi
 import { appLocales, getFallbackLocale, isAppLocale, type AppLocale } from '@/i18n/config'
 import { isJournalLocale, journalLocales } from '@/utilities/journalEnabled'
 import { journalSwitcherSlugs } from '@/Header/localizedDocument'
+import { JournalReskin } from '@/components/JournalReskin'
 
+import { JournalFooter } from '@/components/JournalFooter'
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
 
@@ -156,6 +158,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
           localizedDocument={{ route: 'post', slugs: journalSwitcherSlugs(publishedSlugs) }}
         />
       )}
+      <JournalReskin />
       <div className="jr-page">
         <PageClient />
 
@@ -255,7 +258,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
           <JournalArticleCta cta={copy.cta} />
         </article>
       </div>
-      {!post.hideFooter && <Footer id={footerId} locale={locale} />}
+      {!post.hideFooter && <JournalFooter id={footerId} locale={locale} />}
     </>
   )
 }

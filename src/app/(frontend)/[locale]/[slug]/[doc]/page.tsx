@@ -57,7 +57,9 @@ import { getPublisherSchema } from '@/utilities/publisherSchema'
 import { getServerSideURL } from '@/utilities/getURL'
 
 import PageClient from './page.client'
+import { JournalReskin } from '@/components/JournalReskin'
 
+import { JournalFooter } from '@/components/JournalFooter'
 // Inherits the Pages route's rendering model: the parent segment is a hub whose
 // slug is looked up per request (cached and tagged), and Pages themselves are
 // request-rendered for currency-sensitive copy.
@@ -430,6 +432,7 @@ export default async function Page({ params }: Args) {
           localizedDocument={pillarSwitcherPaths}
         />
       )}
+      <JournalReskin />
       <div className="jr-page">
         <PageClient />
         <JsonLd data={jsonLd} />
@@ -544,7 +547,7 @@ export default async function Page({ params }: Args) {
           <JournalArticleCta cta={copy.cta} />
         </article>
       </div>
-      {!hub.footer.hide && <Footer id={hub.footer.id} locale={locale} />}
+      {!hub.footer.hide && <JournalFooter id={hub.footer.id} locale={locale} />}
     </>
   )
 }

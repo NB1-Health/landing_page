@@ -42,6 +42,12 @@ import { RdPrArrivesBlock } from '@/blocks/redesign/PrArrives/config'
 import { RdPrAdvancedBlock } from '@/blocks/redesign/PrAdvanced/config'
 import { RdYbPageBlock } from '@/blocks/redesign/YbPage/config'
 import { RdLegalBlock } from '@/blocks/redesign/LegalPage/config'
+import { RdOrderBlock } from '@/blocks/redesign/OrderPage/config'
+import { RdDurBlock } from '@/blocks/redesign/DurationPage/config'
+import { RdChkBlock } from '@/blocks/redesign/CheckoutPage/config'
+import { RdFaqBlock } from '@/blocks/redesign/FaqPage/config'
+import { RdCtBlock } from '@/blocks/redesign/ContactPage/config'
+import { RdSbBlock } from '@/blocks/redesign/ScienceBoard/config'
 import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
 import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
 import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
@@ -274,6 +280,12 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdPrAdvancedBlock,
                 RdYbPageBlock,
                 RdLegalBlock,
+                RdOrderBlock,
+                RdDurBlock,
+                RdChkBlock,
+                RdFaqBlock,
+                RdCtBlock,
+                RdSbBlock,
                 RdLbHeroBlock,
                 RdLbNotBlock,
                 RdLbReadsBlock,

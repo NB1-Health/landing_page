@@ -146,6 +146,20 @@ export const SiteSettings: GlobalConfig = {
           },
         },
         {
+          // Not localized, matching the `footer` field above and the Pages
+          // header/footer fields — one choice for the whole Journal branch.
+          name: 'rdFooter',
+          label: 'Redesign footer',
+          type: 'relationship',
+          relationTo: 'rd-footers',
+          admin: {
+            description:
+              'Use a redesign footer across the whole Journal — the index, the paginated pages, every article, and the hub, pillar, term and research pages. Leave empty and each of those keeps whichever site footer it already chooses, unchanged. '
+              + 'This overrides the Footer field above wherever it is set. '
+              + 'If the footer you pick has "Generate a column from the hubs" set, the journal keeps its Journal / Microbiome / Research / Lexicon links; without it, those links are not in the redesign footer at all.',
+          },
+        },
+        {
           name: 'hideFooter',
           label: 'Hide Footer',
           type: 'checkbox',
