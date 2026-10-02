@@ -331,6 +331,7 @@ export interface Page {
     | RdCtBlock
     | RdSbBlock
     | RdAbBlock
+    | RdStBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -5558,6 +5559,196 @@ export interface RdAbBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdAb';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdStBlock".
+ */
+export interface RdStBlock {
+  /**
+   * Optional. Gives the section an id so another page can link straight to it.
+   */
+  anchorId?: string | null;
+  hero: {
+    heading: string;
+    intro?: string | null;
+  };
+  rules: {
+    heading: string;
+    items?:
+      | {
+          num?: string | null;
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The heading sets one word in italic mid-sentence, so it is three fields. Mind the spaces at the ends — they are what separates the words from the italic.
+     */
+    panelLead?: string | null;
+    panelEm?: string | null;
+    panelTail?: string | null;
+    panelBody?: string | null;
+    /**
+     * The four refusals inside the panel.
+     */
+    nots?:
+      | {
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  source: {
+    heading: string;
+    intro?: string | null;
+    cards?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  factory: {
+    /**
+     * Mind the trailing space — it separates the words from the italic clause.
+     */
+    headingLead: string;
+    headingEm?: string | null;
+    intro?: string | null;
+    /**
+     * Exactly four. Each tile's icon is drawn in the design, one per position, so a fifth row renders nothing.
+     */
+    items?:
+      | {
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    outro?: string | null;
+    image?: (number | null) | Media;
+    imageAlt?: string | null;
+  };
+  clean: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * An accordion: one row open at a time, the first on load. Every row needs a body — the mockup only wrote copy for the row it draws open.
+     */
+    items?:
+      | {
+          title: string;
+          body?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Four square photographs beside the accordion.
+     */
+    strip?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The certification badge under the strip.
+     */
+    badge?: (number | null) | Media;
+    badgeAlt?: string | null;
+  };
+  board: {
+    heading: string;
+    body?: string | null;
+    ctaLabel?: string | null;
+    /**
+     * A page slug such as science-board-v2 — the locale is added when the page renders. A full url, a /path or a #anchor is used exactly as typed.
+     */
+    ctaHref?: string | null;
+    statValue?: string | null;
+    /**
+     * The design breaks the label across two lines, so it is two fields.
+     */
+    statLineOne?: string | null;
+    statLineTwo?: string | null;
+    avatars?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+  };
+  proof: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * Three in the mockup: screening, traceability, sign-off.
+     */
+    docs?:
+      | {
+          image?: (number | null) | Media;
+          imageAlt?: string | null;
+          kicker?: string | null;
+          status?: string | null;
+          title: string;
+          body?: string | null;
+          /**
+           * One per line, written as  Label | Value  with a pipe between them. A line with no pipe becomes a label with no value.
+           */
+          rows?: string | null;
+          /**
+           * The small line that closes the card.
+           */
+          foot?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+  };
+  plans: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * Two in the mockup. A tier with a badge gets the featured frame — the heavier border and the drop shadow — so the badge is what makes a plan stand out, not its position.
+     */
+    tiers?:
+      | {
+          name: string;
+          /**
+           * Shown beside the name, and it also switches the card to the featured frame. Leave empty for a plain card.
+           */
+          badge?: string | null;
+          blurb?: string | null;
+          price?: string | null;
+          priceSuffix?: string | null;
+          priceNote?: string | null;
+          listHeading?: string | null;
+          /**
+           * One per line. Each renders with a tick.
+           */
+          features?: string | null;
+          ctaLabel?: string | null;
+          /**
+           * A page slug such as order-v2 — the locale is added when the page renders.
+           */
+          ctaHref?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    note?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdSt';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -13200,6 +13391,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdCt?: T | RdCtBlockSelect<T>;
         rdSb?: T | RdSbBlockSelect<T>;
         rdAb?: T | RdAbBlockSelect<T>;
+        rdSt?: T | RdStBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -15400,6 +15592,160 @@ export interface RdAbBlockSelect<T extends boolean = true> {
         body?: T;
         ctaLabel?: T;
         ctaHref?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdStBlock_select".
+ */
+export interface RdStBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+      };
+  rules?:
+    | T
+    | {
+        heading?: T;
+        items?:
+          | T
+          | {
+              num?: T;
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        panelLead?: T;
+        panelEm?: T;
+        panelTail?: T;
+        panelBody?: T;
+        nots?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+      };
+  source?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        cards?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+      };
+  factory?:
+    | T
+    | {
+        headingLead?: T;
+        headingEm?: T;
+        intro?: T;
+        items?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        outro?: T;
+        image?: T;
+        imageAlt?: T;
+      };
+  clean?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        items?:
+          | T
+          | {
+              title?: T;
+              body?: T;
+              id?: T;
+            };
+        strip?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              id?: T;
+            };
+        badge?: T;
+        badgeAlt?: T;
+      };
+  board?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
+        statValue?: T;
+        statLineOne?: T;
+        statLineTwo?: T;
+        avatars?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              id?: T;
+            };
+        note?: T;
+      };
+  proof?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        docs?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              kicker?: T;
+              status?: T;
+              title?: T;
+              body?: T;
+              rows?: T;
+              foot?: T;
+              id?: T;
+            };
+        note?: T;
+      };
+  plans?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        tiers?:
+          | T
+          | {
+              name?: T;
+              badge?: T;
+              blurb?: T;
+              price?: T;
+              priceSuffix?: T;
+              priceNote?: T;
+              listHeading?: T;
+              features?: T;
+              ctaLabel?: T;
+              ctaHref?: T;
+              id?: T;
+            };
+        note?: T;
       };
   id?: T;
   blockName?: T;

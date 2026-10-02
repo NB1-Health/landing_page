@@ -49,6 +49,7 @@ import { RdFaqBlock } from '@/blocks/redesign/FaqPage/config'
 import { RdCtBlock } from '@/blocks/redesign/ContactPage/config'
 import { RdSbBlock } from '@/blocks/redesign/ScienceBoard/config'
 import { RdAbBlock } from '@/blocks/redesign/AboutPage/config'
+import { RdStBlock } from '@/blocks/redesign/StandardsPage/config'
 import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
 import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
 import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
@@ -288,6 +289,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdCtBlock,
                 RdSbBlock,
                 RdAbBlock,
+                RdStBlock,
                 RdLbHeroBlock,
                 RdLbNotBlock,
                 RdLbReadsBlock,
