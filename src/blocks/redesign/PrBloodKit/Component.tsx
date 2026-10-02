@@ -12,10 +12,39 @@ import type { RdPrBloodKitBlock as Props } from '@/payload-types'
 // by port_css.py and scoped to `.rd-pg` so it cannot reach the homepage's
 // blocks. That scope is why every root here carries `rd-block rd-pg rd-<name>`.
 //
-// The Advanced-only blood kit. The right column is the mockup's own placeholder, reproduced rather than replaced with an upload.
+// The Advanced-only blood kit.
+//
+// HAND-EDITED 2026-10-02, and the one place in this file that is not generated.
+// The right column was the mockup's own empty box, reproduced rather than
+// replaced with an upload — the correct call while the design had no
+// photograph. It now renders an `image` upload when there is one and falls back
+// to that same box when there is not. THE BOX ITSELF IS UNTOUCHED: same 4:5
+// ratio, same 20px radius, same translucent fill, same inset hairline. Only its
+// contents switch.
+//
+// IF THIS BLOCK IS EVER REGENERATED, carry this across — it is four things:
+//   * the `image` / `imageAlt` props and the `shot` const below;
+//   * `overflow: 'hidden'` on the box, so the photograph is clipped to its
+//     radius;
+//   * `role` and `aria-label` dropped when there IS a photograph — `role="img"`
+//     plus an aria-label describes a box standing in for a picture, and an
+//     <img> with its own alt would otherwise be announced twice;
+//   * the `mediaUrl` / `mediaAlt` helpers, which tools/block_component.py emits
+//     on its own for any block that binds an upload.
 
 
-export const RdPrBloodKit: React.FC<Props> = ({ anchorId, detail, facts, guideLink, heading, intro, placeholderAria, placeholderLabel, tag }) => {
+const mediaUrl = (m: unknown): string | undefined =>
+  m && typeof m === 'object' && 'url' in m ? ((m as { url?: string }).url ?? undefined) : undefined
+
+const mediaAlt = (m: unknown): string =>
+  m && typeof m === 'object' && 'alt' in m ? ((m as { alt?: string }).alt ?? '') : ''
+
+
+export const RdPrBloodKit: React.FC<Props> = ({ anchorId, detail, facts, guideLink, heading, image, imageAlt, intro, placeholderAria, placeholderLabel, tag }) => {
+  // Read once: three attributes below depend on whether there is a photograph,
+  // and a block with an unset upload must render exactly what it rendered
+  // before this field existed.
+  const shot = mediaUrl(image)
   return (
     <section style={{
       background: "var(--nb1-dark-brown)",
@@ -130,15 +159,29 @@ export const RdPrBloodKit: React.FC<Props> = ({ anchorId, detail, facts, guideLi
             background: "rgba(240, 245, 255, 0.06)",
             boxShadow: "rgba(240, 245, 255, 0.2) 0px 0px 0px 1px inset",
             display: "grid",
-            placeItems: "center"
-          }} data-m="bloodshot" role="img" aria-label={placeholderAria ?? undefined}>
-            <span style={{
-              fontFamily: "var(--nb1-font-tertiary)",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              fontSize: "10.5px",
-              opacity: "0.6"
-            }}>{placeholderLabel}</span>
+            placeItems: "center",
+            // Only with a photograph. The empty box has nothing to clip, and
+            // leaving it on unconditionally would change a box the design
+            // already signed off.
+            overflow: shot ? "hidden" : undefined
+          }} data-m="bloodshot" role={shot ? undefined : "img"} aria-label={shot ? undefined : (placeholderAria ?? undefined)}>
+            {shot ? (
+              <img src={shot} alt={imageAlt || mediaAlt(image)} style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "center center",
+                display: "block"
+              }} />
+            ) : (
+              <span style={{
+                fontFamily: "var(--nb1-font-tertiary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                fontSize: "10.5px",
+                opacity: "0.6"
+              }}>{placeholderLabel}</span>
+            )}
           </div>
         </div>
       </div>

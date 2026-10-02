@@ -330,6 +330,7 @@ export interface Page {
     | RdFaqBlock
     | RdCtBlock
     | RdSbBlock
+    | RdAbBlock
     | RdLbHeroBlock
     | RdLbNotBlock
     | RdLbReadsBlock
@@ -3502,11 +3503,19 @@ export interface RdPrBloodKitBlock {
     label: string;
   };
   /**
-   * Read by screen readers in place of the missing photograph.
+   * The at-home blood collection kit. Fills the 4:5 panel on the right. Leave empty and the panel renders the placeholder box below instead — which is what the mockup draws.
+   */
+  image?: (number | null) | Media;
+  /**
+   * Leave empty to use the alt text set on the upload itself. Ignored while there is no photograph.
+   */
+  imageAlt?: string | null;
+  /**
+   * Read by screen readers in place of the photograph. Used only while Photograph is empty.
    */
   placeholderAria?: string | null;
   /**
-   * The mockup has no photograph here yet — this is the caption inside the empty box. It disappears when the section gets a real image, which needs a code change.
+   * The caption inside the empty box. Shown only while Photograph is empty; upload one and the box becomes the photograph.
    */
   placeholderLabel?: string | null;
   id?: string | null;
@@ -5429,6 +5438,126 @@ export interface RdSbBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdSb';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdAbBlock".
+ */
+export interface RdAbBlock {
+  /**
+   * Optional. Gives the section an id so another page can link straight to it.
+   */
+  anchorId?: string | null;
+  hero: {
+    eyebrow?: string | null;
+    heading: string;
+    intro?: string | null;
+  };
+  why: {
+    heading: string;
+    /**
+     * The run before the emphasised question. The question itself is the next field, so the design's heavier weight stays where it is.
+     */
+    bodyOne?: string | null;
+    /**
+     * Set in a heavier weight at the end of the first paragraph.
+     */
+    bodyOneAsk?: string | null;
+    bodyTwo?: string | null;
+    bodyThree?: string | null;
+    photo?: (number | null) | Media;
+    /**
+     * Leave empty to use the alt text set on the upload itself.
+     */
+    photoAlt?: string | null;
+    personName?: string | null;
+    personRole?: string | null;
+  };
+  built: {
+    heading: string;
+    intro?: string | null;
+    /**
+     * One card each. The mockup draws two; a third would render beside them.
+     */
+    cards?:
+      | {
+          image?: (number | null) | Media;
+          /**
+           * The card's picture is a background image, so this is what a screen reader announces in its place.
+           */
+          imageAlt?: string | null;
+          eyebrow?: string | null;
+          heading: string;
+          bodyOne?: string | null;
+          bodyTwo?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The line under both cards.
+     */
+    outro?: string | null;
+  };
+  cost?: {
+    /**
+     * Dimmed behind the line. Decorative, so it needs no alt text.
+     */
+    image?: (number | null) | Media;
+    /**
+     * Set in the body colour.
+     */
+    statLead?: string | null;
+    /**
+     * Set in blue-grey. Two fields so the colour change survives an edit.
+     */
+    statAccent?: string | null;
+    body?: string | null;
+  };
+  indep: {
+    heading: string;
+    bodyOne?: string | null;
+    bodyTwo?: string | null;
+    /**
+     * The line that sits apart, under both columns.
+     */
+    note?: string | null;
+  };
+  people: {
+    eyebrow?: string | null;
+    heading: string;
+    body?: string | null;
+    /**
+     * The stacked portraits. The mockup draws five; the number is not fixed.
+     */
+    avatars?:
+      | {
+          photo?: (number | null) | Media;
+          id?: string | null;
+        }[]
+      | null;
+    ctaLabel?: string | null;
+    /**
+     * A page slug such as science-board-v2 — the locale is added when the page renders. A full url, a /path or a #anchor is used exactly as typed.
+     */
+    ctaHref?: string | null;
+    /**
+     * The wide picture beside the copy.
+     */
+    photo?: (number | null) | Media;
+    photoAlt?: string | null;
+  };
+  close: {
+    heading: string;
+    body?: string | null;
+    ctaLabel?: string | null;
+    /**
+     * A page slug such as our-plans-v2 — the locale is added when the page renders.
+     */
+    ctaHref?: string | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdAb';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -13070,6 +13199,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdFaq?: T | RdFaqBlockSelect<T>;
         rdCt?: T | RdCtBlockSelect<T>;
         rdSb?: T | RdSbBlockSelect<T>;
+        rdAb?: T | RdAbBlockSelect<T>;
         rdLbHero?: T | RdLbHeroBlockSelect<T>;
         rdLbNot?: T | RdLbNotBlockSelect<T>;
         rdLbReads?: T | RdLbReadsBlockSelect<T>;
@@ -14133,6 +14263,8 @@ export interface RdPrBloodKitBlockSelect<T extends boolean = true> {
         url?: T;
         label?: T;
       };
+  image?: T;
+  imageAlt?: T;
   placeholderAria?: T;
   placeholderLabel?: T;
   id?: T;
@@ -15172,6 +15304,94 @@ export interface RdSbBlockSelect<T extends boolean = true> {
               tags?: T;
               id?: T;
             };
+      };
+  close?:
+    | T
+    | {
+        heading?: T;
+        body?: T;
+        ctaLabel?: T;
+        ctaHref?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdAbBlock_select".
+ */
+export interface RdAbBlockSelect<T extends boolean = true> {
+  anchorId?: T;
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        intro?: T;
+      };
+  why?:
+    | T
+    | {
+        heading?: T;
+        bodyOne?: T;
+        bodyOneAsk?: T;
+        bodyTwo?: T;
+        bodyThree?: T;
+        photo?: T;
+        photoAlt?: T;
+        personName?: T;
+        personRole?: T;
+      };
+  built?:
+    | T
+    | {
+        heading?: T;
+        intro?: T;
+        cards?:
+          | T
+          | {
+              image?: T;
+              imageAlt?: T;
+              eyebrow?: T;
+              heading?: T;
+              bodyOne?: T;
+              bodyTwo?: T;
+              id?: T;
+            };
+        outro?: T;
+      };
+  cost?:
+    | T
+    | {
+        image?: T;
+        statLead?: T;
+        statAccent?: T;
+        body?: T;
+      };
+  indep?:
+    | T
+    | {
+        heading?: T;
+        bodyOne?: T;
+        bodyTwo?: T;
+        note?: T;
+      };
+  people?:
+    | T
+    | {
+        eyebrow?: T;
+        heading?: T;
+        body?: T;
+        avatars?:
+          | T
+          | {
+              photo?: T;
+              id?: T;
+            };
+        ctaLabel?: T;
+        ctaHref?: T;
+        photo?: T;
+        photoAlt?: T;
       };
   close?:
     | T
