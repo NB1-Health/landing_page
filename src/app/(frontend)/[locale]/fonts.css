@@ -6,7 +6,26 @@
  * Ship the files: a synthesised weight is the one difference no amount of
  * verbatim CSS copying can close, and `document.fonts.check()` returns true
  * for a weight the browser is faking.
+ *
+ * THE URLS ARE RELATIVE, AND THAT IS THE POINT.
+ *
+ * These three lived in `public/fonts/` and were asked for at `/fonts/...`.
+ * On staging that path never reaches Next: nginx proxies `/en/...`, the other
+ * locales, `/cms/...` and `/_next/...` and falls everything else through to the
+ * `/login` SPA's index.html. So each woff2 came back 200 `text/html` — an HTML
+ * document where a font was asked for — and all three faces went to
+ * `status: "error"`. Measured 2026-10-02; `claude/stg-public-dir-not-proxied.md`
+ * has the probe and the readings.
+ *
+ * Nothing in `public/` is reachable on that host, so a relative url is the fix
+ * that needs no nginx change: webpack resolves it, emits the file into
+ * `/_next/static/media/<name>.<hash>.woff2`, and `/_next/` is already proxied.
+ * It also gets the files content-hashed and immutably cacheable, which the
+ * public copy never was.
+ *
+ * Keep them relative. An absolute `/fonts/...` is not a style choice here — it
+ * is the bug.
  */
-@font-face{font-family:"Martina Plantijn";src:local("Martina Plantijn"),url("/fonts/martina-plantijn-400.woff2") format("woff2");font-weight:400;font-display:swap;}
-  @font-face{font-family:"F37 Zagma";src:local("F37 Zagma"),url("/fonts/f37-zagma-350.woff2") format("woff2");font-weight:350;font-display:swap;}
-  @font-face{font-family:"OO Theran";src:local("OO Theran"),url("/fonts/oo-theran-300.woff2") format("woff2");font-weight:300;font-display:swap;}
+@font-face{font-family:"Martina Plantijn";src:local("Martina Plantijn"),url("../../../styles/fonts/martina-plantijn-400.woff2") format("woff2");font-weight:400;font-display:swap;}
+  @font-face{font-family:"F37 Zagma";src:local("F37 Zagma"),url("../../../styles/fonts/f37-zagma-350.woff2") format("woff2");font-weight:350;font-display:swap;}
+  @font-face{font-family:"OO Theran";src:local("OO Theran"),url("../../../styles/fonts/oo-theran-300.woff2") format("woff2");font-weight:300;font-display:swap;}

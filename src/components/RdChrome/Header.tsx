@@ -122,8 +122,9 @@ const SheetMenu: React.FC<{
 export const RdHeader: React.FC<ComponentProps> = (props) => {
   const {
     homeUrl, logo, logoLight, sheetWatermark,
-    discoverLabel, languageLabel, applyLabel, loginLabel, loginUrl, cta,
+    discoverLabel, languageLabel, currencyLabel, loginLabel, loginUrl, cta,
     menuLabel, closeLabel, primaryLabel, moreLabel,
+    transparent, lightText,
     locale, initialCurrency, localizedDocument = null,
   } = props
   const navItems = props.navItems ?? []
@@ -157,14 +158,38 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
   // the floating state — white text and a white logo on a white page, i.e.
   // an invisible header. So the wait is bounded, and running out settles on
   // solid, which is legible over anything.
+  //
+  // THE DEFAULT IS THE SOLID LIGHT BAR, and that is the spec's word: "Light is
+  // the default. Pages that open on a dark hero start with the dark header."
+  // The floating state is now opt-in per header document — the `transparent`
+  // checkbox — rather than inferred.
+  //
+  // WHY THAT CHANGED. Inferring it meant starting floating and watching for a
+  // hero to scroll past, with a bounded wait that settled on solid if no hero
+  // turned up. Every page whose first block is not `rdHero` has no
+  // `[data-m="herostage"]` at all, so every one of them rendered a white
+  // wordmark and white links over a light hero until the wait expired — and on
+  // the pages built this week it never did expire: Our Standards pointed at
+  // "Header - solid" and still drew the see-through header, because nothing in
+  // this component had ever read that field. The checkboxes existed, the admin
+  // offered them, and the only thing choosing between the two treatments was a
+  // query selector for another page's markup.
+  //
+  // So: `transparent` decides whether there is a floating state at all, and the
+  // observer only runs when there is one. A solid header is solid from the
+  // first paint, with no observer, no retry loop and nothing to expire.
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
+    if (!transparent) return
     let io: IntersectionObserver | null = null
     let raf = 0
     let tries = 0
     const attach = () => {
       const el = document.querySelector('.rd-block [data-m="herostage"]')
       if (!el) {
+        // A transparent header on a page with no hero stage still has to end up
+        // legible, so the bounded wait stays — it is now the exception rather
+        // than the path every page took.
         if (++tries < 30) {
           raf = requestAnimationFrame(attach)
           return
@@ -183,13 +208,64 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
       cancelAnimationFrame(raf)
       io?.disconnect()
     }
-  }, [])
+  }, [transparent])
+
+  /** Floating over the hero right now: transparent, and the hero still behind us. */
+  const over = Boolean(transparent) && !scrolled
+
+  /** Cool-grey wordmark, links and panels. Only ever while floating — a solid
+   *  bar is cool grey itself, and light ink on it would be invisible. */
+  const ink = over && lightText !== false ? 'light' : 'dark'
+
+  /**
+   * The dropdown panels, themed.
+   *
+   * Both panels were hard-coded to the dark glass the mockup draws over a
+   * photograph — `rgba(28,23,22,.44)` and an 18px blur. On a solid light header
+   * that is a grey haze over white: Andra's "the discover and lang selection
+   * are transparent when they should be opaque". The glass belongs to the
+   * floating header, so it moves with it.
+   */
+  const panel: React.CSSProperties = ink === 'light'
+    ? {
+        background: 'rgba(28, 23, 22, 0.44)',
+        backdropFilter: 'blur(18px) saturate(150%)',
+        WebkitBackdropFilter: 'blur(18px) saturate(150%)',
+        border: '1px solid rgba(255, 255, 255, 0.22)',
+        boxShadow: 'rgba(20, 16, 15, 0.5) 0px 26px 60px -28px',
+      }
+    : {
+        background: 'var(--nb1-cool-grey)',
+        backdropFilter: 'none',
+        WebkitBackdropFilter: 'none',
+        border: '1px solid rgba(81, 71, 69, 0.14)',
+        boxShadow: 'rgba(81, 71, 69, 0.22) 0px 26px 60px -30px',
+      }
 
   const {
     langs, curLang, curCur, curSym,
     pendingLang, setPendingLang, pendingLocaleAvailable,
+    allowedCurs, applyCur,
     locOpen, setLocOpen, locRef, applyLang,
   } = useLocaleCurrency({ locale, initialCurrency, localizedDocument })
+
+  /** One option in the locale panel, pressed or not. The two differ only in the
+   *  fill, and on the dark glass the fill has to be lighter rather than darker,
+   *  so the colour follows the panel it is sitting on. */
+  const option = (pressed: boolean): React.CSSProperties => ({
+    fontFamily: 'var(--nb1-font-secondary)',
+    fontSize: '14.5px',
+    padding: '0.6em 0.8em',
+    borderRadius: '10px',
+    border: '0px',
+    cursor: 'pointer',
+    textAlign: 'left',
+    width: '100%',
+    background: pressed
+      ? 'rgba(95, 234, 255, 0.18)'
+      : 'transparent',
+    color: ink === 'light' ? 'var(--nb1-cool-grey)' : 'var(--nb1-dark-brown)',
+  })
 
   return (
     <>
@@ -207,7 +283,7 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
       backdropFilter: "blur(12px)",
       borderBottom: "1px solid rgba(81, 71, 69, 0.1)",
       WebkitBackdropFilter: "blur(12px)"
-    }} className="rd-chrome rd-header" data-over={scrolled ? '0' : '1'}>
+    }} className="rd-chrome rd-header" data-over={over ? '1' : '0'} data-ink={ink}>
       <a style={{
         display: "block",
         flex: "1 1 auto",
@@ -283,14 +359,10 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
             right: "0px",
             minWidth: "232px",
             zIndex: "70",
-            background: "rgba(28, 23, 22, 0.44)",
-            backdropFilter: "blur(18px) saturate(150%)",
-            border: "1px solid rgba(255, 255, 255, 0.22)",
+            ...panel,
             borderRadius: "var(--nb1-radius-md)",
-            boxShadow: "rgba(20, 16, 15, 0.5) 0px 26px 60px -28px",
             padding: "14px 20px",
-            flexDirection: "column",
-            WebkitBackdropFilter: "blur(18px) saturate(150%)"
+            flexDirection: "column"
           }, display: discoverOpen ? 'flex' : 'none' }}>
             {(discoverItems || []).map((disc, discIdx) => (
               <a key={discIdx} style={{
@@ -341,14 +413,10 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
             right: "0px",
             width: "288px",
             zIndex: "70",
-            background: "rgba(28, 23, 22, 0.44)",
-            backdropFilter: "blur(18px) saturate(150%)",
-            border: "1px solid rgba(255, 255, 255, 0.22)",
+            ...panel,
             borderRadius: "var(--nb1-radius-md)",
-            boxShadow: "rgba(20, 16, 15, 0.5) 0px 26px 60px -28px",
             padding: "18px",
-            flexDirection: "column",
-            WebkitBackdropFilter: "blur(18px) saturate(150%)"
+            flexDirection: "column"
           }, display: locOpen ? 'flex' : 'none' }}>
             <div style={{
               fontFamily: "var(--nb1-font-tertiary)",
@@ -364,45 +432,57 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
               gap: "4px"
             }}>
               {(langs || []).map((lang, langIdx) => (
-                <button key={langIdx} style={pendingLang === lang[0] ? {
-                  fontFamily: "var(--nb1-font-secondary)",
-                  fontSize: "14.5px",
-                  padding: "0.6em 0.8em",
-                  borderRadius: "10px",
-                  border: "0px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
-                  background: "rgba(95, 234, 255, 0.18)",
-                  color: "var(--nb1-dark-brown)"
-                } : {
-                  fontFamily: "var(--nb1-font-secondary)",
-                  fontSize: "14.5px",
-                  padding: "0.6em 0.8em",
-                  borderRadius: "10px",
-                  border: "0px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  width: "100%",
-                  background: "transparent",
-                  color: "var(--nb1-dark-brown)"
-                }} type={'button'} aria-pressed={pendingLang === lang[0]} onClick={() => setPendingLang(lang[0])}>{lang[1]}</button>
+                <button key={langIdx} style={option(curLang === lang[0])} type={'button'}
+                  aria-pressed={curLang === lang[0]}
+                  disabled={pendingLang === lang[0] && !pendingLocaleAvailable}
+                  onClick={() => {
+                    // APPLIED ON TAP. The spec is explicit — "Each tap applies
+                    // straight away; there is no Apply button" — and the panel
+                    // had an Apply button and no currency at all.
+                    //
+                    // `setPendingLang` still runs first because the hook works
+                    // out, from the pending language, whether this document has
+                    // a translation to navigate to; `applyLang` then commits the
+                    // cookies and navigates.
+                    setPendingLang(lang[0])
+                    applyLang(lang[0])
+                    setLocOpen(false)
+                  }}>{lang[1]}</button>
               ))}
             </div>
-            <button style={{
-              marginTop: "16px",
-              width: "100%",
+            <div style={{
               fontFamily: "var(--nb1-font-tertiary)",
               textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              fontSize: "12px",
-              background: "var(--nb1-dark-brown)",
-              color: "var(--nb1-cool-grey)",
-              border: "0px",
-              borderRadius: "999px",
-              padding: "0.95em 1em",
-              cursor: "pointer"
-            }} type={'button'} disabled={!pendingLocaleAvailable} onClick={() => { applyLang(pendingLang); setLocOpen(false) }}>{applyLabel}</button>
+              letterSpacing: "0.1em",
+              fontSize: "10.5px",
+              opacity: "0.55",
+              marginTop: "14px",
+              marginBottom: "6px"
+            }}>{currencyLabel || 'Currency'}</div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "4px"
+            }}>
+              {/* THE HALF OF THE PANEL THAT WAS MISSING. The spec puts
+                  "Language and currency in one panel behind the globe", and the
+                  globe button has always printed the currency symbol — "EN · €"
+                  — while the panel offered no way to change it.
+
+                  `allowedCurs` is the hook's own list for the current language,
+                  not every currency: a German page offers € and CHF, not £. */}
+              {(allowedCurs(curLang) || []).map(([code, sym, name]) => (
+                <button key={code} style={option(curCur === code)} type={'button'}
+                  aria-pressed={curCur === code}
+                  onClick={() => {
+                    // No navigation: `applyCur` writes the cookie and fires the
+                    // event the price components listen on, so the amounts on
+                    // the page change under the open panel.
+                    applyCur(code)
+                    setLocOpen(false)
+                  }}>{`${sym} ${name}`}</button>
+              ))}
+            </div>
           </div>
         </div>
         <a style={{
