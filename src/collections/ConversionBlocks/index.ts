@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor } from '../../access/roles'
 import { normalizeSlug } from '@/fields/slug'
 import {
   revalidateContentLibrary,
@@ -25,10 +25,10 @@ export const ConversionBlocks: CollectionConfig = {
   slug: 'conversion-blocks',
   labels: { singular: 'Conversion block', plural: 'Conversion blocks' },
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: adminOrEditor,
+    delete: adminOrEditor,
     read: () => true,
-    update: authenticated,
+    update: adminOrEditor,
   },
   admin: {
     useAsTitle: 'name',
