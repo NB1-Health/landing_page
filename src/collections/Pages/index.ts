@@ -50,6 +50,7 @@ import { RdCtBlock } from '@/blocks/redesign/ContactPage/config'
 import { RdSbBlock } from '@/blocks/redesign/ScienceBoard/config'
 import { RdAbBlock } from '@/blocks/redesign/AboutPage/config'
 import { RdStBlock } from '@/blocks/redesign/StandardsPage/config'
+import { RdLiBlock } from '@/blocks/redesign/IngredientLibrary/config'
 import { RdLbHeroBlock } from '@/blocks/redesign/LbHero/config'
 import { RdLbNotBlock } from '@/blocks/redesign/LbNot/config'
 import { RdLbReadsBlock } from '@/blocks/redesign/LbReads/config'
@@ -290,6 +291,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdSbBlock,
                 RdAbBlock,
                 RdStBlock,
+                RdLiBlock,
                 RdLbHeroBlock,
                 RdLbNotBlock,
                 RdLbReadsBlock,
