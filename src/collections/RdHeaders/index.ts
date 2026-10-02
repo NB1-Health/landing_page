@@ -243,10 +243,27 @@ export const RdHeaders: CollectionConfig = {
       defaultValue: "Language",
     },
     {
+      name: 'currencyLabel',
+      type: 'text',
+      localized: true,
+      label: "Currency menu heading",
+      admin: {
+        description:
+          "The second heading inside the globe menu, above the currency choices.",
+      },
+      defaultValue: "Currency",
+    },
+    {
       name: 'applyLabel',
       type: 'text',
       localized: true,
-      label: "Language menu button",
+      label: "Language menu button (unused)",
+      admin: {
+        description:
+          "No longer rendered. The spec puts language and currency in one panel " +
+          "where each tap applies straight away, with no Apply button, so the " +
+          "header stopped drawing this. Kept so no stored value is lost.",
+      },
       defaultValue: "Apply",
     },
     {

@@ -1353,6 +1353,13 @@ export interface RdHeader {
       }[]
     | null;
   languageLabel?: string | null;
+  /**
+   * The second heading inside the globe menu, above the currency choices.
+   */
+  currencyLabel?: string | null;
+  /**
+   * No longer rendered. The spec puts language and currency in one panel where each tap applies straight away, with no Apply button, so the header stopped drawing this. Kept so no stored value is lost.
+   */
   applyLabel?: string | null;
   loginLabel?: string | null;
   loginUrl?: string | null;
@@ -19432,6 +19439,7 @@ export interface RdHeadersSelect<T extends boolean = true> {
         id?: T;
       };
   languageLabel?: T;
+  currencyLabel?: T;
   applyLabel?: T;
   loginLabel?: T;
   loginUrl?: T;
