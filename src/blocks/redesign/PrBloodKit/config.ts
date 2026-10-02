@@ -15,13 +15,22 @@ import { localizedLink } from '@/fields/localizedLink'
  * when this section came up, so a variant would have meant altering a live block,
  * a migration and a re-seed. Merging the two later costs less than un-merging.
  *
- * THE RIGHT COLUMN HAS NO PHOTOGRAPH. The mockup leaves a bordered box with
- * `role="img"`, an aria-label that says it is a placeholder, and the caption
- * "Blood kit image". It is reproduced exactly, on purpose: the alternative — an
- * upload field that falls back to the box — invents an `<img>` the design has not
- * got. Both strings are fields, so the placeholder is at least translatable, and
- * supplying the photograph is on the punch list. Until then the section renders a
- * grey box in production, which is what the design says.
+ * THE RIGHT COLUMN NOW TAKES A PHOTOGRAPH, and keeps the mockup's empty box as
+ * its fallback.
+ *
+ * The mockup leaves a bordered 4:5 panel with `role="img"`, an aria-label that
+ * says it is a placeholder, and the caption "Blood kit image". That was
+ * reproduced exactly while the design had no photograph — inventing an `<img>`
+ * the design has not got is how a block stops matching its design — and the two
+ * placeholder strings are still fields, still translated, still what renders
+ * when `image` is empty. Nothing about the box changed: same aspect ratio, same
+ * radius, same inset hairline. Only its CONTENTS switch.
+ *
+ * `image` is deliberately NOT localized. That is the standing rule for this
+ * redesign: media is shared across the nine locales and only the words around
+ * it are translated. `imageAlt` IS localized, and falls back to the alt text set
+ * on the upload itself — so a photograph described once in the media library
+ * needs nothing here.
  *
  * Five fact rows against rdPrKit's four, and they ARE a genuine repeat: identical
  * in style, nothing in a row drawn rather than written. Both cells come through
@@ -110,7 +119,9 @@ export const RdPrBloodKitBlock: Block = {
         },
       },
     }),
-    { name: "placeholderAria", type: "text", localized: true, label: "Placeholder description", admin: { description: "Read by screen readers in place of the missing photograph." }, defaultValue: "Placeholder for the at-home blood collection kit" },
-    { name: "placeholderLabel", type: "text", localized: true, label: "Placeholder caption", admin: { description: "The mockup has no photograph here yet \u2014 this is the caption inside the empty box. It disappears when the section gets a real image, which needs a code change." }, defaultValue: "Blood kit image" },
+    { name: "image", type: "upload", relationTo: "media", label: "Photograph", admin: { description: "The at-home blood collection kit. Fills the 4:5 panel on the right. Leave empty and the panel renders the placeholder box below instead \u2014 which is what the mockup draws." } },
+    { name: "imageAlt", type: "text", localized: true, label: "Photograph alt text", admin: { description: "Leave empty to use the alt text set on the upload itself. Ignored while there is no photograph." } },
+    { name: "placeholderAria", type: "text", localized: true, label: "Placeholder description", admin: { description: "Read by screen readers in place of the photograph. Used only while Photograph is empty." }, defaultValue: "Placeholder for the at-home blood collection kit" },
+    { name: "placeholderLabel", type: "text", localized: true, label: "Placeholder caption", admin: { description: "The caption inside the empty box. Shown only while Photograph is empty; upload one and the box becomes the photograph." }, defaultValue: "Blood kit image" },
   ],
 }
