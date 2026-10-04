@@ -1,0 +1,54 @@
+/*
+ * rd-bar — the sticky buy bar's one responsive rule.
+ *
+ * HAND-WRITTEN, and the only stylesheet in the redesign that is. Every other
+ * rd-*.css is ported by tools/make_rd_page_css.py from a captured mockup's own
+ * stylesheets. The buy bar has none: the navigation spec draws it as two
+ * STATIC FRAMES side by side, one at 1280px and one at 390px, and never a
+ * breakpoint between them. There is nothing to port — the switch has to be
+ * written, and this is it.
+ *
+ * The component renders BOTH frames, each with its inline styles copied
+ * verbatim from the spec (tools/bar_from_spec.py). This file decides which one
+ * the visitor sees, and does nothing else: no colour, no spacing, no type.
+ * Those are all in the markup where the spec put them.
+ *
+ * 1000px is the spec's own figure, stated for the header and footer in the
+ * same document: "The layout switches at a 1000px container width." The bar is
+ * the third piece of the same chrome and switching it anywhere else would put
+ * a phone bar under a desktop header.
+ *
+ * A MEDIA QUERY, NOT `@container`. Every page stylesheet here queries the
+ * `nb1page` container, because a block is laid out inside the page and should
+ * measure the page. This bar is `position: fixed` — it is laid out against the
+ * viewport, has the viewport's width whatever the page is doing, and is the
+ * one thing in the redesign for which the viewport IS the container.
+ *
+ * `!important` IS LOAD-BEARING HERE. The mobile frame's own inline style
+ * begins `display:flex`, and an inline declaration outranks any selector in a
+ * stylesheet. Without `!important` the phone bar would be visible at every
+ * width, under the desktop one. The alternative was to strip `display` out of
+ * the copied markup, which would have made the copy no longer a copy.
+ */
+
+/* Desktop is the default, so the phone frame starts hidden. */
+.rd-bar__m { display: none !important; }
+
+@media (max-width: 999.98px) {
+  .rd-bar__d { display: none !important; }
+  .rd-bar__m { display: flex !important; }
+}
+
+/*
+ * "Rises from the bottom, 260ms" is the spec's, and so is the stance on taking
+ * it away: the header's own row in the same table reads "Reduced motion — No
+ * slide: the header stays put and themes switch instantly." The bar is the
+ * same chrome and gets the same answer, so it appears and disappears outright
+ * rather than sliding.
+ *
+ * `visibility` keeps its own transition delay: that is what holds a hidden bar
+ * out of the tab order, and it is not motion.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rd-bar { transition: visibility 0s linear !important; }
+}

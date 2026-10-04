@@ -241,6 +241,7 @@ import * as migration_20261002_110000_rd_pr_blood_kit_image from './20261002_110
 import * as migration_20261002_120000_rd_st_block from './20261002_120000_rd_st_block'
 import * as migration_20261002_130000_rd_li_block from './20261002_130000_rd_li_block'
 import * as migration_20261002_140000_rd_header_currency_label from './20261002_140000_rd_header_currency_label'
+import * as migration_20261004_100000_rd_bar_block from './20261004_100000_rd_bar_block'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
 
 export const migrations = [
@@ -1463,5 +1464,10 @@ export const migrations = [
     up: migration_20261002_140000_rd_header_currency_label.up,
     down: migration_20261002_140000_rd_header_currency_label.down,
     name: '20261002_140000_rd_header_currency_label',
+  },
+  {
+    up: migration_20261004_100000_rd_bar_block.up,
+    down: migration_20261004_100000_rd_bar_block.down,
+    name: '20261004_100000_rd_bar_block',
   },
 ]

@@ -118,6 +118,11 @@ import './rd-st.css'
 // dialog, and never to `.rd-block`, because the rules it carries are written
 // against bare tags.
 import './rd-li.css'
+// The sticky buy bar's one responsive rule, and the only rd-*.css here that
+// is hand-written: the navigation spec draws the bar as two static frames,
+// 1280px and 390px, and never a breakpoint between them, so there is no
+// stylesheet to port. It decides which frame shows and nothing else.
+import './rd-bar.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

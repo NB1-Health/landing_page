@@ -342,6 +342,7 @@ export interface Page {
     | RdLbFormulaBlock
     | RdLbAdvancedBlock
     | RdLbBoardBlock
+    | RdBarBlock
     | HeroBannerBlock
     | YpHeroBlock
     | YpPlansBlock
@@ -6871,6 +6872,43 @@ export interface RdLbBoardBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdLbBoard';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBarBlock".
+ */
+export interface RdBarBlock {
+  /**
+   * The first line on desktop. Hidden on phones, where there is no room for it — the bar shows the price and the short note instead.
+   */
+  productName: string;
+  /**
+   * The dotted line beside the product name, desktop only. {{463}} is a currency token: it resolves to the right amount in the visitor's currency and re-resolves when they switch. Type a bare number inside braces for a flat amount, or leave the token alone.
+   */
+  note?: string | null;
+  /**
+   * Shown on both layouts. {{price:core:1}} is a LIVE price — the Core one-month rate for the visitor's currency, from the subscriptions API. A plain {{99}} would show an AED visitor 99 where the real figure is 419, so leave it as a price token unless the bar is meant to carry a flat claim.
+   */
+  price?: string | null;
+  /**
+   * Set in the body face beside the price, smaller. The leading space is deliberate — it is the gap between the amount and the unit.
+   */
+  priceSuffix?: string | null;
+  /**
+   * Sits under the price on phones, in place of the product name and the longer desktop note. Short: it has to stay on one line next to the button.
+   */
+  mobileNote?: string | null;
+  /**
+   * The lime pill, on both layouts. The arrow after it is drawn by the component and is not part of this text.
+   */
+  ctaLabel: string;
+  /**
+   * A slug — the locale is added when the page renders, so one value is right in all nine. The spec points this at the order funnel. A full url, a /path, a #anchor, mailto: or tel: is passed through as typed.
+   */
+  ctaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdBar';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -13550,6 +13588,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdLbFormula?: T | RdLbFormulaBlockSelect<T>;
         rdLbAdvanced?: T | RdLbAdvancedBlockSelect<T>;
         rdLbBoard?: T | RdLbBoardBlockSelect<T>;
+        rdBar?: T | RdBarBlockSelect<T>;
         heroBanner?: T | HeroBannerBlockSelect<T>;
         ypHero?: T | YpHeroBlockSelect<T>;
         ypPlans?: T | YpPlansBlockSelect<T>;
@@ -16524,6 +16563,21 @@ export interface RdLbBoardBlockSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBarBlock_select".
+ */
+export interface RdBarBlockSelect<T extends boolean = true> {
+  productName?: T;
+  note?: T;
+  price?: T;
+  priceSuffix?: T;
+  mobileNote?: T;
+  ctaLabel?: T;
+  ctaHref?: T;
   id?: T;
   blockName?: T;
 }

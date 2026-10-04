@@ -32,8 +32,33 @@
 /* The wrapper. `background` and `margin` do NOT inherit, so they belong
  * here rather than above — and the container is what makes every inline
  * `cqi` resolve against the page the way it did in the design. The name is
- * the mockup's own, `nb1page`. */
-.rd-li, .rd-li-fam, .rd-li-browse, .rd-li-chosen, .rd-li-modal {
+ * the mockup's own, `nb1page`.
+ *
+ * `.rd-li-modal` IS DELIBERATELY ABSENT FROM THIS ONE RULE.
+ *
+ * The other four roots are page sections and this rule is their `body`. The
+ * modal is not a section: it is the mockup's `position:fixed; inset:0`
+ * dialog, a sibling of the page, and the mockup dims the page with a CHILD
+ * div at `rgba(40,34,33,.45)` — a 45% wash you are meant to read the library
+ * through. The dialog root itself has no background in the mockup at all,
+ * so this rule met no inline value to lose to and painted
+ * `--nb1-cool-grey` across the whole viewport UNDERNEATH that scrim. The
+ * page vanished and the backdrop read as flat opaque grey.
+ *
+ * Worth knowing why the other two overlays never showed this: The Lab's and
+ * Your Biology's modals set `background: rgba(42,36,34,.6)` inline on the
+ * fixed root itself, so the inline value wins and the stylesheet is moot.
+ * This one puts the wash on a child, exactly as its mockup does, which is
+ * what left the root exposed.
+ *
+ * `container-type` goes with it. Nothing inside the dialog is sized in
+ * `cqi`, so it bought nothing, and a second `nb1page` container nested in
+ * the first is a trap for whatever gets added later.
+ *
+ * tools/make_rd_page_css.py rescopes the mockup's `body` rule onto every
+ * root it is handed; it cannot tell a section from an overlay. An overlay
+ * root has to be held out by hand, here and on the next page that has one. */
+.rd-li, .rd-li-fam, .rd-li-browse, .rd-li-chosen {
   background: var(--nb1-cool-grey);
   container-type: inline-size;
   container-name: nb1page;
