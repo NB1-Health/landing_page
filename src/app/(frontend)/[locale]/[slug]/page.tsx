@@ -37,6 +37,7 @@ import { buildHubMetadata } from '@/utilities/hubMetadata'
 import { getCachedHubBySlug } from '@/utilities/hubQueries'
 import { JournalReskin } from '@/components/JournalReskin'
 import { JournalFooter } from '@/components/JournalFooter'
+import { HelpReskin } from '@/components/HelpReskin'
 
 const PAGE_RENDER_POPULATE = {
   headers: { name: true },
@@ -259,6 +260,10 @@ export default async function Page({ params: paramsPromise }: Args) {
   return (
     <>
       <JournalReskin />
+      {/* Scoped by `body:has([data-help-article])`, so it applies to nothing
+          unless a help block is on the page — same arrangement as the line
+          above. Switch: HELP_RESKIN in src/utilities/helpReskin.ts. */}
+      <HelpReskin />
       <JsonLd data={pageJsonLd} />
 
       {!hideHeader &&

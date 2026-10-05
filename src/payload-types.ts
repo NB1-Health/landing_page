@@ -5659,7 +5659,7 @@ export interface RdStBlock {
     heading: string;
     intro?: string | null;
     /**
-     * An accordion: one row open at a time, the first on load. Every row needs a body — the mockup only wrote copy for the row it draws open.
+     * An accordion: one row open at a time, the first on load. Every row needs a body — a row with none opens onto nothing, and the row still looks clickable.
      */
     items?:
       | {
