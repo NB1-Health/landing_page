@@ -1,0 +1,484 @@
+/* ============================================================================
+   nb1 kit-instructions reskin — colour and type layer
+   ----------------------------------------------------------------------------
+   Loaded by <HelpReskin />, gated by HELP_RESKIN in src/utilities/helpReskin.ts.
+
+   SCOPE. Every rule is prefixed `body:has([data-help-article])`. That attribute
+   is already emitted by HelpSteps and HelpFaq (HELP_ARTICLE_ATTR in
+   _shared/layout.ts), so the scope costs no markup change. It is also what makes
+   the sheet safe to load on the whole [locale]/[slug] route: on a page with no
+   help block it matches nothing.
+
+   SPECIFICITY, AND WHY EVERY DECLARATION CARRIES `!important`.
+   styled-jsx appends its hash class to EVERY COMPOUND in a selector, not only
+   the first: `.hs-steps h2` compiles to `.hs-steps.jsx-x h2.jsx-x` (0-3-1), and
+   `.hf-item .ans-body p` reaches 0-5-1. A scoped override can out-specify the
+   single-compound rules — `.hh-h1` really is just 0-2-0 — but not the nested
+   ones, and matching those by counting classes is both an arms race and a
+   SILENT failure: add one nesting level inside a component and the override
+   stops applying with nothing to show for it.
+
+   Measured rather than reasoned about: with no `!important`, `.hh-h1` took the
+   reskin on the rendered page and `.hs-steps h2` did not. So `!important` here
+   is the correct tool for overriding styled-jsx from outside, not a shortcut
+   around the cascade — and it is precisely the cost of reskinning from a
+   stylesheet instead of retokenising the components. The journal reskin did not
+   need it because the journal was already token-driven; these blocks are not.
+
+   The custom properties in the token block below are the exception: nothing
+   else defines `--hr-*`, so they have nothing to beat.
+
+   THE .hc COLLISION. HelpCallout and HelpCta both use the `.hc` prefix:
+   `.hc/.hc-wrap/.hc-panel` and `.hc/.hc-card/.hc-body/.hc-fine/.hc-btn`. Inside
+   styled-jsx they never collide because each gets a different hash. From out
+   here they would. Bare `.hc` is therefore never targeted — the two section
+   rules below discriminate with `:has()`, and everything else targets a child
+   class that belongs to only one of them.
+
+   NOT IN THIS FILE: spacing, widths, section rhythm and the contents-rail
+   arithmetic. Those wait on the Figma frame — see the note at the foot.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- tokens ---
+   The redesign's own custom properties are ALREADY live on this route —
+   --nb1-dark-brown, --nb1-cool-grey, --nb1-lime, --nb1-hairline and the three
+   font tokens all resolve, and the Martina Plantijn / F37 Zagma / OO Theran
+   faces are declared. Measured on /en/how-to-use-your-stool-kit, not assumed.
+   So this block adds no new design values; it only names the MAPPING from the
+   old palette to those tokens, in one place, so a decision can be changed once.
+
+   TWO VALUES COME FROM THE FIGMA FRAME, NOT FROM THE SITE TOKENS, because the
+   frame and the reskin brief disagree and the frame is the newer artifact.
+   Sampled from Andra's export of node 8703-2634, not eyeballed:
+
+     | surface      | Figma frame | site token                     |
+     |--------------|-------------|--------------------------------|
+     | page ground  | #F4F0ED     | --nb1-cool-grey  #F0F5FF       |  DIFFERENT
+     | panel tint   | #EBF6F9     | (no site token on this route)  |
+     | dark surface | #2B2220     | --nb1-dark-brown #514745       |  DIFFERENT
+     | ink          | #514745     | --nb1-dark-brown #514745       |  same
+     | CTA          | #D9FF65     | --nb1-lime       #D9FF65       |  same
+
+   The ground is WARM in the frame and cool in the token; the CTA card is a near
+   black rather than the brown. Ink and lime agree exactly, which is what makes
+   the other two look deliberate rather than like a stale frame.
+
+   They are written as literals HERE, in a block that applies to two pages, and
+   nowhere else — so this does not quietly fork the design system. If the warm
+   ground is the real new branding, the right fix is a site token and this block
+   should then point at it; that is a decision above this stylesheet. FLAGGED TO
+   ANDRA rather than resolved here.
+
+   `--hr-tint` is not taken from `--tint`, which is UNSET on this route: --tint
+   is a per-page token living in the rd-<page>.css files, and this route loads
+   none of them.
+   -------------------------------------------------------------------------- */
+body:has([data-help-article]) {
+  /* ink — was #12314d navy. Agrees with --nb1-dark-brown, so it uses it. */
+  --hr-ink: var(--nb1-dark-brown, #514745);
+  --hr-ink-86: rgba(81, 71, 69, 0.86);
+  --hr-ink-70: rgba(81, 71, 69, 0.7);
+  --hr-ink-55: rgba(81, 71, 69, 0.55);
+  --hr-ink-45: rgba(81, 71, 69, 0.45);
+  --hr-ink-40: rgba(81, 71, 69, 0.4);
+  --hr-hairline: rgba(81, 71, 69, 0.1);
+
+  /* grounds — was #fff / #f7f9fb / #f7fafc / #eef2f5. Measured from the frame. */
+  --hr-ground: #f4f0ed;
+  --hr-tint: #ebf6f9;
+
+  /* the dark surface under the closing CTA — was #0e2740 navy */
+  --hr-surface-dark: #2b2220;
+  --hr-on-dark: #f4f0ed;
+  --hr-on-dark-78: rgba(244, 240, 237, 0.78);
+  --hr-on-dark-60: rgba(244, 240, 237, 0.6);
+
+  /* the CTA, the one place colour is allowed to shout — was #c6ff5b */
+  --hr-cta: var(--nb1-lime, #d9ff65);
+  --hr-cta-ink: var(--nb1-black, #000);
+
+  /* type */
+  --hr-font-head: var(--nb1-font-primary, 'Martina Plantijn', Georgia, serif);
+  --hr-font-body: var(--nb1-font-secondary, 'F37 Zagma', Arial, sans-serif);
+  --hr-font-label: var(--nb1-font-tertiary, 'OO Theran', ui-monospace, monospace);
+}
+
+/* THE TEAL. #0a8fb0 was the accent on links, step numerals, the FAQ plus-mark,
+   inline code and the callout grounds. The nb1 system has no teal, and the
+   journal reskin settled what inherits that job: nothing at the text level —
+   the signal folds into the ink — while the *tints* become the system's
+   blue-grey. Links keep their underline, so they stay findable without colour,
+   and lime is reserved for the primary CTA. Same judgement, same reasons; see
+   claude/journal-reskin-shipped.md, "The one judgement call". */
+
+/* ------------------------------------------------------------- the header --- */
+body:has([data-help-article]) .hh {
+  background: var(--hr-ground) !important;
+}
+body:has([data-help-article]) .hh-h1 {
+  font-family: var(--hr-font-head) !important;
+  font-weight: 400 !important;
+  /* Martina Plantijn is a text face; 600 would be faux-bold */
+  letter-spacing: -0.025em !important;
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hh-eyebrow {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink-70) !important;
+}
+body:has([data-help-article]) .hh-eyebrow::before {
+  background: var(--hr-ink-40) !important;
+}
+body:has([data-help-article]) .hh-dek {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-86) !important;
+}
+body:has([data-help-article]) .hh-also .tag {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink-40) !important;
+}
+body:has([data-help-article]) .hh-also a {
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hh-also a:hover {
+  color: var(--hr-ink-70) !important;
+}
+body:has([data-help-article]) .hh-fig img {
+  border-radius: 16px !important;
+  border-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hh-fig figcaption {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-45) !important;
+}
+
+/* -------------------------------------------------------- the contents rail --- */
+body:has([data-help-article]) .hn-rail .lbl {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink-40) !important;
+}
+body:has([data-help-article]) .hn-rail a {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-55) !important;
+  border-left-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hn-rail a:hover,
+body:has([data-help-article]) .hn-rail a.active {
+  color: var(--hr-ink) !important;
+  border-left-color: var(--hr-ink) !important;
+}
+
+/* ------------------------------------------------------------- the steps --- */
+body:has([data-help-article]) .hs {
+  background: var(--hr-ground) !important;
+}
+/* NOTE `:global(…)` is styled-jsx AUTHORING syntax and is not valid CSS. In a
+   real stylesheet it makes the browser drop the entire selector list, so it
+   must never appear here — the rules target the rendered elements directly,
+   which is all `:global` ever meant. */
+body:has([data-help-article]) .hs-lead p {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hs-lead li,
+body:has([data-help-article]) .hs-body li,
+body:has([data-help-article]) .hs-body p,
+body:has([data-help-article]) .hs-outro p {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-86) !important;
+}
+body:has([data-help-article]) .hs-body a,
+body:has([data-help-article]) .hs-lead a,
+body:has([data-help-article]) .hs-outro a,
+body:has([data-help-article]) .hs-note a {
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hs-body h4,
+body:has([data-help-article]) .hs-note h4 {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink) !important;
+}
+
+/* the numbered step headings, and their numeral */
+body:has([data-help-article]) .hs-steps h2 {
+  font-family: var(--hr-font-head) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--hr-ink) !important;
+  border-top-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hs-steps h2::before {
+  border-color: var(--hr-ink-40) !important;
+  color: var(--hr-ink) !important;
+  font-family: var(--hr-font-label) !important;
+}
+
+/* inline code — tinted ground, ink foreground */
+body:has([data-help-article]) .hs-body code {
+  font-family: var(--hr-font-label) !important;
+  background: var(--hr-tint) !important;
+  color: var(--hr-ink) !important;
+}
+
+/* the key/value box and its links */
+body:has([data-help-article]) .hs-code .box {
+  background: var(--hr-tint) !important;
+  border-color: var(--hr-hairline) !important;
+  border-radius: 16px !important;
+}
+body:has([data-help-article]) .hs-code .k {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink-40) !important;
+}
+body:has([data-help-article]) .hs-code .v {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hs-code a {
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hs-code a:hover {
+  color: var(--hr-ink-70) !important;
+}
+
+/* the flow strip and the example guide */
+body:has([data-help-article]) .hs-flow .fi img {
+  border-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hs-flow .lbl,
+body:has([data-help-article]) .hs-guide .lbl {
+  font-family: var(--hr-font-label) !important;
+  color: var(--hr-ink-45) !important;
+}
+body:has([data-help-article]) .hs-guide {
+  background: var(--hr-tint) !important;
+  border-color: var(--hr-hairline) !important;
+  border-radius: 16px !important;
+}
+
+/* the hairline that opens the numbered steps */
+body:has([data-help-article]) .hs-divider {
+  border-top-color: var(--hr-hairline) !important;
+}
+
+/* step figures */
+body:has([data-help-article]) .hs-img img,
+body:has([data-help-article]) .hs-img .ph {
+  border-radius: 16px !important;
+  border-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hs-img .ph {
+  background: var(--hr-tint) !important;
+  color: var(--hr-ink-45) !important;
+  font-family: var(--hr-font-label) !important;
+}
+body:has([data-help-article]) .hs-img figcaption,
+body:has([data-help-article]) .hs-subnote {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-45) !important;
+}
+body:has([data-help-article]) .hs-subnote {
+  color: var(--hr-ink-55) !important;
+}
+
+/* the in-step notes */
+body:has([data-help-article]) .hs-note {
+  background: var(--hr-tint) !important;
+  border-color: var(--hr-hairline) !important;
+  border-radius: 16px !important;
+}
+body:has([data-help-article]) .hs-note.quiet {
+  background: var(--hr-ground) !important;
+  border-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hs-note p,
+body:has([data-help-article]) .hs-note li {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-86) !important;
+}
+body:has([data-help-article]) .hs-note strong,
+body:has([data-help-article]) .hs-note b {
+  color: var(--hr-ink) !important;
+}
+
+/* the closing line */
+body:has([data-help-article]) .hs-done {
+  font-family: var(--hr-font-head) !important;
+  font-weight: 400 !important;
+  color: var(--hr-ink) !important;
+}
+
+/* --------------------------------------------------------------- the FAQ --- */
+body:has([data-help-article]) .hf {
+  background: var(--hr-ground) !important;
+}
+body:has([data-help-article]) .hf-h2 {
+  font-family: var(--hr-font-head) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--hr-ink) !important;
+  border-top-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hf-list {
+  border-top-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hf-item {
+  border-bottom-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hf-item button {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hf-item .x::before,
+body:has([data-help-article]) .hf-item .x::after {
+  background: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hf-item .ans-body p {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-86) !important;
+}
+body:has([data-help-article]) .hf-item .ans-body a {
+  color: var(--hr-ink) !important;
+}
+
+/* ---------------------------------------------------- the callout panels ---
+   `.hc:has(.hc-panel)` is the callout section; `.hc:has(.hc-card)` is the CTA.
+   See "THE .hc COLLISION" at the top — bare `.hc` is never used. */
+body:has([data-help-article]) .hc:has(.hc-panel) {
+  background: var(--hr-ground) !important;
+}
+body:has([data-help-article]) .hc-panel {
+  background: var(--hr-tint) !important;
+  border-color: var(--hr-hairline) !important;
+  border-radius: 16px !important;
+}
+body:has([data-help-article]) .hc-panel.quiet {
+  background: var(--hr-ground) !important;
+  border-color: var(--hr-hairline) !important;
+}
+body:has([data-help-article]) .hc-panel h2,
+body:has([data-help-article]) .hc-panel h4 {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink) !important;
+}
+body:has([data-help-article]) .hc-panel p,
+body:has([data-help-article]) .hc-panel li {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-ink-86) !important;
+}
+body:has([data-help-article]) .hc-panel strong,
+body:has([data-help-article]) .hc-panel b,
+body:has([data-help-article]) .hc-panel a {
+  color: var(--hr-ink) !important;
+}
+
+/* --------------------------------------------------------------- the CTA --- */
+body:has([data-help-article]) .hc:has(.hc-card) {
+  background: var(--hr-ground) !important;
+}
+body:has([data-help-article]) .hc-card {
+  background: var(--hr-surface-dark) !important;
+  color: var(--hr-on-dark) !important;
+  border-radius: 16px !important;
+}
+body:has([data-help-article]) .hc-card h2 {
+  font-family: var(--hr-font-head) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--hr-on-dark) !important;
+}
+body:has([data-help-article]) .hc-body {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-on-dark-78) !important;
+}
+body:has([data-help-article]) .hc-fine p {
+  font-family: var(--hr-font-body) !important;
+  color: var(--hr-on-dark-60) !important;
+}
+body:has([data-help-article]) .hc-fine a {
+  color: var(--hr-on-dark) !important;
+}
+/* the one lime object on the page: an uppercase pill, per the brief */
+body:has([data-help-article]) .hc-btn {
+  font-family: var(--hr-font-label) !important;
+  font-weight: 400 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  border-radius: 999px !important;
+  background: var(--hr-cta) !important;
+  color: var(--hr-cta-ink) !important;
+}
+body:has([data-help-article]) .hc-btn:hover {
+  background: color-mix(in oklab, var(--hr-cta) 88%, #000) !important;
+}
+
+/* ------------------------------------------------------- the article ground ---
+   THE ONLY `!important` IN THIS FILE, and it is not about styled-jsx.
+   `[locale]/[slug]/page.tsx` sets `style={{ backgroundColor: '#ffffff' }}` on
+   the <article> inline. An inline declaration beats every selector, so this is
+   the one place a scoped rule cannot win on specificity alone.
+
+   The alternative is editing that route file to drop the literal — which would
+   change the ground of every [slug] page, not just these two. A single scoped
+   `!important` is the smaller change. If that inline style is ever removed,
+   delete the `!important` here with it. */
+body:has([data-help-article]) article {
+  background-color: var(--hr-ground) !important;
+}
+
+/* ============================================================================
+   THE GEOMETRY LAYER — solved from Andra's export of node 8703-2634.
+
+   The frame is 1:1 at a 1280px viewport, which is not an assumption: the
+   closing CTA card measures exactly 1000px wide in the export and the component
+   already declares `max-width: 1000px`. That one coincidence makes every other
+   pixel in the frame directly comparable.
+
+   MEASURED FROM THE FRAME (x positions at 1280):
+     rail text        ~124 … ~300
+     body column       351 … 1166   → 816 wide
+     CTA card          140 … 1139   → 1000 wide, centred
+
+   SOLVED, not eyeballed. Holding the rail and the gap at their current values
+   (RAIL 190, GAP 48, so GUTTER 238) and asking what ARTICLE_MAX gives an
+   816px body:
+
+     ARTICLE_MAX = 816 + 238          = 1054
+     grid left   = (1280 - 1054) / 2  =  113
+     rail        = 113 … 303                      (frame: ~124 … ~300)
+     body left   = 113 + 238          =  351      (frame: 351)   exact
+     body width  = 1054 - 238         =  816      (frame: 816)   exact
+
+   So the ONLY change the frame actually asks for is that the article grid grows
+   from 820 to 1054. The rail width, the gap and the CTA card are already right.
+   A single number, and it reproduces all three measurements — which is the
+   reason to believe it rather than to start nudging paddings.
+
+   ────────────────────────────────────────────────────────────────────────────
+   WHAT THIS COSTS, AND WHY ANDRA SHOULD SEE IT.
+
+   `_shared/layout.ts` declares itself the source of truth for this grid, and
+   its numbers are duplicated as literals inside four components because the
+   rail is `position: fixed` and aligned by arithmetic rather than `sticky`.
+   Overriding ARTICLE_MAX from here leaves that file — the one that says to
+   treat it as authoritative — stating 820 while the page renders 1054.
+
+   The honest change is ARTICLE_MAX in layout.ts plus the four literals, which
+   is a four-line edit to the components. It was not made because the brief for
+   this job is "no new blocks, just CSS". This block is the compromise, and it
+   is marked so nobody later reads layout.ts and believes it.
+   ========================================================================== */
+
+body:has([data-help-article]) .hn-rail {
+  left: max(24px, calc(50% - 527px)) !important;
+}
+body:has([data-help-article]) .hs-wrap,
+body:has([data-help-article]) .hf-wrap,
+body:has([data-help-article]) .hc-wrap {
+  max-width: 1054px !important;
+}
+/* The article HEADER is deliberately NOT touched. `.hh-head` is max-width 760
+   centred, which puts its left edge at 260 in a 1280 viewport — and the frame's
+   title and dek both start at x=261. It already matches; a rule here would have
+   been a number I made up. The header stays narrower than the body column on
+   purpose, and the frame agrees. */
