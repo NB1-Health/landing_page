@@ -5149,6 +5149,14 @@ export interface RdChkBlock {
           id?: string | null;
         }[]
       | null;
+    /**
+     * Where Back goes from Checkout when Core is the chosen plan — the Core duration page. A slug; the locale is added when the page renders. Leave empty to fall back to the browser's own history.
+     */
+    backSlugCore?: string | null;
+    /**
+     * The same for Advanced. The two are separate fields because the funnel splits here: Checkout is one page but the step before it is two.
+     */
+    backSlugAdvanced?: string | null;
     backLabel?: string | null;
     backLabelDone?: string | null;
   };
@@ -5239,6 +5247,9 @@ export interface RdChkBlock {
     acctHeading?: string | null;
     acctBody?: string | null;
     acctCta?: string | null;
+    /**
+     * Where "Create your account" goes. The account app is a separate application mounted at /login and is NOT under a locale, so this is stored as an absolute /path and passed through as typed. A bare slug (no leading /) is treated as a page on this site and gets the locale prefix.
+     */
     acctSlug?: string | null;
     survHeading?: string | null;
     survIntro?: string | null;
@@ -15384,6 +15395,8 @@ export interface RdChkBlockSelect<T extends boolean = true> {
               label?: T;
               id?: T;
             };
+        backSlugCore?: T;
+        backSlugAdvanced?: T;
         backLabel?: T;
         backLabelDone?: T;
       };
