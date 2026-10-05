@@ -34,5 +34,7 @@ export function helpReskinEnabled(): boolean {
   return HELP_RESKIN
 }
 
-/** The stylesheet, served from /public. Named here so the path has one home. */
-export const HELP_RESKIN_HREF = '/help-reskin.css'
+/* The stylesheet is no longer fetched by URL, so there is no path constant
+ * here any more: it is imported by [locale]/layout.tsx and served from
+ * /_next/. This switch now decides whether the marker attribute is in the
+ * DOM, which is what every rule in that stylesheet is behind. */
