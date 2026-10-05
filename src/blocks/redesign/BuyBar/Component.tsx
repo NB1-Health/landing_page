@@ -85,7 +85,18 @@ const RdBarInner: React.FC<Props & { locale?: AppLocale }> = ({
     // block's own wrapper and all its siblings are one level up. This reads
     // that structure rather than the page's markup, which differs per page.
     const mine = el.closest('.p-0')
-    const firstWrap = mine?.parentElement?.firstElementChild ?? null
+
+    // THE FIRST `.p-0`, NOT THE FIRST CHILD. Measured on staging: the page
+    // template renders its own `<div class="container pr-10 pl-10">` inside
+    // the `<article>` BEFORE RenderBlocks' output, so `firstElementChild` is
+    // that container — zero-height, sitting at the very top of the page. Its
+    // bottom passes 0 after about forty pixels of scroll, so the bar rose
+    // almost immediately instead of after the hero. Only the `.p-0` wrappers
+    // are blocks.
+    const wraps = mine?.parentElement
+      ? Array.from(mine.parentElement.children).filter((c) => c.classList.contains('p-0'))
+      : []
+    const firstWrap = wraps[0] ?? null
 
     // THE FIRST SECTION, NOT THE FIRST BLOCK — and on half these pages they
     // are not the same thing.
