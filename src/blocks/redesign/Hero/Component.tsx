@@ -26,6 +26,32 @@ const mediaUrl = (m: unknown): string | undefined =>
 const mediaAlt = (m: unknown): string =>
   m && typeof m === 'object' && 'alt' in m ? ((m as { alt?: string }).alt ?? '') : ''
 
+/** A destination. The field holds a SLUG and the locale is added here, so one
+ * stored value is right in all nine. Anything already absolute — a url,
+ * mailto, tel, #anchor or a /path — passes straight through.
+ *
+ * WHY IT MATTERS MORE THAN IT LOOKS. A bare slug in an href is relative to the
+ * current path, so on `/en` it resolves with the locale stripped — and on
+ * staging nginx does not route a locale-less path to Next at all. `/order`
+ * comes back as the LOGIN APP'S HTML with a 200: not a 404, not a redirect,
+ * just the wrong application. Measured 2026-10-05; see
+ * claude/bare-slug-links-land-on-the-login-app.md.
+ *
+ * The middleware's own 307 to the locale-prefixed path would handle it and is
+ * never reached on a deployed host, which is why the link has to carry the
+ * locale itself rather than rely on being corrected.
+ *
+ * NOT a lookup: `pages.slug` is localized, and resolving that needs the
+ * database, which a client component cannot reach. No redesign page has a
+ * translated slug today.
+ */
+const heroPath = (s?: string | null, locale?: string | null) => {
+  const v = (s || '').trim()
+  if (!v) return '#'
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(v)) return v
+  return `/${locale || 'en'}/${v}`
+}
+
 type ComponentProps = Props & { locale?: string | null }
 
 export const RdHero: React.FC<ComponentProps> = (props) => {
@@ -298,7 +324,7 @@ export const RdHero: React.FC<ComponentProps> = (props) => {
               color: "var(--nb1-dark-brown)",
               whiteSpace: "nowrap",
               flexShrink: "0"
-            }} href={primaryCta?.url || '#'}>
+            }} href={heroPath(primaryCta?.url, locale)}>
               <span style={{
                 background: "var(--nb1-cool-grey)",
                 borderRadius: "10px",
@@ -324,7 +350,7 @@ export const RdHero: React.FC<ComponentProps> = (props) => {
               color: "var(--nb1-white,#fff)",
               opacity: "0.85",
               whiteSpace: "nowrap"
-            }} href={secondaryCta?.url || '#'}>{secondaryCta?.label}</a>
+            }} href={heroPath(secondaryCta?.url, locale)}>{secondaryCta?.label}</a>
           </div>
         </div>
       </div>
