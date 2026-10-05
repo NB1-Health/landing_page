@@ -5,9 +5,18 @@ import type { RdHeader as Props } from '@/payload-types'
 import { useLocaleCurrency } from '@/components/LocaleCurrency/useLocaleCurrency'
 import type { LocalizedDocument } from '@/Header/localizedDocument'
 
-// GENERATED from manifests/section-17.json + section-19.json by
+// ORIGINALLY GENERATED from manifests/section-17.json + section-19.json by
 // tools/header_component.py — assembled from the two bound files and
-// out/header/sheetmenu.tsx. Do not hand-edit; regenerate.
+// out/header/sheetmenu.tsx.
+//
+// NO LONGER REGENERABLE WITHOUT LOSS. This file has since been hand-edited, and
+// the edits are behaviour the generator does not know about: the currency half
+// of the desktop panel, the currency half of the phone drawer, and the drawer's
+// spacing fix. The old "do not hand-edit; regenerate" line was already untrue
+// when the desktop currency block went in, and leaving it there invites exactly
+// the regeneration that would silently delete all of it.
+//
+// To regenerate, port these edits into tools/header_component.py first.
 //
 // Styles copied verbatim from the mockup; bindings replace content only.
 // Layout and breakpoints come from rd-tokens.css — the mockup's own stylesheet,
@@ -18,9 +27,15 @@ import type { LocalizedDocument } from '@/Header/localizedDocument'
 //
 // The language switcher is the real one: `useLocaleCurrency` is the hook lifted
 // out of src/Header/Component.client.tsx, so this header and the live header
-// share one implementation. The mockup draws no currency picker, so this menu
-// offers language only — applying a language still sets that locale's default
-// currency, which is what keeps pricing correct.
+// share one implementation.
+//
+// BOTH the desktop panel and the phone drawer now offer language AND currency.
+// The mockup draws no currency picker, but the navigation spec asks for
+// "language and currency in one panel behind the globe", and the control has
+// always PRINTED the currency ("EN · €") — so offering no way to change it read
+// as a broken control rather than an absent feature. On a phone it was worse
+// than cosmetic: `[data-d~="navmore"]` hides the desktop switcher below 1120px,
+// so the drawer is the only route to it and currency was simply unreachable.
 
 const mediaUrl = (m: unknown): string | undefined =>
   m && typeof m === 'object' && 'url' in m ? ((m as { url?: string }).url ?? undefined) : undefined
@@ -265,6 +280,31 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
       ? 'rgba(95, 234, 255, 0.18)'
       : 'transparent',
     color: ink === 'light' ? 'var(--nb1-cool-grey)' : 'var(--nb1-dark-brown)',
+  })
+
+  /** One option in the PHONE DRAWER's locale panel.
+   *
+   *  Separate from `option` above on purpose: the drawer is always on the dark
+   *  sheet (never the light panel, so no `ink` branch), its chips are centred
+   *  uppercase labels rather than left-aligned sentence case, and the pressed
+   *  state is the lime fill the mockup draws rather than the desktop's tint.
+   *
+   *  It exists as a function because the language grid and the currency grid
+   *  below must stay identical — this style was written out twice inline for
+   *  the languages alone, and a third and fourth copy for the currencies is how
+   *  two grids in the same panel quietly drift apart. */
+  const sheetOption = (pressed: boolean): React.CSSProperties => ({
+    cursor: 'pointer',
+    border: '0px',
+    borderRadius: '10px',
+    padding: '0.8em 0.4em',
+    fontFamily: 'var(--nb1-font-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    fontSize: '10.5px',
+    background: pressed ? 'var(--nb1-lime)' : 'rgba(240, 245, 255, 0.1)',
+    color: pressed ? 'var(--nb1-black)' : 'rgba(240, 245, 255, 0.86)',
+    boxShadow: pressed ? 'none' : 'rgba(240, 245, 255, 0.2) 0px 0px 0px 1px inset',
   })
 
   return (
@@ -637,8 +677,16 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
             lineHeight: "1"
           }}>{"\u2197"}</span>
         </a>
+        {/* GLUED TO THE CTA. This wrapper carried `position: relative` and
+            nothing else, so the locale pill sat flush against the bottom of the
+            "Order your kit" button with no gap at all — two pills touching,
+            reading as one control. Every other row in this footer sets its own
+            top spacing (the Log in row below uses 12px); this one never did.
+            14px matches the gap the open panel already puts above its first
+            label, so the drawer has one rhythm whether it is open or closed. */}
         <div style={{
-          position: "relative"
+          position: "relative",
+          marginTop: "14px"
         }}>
           <button style={{
             width: "100%",
@@ -691,31 +739,44 @@ export const RdHeader: React.FC<ComponentProps> = (props) => {
               marginTop: "9px"
             }}>
               {(langs || []).map((lang, langIdx) => (
-                <button key={langIdx} style={curLang === lang[0] ? {
-                  cursor: "pointer",
-                  border: "0px",
-                  borderRadius: "10px",
-                  padding: "0.8em 0.4em",
-                  fontFamily: "var(--nb1-font-tertiary)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  fontSize: "10.5px",
-                  background: "var(--nb1-lime)",
-                  color: "var(--nb1-black)",
-                  boxShadow: "none"
-                } : {
-                  cursor: "pointer",
-                  border: "0px",
-                  borderRadius: "10px",
-                  padding: "0.8em 0.4em",
-                  fontFamily: "var(--nb1-font-tertiary)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                  fontSize: "10.5px",
-                  background: "rgba(240, 245, 255, 0.1)",
-                  color: "rgba(240, 245, 255, 0.86)",
-                  boxShadow: "rgba(240, 245, 255, 0.2) 0px 0px 0px 1px inset"
-                }} type={'button'} aria-pressed={curLang === lang[0]} onClick={() => { setPendingLang(lang[0]); applyLang(lang[0]) }}>{lang[1]}</button>
+                <button key={langIdx} style={sheetOption(curLang === lang[0])}
+                  type={'button'} aria-pressed={curLang === lang[0]}
+                  disabled={pendingLang === lang[0] && !pendingLocaleAvailable}
+                  onClick={() => { setPendingLang(lang[0]); applyLang(lang[0]) }}>{lang[1]}</button>
+              ))}
+            </div>
+            {/* THE CURRENCY HALF, WHICH THE DRAWER NEVER HAD. The desktop panel
+                behind the globe got both halves; the phone drawer kept only the
+                languages, so the pill above it printed "ENGLISH · €" and there
+                was no way to change the €. On a phone the drawer is the ONLY
+                route to this control — `[data-d~="navmore"]` hides the desktop
+                switcher below 1120px — so the currency was unreachable on a
+                phone entirely, not merely inconvenient.
+
+                Same data and same handlers as the desktop panel: `allowedCurs`
+                is the hook's list for the CURRENT language, not every currency,
+                so a German drawer offers € and CHF and not £. `applyCur` writes
+                the cookie and fires the event the price components listen on —
+                no navigation, so the drawer stays open and the amounts behind
+                it change. */}
+            <div style={{
+              fontFamily: "var(--nb1-font-tertiary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              fontSize: "10.5px",
+              color: "rgba(240, 245, 255, 0.6)",
+              marginTop: "16px"
+            }}>{currencyLabel || 'Currency'}</div>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "6px",
+              marginTop: "9px"
+            }}>
+              {(allowedCurs(curLang) || []).map(([code, sym, name]) => (
+                <button key={code} style={sheetOption(curCur === code)}
+                  type={'button'} aria-pressed={curCur === code}
+                  onClick={() => applyCur(code)}>{`${sym} ${name}`}</button>
               ))}
             </div>
           </div>

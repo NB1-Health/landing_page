@@ -37,10 +37,17 @@ import { useAmountTokens } from '@/blocks/redesign/_shared/amountTokens'
 //            first block, and it is the one the spec means.
 //
 //   hides    THIS BLOCK'S OWN POSITION. The component drops a zero-height
-//            marker where the block sits in the flow and hides the bar when
-//            that marker comes into view. Put the block immediately before the
-//            final CTA and you get the spec's rule exactly; put it last and
-//            the bar clears the footer instead.
+//            marker where the block sits in the flow and hides the bar once
+//            that marker is REACHED — and it stays hidden for everything below
+//            it, which is the part that matters. Put the block immediately
+//            before the final CTA and you get the spec's rule exactly; put it
+//            last and the bar clears the footer instead.
+//
+//            "Reached", not "on screen": the marker sits at the TOP of this
+//            block, so on a page with a CTA block after the bar the entire CTA
+//            is below the marker. Hiding only while the marker is visible put
+//            the bar back on top of that CTA as soon as the reader scrolled
+//            into it. See the observer below.
 //
 // The alternative was two selector fields per page, which is two more things
 // to leave blank or let go stale, with nothing to catch it when they do. Here
@@ -128,9 +135,31 @@ const RdBarInner: React.FC<Props & { locale?: AppLocale }> = ({
       setPassed(true)
     }
 
-    const end = new IntersectionObserver(([e]) => setAtEnd(e.isIntersecting), {
-      threshold: 0,
-    })
+    // ONCE REACHED, STAY HIDDEN — not "hidden only while the line is on screen".
+    //
+    // `isIntersecting` alone is a WINDOW, and that is the bug Andra reported on
+    // The Lab, The Protocol and Our Plans. The stop line sits at the top of this
+    // block, so on those pages the whole closing CTA is BELOW it: you scroll to
+    // the CTA, the bar correctly goes away, you keep reading, the line leaves
+    // through the top of the viewport, `isIntersecting` flips back to false and
+    // the bar RETURNS — on top of the very CTA it is supposed to defer to, and
+    // it stays up through the footer.
+    //
+    // Your Biology looked correct for a reason that is pure arithmetic rather
+    // than design: there the bar is the LAST block, so its stop line is close
+    // enough to the end of the document that the remaining scroll never pushes
+    // it above the viewport. The window never closes, so the bug never shows.
+    // The three pages that put a CTA block after the bar all show it.
+    //
+    // `boundingClientRect.top < 0` is the "already passed it" half. The observer
+    // fires on both boundary crossings, so: entering from the bottom hides it;
+    // leaving through the top keeps it hidden; coming back down through the top
+    // keeps it hidden; and leaving through the bottom — the only way back above
+    // the line — is the one case where `top` is positive and the bar returns.
+    const end = new IntersectionObserver(
+      ([e]) => setAtEnd(e.isIntersecting || e.boundingClientRect.top < 0),
+      { threshold: 0 },
+    )
     end.observe(el)
 
     return () => {

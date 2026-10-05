@@ -35,7 +35,7 @@
  * provably dead code — which some lint configurations remove and others flag.
  * Annotated, the branch stays real and flipping the value just works.
  */
-export const JOURNAL_RESKIN: boolean = false
+export const JOURNAL_RESKIN: boolean = true
 
 export function journalReskinEnabled(): boolean {
   return JOURNAL_RESKIN

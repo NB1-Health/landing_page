@@ -678,7 +678,12 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                   <span style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "6px"
+                    gap: "6px",
+                    /* A flex item defaults to `min-width: auto`, so it refuses
+                       to shrink below its content even when that content could
+                       wrap. Without this the row overflows the card instead of
+                       the column narrowing. */
+                    minWidth: 0
                   }}>
                     <span style={{
                       display: "flex",
@@ -698,10 +703,15 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                         opacity: "0.7"
                       }}>{plans?.cards?.[0]?.perLabel}</span>
                     </span>
+                    {/* `whiteSpace: "nowrap"` removed. It is why the icons left
+                        the card: this line is the widest thing in the price
+                        column, nowrap gave the column a floor it would not go
+                        below, and the icon cluster beside it is `flex: 0 0 auto`,
+                        so neither side could give. Wrapping costs nothing on a
+                        wide card — text only breaks when it has to. */}
                     <span style={{
                       fontSize: "14px",
-                      color: "var(--muted)",
-                      whiteSpace: "nowrap"
+                      color: "var(--muted)"
                     }}>{plans?.cards?.[0]?.meta}</span>
                   </span>
                   <span style={{
@@ -811,7 +821,12 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                   <span style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "6px"
+                    gap: "6px",
+                    /* A flex item defaults to `min-width: auto`, so it refuses
+                       to shrink below its content even when that content could
+                       wrap. Without this the row overflows the card instead of
+                       the column narrowing. */
+                    minWidth: 0
                   }}>
                     <span style={{
                       display: "flex",
@@ -831,10 +846,15 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                         opacity: "0.7"
                       }}>{plans?.cards?.[1]?.perLabel}</span>
                     </span>
+                    {/* `whiteSpace: "nowrap"` removed. It is why the icons left
+                        the card: this line is the widest thing in the price
+                        column, nowrap gave the column a floor it would not go
+                        below, and the icon cluster beside it is `flex: 0 0 auto`,
+                        so neither side could give. Wrapping costs nothing on a
+                        wide card — text only breaks when it has to. */}
                     <span style={{
                       fontSize: "14px",
-                      color: "var(--muted)",
-                      whiteSpace: "nowrap"
+                      color: "var(--muted)"
                     }}>{plans?.cards?.[1]?.meta}</span>
                   </span>
                   <span style={{

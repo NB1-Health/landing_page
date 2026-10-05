@@ -138,7 +138,20 @@ div:not(.rd-block *):has(> .rd-block) {
   :is(.rd-block,.rd-chrome) [data-m="biocard"] img, :is(.rd-block,.rd-chrome)[data-m="biocard"] img{height:100%;min-height:340px;}
   @container biomodal (max-width:760px){
     :is(.rd-block,.rd-chrome) [data-m="biocard"], :is(.rd-block,.rd-chrome)[data-m="biocard"]{grid-template-columns:1fr;}
-    :is(.rd-block,.rd-chrome) [data-m="biocard"] img, :is(.rd-block,.rd-chrome)[data-m="biocard"] img{height:230px;min-height:0;object-position:50% 0%;}
+    /* HAND-EDITED, NOT PORTED. The mockup's own value here is `height:230px`,
+       and on a phone that is a 1.46 landscape box holding a 0.68 portrait:
+       measured at a 390px viewport the box is 335x230 and `object-fit:cover`
+       throws away 53% of the photograph, taking the crop off the top so the
+       chin goes first. The desktop half of this rule gives the portrait a full
+       330px column and `min-height:340px`; the phone half was the one that
+       never got a shape, only a number.
+       A 1:1 ratio instead of a fixed height: ~69% of the portrait survives, it
+       scales with the screen rather than being a fixed band, and the name and
+       bio still begin near the top of the card. `object-position:50% 0%` is
+       kept exactly as ported — only the box changed.
+       If this file is regenerated from the mockup, this line comes back as
+       230px and the crop returns. */
+    :is(.rd-block,.rd-chrome) [data-m="biocard"] img, :is(.rd-block,.rd-chrome)[data-m="biocard"] img{height:auto;aspect-ratio:1 / 1;min-height:0;object-position:50% 0%;}
     :is(.rd-block,.rd-chrome) [data-m="biocard"] > div:last-child, :is(.rd-block,.rd-chrome)[data-m="biocard"] > div:last-child{padding:26px 24px 30px;}
   }
   @container nb1page (min-width:900px){ .rd-block [data-m="herocopy"], .rd-block:is([data-m="herocopy"]){padding:0 0 42px 32px!important;} }
