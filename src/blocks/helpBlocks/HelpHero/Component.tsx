@@ -39,9 +39,23 @@ export const HelpHeroComponent: React.FC<HelpHeroBlockType> = ({
   return (
     <header className="hh" data-screen-label="Help header">
       <style jsx>{`
+        /* 104px, not 40.
+           These pages run on the redesign chrome (rdHeader 2 / rdFooter 1), and
+           that header is position:sticky with margin-bottom:-64px — it pulls the
+           next section up underneath itself on purpose, because a redesign hero
+           is built to start behind it. This hero was built for the old static
+           header and is not.
+           Measured on staging before the change: the nav box ran 36 to 103 and
+           .hh started at 39, so the h1 at 79 sat INSIDE the header. 40 + 64 is
+           what clears it while keeping the original 40px of breathing room.
+           Deliberately NOT in help-reskin.css: the overlap comes from the
+           chrome, not from the reskin, so gating it behind HELP_RESKIN would
+           leave the title under the header whenever that switch is off.
+           No backticks in this comment — styled-jsx is a template literal and
+           one would end the string. */
         .hh {
           background: #fff;
-          padding: 40px 0 0;
+          padding: 104px 0 0;
         }
         /* HEAD_MAX from _shared/layout.ts — the header is centred in the
            viewport, not indented behind the contents rail. */

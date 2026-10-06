@@ -5,7 +5,9 @@ import RichText from '@/components/RichText'
 import type { RdPgHeroBlock as Props } from '@/payload-types'
 
 // GENERATED from manifests/section-01.json + bindings/RdPgHero.json by
-// tools/block_component.py — do not hand-edit; regenerate.
+// tools/block_component.py — NO LONGER REGENERABLE WITHOUT LOSS: the root
+// padding below was hand-corrected and a regeneration would restore the
+// mockup's 22px, which puts the heading back under the header.
 //
 // Styles copied verbatim from the mockup; bindings replace content only.
 // Layout and breakpoints come from rd-pg.css — the Our Plans stylesheet, ported
@@ -26,7 +28,34 @@ export const RdPgHero: React.FC<Props> = ({ anchorId, heading, image, imageBadge
     <header style={{
       maxWidth: "1240px",
       margin: "0px auto",
-      padding: "22px 48px 80px"
+      /*
+       * 86px top, not the mockup's 22px — the extra 64 buys back what the
+       * header takes.
+       *
+       * `.rd-header` carries `margin-bottom: -64px`, which deliberately pulls
+       * whatever follows it up underneath the nav. That is right for a
+       * TRANSPARENT header floating over a hero photograph. This page's header
+       * is solid (`data-over="0"`, background rgba(240,245,255,.92)), so the
+       * pull just hides 64px of this block behind an opaque bar.
+       *
+       * Measured on staging at a 926px viewport, scrolled to the top:
+       *
+       *   nav bottom edge          103px
+       *   h1 top, 2-line locales    98px   ->  5px of the heading hidden
+       *   h1 top, 3-line locales    78px   -> 25px of the heading hidden
+       *
+       * English, Swiss, UK and UAE wrap to two lines and lose 5px of empty
+       * ascender space, which is why this went unseen. French, Dutch, Italian
+       * and Belgian wrap to three and lose 25px, which cuts into the letters.
+       *
+       * Each extra line costs another ~20px because [data-m="herogrid"] is
+       * `align-items: center` against a taller image column: a taller heading
+       * grows upward as well as downward. So a fixed nudge sized for today's
+       * longest translation would fail on the next longer one. Restoring the
+       * whole 64px clears every case with room to spare — 59px for two lines,
+       * 39px for three, ~19px for five.
+       */
+      padding: "86px 48px 80px"
     }} className="rd-pg rd-pghero" id={anchorId || undefined}>
       <div style={{
         display: "flex",

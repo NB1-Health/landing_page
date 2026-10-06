@@ -177,20 +177,23 @@ export const RdStBlock: Block = {
         { name: "heading", type: "text", localized: true, required: true, defaultValue: "What every nb1 formula holds to." },
         { name: "intro", type: "textarea", localized: true, defaultValue: "Beyond what your reading calls for, every formula meets a baseline that never changes. Open any standard for the detail." },
         {
-          name: "items", type: 'array', label: "Standards", admin: { description: "An accordion: one row open at a time, the first on load. Every row needs a body \u2014 the mockup only wrote copy for the row it draws open." },
+          name: "items", type: 'array', label: "Standards", admin: { description: "An accordion: one row open at a time, the first on load. Every row needs a body \u2014 a row with none opens onto nothing, and the row still looks clickable." },
           defaultValue: [
             {
               "title": "Allergen-conscious formulation",
               "body": "We formulate to avoid the major allergens wherever possible, and every formula is screened against the sensitivities you tell us about."
             },
             {
-              "title": "No unnecessary fillers or binders"
+              "title": "No unnecessary fillers or binders",
+              "body": "We use only what a dose genuinely needs to hold together. Nothing is added to bulk out a capsule or pad the label."
             },
             {
-              "title": "No artificial colours or sweeteners"
+              "title": "No artificial colours or sweeteners",
+              "body": "Nothing goes in for looks or taste. No synthetic dyes, no artificial sweeteners, no cosmetic additives."
             },
             {
-              "title": "Full transparency on every dose"
+              "title": "Full transparency on every dose",
+              "body": "You see the exact amount of every ingredient in your formula. No proprietary blends, no hidden quantities."
             }
           ],
           fields: [

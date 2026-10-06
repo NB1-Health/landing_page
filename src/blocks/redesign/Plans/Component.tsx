@@ -55,6 +55,32 @@ type Cta = {
   advancedLabel?: string | null
 }
 
+/** A destination. The field holds a SLUG and the locale is added here, so one
+ * stored value is right in all nine. Anything already absolute — a url,
+ * mailto, tel, #anchor or a /path — passes straight through.
+ *
+ * WHY IT MATTERS MORE THAN IT LOOKS. A bare slug in an href is relative to the
+ * current path, so on `/en` it resolves with the locale stripped — and on
+ * staging nginx does not route a locale-less path to Next at all. `/order`
+ * comes back as the LOGIN APP'S HTML with a 200: not a 404, not a redirect,
+ * just the wrong application. Measured 2026-10-05; see
+ * claude/bare-slug-links-land-on-the-login-app.md.
+ *
+ * The middleware's own 307 to the locale-prefixed path would handle it and is
+ * never reached on a deployed host, which is why the link has to carry the
+ * locale itself rather than rely on being corrected.
+ *
+ * NOT a lookup: `pages.slug` is localized, and resolving that needs the
+ * database, which a client component cannot reach. No redesign page has a
+ * translated slug today.
+ */
+const plansPath = (s?: string | null, locale?: string | null) => {
+  const v = (s || '').trim()
+  if (!v) return '#'
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(v)) return v
+  return `/${locale || 'en'}/${v}`
+}
+
 const CompareValue: React.FC<{ kind?: string | null; text?: string | null }> = ({ kind, text }) => {
   if (kind === 'included') return <span style={{
     width: "22px",
@@ -104,7 +130,8 @@ const PlansCompareGrid: React.FC<{
   core?: Plan | null
   advanced?: Plan | null
   cta?: Cta | null
-}> = ({ groups, core, advanced, cta }) => (
+  locale?: string | null
+}> = ({ groups, core, advanced, cta, locale }) => (
   <>
     <div style={{
       background: "var(--nb1-dark-brown)"
@@ -202,7 +229,10 @@ const PlansCompareGrid: React.FC<{
       alignItems: "center",
       justifyContent: "center"
     }} data-m="cmpcta">
-      <a href={cta?.coreUrl || '#'} style={{
+      <a href={plansPath(cta?.coreUrl, locale)} style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "1.1em",
         fontFamily: "var(--nb1-font-tertiary)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
@@ -213,7 +243,13 @@ const PlansCompareGrid: React.FC<{
         borderRadius: "999px",
         whiteSpace: "nowrap"
       }}>
-        {cta?.coreLabel}
+        {/* Same arrow asymmetry as the card above; the label here was already
+            bound correctly, so this is the arrow alone. */}
+        <span>{cta?.coreLabel}</span>
+        <span style={{
+          fontSize: "1.05em",
+          lineHeight: "1"
+        }}>{'\u2197'}</span>
       </a>
     </div>
     <div style={{
@@ -224,7 +260,7 @@ const PlansCompareGrid: React.FC<{
       alignItems: "center",
       justifyContent: "center"
     }} data-m="cmpcta">
-      <a href={cta?.advancedUrl || '#'} style={{
+      <a href={plansPath(cta?.advancedUrl, locale)} style={{
         display: "inline-flex",
         alignItems: "center",
         gap: "1.1em",
@@ -249,10 +285,10 @@ const PlansCompareGrid: React.FC<{
   </>
 )
 
-export const RdPlans: React.FC<Props> = (props) => {
+export const RdPlans: React.FC<Props & { locale?: string | null }> = (props) => {
   const {
     anchorId, heading, intro, core, advanced,
-    compareOpenLabel, compareCloseLabel, compareCta, compareFootnote,
+    compareOpenLabel, compareCloseLabel, compareCta, compareFootnote, locale,
   } = props
   const assurances = props.assurances ?? []
   const compare = props.compare ?? []
@@ -371,8 +407,26 @@ export const RdPlans: React.FC<Props> = (props) => {
               </li>
             ))}
           </ul>
+          {/*
+            TWO FIXES HERE, both Core-only.
+
+            1. The label was the literal "Start with Core". `core.cta.label` is
+               a localized field, it is filled in all nine locales, and it was
+               never read — so every non-English page printed English. It went
+               unnoticed because the hardcoded string is character-for-character
+               what the English field says.
+
+            2. The arrow. Advanced renders <span>label</span><span>↗</span>;
+               this rendered bare text, so no arrow and no gap to put one in.
+               The box picks up inline-flex and the same 1.1em gap Advanced
+               uses, so the two buttons now differ only in their skin.
+          */}
           <a style={{
             marginTop: "24px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "1.1em",
             textAlign: "center",
             fontFamily: "var(--nb1-font-tertiary)",
             textTransform: "uppercase",
@@ -381,7 +435,13 @@ export const RdPlans: React.FC<Props> = (props) => {
             border: "1.5px solid var(--nb1-dark-brown)",
             padding: "1.05em",
             borderRadius: "999px"
-          }} href={core?.cta?.url || '#'}>{"Start with Core"}</a>
+          }} href={plansPath(core?.cta?.url, locale)}>
+            <span>{core?.cta?.label}</span>
+            <span style={{
+              fontSize: "1.05em",
+              lineHeight: "1"
+            }}>{"\u2197"}</span>
+          </a>
           <p style={{
             fontFamily: "var(--nb1-font-secondary)",
             fontSize: "12.5px",
@@ -506,7 +566,7 @@ export const RdPlans: React.FC<Props> = (props) => {
             borderRadius: "999px",
             whiteSpace: "nowrap",
             flexShrink: "0"
-          }} href={advanced?.cta?.url || '#'}>
+          }} href={plansPath(advanced?.cta?.url, locale)}>
             <span>{advanced?.cta?.label}</span>
             <span style={{
               fontSize: "1.05em",
@@ -672,7 +732,7 @@ export const RdPlans: React.FC<Props> = (props) => {
             display: "grid",
             gridTemplateColumns: "1.6fr 0.7fr 0.7fr"
           }} data-keepcols="1" data-cmprow="1">
-            <PlansCompareGrid groups={compare} core={core} advanced={advanced} cta={compareCta} />
+            <PlansCompareGrid groups={compare} core={core} advanced={advanced} cta={compareCta} locale={locale} />
           </div>
           <p style={{
             fontFamily: "var(--nb1-font-secondary)",

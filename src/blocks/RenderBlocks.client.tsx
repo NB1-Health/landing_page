@@ -56,6 +56,7 @@ const RdLbReadingComponent = dynamic(() => import('@/blocks/redesign/LbReading/C
 const RdLbFormulaComponent = dynamic(() => import('@/blocks/redesign/LbFormula/Component').then((m) => m.RdLbFormulaComponent))
 const RdLbAdvancedComponent = dynamic(() => import('@/blocks/redesign/LbAdvanced/Component').then((m) => m.RdLbAdvancedComponent))
 const RdLbBoardComponent = dynamic(() => import('@/blocks/redesign/LbBoard/Component').then((m) => m.RdLbBoardComponent))
+const RdBarComponent = dynamic(() => import('@/blocks/redesign/BuyBar/Component').then((m) => m.RdBarComponent))
 const FormBlock = dynamic(() => import('@/blocks/Form/Component').then((m) => m.FormBlock))
 const MediaBlock = dynamic(() => import('@/blocks/MediaBlock/Component').then((m) => m.MediaBlock))
 const FormCustomBlock = dynamic(() => import('@/blocks/FormCostom/Component').then((m) => m.FormCustomBlock))
@@ -220,6 +221,7 @@ const blockComponents: Record<string, React.ComponentType<any>> = {
   rdLbFormula: RdLbFormulaComponent,
   rdLbAdvanced: RdLbAdvancedComponent,
   rdLbBoard: RdLbBoardComponent,
+  rdBar: RdBarComponent,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
   'form-custom': FormCustomBlock,

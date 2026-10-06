@@ -10,7 +10,7 @@ import React from 'react'
 
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { Footer } from '@/Footer/Component'
-import { Header } from '@/Header/Component'
+import { JournalHeader } from '@/components/JournalHeader'
 import { HubStrip } from '@/components/HubStrip'
 import { JournalGrid } from '@/components/JournalGrid'
 import { Pagination } from '@/components/Pagination'
@@ -79,8 +79,7 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
   return (
     <>
       {!copy.header.hide && (
-        <Header
-          id={copy.header.id}
+        <JournalHeader
           locale={locale}
           localizedDocument={journalIndexLocalizedDocument()}
         />

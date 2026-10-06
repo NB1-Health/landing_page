@@ -6,6 +6,9 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 import RichText from '@/components/RichText'
 import { useReveal } from '@/hooks/useReveal'
 
+import { referralRedesignEnabled } from '@/utilities/referralRedesign'
+import { ReferFaqComponentLegacy } from './Component.legacy'
+
 type Item = {
   question?: string | null
   answer?: DefaultTypedEditorState | null
@@ -17,7 +20,7 @@ export type ReferFaqBlockType = {
   items?: Item[] | null
 }
 
-export const ReferFaqComponent: React.FC<ReferFaqBlockType> = ({ title, items }) => {
+const ReferFaqComponentRedesign: React.FC<ReferFaqBlockType> = ({ title, items }) => {
   const ref = useRef<HTMLElement>(null)
   useReveal(ref, '[data-rv]')
 
@@ -32,46 +35,51 @@ export const ReferFaqComponent: React.FC<ReferFaqBlockType> = ({ title, items })
   const toggle = (i: number) => setOpen((o) => ({ ...o, [i]: !o[i] }))
 
   return (
-    <section ref={ref} className="rf-sec" data-screen-label="FAQ">
+    // See ReferralWidget: `rd-block` creates the `nb1page` container the `cqi`
+    // type scale below reads from, and brings the brand tokens with it.
+    <section ref={ref} className="rd-block rff-sec" data-screen-label="FAQ">
       <style jsx>{`
-        .rf-sec {
-          padding: clamp(56px, 7vw, 92px) 0;
-          background: #fff;
+        /* Vertical padding on the section, horizontal on the wrapper — see the
+           long note in ReferralWidget. */
+        .rff-sec {
+          background: var(--nb1-dark-brown);
+          color: var(--nb1-cool-grey);
+          padding: 88px 0 104px;
         }
-        .rfw {
-          max-width: 1120px;
+        .rff-pad {
+          max-width: 1240px;
           margin: 0 auto;
-          padding: 0 clamp(20px, 4vw, 32px);
+          padding: 0 20px;
         }
-        .rf-faq {
+        .rff-grid {
           display: grid;
-          grid-template-columns: 0.42fr 1fr;
-          gap: clamp(24px, 4vw, 56px);
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+          gap: 32px 64px;
           align-items: start;
         }
-        @media (max-width: 820px) {
-          .rf-faq {
-            grid-template-columns: 1fr;
-          }
-        }
-        .rf-h2 {
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: clamp(26px, 3.4vw, 40px);
-          line-height: 1.08;
-          letter-spacing: -0.026em;
-          color: #12314d;
+        .rff-h2 {
+          font-family: var(--nb1-font-primary);
+          font-weight: 400;
+          font-size: clamp(30px, 4.4cqi, 46px);
+          line-height: 1.05;
+          letter-spacing: -0.02em;
           margin: 0;
-          max-width: 22ch;
           text-wrap: balance;
         }
-        .rf-faq-list {
-          border-top: 1px dashed rgba(18, 49, 77, 0.1);
+
+        .rff-row {
+          border-top: 1px solid rgba(240, 245, 255, 0.22);
         }
-        .rf-fq {
-          border-bottom: 1px dashed rgba(18, 49, 77, 0.1);
+        /*
+         * The LAST hairline is a rule on its own, not a border-bottom on the
+         * final row. Giving every row both borders would double them up; the
+         * mockup closes the list with one empty bordered div and so does this.
+         */
+        .rff-end {
+          border-top: 1px solid rgba(240, 245, 255, 0.22);
         }
-        .rf-fq button {
+
+        .rff-row button {
           width: 100%;
           display: flex;
           align-items: center;
@@ -82,80 +90,84 @@ export const ReferFaqComponent: React.FC<ReferFaqBlockType> = ({ title, items })
           text-align: left;
           cursor: pointer;
           padding: 20px 0;
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: 16.5px;
-          letter-spacing: -0.01em;
-          color: #12314d;
+          font-family: var(--nb1-font-primary);
+          /*
+           * 350, not 400. In the mockup the summary is a plain element and
+           * inherits the body weight; here it is a <button>, and the UA sheet
+           * resets a button's font to 400 Arial before anything inherits. Every
+           * value that rule clobbers has to be restated — weight and colour
+           * included — or the row renders a notch heavier than the design.
+           */
+          font-weight: 350;
+          font-size: clamp(19px, 2.4cqi, 22px);
+          line-height: 1.2;
+          color: var(--nb1-cool-grey);
         }
-        .rf-fq .pm {
-          flex: none;
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: #0a8fb0;
-          position: relative;
+        .rff-row .pm {
+          font-family: var(--nb1-font-secondary);
+          font-size: 22px;
+          line-height: 1;
+          flex: 0 0 auto;
         }
-        .rf-fq .pm::before,
-        .rf-fq .pm::after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          background: #fff;
-        }
-        .rf-fq .pm::before {
-          width: 11px;
-          height: 2px;
-        }
-        .rf-fq .pm::after {
-          width: 2px;
-          height: 11px;
-          transition: transform 0.25s;
-        }
-        .rf-fq.open .pm::after {
-          transform: translate(-50%, -50%) scaleY(0);
-        }
-        .rf-fq .ans {
+
+        .rff-row .ans {
           max-height: 0;
           overflow: hidden;
           transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .rf-fq .ans-body :global(p) {
-          font-size: 14.5px;
-          line-height: 1.66;
-          color: rgba(18, 49, 77, 0.7);
-          padding: 0 0 20px;
+        @media (prefers-reduced-motion: reduce) {
+          .rff-row .ans {
+            transition: none;
+          }
+        }
+        .rff-row .ans-body :global(p) {
+          font-family: var(--nb1-font-secondary);
+          font-size: 16px;
+          line-height: 1.65;
+          color: rgba(240, 245, 255, 0.86);
           margin: 0;
-          max-width: 66ch;
+          padding: 0 0 22px;
+          max-width: 64ch;
         }
-        .rf-fq .ans-body :global(a) {
-          color: #0a8fb0;
+        /*
+         * rd-tokens.css strips link underlines site-wide and hovers them to
+         * dark brown — which on this dark-brown band would make the link
+         * vanish. Both have to be answered here.
+         */
+        .rff-row .ans-body :global(a) {
+          color: var(--nb1-cool-grey);
           text-decoration: underline;
+          text-underline-offset: 3px;
         }
+        .rff-row .ans-body :global(a:hover) {
+          color: var(--nb1-cool-grey);
+          opacity: 0.7;
+        }
+
       `}</style>
 
-      <div className="rfw">
-        <div className="rf-faq">
-          <h2 className="rf-h2" data-rv="">
+      <div className="rff-pad" data-d="pad">
+        <div className="rff-grid">
+          <h2 className="rff-h2" data-rv="">
             {title || 'FAQs'}
           </h2>
-          <div className="rf-faq-list" data-rv="">
+          <div data-rv="">
             {items.map((item, i) => {
               const isOpen = !!open[i]
               return (
-                <div className={`rf-fq${isOpen ? ' open' : ''}`} key={i}>
+                <div className="rff-row" key={i}>
                   <button aria-expanded={isOpen} onClick={() => toggle(i)}>
                     {item.question}
-                    <span className="pm" aria-hidden="true" />
+                    <span className="pm" aria-hidden="true">
+                      +
+                    </span>
                   </button>
                   <div
                     className="ans"
                     ref={(el) => {
                       ansRefs.current[i] = el
                     }}
-                    style={{ maxHeight: isOpen ? ansRefs.current[i]?.scrollHeight ?? 0 : 0 }}
+                    style={{ maxHeight: isOpen ? (ansRefs.current[i]?.scrollHeight ?? 0) : 0 }}
                   >
                     {item.answer && (
                       <div className="ans-body">
@@ -166,9 +178,26 @@ export const ReferFaqComponent: React.FC<ReferFaqBlockType> = ({ title, items })
                 </div>
               )
             })}
+            <div className="rff-end" />
           </div>
         </div>
       </div>
     </section>
   )
 }
+
+/*
+ * WHICH DESIGN RENDERS — the only thing in this file that is not the redesign.
+ *
+ * One constant decides, the same way the journal and the kit-instruction pages
+ * decide, and the sibling Component.legacy.tsx holds what was there before.
+ * See src/utilities/referralRedesign.ts for the switch and why it is a constant.
+ *
+ * Read at RENDER TIME, not at module scope. A module-scope `const Chosen = …`
+ * would be evaluated once when the bundle loads, which is the same answer in
+ * practice but makes the branch look like configuration rather than a decision
+ * the component takes — and it is the shape that quietly breaks if the switch
+ * ever becomes anything but a constant.
+ */
+export const ReferFaqComponent: React.FC<ReferFaqBlockType> = (props) =>
+  referralRedesignEnabled() ? <ReferFaqComponentRedesign {...props} /> : <ReferFaqComponentLegacy {...props} />

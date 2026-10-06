@@ -134,12 +134,42 @@ div:not(.rd-block *):has(> .rd-block) {
    * on the punch list. This narrowing is inert for both shipped pages by
    * construction: nothing in the repo carries `.rd-pr` until this page ships.
    */
-  :is(.rd-block,.rd-chrome) [data-m="biocard"], :is(.rd-block,.rd-chrome)[data-m="biocard"]{display:grid;grid-template-columns:330px minmax(0,1fr);}
-  :is(.rd-block,.rd-chrome) [data-m="biocard"] img, :is(.rd-block,.rd-chrome)[data-m="biocard"] img{height:100%;min-height:340px;}
+  /* `.rd-biomodal` is the third alternative so the Our Plans board modal can
+     reach these rules. That block's root is `.rd-pg .rd-pgboard`, not
+     `.rd-block`, and putting `.rd-block` on it would be a much bigger change
+     than it looks: `div:not(.rd-block *):has(> .rd-block)` above would then
+     fire on the section that contains the overlay and repaint it cool-grey
+     while renaming its container. The overlay carries `.rd-biomodal` instead —
+     one class, on one `position:fixed` element, reaching nothing else. */
+  :is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"], :is(.rd-block,.rd-chrome,.rd-biomodal)[data-m="biocard"]{display:grid;grid-template-columns:330px minmax(0,1fr);}
+  :is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"] img, :is(.rd-block,.rd-chrome,.rd-biomodal)[data-m="biocard"] img{height:100%;min-height:340px;}
   @container biomodal (max-width:760px){
-    :is(.rd-block,.rd-chrome) [data-m="biocard"], :is(.rd-block,.rd-chrome)[data-m="biocard"]{grid-template-columns:1fr;}
-    :is(.rd-block,.rd-chrome) [data-m="biocard"] img, :is(.rd-block,.rd-chrome)[data-m="biocard"] img{height:230px;min-height:0;object-position:50% 0%;}
-    :is(.rd-block,.rd-chrome) [data-m="biocard"] > div:last-child, :is(.rd-block,.rd-chrome)[data-m="biocard"] > div:last-child{padding:26px 24px 30px;}
+    :is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"], :is(.rd-block,.rd-chrome,.rd-biomodal)[data-m="biocard"]{grid-template-columns:1fr;}
+    /* HAND-EDITED, NOT PORTED. NO PORTRAIT BELOW THIS WIDTH — by request, and
+       it also retires a crop this rule had been losing to twice.
+
+       The mockup's own value here is `height:230px`. On a phone that is a 1.46
+       landscape box holding a 0.68 portrait: measured at a 390px viewport the
+       box is 335x230 and `object-fit:cover` throws away 53% of the photograph,
+       taking the crop off the top so the chin goes first. That was replaced
+       with `aspect-ratio:1 / 1`, which saved ~69% of the portrait and scaled
+       with the screen — better, but still a cropped face above a bio, and
+       still the tallest thing on the card before a word is read.
+
+       Hiding the column instead of reshaping it is the simpler answer: above
+       760px there are two columns and a full portrait, below it there is one
+       column and none. Nothing in between to keep in sync, and the name and
+       role now open the card.
+
+       The wrapper goes, not the <img>. Hiding the image alone would leave its
+       empty grid cell holding a row of its own. The padding rule below still
+       matches the text panel, which is both first and last child once the
+       portrait is out.
+
+       If this file is regenerated from the mockup, this comes back as a 230px
+       band and the crop returns. */
+    :is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"] > div:first-child, :is(.rd-block,.rd-chrome,.rd-biomodal)[data-m="biocard"] > div:first-child{display:none;}
+    :is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"] > div:last-child, :is(.rd-block,.rd-chrome,.rd-biomodal)[data-m="biocard"] > div:last-child{padding:26px 24px 30px;}
   }
   @container nb1page (min-width:900px){ .rd-block [data-m="herocopy"], .rd-block:is([data-m="herocopy"]){padding:0 0 42px 32px!important;} }
   @container nb1page (max-width:760px){

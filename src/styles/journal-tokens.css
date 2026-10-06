@@ -72,3 +72,35 @@
   --jr-shadow-card: 0 24px 44px -32px rgba(18, 49, 77, 0.5);
   --jr-shadow-feat: 0 30px 60px -46px rgba(18, 49, 77, 0.5);
 }
+
+/* ─────────────────────────── the redesign header's overhang ───────────────
+ *
+ * The journal now wears the redesign header, and that header carries
+ * `marginBottom: "-64px"` as an INLINE style (RdChrome/Header.tsx:316). The
+ * negative margin is deliberate on redesign pages: it pulls the next section up
+ * underneath the translucent bar, because a redesign hero is built to begin
+ * behind it.
+ *
+ * No journal surface is built that way. Left alone, every one of them loses
+ * 64px off the top of its first element — on the index the breadcrumb and the
+ * h1 ride up under the bar.
+ *
+ * NEUTRALISING THE MARGIN, NOT PADDING EACH SURFACE. There are nine `.jr-page`
+ * surfaces (index, paginated, article, hub, pillar, term, scientific article,
+ * lexicon index, lexicon category) across two stylesheets, and their first
+ * elements are not the same thing — `.jr-hero__inner` here, `.jr-crumb` there.
+ * Adding 64px to each means nine numbers to guess and keep in step, and a new
+ * journal surface would arrive broken. Removing the overhang fixes the cause
+ * once, and every surface keeps the spacing its own design already specifies.
+ *
+ * `!important` because the declaration it overrides is inline, and inline beats
+ * any selector without it. `body:has(.jr-page)` keeps it to the journal: every
+ * other page still gets the overhang the design intends.
+ *
+ * This file is the right home because it is the ONE stylesheet every journal
+ * surface imports — journal-index.css and journal-article.css are each loaded
+ * by only some of them.
+ */
+body:has(.jr-page) .rd-header {
+  margin-bottom: 0 !important;
+}

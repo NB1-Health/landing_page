@@ -118,6 +118,22 @@ import './rd-st.css'
 // dialog, and never to `.rd-block`, because the rules it carries are written
 // against bare tags.
 import './rd-li.css'
+// The sticky buy bar's one responsive rule, and the only rd-*.css here that
+// is hand-written: the navigation spec draws the bar as two static frames,
+// 1280px and 390px, and never a breakpoint between them, so there is no
+// stylesheet to port. It decides which frame shows and nothing else.
+import './rd-bar.css'
+// The two reskins. They live here rather than in public/ because nginx on
+// staging does not proxy public/ — it serves the login SPA's index.html with a
+// 200 for any path outside its allowlist, so a <link href="/journal-reskin.css">
+// quietly loaded 3,634 bytes of HTML and applied nothing. Imported, they are
+// emitted under /_next/static/css/…, which is proxied.
+//
+// Both load on every page and apply on none of it by themselves: every rule is
+// behind a marker attribute that <JournalReskin /> / <HelpReskin /> render only
+// where the reskin belongs, and that marker is the on/off switch.
+import './journal-reskin.css'
+import './help-reskin.css'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings } from '@/utilities/getSiteSettings'
 import '@fontsource/inter/300.css'

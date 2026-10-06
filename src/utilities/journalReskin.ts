@@ -5,7 +5,7 @@
  * the one they shipped with. Nothing else in the codebase knows about it.
  *
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  TO PUT THE OLD DESIGN BACK: change `true` to `false` below, and deploy. │
+ * │  CURRENTLY OFF. To put the new design back: change `false` to `true`.   │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * That is the whole procedure. Off means the <link> is never rendered, the
@@ -41,5 +41,7 @@ export function journalReskinEnabled(): boolean {
   return JOURNAL_RESKIN
 }
 
-/** The stylesheet, served from /public. Named here so the path has one home. */
-export const JOURNAL_RESKIN_HREF = '/journal-reskin.css'
+/* The stylesheet is no longer fetched by URL, so there is no path constant
+ * here any more: it is imported by [locale]/layout.tsx and served from
+ * /_next/. This switch now decides whether the marker attribute is in the
+ * DOM, which is what every rule in that stylesheet is behind. */

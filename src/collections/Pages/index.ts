@@ -60,6 +60,7 @@ import { RdLbReadingBlock } from '@/blocks/redesign/LbReading/config'
 import { RdLbFormulaBlock } from '@/blocks/redesign/LbFormula/config'
 import { RdLbAdvancedBlock } from '@/blocks/redesign/LbAdvanced/config'
 import { RdLbBoardBlock } from '@/blocks/redesign/LbBoard/config'
+import { RdBarBlock } from '@/blocks/redesign/BuyBar/config'
 import { hero } from '@/heros/config'
 
 import { populatePublishedAt } from '../../hooks/populatePublishedAt'
@@ -301,6 +302,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 RdLbFormulaBlock,
                 RdLbAdvancedBlock,
                 RdLbBoardBlock,
+                RdBarBlock,
                 HeroBannerBlock,
                 YpHeroBlock,
                 YpPlansBlock,

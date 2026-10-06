@@ -13,7 +13,7 @@ import { AuthorBox } from '@/components/AuthorBox'
 import { Byline } from '@/components/Byline'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { Footer } from '@/Footer/Component'
-import { Header } from '@/Header/Component'
+import { JournalHeader } from '@/components/JournalHeader'
 import { JsonLd } from '@/components/JsonLd'
 import { JournalArticleCta } from '@/components/JournalArticleCta'
 import RichText from '@/components/RichText'
@@ -426,8 +426,7 @@ export default async function Page({ params }: Args) {
   return (
     <>
       {!hub.header.hide && (
-        <Header
-          id={hub.header.id}
+        <JournalHeader
           locale={locale}
           localizedDocument={pillarSwitcherPaths}
         />

@@ -12,7 +12,7 @@ import RichText from '@/components/RichText'
 
 import type { Post } from '@/payload-types'
 
-import { Header } from '@/Header/Component'
+import { JournalHeader } from '@/components/JournalHeader'
 import { Footer } from '@/Footer/Component'
 import { JournalArticleHero } from '@/heros/JournalArticleHero'
 import { ArticleToc } from '@/components/ArticleToc'
@@ -152,8 +152,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
   return (
     <>
       {!post.hideHeader && (
-        <Header
-          id={headerId}
+        <JournalHeader
           locale={locale}
           localizedDocument={{ route: 'post', slugs: journalSwitcherSlugs(publishedSlugs) }}
         />

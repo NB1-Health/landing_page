@@ -342,6 +342,7 @@ export interface Page {
     | RdLbFormulaBlock
     | RdLbAdvancedBlock
     | RdLbBoardBlock
+    | RdBarBlock
     | HeroBannerBlock
     | YpHeroBlock
     | YpPlansBlock
@@ -1430,6 +1431,26 @@ export interface RdFooter {
    */
   signupButtonLabel?: string | null;
   signupNote?: string | null;
+  /**
+   * The LIST id from Klaviyo (Lists & Segments -> the list -> Settings), not a form id. Localized, because the old footer ran two Klaviyo forms across nine locales and that was a limit of where the ids lived, not a decision. Leave a locale empty and its footer collects nothing, visibly: the button is disabled and the note says so.
+   */
+  klaviyoListId?: string | null;
+  /**
+   * Optional, and NOT what subscribes anyone — Klaviyo does that. This logs a copy of each address into Payload and, if the selected form's confirmation type is Redirect, sends people to its URL afterwards. Same field and same meaning as the old site footer, so the two can point at one form and keep a single submissions list.
+   */
+  form?: (number | null) | Form;
+  /**
+   * Replaces the note while the request is in flight.
+   */
+  signupSending?: string | null;
+  /**
+   * Replaces the note once Klaviyo has accepted the address. If the list is set to double opt-in, this is the moment to say a confirmation email is coming — Klaviyo accepts the request either way, so the wording is the only thing that tells people which it was.
+   */
+  signupSuccess?: string | null;
+  /**
+   * Replaces the note when the request fails. The address stays in the field.
+   */
+  signupError?: string | null;
   columnOneTitle?: string | null;
   /**
    * First footer column.
@@ -5148,6 +5169,14 @@ export interface RdChkBlock {
           id?: string | null;
         }[]
       | null;
+    /**
+     * Where Back goes from Checkout when Core is the chosen plan — the Core duration page. A slug; the locale is added when the page renders. Leave empty to fall back to the browser's own history.
+     */
+    backSlugCore?: string | null;
+    /**
+     * The same for Advanced. The two are separate fields because the funnel splits here: Checkout is one page but the step before it is two.
+     */
+    backSlugAdvanced?: string | null;
     backLabel?: string | null;
     backLabelDone?: string | null;
   };
@@ -5238,6 +5267,9 @@ export interface RdChkBlock {
     acctHeading?: string | null;
     acctBody?: string | null;
     acctCta?: string | null;
+    /**
+     * Where "Create your account" goes. The account app is a separate application mounted at /login and is NOT under a locale, so this is stored as an absolute /path and passed through as typed. A bare slug (no leading /) is treated as a page on this site and gets the locale prefix.
+     */
     acctSlug?: string | null;
     survHeading?: string | null;
     survIntro?: string | null;
@@ -5647,7 +5679,7 @@ export interface RdStBlock {
     heading: string;
     intro?: string | null;
     /**
-     * An accordion: one row open at a time, the first on load. Every row needs a body — the mockup only wrote copy for the row it draws open.
+     * An accordion: one row open at a time, the first on load. Every row needs a body — a row with none opens onto nothing, and the row still looks clickable.
      */
     items?:
       | {
@@ -6871,6 +6903,43 @@ export interface RdLbBoardBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'rdLbBoard';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBarBlock".
+ */
+export interface RdBarBlock {
+  /**
+   * The first line on desktop. Hidden on phones, where there is no room for it — the bar shows the price and the short note instead.
+   */
+  productName: string;
+  /**
+   * The dotted line beside the product name, desktop only. {{463}} is a currency token: it resolves to the right amount in the visitor's currency and re-resolves when they switch. Type a bare number inside braces for a flat amount, or leave the token alone.
+   */
+  note?: string | null;
+  /**
+   * Shown on both layouts. {{price:core:1}} is a LIVE price — the Core one-month rate for the visitor's currency, from the subscriptions API. A plain {{99}} would show an AED visitor 99 where the real figure is 419, so leave it as a price token unless the bar is meant to carry a flat claim.
+   */
+  price?: string | null;
+  /**
+   * Set in the body face beside the price, smaller. The leading space is deliberate — it is the gap between the amount and the unit.
+   */
+  priceSuffix?: string | null;
+  /**
+   * Sits under the price on phones, in place of the product name and the longer desktop note. Short: it has to stay on one line next to the button.
+   */
+  mobileNote?: string | null;
+  /**
+   * The lime pill, on both layouts. The arrow after it is drawn by the component and is not part of this text.
+   */
+  ctaLabel: string;
+  /**
+   * A slug — the locale is added when the page renders, so one value is right in all nine. The spec points this at the order funnel. A full url, a /path, a #anchor, mailto: or tel: is passed through as typed.
+   */
+  ctaHref?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'rdBar';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -13550,6 +13619,7 @@ export interface PagesSelect<T extends boolean = true> {
         rdLbFormula?: T | RdLbFormulaBlockSelect<T>;
         rdLbAdvanced?: T | RdLbAdvancedBlockSelect<T>;
         rdLbBoard?: T | RdLbBoardBlockSelect<T>;
+        rdBar?: T | RdBarBlockSelect<T>;
         heroBanner?: T | HeroBannerBlockSelect<T>;
         ypHero?: T | YpHeroBlockSelect<T>;
         ypPlans?: T | YpPlansBlockSelect<T>;
@@ -15345,6 +15415,8 @@ export interface RdChkBlockSelect<T extends boolean = true> {
               label?: T;
               id?: T;
             };
+        backSlugCore?: T;
+        backSlugAdvanced?: T;
         backLabel?: T;
         backLabelDone?: T;
       };
@@ -16524,6 +16596,21 @@ export interface RdLbBoardBlockSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RdBarBlock_select".
+ */
+export interface RdBarBlockSelect<T extends boolean = true> {
+  productName?: T;
+  note?: T;
+  price?: T;
+  priceSuffix?: T;
+  mobileNote?: T;
+  ctaLabel?: T;
+  ctaHref?: T;
   id?: T;
   blockName?: T;
 }
@@ -19473,6 +19560,11 @@ export interface RdFootersSelect<T extends boolean = true> {
   signupInputLabel?: T;
   signupButtonLabel?: T;
   signupNote?: T;
+  klaviyoListId?: T;
+  form?: T;
+  signupSending?: T;
+  signupSuccess?: T;
+  signupError?: T;
   columnOneTitle?: T;
   columnOneLinks?:
     | T

@@ -1,36 +1,36 @@
 import React from 'react'
 
-import { JOURNAL_RESKIN_HREF, journalReskinEnabled } from '@/utilities/journalReskin'
+import { journalReskinEnabled } from '@/utilities/journalReskin'
 
 /**
- * Loads the Journal reskin, or renders nothing.
+ * Turns the Journal reskin on for this route, or renders nothing.
  *
- * One line per journal route, and the route needs to know nothing else — not
- * the stylesheet's path, not the environment variable, not the default.
+ * WHY THIS IS A MARKER AND NO LONGER A <link>.
  *
- * WHY A <link> AND NOT AN import. A CSS `import` in Next is static — it is
- * resolved at build time and there is no way to not-have-it — so a conditional
- * import is not a thing that can be written. The stylesheet lives in /public
- * and is linked when the switch is on. React 19 hoists a
- * <link rel="stylesheet"> to <head> wherever it is rendered, so this can sit
- * inline in the route's JSX and still land in the right place.
+ * It used to render `<link rel="stylesheet" href="/journal-reskin.css">`,
+ * because a CSS `import` in Next is static and a conditional import cannot be
+ * written. That worked locally and was INVISIBLE ON STAGING: nginx there
+ * proxies an allowlist (`/en/`, the other locales, `/cms/`, `/_next/`) and
+ * serves the login SPA's index.html with a 200 for everything else, so the
+ * browser received 3,634 bytes of HTML where it asked for CSS, built an empty
+ * stylesheet, and the reskin did nothing at all. The same fault took the
+ * webfonts out in October — see claude/stg-public-dir-not-proxied.md.
  *
- * `precedence` is what makes React manage it rather than leave it where it
- * falls — React groups stylesheets by precedence and orders the groups, which
- * is as close to "loaded last" as this gets. It is not relied on: the token
- * block in the stylesheet uses `:root:root`, so it wins on specificity whatever
- * the order turns out to be. Two independent reasons for the same outcome,
- * because ordering between a Next CSS import and a React-managed link is not
- * something this code controls.
+ * The stylesheet is now imported by `[locale]/layout.tsx`, so it is emitted
+ * under `/_next/static/css/…`, which IS proxied. An import loads on every page
+ * though, so the switch had to move into the CSS: every rule is behind
+ * `[data-jr-reskin]`, and this component is what puts that attribute in the
+ * DOM — on exactly the five journal routes it used to render the <link> on.
  *
- * The switch itself is a constant in src/utilities/journalReskin.ts — one line
- * to flip, and it shows up in the diff and the history rather than in an
- * environment nobody can see from the code.
+ * `hidden` keeps it out of layout and out of the accessibility tree. `:has()`
+ * still matches a hidden element, which is the whole point.
+ *
+ * The switch itself is still one line in src/utilities/journalReskin.ts.
  */
 export function JournalReskin() {
   if (!journalReskinEnabled()) return null
 
-  return <link rel="stylesheet" href={JOURNAL_RESKIN_HREF} precedence="high" />
+  return <div data-jr-reskin="" hidden aria-hidden="true" />
 }
 
 export default JournalReskin

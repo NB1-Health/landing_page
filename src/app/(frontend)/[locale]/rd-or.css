@@ -230,10 +230,19 @@ div:not(.rd-chk-note *):not(.rd-or *):not(.rd-or-steps *):not(.rd-du *):not(.rd-
  * it ran out past the pill.
  *
  * Both are fixed with properties the harness does not compare — flex-wrap,
- * flex-basis, white-space — so the measured box is still the design's. The
- * inline styles are the mockup's own phone values and cannot be overridden
- * from a stylesheet without !important; these add to them rather than fight
- * them, which is why none of this needs it.
+ * flex-basis, white-space — so the measured box is still the design's. These
+ * mostly ADD to the inline styles rather than fight them, which is why almost
+ * none of this needs !important.
+ *
+ * ONE EXCEPTION, and the sentence that used to sit here got it wrong. It said
+ * these rules "cannot be overridden from a stylesheet without !important" and
+ * then concluded that none of them needed it — which is backwards. An inline
+ * declaration beats any stylesheet rule that is not !important, so where one of
+ * these rules sets a property the element ALSO carries inline, the rule loses
+ * silently. `text-align` on the summary below is exactly that case: the span is
+ * rendered with inline `text-align: right` for the desktop row, the rule asked
+ * for `left`, and the email stayed flush right on a phone while the title and
+ * Edit sat left. Measured on the page, not reasoned about.
  */
 
 /* ── the accordion head ─────────────────────────────────────────────── */
@@ -250,13 +259,21 @@ div:not(.rd-chk-note *):not(.rd-or *):not(.rd-or-steps *):not(.rd-du *):not(.rd-
   /* The summary and the Edit link — present only on a completed step. */
   .rd-chk-head > span:nth-child(3) {
     flex: 1 1 100%;
-    text-align: left;
-    /* Clears the 40px number plus the head's 16px gap, so the second row
-       lines up under the title rather than under the tick. */
-    padding-left: 56px;
+    /* !important because the span carries inline `text-align: right` — that is
+       correct on the desktop row, where the summary is the last thing before
+       Edit, and wrong here, where it is a full-width row of its own. This is
+       the only declaration in this file that has to fight an inline style. */
+    text-align: left !important;
+    /* Clears the number plus the head's 16px gap, so the second row lines up
+       under the TITLE rather than under the tick.
+       48px, not 56: the number is a 32px circle (set inline on the span), and
+       32 + 16 = 48. The old 56 came from calling it "the 40px number", which
+       left both wrapped rows 8px to the right of the title — visible as a step
+       in the left edge once the summary stopped being right-aligned. */
+    padding-left: 48px;
   }
   .rd-chk-head > span:nth-child(4) {
-    padding-left: 56px;
+    padding-left: 48px;
   }
 }
 

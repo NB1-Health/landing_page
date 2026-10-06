@@ -117,7 +117,7 @@ function computeTiers(
       monthlyRate: formatPrice(rate, currency, locale),
       saveLabel: formatSavingsLabel(savings, currency, locale),
       isBestValue: p.is_preferred,
-      checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
+      checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details-v1`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
     }
   })
 }
@@ -178,14 +178,16 @@ export const CycleSelectorClient: React.FC<Props> = ({
   useEffect(() => {
     storePlanSelection({ plan: planFamily ?? undefined })
     const storedCycle = getStoredPlanSelection().cycle
-    const idx = storedCycle ? IDX_TO_CYCLE.indexOf(storedCycle as (typeof IDX_TO_CYCLE)[number]) : -1
+    const idx = storedCycle
+      ? IDX_TO_CYCLE.indexOf(storedCycle as (typeof IDX_TO_CYCLE)[number])
+      : -1
     // idx 0 ('monthly') keeps the default flex tab; only a stored 4/12 pulls
     // the visitor back into the commit tab on that specific tier.
     if (idx === 1 || idx === 2) {
       setActiveTab('commit')
       setCommitIdx(idx)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -240,7 +242,10 @@ export const CycleSelectorClient: React.FC<Props> = ({
   const commitSubLabel =
     commitTiers.length === 2
       ? `${commitTiers[0].month} ${orWord} ${commitTiers[1].months}`
-      : (commitTiers.map((t) => t.months).filter(Boolean).join(', ') || undefined)
+      : commitTiers
+          .map((t) => t.months)
+          .filter(Boolean)
+          .join(', ') || undefined
 
   const selectedIdx = activeTab === 'flex' ? 0 : commitIdx
   const activeTier = activeTiers[selectedIdx]

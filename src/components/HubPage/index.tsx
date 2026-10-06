@@ -8,7 +8,7 @@ import { getPayload } from 'payload'
 
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { DISCLAIMER_KEYS, getCachedDisclaimer } from '@/utilities/libraryQueries'
-import { Footer } from '@/Footer/Component'
+import { JournalFooter } from '@/components/JournalFooter'
 import { JournalCard } from '@/components/JournalCard'
 import { LexiconIndexPage } from '@/components/LexiconIndexPage'
 import {
@@ -18,7 +18,7 @@ import {
 } from '@/utilities/lexiconQueries'
 import { getPillarCardsForHub } from '@/utilities/pillarQueries'
 import { getHubDocumentCards } from '@/utilities/hubDocumentQueries'
-import { Header } from '@/Header/Component'
+import { JournalHeader } from '@/components/JournalHeader'
 import { hubLocalizedDocument } from '@/Header/localizedDocument'
 import { JsonLd } from '@/components/JsonLd'
 import { getDictionary } from '@/i18n/getDictionary'
@@ -111,8 +111,7 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
   return (
     <>
       {!hub.header.hide && (
-        <Header
-          id={hub.header.id}
+        <JournalHeader
           locale={locale}
           // Which locales this hub actually exists in. Without it the
           // language switcher offers all eight and sends a reader to a 404.
@@ -153,7 +152,7 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
           )}
         </div>
       </div>
-      {!hub.footer.hide && <Footer id={hub.footer.id} locale={locale} />}
+      {!hub.footer.hide && <JournalFooter id={hub.footer.id} locale={locale} />}
     </>
   )
 }

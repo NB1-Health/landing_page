@@ -124,6 +124,21 @@ export const RdPgBoard: React.FC<Props> = ({ anchorId, closeLabel, heading, intr
             </button>
           ))}
         </div>
+        {/*
+          Two additions, both required for the cards below to respond at all.
+
+          `container: "biomodal / inline-size"` is what the @container query in
+          rd-tokens.css asks about. Without a container of that name the query
+          never matches and the card is frozen at its desktop layout.
+
+          `rd-biomodal` is the scope. The biocard rules are written
+          `:is(.rd-block,.rd-chrome,.rd-biomodal) [data-m="biocard"]`, and this
+          block's root is `.rd-pg .rd-pgboard` — so the hook alone would select
+          nothing here. Putting `.rd-block` on the root instead would make the
+          section that contains this overlay match
+          `div:not(.rd-block *):has(> .rd-block)` and turn it cool-grey; this
+          class touches only the overlay.
+        */}
         <div style={{ ...{
           position: "fixed",
           inset: "0px",
@@ -134,12 +149,21 @@ export const RdPgBoard: React.FC<Props> = ({ anchorId, closeLabel, heading, intr
           justifyContent: "center",
           padding: "32px",
           overflow: "auto",
+          container: "biomodal / inline-size",
           WebkitBackdropFilter: "blur(6px)"
-        }, display: (openBio !== null) ? "flex" : 'none' }} onClick={close} role={'dialog'} aria-modal={openBio !== null}>
+        }, display: (openBio !== null) ? "flex" : 'none' }} className="rd-biomodal" onClick={close} role={'dialog'} aria-modal={openBio !== null}>
           <div style={{ display: (openBio === 0) ? "block" : 'none' }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "330px 1fr",
+            {/*
+              The grid lives in rd-tokens.css under [data-m="biocard"], NOT
+              inline. It used to be `display:grid; gridTemplateColumns:330px 1fr`
+              right here, and an inline style beats any stylesheet without
+              !important — so the one-column rule for narrow screens could never
+              win and this modal kept a 330px portrait column on a phone, with
+              the text crushed into what was left. The hook is the whole fix:
+              the card now gets the same two-column desktop layout, the same
+              stacking, and the same hidden portrait as the home page's.
+            */}
+            <div data-m="biocard" style={{
               maxWidth: "940px",
               width: "100%",
               margin: "auto",
@@ -231,9 +255,17 @@ export const RdPgBoard: React.FC<Props> = ({ anchorId, closeLabel, heading, intr
             </div>
           </div>
           <div style={{ display: (openBio === 1) ? "block" : 'none' }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "330px 1fr",
+            {/*
+              The grid lives in rd-tokens.css under [data-m="biocard"], NOT
+              inline. It used to be `display:grid; gridTemplateColumns:330px 1fr`
+              right here, and an inline style beats any stylesheet without
+              !important — so the one-column rule for narrow screens could never
+              win and this modal kept a 330px portrait column on a phone, with
+              the text crushed into what was left. The hook is the whole fix:
+              the card now gets the same two-column desktop layout, the same
+              stacking, and the same hidden portrait as the home page's.
+            */}
+            <div data-m="biocard" style={{
               maxWidth: "940px",
               width: "100%",
               margin: "auto",
@@ -316,9 +348,17 @@ export const RdPgBoard: React.FC<Props> = ({ anchorId, closeLabel, heading, intr
             </div>
           </div>
           <div style={{ display: (openBio === 2) ? "block" : 'none' }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "330px 1fr",
+            {/*
+              The grid lives in rd-tokens.css under [data-m="biocard"], NOT
+              inline. It used to be `display:grid; gridTemplateColumns:330px 1fr`
+              right here, and an inline style beats any stylesheet without
+              !important — so the one-column rule for narrow screens could never
+              win and this modal kept a 330px portrait column on a phone, with
+              the text crushed into what was left. The hook is the whole fix:
+              the card now gets the same two-column desktop layout, the same
+              stacking, and the same hidden portrait as the home page's.
+            */}
+            <div data-m="biocard" style={{
               maxWidth: "940px",
               width: "100%",
               margin: "auto",

@@ -2,6 +2,7 @@
 
 import React from 'react'
 import type { RdCloseBlock as Props } from '@/payload-types'
+import type { AppLocale } from '@/i18n/config'
 
 // GENERATED from manifests/section-09.json + bindings/RdClose.json
 // Styles copied verbatim from the mockup; bindings replace content only.
@@ -12,7 +13,35 @@ import type { RdCloseBlock as Props } from '@/payload-types'
 // client component only because RenderBlocks.client.tsx imports every block into
 // one client bundle.
 
-export const RdClose: React.FC<Props> = ({ anchorId, heading, intro, cta }) => (
+/** A destination. The field holds a SLUG and the locale is added here, so one
+ * stored value is right in all nine. Anything already absolute — a url, mailto,
+ * tel, #anchor or a /path — passes straight through, because an editor who
+ * typed one meant it.
+ *
+ * WHY THIS IS HERE AT ALL. The stored value is `order`, and a bare slug in an
+ * href is RELATIVE TO THE CURRENT PATH. This block is the closing CTA on the
+ * homepage, which is the one page whose path has a single segment: there
+ * `order` resolves to `/order` and the locale is lost. On `/en/the-protocol`
+ * the same value resolves to `/en/order` and looks perfect, which is why it
+ * went unnoticed.
+ *
+ * Same helper, same reasoning, as `liPath` / `sbPath` / `stPath` / `barPath` on
+ * the newer blocks. The older blocks do not have one yet — measured on staging,
+ * 33 bare links across five pages — and this fixes only this block, as asked.
+ *
+ * NOT a lookup, unlike the chrome's: `pages.slug` IS localized (en `order-v1`
+ * is de `bestellen-v1`), and resolving that needs the database, which a client
+ * component cannot reach. No redesign page has a translated slug today, so this
+ * is correct now; `getLocalizedPagePath` is what it would need when one does.
+ */
+const closePath = (s?: string | null, locale?: string | null) => {
+  const v = (s || '').trim()
+  if (!v) return '#'
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(v)) return v
+  return `/${locale || 'en'}/${v}`
+}
+
+export const RdClose: React.FC<Props & { locale?: AppLocale }> = ({ anchorId, heading, intro, cta, locale }) => (
     <section style={{
       background: "var(--nb1-dark-brown)",
       color: "var(--nb1-cool-grey)"
@@ -89,7 +118,7 @@ export const RdClose: React.FC<Props> = ({ anchorId, heading, intro, cta }) => (
             borderRadius: "999px",
             whiteSpace: "nowrap",
             flexShrink: "0"
-          }} href={cta?.url || '#'}>
+          }} href={closePath(cta?.url, locale)}>
             <span>{cta?.label}</span>
             <span style={{
               fontSize: "1.05em",

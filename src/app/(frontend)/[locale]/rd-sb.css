@@ -65,3 +65,48 @@
   .rd-sb [data-d~="bigh"], .rd-sb-leads [data-d~="bigh"], .rd-sb-board [data-d~="bigh"], .rd-sb-team [data-d~="bigh"], .rd-sb-close [data-d~="bigh"] { font-size: clamp(40px, 4.6cqi, 62px) !important; }
   .rd-sb [data-d~="side"], .rd-sb-leads [data-d~="side"], .rd-sb-board [data-d~="side"], .rd-sb-team [data-d~="side"], .rd-sb-close [data-d~="side"] { grid-template-columns: 1.02fr 0.98fr !important; }
 }
+
+/* ───────────────────────── the hero's stat row ─────────────────────────
+ *
+ * `[data-m="abgrid"]` had NO RULE ANYWHERE. Not in this file, not in
+ * rd-tokens.css, not in rd-ab.css — the attribute was carried over from the
+ * mockup's markup and the stylesheet rule that gives it meaning was never
+ * ported. Grepped across all seventeen rd-*.css: the only `data-m` selectors
+ * that made it over are `readsrail` and `teamrail`.
+ *
+ * WHY IT SHOWS AS OVERFLOW. The convention in these generated files is that the
+ * INLINE style is the phone value and the container query holds the desktop
+ * override — `[data-m="built2"]` in rd-ab.css is the pattern. This one inverted
+ * it: the component's inline style is `repeat(4, 1fr)`, a desktop value sitting
+ * in the phone slot, with nothing to narrow it. Four 190px-minimum cards inside
+ * a 390px viewport cannot fit, so the row runs off the right edge and the third
+ * and fourth tiles are simply unreachable.
+ *
+ * So this is not a new design decision — it restores the missing half of a rule
+ * the markup already expected to exist. Stated as base + override rather than a
+ * max-width query, to match every other rule in this file.
+ *
+ * TWO UP, NOT ONE. Andra's call, and it agrees with the design system's own
+ * answer for this component: rd-lb.css already narrows The Lab's identical
+ * four-stat row to `grid-template-columns: 1fr 1fr` on mobile
+ * (`[data-m="statgrid"]`), with the comment "the board stats read two-up,
+ * compact, not four tall cards". Four single-file cards would have made the
+ * hero roughly twice as tall before a reader reached the first section.
+ *
+ * ORDER IS LOAD-BEARING. The base rule must come BEFORE its container query:
+ * the two have equal specificity, so above 900px the later one has to be the
+ * four-column rule or the stack would win everywhere.
+ *
+ * SCOPED TO `.rd-sb` ALONE, not the five-class list the generated rules carry,
+ * because the hero section is the only one of the five that renders this grid.
+ *
+ * NOT FIXED HERE: YbPage/Component.tsx carries the same `data-m="abgrid"` with
+ * the same inline `repeat(4, 1fr)` and the same missing rule, so Your Biology
+ * overflows identically. rd-yb.css needs the same four lines. Left alone
+ * because that page was not what was reported — flagged, not silently changed.
+ */
+.rd-sb [data-m="abgrid"] { grid-template-columns: 1fr 1fr !important; }
+
+@container nb1page (min-width: 900px) {
+  .rd-sb [data-m="abgrid"] { grid-template-columns: repeat(4, 1fr) !important; }
+}

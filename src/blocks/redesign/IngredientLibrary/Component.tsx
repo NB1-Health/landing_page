@@ -203,7 +203,13 @@ const RdLiModal: React.FC<{ item?: NonNullable<NonNullable<Props['browse']>['ite
   )
 }
 
-const RdLiFam: React.FC<{ fam?: Props['fam'] | null; browse?: Props['browse'] | null; locale?: AppLocale }> = ({ browse, fam, locale }) => {
+const RdLiFam: React.FC<{
+  fam?: Props['fam'] | null
+  browse?: Props['browse'] | null
+  locale?: AppLocale
+  /** Pick this family in the browse section and scroll it into view. */
+  onPick?: (family: string) => void
+}> = ({ browse, fam, locale, onPick }) => {
   return (
     <section style={{
       background: "var(--nb1-cool-grey)"
@@ -250,7 +256,7 @@ const RdLiFam: React.FC<{ fam?: Props['fam'] | null; browse?: Props['browse'] | 
               cursor: "pointer",
               textAlign: "left",
               color: "var(--nb1-dark-brown)"
-            }}>
+            }} onClick={() => onPick?.(g.family || '')}>
               <div style={{
                 position: "relative",
                 aspectRatio: "4 / 3",
@@ -335,7 +341,14 @@ const RdLiFam: React.FC<{ fam?: Props['fam'] | null; browse?: Props['browse'] | 
   )
 }
 
-const RdLiBrowse: React.FC<{ browse?: Props['browse'] | null }> = ({ browse }) => {
+const RdLiBrowse: React.FC<{
+  browse?: Props['browse'] | null
+  /** LIFTED. The four tiles in the section above set this too, so the state
+   *  cannot live here any more — see RdLiRest. `query` and `open` stay local:
+   *  nothing outside this section touches them. */
+  family?: string
+  onFamily?: (f: string) => () => void
+}> = ({ browse, family: familyProp, onFamily: onFamilyProp }) => {
   // ---------------------------------------------------------------- state
   //
   // Three pieces, and the mockup decides each one:
@@ -353,9 +366,16 @@ const RdLiBrowse: React.FC<{ browse?: Props['browse'] | null }> = ({ browse }) =
   //   `open` is the index of the component whose dialog is showing, into the
   //   FILTERED list rather than the full one, because that is the list the
   //   clicked card came from. -1 is closed.
-  const [family, setFamily] = useState('')
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(-1)
+
+  // DECLARED HERE, WITH THE OTHER TWO, because `shown` below reads it. It used
+  // to be a `useState` on this line; lifting it to RdLiRest turned it into a
+  // prop read, and a `const` is in the temporal dead zone until its own line
+  // runs — so leaving it further down threw "Cannot access 'family' before
+  // initialization" on first render. `useState` tolerated being read above
+  // itself only because it never was: the declaration sat here all along.
+  const family = familyProp ?? ''
 
   const all = browse?.items || []
 
@@ -374,7 +394,7 @@ const RdLiBrowse: React.FC<{ browse?: Props['browse'] | null }> = ({ browse }) =
   // would be showing a DIFFERENT component than the one that was clicked. Both
   // setters close it rather than trying to follow the card.
   const onFamily = (f: string) => () => {
-    setFamily((prev) => (prev === f ? prev : f))
+    onFamilyProp?.(f)()
     setOpen(-1)
   }
   const onQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -654,13 +674,47 @@ const RdLiRest: React.FC<{
   browse?: Props['browse'] | null
   chosen?: Props['chosen'] | null
   locale?: AppLocale
-}> = ({ fam, browse, chosen, locale }) => (
-  <>
-    <RdLiFam fam={fam} browse={browse} locale={locale} />
-    <RdLiBrowse browse={browse} />
-    <RdLiChosen chosen={chosen} locale={locale} />
-  </>
-)
+}> = ({ fam, browse, chosen, locale }) => {
+  /* THE FILTER IS SHARED, so it is owned here.
+     The mockup binds each family tile to `f.go` and each chip to `p.pick`, and
+     both end up at the same place: one selected family. The tiles are in
+     `#families` and the chips are in `#browse`, two sibling sections, so the
+     state cannot sit in either — it used to live in RdLiBrowse, where the tiles
+     could not reach it, which is why they did nothing at all.
+
+     `query` and `open` stay inside RdLiBrowse: nothing outside that section
+     touches them. */
+  const [family, setFamily] = useState('')
+  const onFamily = (f: string) => () => setFamily((prev) => (prev === f ? prev : f))
+
+  /* A tile also MOVES you to the list. Picking a family from up here is
+     pointless if the result is two screens below — the mockup scrolls, so this
+     scrolls. `#browse` is the section's own id, already on the element.
+
+     `scrollIntoView` is deferred one frame so the chips have re-rendered with
+     the new selection before the section arrives; landing on a list that then
+     visibly changes reads as a glitch. Reduced motion gets the same jump
+     without the travel. */
+  const onPick = (f: string) => {
+    setFamily(f)
+    if (typeof window === 'undefined') return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    window.requestAnimationFrame(() => {
+      document.getElementById('browse')?.scrollIntoView({
+        behavior: reduce ? 'auto' : 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
+  return (
+    <>
+      <RdLiFam fam={fam} browse={browse} locale={locale} onPick={onPick} />
+      <RdLiBrowse browse={browse} family={family} onFamily={onFamily} />
+      <RdLiChosen chosen={chosen} locale={locale} />
+    </>
+  )
+}
 
 export const RdLi: React.FC<Props & { locale?: AppLocale }> = ({ anchorId, browse, chosen, fam, hero, locale }) => {
   return (

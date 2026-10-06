@@ -57,6 +57,7 @@ import {
   trackLanguagePublic,
 } from '@/lib/checkoutApi'
 import { createFirebaseAccount } from '@/lib/createAccount'
+import { openArminChat } from '@/components/ArminWidget'
 import 'react-phone-number-input/style.css'
 import AddressAutocomplete, { type GooglePlace } from '@/blocks/checkoutBlocks/CheckoutForm/AddressAutocomplete'
 import PhoneInput, {
@@ -657,26 +658,39 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
       }}>
         <RdChkExpress ready={expressReady} express={express} />
       </div>
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        margin: "18px 0px 14px",
-        fontSize: "14px",
-        color: "var(--muted)"
-      }}>
-        <span style={{
-          flex: "1 1 0%",
-          height: "1px",
-          background: "var(--nb1-hairline)"
-        }} />
-        {pay?.orLabel}
-        <span style={{
-          flex: "1 1 0%",
-          height: "1px",
-          background: "var(--nb1-hairline)"
-        }} />
-      </div>
+      {/* "or pay another way" — ONLY when a wallet actually rendered.
+          The shipped form gates its own divider on the same flag
+          (`{expressReady && <div className="nb1-pay-divider">}`); this block
+          drew it unconditionally, so a browser with no Apple or Google Pay got
+          an "or" with nothing above it. `expressReady` is false until the
+          element reports `availablePaymentMethods`, so this is also the
+          server-render state — no divider flashes in before the wallet does.
+
+          Note the row above stays MOUNTED and merely hidden when not ready:
+          unmounting it would mean `onReady` never fires and the flag could
+          never turn true. */}
+      {expressReady ? (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          margin: "18px 0px 14px",
+          fontSize: "14px",
+          color: "var(--muted)"
+        }}>
+          <span style={{
+            flex: "1 1 0%",
+            height: "1px",
+            background: "var(--nb1-hairline)"
+          }} />
+          {pay?.orLabel}
+          <span style={{
+            flex: "1 1 0%",
+            height: "1px",
+            background: "var(--nb1-hairline)"
+          }} />
+        </div>
+      ) : null}
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -699,15 +713,15 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
                 }}>
                   {m.label}
                 </span>
-                <span style={{
-                  fontFamily: "var(--nb1-font-tertiary)",
-                  fontSize: "11.5px",
-                  letterSpacing: "0.06em",
-                  color: "var(--muted)",
-                  whiteSpace: "nowrap"
-                }}>
-                  {m.meta}
-                </span>
+                {/* The `meta` caption — "VISA · MC · AMEX", "KLARNA", "PAYPAL",
+                    "BACS" — is no longer drawn. Andra's call: the card row
+                    already carries the scheme marks, and the rest restated the
+                    row's own label in a second typeface.
+
+                    THE FIELD IS LEFT IN PLACE, in the block config and in the
+                    seeds. Removing it would be a schema change and a migration
+                    for something that is now simply not rendered, and the stored
+                    values are still there if the caption is ever wanted back. */}
               </button>
               {(payMethod === m.key && m.key === 'card') ? (
                 <div style={{
@@ -784,7 +798,11 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
   )
 }
 
-const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, doneHeading, dotStyle, lineStyle, onTopOpt, orderLine, path, planName, priceLabel, survOpts, survey }) => {
+const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, doneHeading, dotStyle, lineStyle, onTopOpt, orderLine, path, planName, priceLabel, promo, survOpts, survey }) => {
+  // `#` and empty both mean "no destination" — the seed writes `#`. Anything
+  // else is a real url an editor meant.
+  const chatRaw = (done?.helpChatUrl || '').trim()
+  const chatHref = chatRaw && chatRaw !== '#' ? chatRaw : null
   return (
     <div style={{
       maxWidth: "1040px",
@@ -919,19 +937,32 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
           flexWrap: "wrap",
           gap: "9px"
         }}>
-          {(survOpts || []).map((so, sIdx) => (
+          {(survOpts || []).map((so, sIdx) => {
+            /* PRESSED HAS TO BE VISIBLE, not only announced. This style was an
+               unconditional literal and `activeSurvOpt` reached nothing but
+               `aria-pressed` — so a screen reader knew which bubble was chosen
+               and nobody else did. The block is styled inline throughout, so
+               there is no stylesheet to carry an `[aria-pressed="true"]` rule;
+               the state has to branch here. */
+            const pressed = activeSurvOpt?.code === so.code
+            return (
             <button key={so.code || sIdx} style={{
               border: "0px",
               cursor: "pointer",
               borderRadius: "999px",
-              background: "rgb(255, 255, 255)",
-              boxShadow: "rgba(81, 71, 69, 0.2) 0px 0px 0px 1.5px inset",
+              background: pressed ? "var(--nb1-dark-brown)" : "rgb(255, 255, 255)",
+              color: pressed ? "var(--nb1-cool-grey)" : undefined,
+              boxShadow: pressed
+                ? "var(--nb1-dark-brown) 0px 0px 0px 1.5px inset"
+                : "rgba(81, 71, 69, 0.2) 0px 0px 0px 1.5px inset",
               padding: "0.7em 1.1em",
-              fontSize: "14.5px"
-            }} aria-pressed={activeSurvOpt?.code === so.code ? 'true' : 'false'} onClick={onTopOpt(so)}>
+              fontSize: "14.5px",
+              transition: "background 140ms ease, color 140ms ease"
+            }} aria-pressed={pressed ? 'true' : 'false'} onClick={onTopOpt(so)}>
               {so.label}
             </button>
-          ))}
+            )
+          })}
         </div>
       </div>
       <div style={{
@@ -1113,10 +1144,11 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
               }}>{billingShort}</span>
               <span style={{
                 fontFamily: "var(--nb1-font-primary)",
-                fontSize: "24px",
-                lineHeight: "1"
+                fontSize: promo ? "15px" : "24px",
+                lineHeight: "1",
+                ...(promo ? { textDecoration: 'line-through', opacity: 0.45 } : null),
               }}>
-                {priceLabel}
+                {promo ? promo.monthly : priceLabel}
                 <span style={{
                   fontFamily: "var(--nb1-font-secondary)",
                   fontSize: "12px",
@@ -1124,6 +1156,41 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
                 }}>{done?.sumPerLabel}</span>
               </span>
             </div>
+            {/* The discount survived the payment, so it belongs on the receipt.
+                The shipped checkout's confirmation screen shows the plain rate
+                (ConfirmationScreen.tsx L399) and never mentions the code — this
+                is deliberately more than it did, because a customer who used a
+                code and then sees the full price has every reason to think it
+                did not apply. */}
+            {promo ? (
+              <>
+                <div style={{
+                  display: "flex", justifyContent: "space-between",
+                  alignItems: "center", gap: "14px", padding: "2px 0px",
+                }}>
+                  <span style={{ fontSize: "15px", color: "var(--muted)" }}>{promo.discountLabel}</span>
+                  <span style={{ fontSize: "15px", fontWeight: 600 }}>{'\u2212'}{promo.discount}</span>
+                </div>
+                <div style={{
+                  display: "flex", justifyContent: "space-between",
+                  alignItems: "center", gap: "14px", padding: "2px 0px 9px",
+                }}>
+                  <span style={{ fontSize: "15px", color: "var(--muted)" }}>{promo.firstMonthLabel}</span>
+                  <span style={{
+                    fontFamily: "var(--nb1-font-primary)",
+                    fontSize: "24px",
+                    lineHeight: "1",
+                  }}>
+                    {promo.firstMonth}
+                    <span style={{
+                      fontFamily: "var(--nb1-font-secondary)",
+                      fontSize: "12px",
+                      opacity: "0.7"
+                    }}>{done?.sumPerLabel}</span>
+                  </span>
+                </div>
+              </>
+            ) : null}
             <div style={{
               marginTop: "14px",
               padding: "11px",
@@ -1154,11 +1221,43 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
             color: "var(--muted)",
             marginTop: "12px"
           }}>
-            <a style={{
-              textDecoration: "underline",
-              textUnderlineOffset: "2px"
-            }} href={done?.helpChatUrl || '#'}>{done?.helpChat}</a>
-            {done?.helpOr}
+            {/* CHAT WITH US OPENS THE WIDGET.
+                The shipped confirmation screen does exactly this —
+                ConfirmationScreen.tsx L406, `onClick={() => openArminChat()}` on
+                a <button> — and this one was an <a href="#"> that went nowhere.
+                `helpChatUrl` is kept as the escape hatch: give it a real
+                destination and it renders a link again, which is what an editor
+                typing a url into that field expects. `#` or empty, the seeded
+                value, means "open the chat".
+
+                A <button> reset to look like the link beside it, rather than an
+                <a> with a click handler: there is no href to follow, so a link
+                would be a lie to the keyboard and to a middle-click. */}
+            {chatHref ? (
+              <a style={{
+                textDecoration: "underline",
+                textUnderlineOffset: "2px"
+              }} href={chatHref}>{done?.helpChat}</a>
+            ) : (
+              <button type="button" onClick={() => openArminChat()} style={{
+                border: "0px",
+                background: "transparent",
+                padding: "0px",
+                font: "inherit",
+                color: "inherit",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textUnderlineOffset: "2px"
+              }}>{done?.helpChat}</button>
+            )}
+            {/* THE SPACES ARE THE MARKUP'S, NOT THE FIELD'S.
+                This rendered "Chat with usorsupport@nb1.com". The config default
+                is `" or "` with spaces, but the seeded value is `"or"` — the
+                defaults extractor trims, as it should — and JSX prints the
+                string exactly. Padding the separator survives both, and
+                survives a translator who writes "oder" without thinking about
+                whitespace. */}
+            <span style={{ padding: "0px 0.45em" }}>{done?.helpOr}</span>
             <a style={{
               textDecoration: "underline",
               textUnderlineOffset: "2px"
@@ -1797,7 +1896,7 @@ const RdChkCardField: React.FC<{
 }
 
 /**
- * The express wallet row — Apple Pay, Google Pay, Link, PayPal.
+ * The express wallet row — Apple Pay, Google Pay.
  *
  * Stripe's ExpressCheckoutElement draws every button it has, inside an iframe
  * it controls, so the mockup's two hand-drawn buttons are a picture of what
@@ -1805,9 +1904,39 @@ const RdChkCardField: React.FC<{
  * around it, and whether it appears at all: an element with no wallet to offer
  * renders nothing, and the mockup's divider below would then sit above an empty
  * box. `expressReady` is the shipped form's own flag for exactly that.
+ *
+ * ITS OWN `<Elements>`, AND THAT IS THE WHOLE POINT OF THIS ROW.
+ *
+ * `ExpressLinkRow` here is byte-identical to the shipped form's — diffed, not
+ * assumed. What was NOT carried across was the Elements group it lives in. The
+ * shipped form mounts it inside a dedicated DEFERRED group; this block had it
+ * inheriting the page-wide `<Elements stripe={stripePromise}>` at the bottom of
+ * this file, which carries no options at all. Two things follow from that:
+ *
+ *   WHICH WALLETS APPEAR. With no `mode`, `currency` or `paymentMethodTypes`,
+ *   the element offers whatever the browser can do — which is why Apple Pay
+ *   turned up on an iPhone here and not on the old checkout. Restricting the
+ *   group to `['card', 'link']`, as the shipped form does, is what decides it.
+ *
+ *   WHETHER CONFIRM CAN EVEN RUN. `onConfirm` calls `elements.submit()` and
+ *   `stripe.confirmSetup({ elements })`, and both REQUIRE a deferred group.
+ *   Without `mode: 'setup'` the submit throws, so the sheet could open and the
+ *   confirm behind it could not complete.
+ *
+ * `appearance` is deliberately NOT copied from the shipped form: its values are
+ * the old navy theme, and these are the redesign's buttons. Appearance does not
+ * decide which methods appear, which is what this change is about.
  */
 const RdChkExpress: React.FC<ChkPartProps> = ({ ready, express }) => (
   <div style={{ display: ready === false ? 'none' : 'block' }}>
+    <Elements
+      stripe={stripePromise}
+      options={{
+        mode: 'setup',
+        currency: String(express?.currency || 'eur').toLowerCase(),
+        paymentMethodTypes: ['card', 'link'],
+      }}
+    >
     <ExpressLinkRow
       onReadyChange={express.onReadyChange}
       validate={express.validate}
@@ -1816,6 +1945,7 @@ const RdChkExpress: React.FC<ChkPartProps> = ({ ready, express }) => (
       finalize={express.finalize}
       onError={express.onError}
     />
+    </Elements>
   </div>
 )
 
@@ -1946,7 +2076,7 @@ const RdChkSurveyMore: React.FC<ChkPartProps> = ({ survey }) => {
   if (survey.state === 'thanks')
     return (
       <div style={{ marginTop: '12px', fontSize: '15px', color: 'var(--muted)' }}>
-        {survey.t?.survThanks}
+        {survey.t?.survey?.thanks}
       </div>
     )
   if (survey.state === 'sub' && survey.opt?.details?.length)
@@ -1977,7 +2107,7 @@ const RdChkSurveyMore: React.FC<ChkPartProps> = ({ survey }) => {
           onChange={(e) => survey.setOtherVal(e.target.value)}
         />
         <button type="button" style={chip} onClick={survey.onSend}>
-          {survey.t?.survSend}
+          {survey.t?.survey?.send}
         </button>
       </div>
     )
@@ -2004,6 +2134,7 @@ const RdChkChrome: React.FC<ChkPartProps> = (p) => (
       steps={p.confirmed ? { ...p.steps, backLabel: p.steps?.backLabelDone } : p.steps}
       locale={p.locale}
       current={p.confirmed ? 3 : 2}
+      backHref={p.confirmed ? null : p.backHref}
     />
     {p.confirmed ? (
       <RdChkDone
@@ -2011,6 +2142,7 @@ const RdChkChrome: React.FC<ChkPartProps> = (p) => (
         planName={p.planName}
         billingShort={p.billingShort}
         priceLabel={p.priceLabel}
+        promo={p.promo}
         orderLine={p.orderLine}
         doneHeading={p.doneHeading}
         lineStyle={p.lineStyle}
@@ -2051,7 +2183,14 @@ const RdChkChrome: React.FC<ChkPartProps> = (p) => (
 
 type DurSteps = NonNullable<Props['steps']>
 
-const RdOrderSteps: React.FC<{ steps?: DurSteps | null; locale?: AppLocale; current: number }> = ({ current, locale, steps }) => {
+const RdOrderSteps: React.FC<{
+  steps?: DurSteps | null
+  locale?: AppLocale
+  current: number
+  /** Where Back goes, already resolved. See the control at the end of this
+   *  component for why it is passed in rather than derived here. */
+  backHref?: string | null
+}> = ({ backHref, current, locale, steps }) => {
   //
   // The header's dot and label are styled from whether a step is CURRENT, done
   // or still ahead — `done = i < step`, `cur = i === step` in the mockup, which
@@ -2174,7 +2313,28 @@ const RdOrderSteps: React.FC<{ steps?: DurSteps | null; locale?: AppLocale; curr
             fontSize: "12px",
             padding: "6px 0px",
             whiteSpace: "nowrap"
-          }} onClick={() => { try { window.history.back() } catch { /* no history */ } }}>
+          }} onClick={() => {
+            /* BACK IS A STEP, NOT A HISTORY ENTRY.
+               The funnel is Plan -> Duration -> Checkout, but the middle step is
+               two pages — `duration-core` and `duration-advanced` — and Checkout
+               is one page reached from either. So "back one step" depends on the
+               plan the visitor is carrying, which `history.back()` knows nothing
+               about: it returns to whatever was last in the tab. After a reload,
+               a deep link, a redirect-return from Klarna or a retried payment
+               that is not the duration page, and can leave the funnel entirely.
+
+               `backHref` is the duration page for the CHOSEN plan, resolved by
+               RdChkInner, which is where the plan lives. It is only supplied
+               while the form is open; on the confirmed screen this same control
+               becomes "Need help?" and keeps the old behaviour, because there is
+               no step to go back to.
+
+               Still a <button>, not an <a>: the mockup draws a button and this
+               is its markup. An empty `backHref` falls through to history, so a
+               page seeded before this field existed behaves as it did. */
+            if (backHref) { window.location.assign(backHref); return }
+            try { window.history.back() } catch { /* no history */ }
+          }}>
             {steps?.backLabel}
           </button>
         </div>
@@ -4269,6 +4429,10 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // card inputs because the wallet supplies the payment method, and the billing
   // address is still checked.
   const express = {
+    // Feeds the deferred Elements group in RdChkExpress. The shipped form
+    // passes the visitor's selected currency the same way, so the wallet sheet
+    // quotes what the summary quotes.
+    currency,
     onReadyChange: setExpressReady,
     validate: () => validateBeforePay(false),
     beginSubmit: () => {
@@ -4350,12 +4514,56 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
       : `${cycleLabel}${sum?.billingSuffix ?? ''}`
   const priceLabel = rate
 
+  // The discount, formatted once, for the confirmation screen. Built here
+  // because `fmt` and the dictionary live here and the view should hold no
+  // arithmetic; null when no code is applied, which is what every `promoRow ?`
+  // branch below keys off.
+  //
+  // NOT `promo` — that name is taken at L4336 by the promo-CODE bundle (the
+  // input, the apply button, the message). These are the FIGURES the code
+  // produced, which is a different thing on the same subject.
+  const promoRow = promoPreview
+    ? {
+        monthly: fmt(promoPreview.monthly_price),
+        discount: fmt(promoPreview.promo_discount),
+        firstMonth: fmt(promoPreview.first_month_price),
+        discountLabel: t.promoUi?.discount ?? 'Discount',
+        firstMonthLabel: t.promoUi?.firstMonth ?? 'First month',
+      }
+    : null
+
   const orderLine = [done?.orderPrefix, orderNumber].filter(Boolean).join(' ')
   const doneHeading = [done?.headPrefix, fn].filter(Boolean).join(' ') + (done?.headSuffix ?? '')
 
   // A SLUG, not a path: every page lives at /{locale}/{slug}, so storing nine
   // full paths per link is nine chances for one locale to point at another's.
-  const path = (s?: string | null) => `/${locale || 'en'}${s ? `/${s}` : ''}`
+  //
+  // EXCEPT WHEN IT IS NOT A PAGE. `done.acctSlug` points at the account app,
+  // which is mounted at `/login` and is NOT under a locale — the same reason
+  // the header stores `/login?lang=en` rather than a slug. A value that is
+  // already absolute (a url, a /path, a #anchor, mailto:, tel:) is therefore
+  // passed through exactly as stored, and only a bare slug is prefixed.
+  const path = (s?: string | null) => {
+    const v = (s || '').trim()
+    if (!v) return `/${locale || 'en'}`
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#)/i.test(v)) return v
+    return `/${locale || 'en'}/${v}`
+  }
+
+  // WHERE BACK GOES. The step before Checkout is two pages, one per plan, so
+  // the destination is whichever duration page matches the plan the visitor is
+  // carrying — `planKey`, which is 'core' or 'advanced' and is already what
+  // every price on this page is derived from.
+  //
+  // DECLARED AFTER `path`, deliberately: it calls it, and `const` does not
+  // hoist, so a line above the declaration is a temporal-dead-zone error at
+  // render — "Cannot access 'path' before initialization". It was written
+  // beside `orderLine` first, which sits thirteen lines too early.
+  //
+  // An unset field yields null and the header falls back to the browser's own
+  // history, which is what a page seeded before these fields existed will do.
+  const backSlug = planKey === 'advanced' ? steps?.backSlugAdvanced : steps?.backSlugCore
+  const backHref = backSlug ? path(backSlug) : null
 
   // The success-view effect used to be RETYPED here from the shipped form's
   // L600-L608. It is now captured verbatim as mechanism.md section 8l and
@@ -4470,8 +4678,12 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     })
   }
   function onTopOptRaw(opt: SurvOpt) {
+    // SET ON BOTH BRANCHES. This used to run only where `opt.details` exists,
+    // which is one option of seven — `social_media`. For the other six the
+    // chosen bubble was never recorded at all, so even `aria-pressed` stayed
+    // false and no highlight was possible however the style was written.
+    setActiveSurvOpt(opt)
     if (opt.details?.length) {
-      setActiveSurvOpt(opt)
       setSurvState('sub')
     } else {
       recordAnswer(opt.code, opt.detailCode)
@@ -4484,7 +4696,13 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     recordAnswer(activeSurvOpt.code, detailCode)
     setSurvState('thanks')
   }
-  function onOther() { setShowOther(true); setActiveSurvOpt(null) }
+  // `Something else` is drawn as a seventh bubble, so it highlights like the
+  // rest. It used to clear the selection, which left every bubble unlit while
+  // its own free-text box was open.
+  function onOther() {
+    setShowOther(true)
+    setActiveSurvOpt({ code: 'other', label: done?.survOther ?? '' })
+  }
   function onSurvSend() {
     if (!otherVal.trim()) return
     recordAnswer('other', undefined, true, otherVal.trim())
@@ -4571,7 +4789,76 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
 
   return (
       <>
-        <RdChkChrome steps={steps} locale={locale} confirmed={confirmed} done={done} planName={planName} billingShort={billingShort} priceLabel={priceLabel} orderLine={orderLine} doneHeading={doneHeading} lineStyle={lineStyle} dotStyle={dotStyle} path={path} survOpts={survOpts} onTopOpt={onTopOpt} activeSurvOpt={activeSurvOpt} survey={survey} />
+        {/* THE WAIT HAS TO BE VISIBLE.
+            `placing` already existed and already disabled the pay button, but a
+            greyed button is the whole of the feedback while the card is
+            authorised, the subscription created and the account provisioned —
+            several seconds on a slow connection, with nothing moving. People
+            click again, or leave.
+
+            So the same flag now also draws over the page. `aria-busy` and
+            `role="status"` announce it; `pointer-events` on the backdrop is what
+            actually stops a second submit, rather than relying on every control
+            underneath being disabled.
+
+            The copy is `t.confirm.processing` — already in the dictionary, in
+            all nine locales, and already used by the offer-resolving guard. No
+            new field, no migration, nothing to seed. */}
+        {placing ? (
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 200,
+              display: 'grid',
+              placeItems: 'center',
+              gap: '18px',
+              background: 'rgba(240, 245, 255, 0.86)',
+              backdropFilter: 'blur(6px)',
+              WebkitBackdropFilter: 'blur(6px)',
+            }}
+          >
+            <div style={{ display: 'grid', justifyItems: 'center', gap: '18px' }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  border: '2.5px solid rgba(81, 71, 69, 0.18)',
+                  borderTopColor: 'var(--nb1-dark-brown)',
+                  animation: 'rd-chk-spin 820ms linear infinite',
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'var(--nb1-font-tertiary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  fontSize: '13px',
+                  color: 'var(--nb1-dark-brown)',
+                }}
+              >
+                {t.confirm?.processing}
+              </span>
+            </div>
+            {/* The keyframes ride with the element rather than going into a
+                stylesheet: this block carries all of its own styling inline,
+                and an animation is the one thing inline style cannot express.
+                `prefers-reduced-motion` stops the spin and leaves the wording,
+                which is the part that actually says what is happening. */}
+            <style>{`
+              @keyframes rd-chk-spin { to { transform: rotate(360deg) } }
+              @media (prefers-reduced-motion: reduce) {
+                [role="status"] [aria-hidden="true"] { animation: none !important }
+              }
+            `}</style>
+          </div>
+        ) : null}
+        <RdChkChrome promo={promoRow} backHref={backHref} steps={steps} locale={locale} confirmed={confirmed} done={done} planName={planName} billingShort={billingShort} priceLabel={priceLabel} orderLine={orderLine} doneHeading={doneHeading} lineStyle={lineStyle} dotStyle={dotStyle} path={path} survOpts={survOpts} onTopOpt={onTopOpt} activeSurvOpt={activeSurvOpt} survey={survey} />
         {(!confirmed) ? (
           <div style={{
             maxWidth: "720px",
@@ -4621,7 +4908,9 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
                   alignItems: "center",
                   gap: "14px"
                 }}>
-                  <RdChkPrice sumOpen={sumOpen} priceLabel={priceLabel} perLabel={sum?.perLabel} />
+                  {/* Collapsed, there is room for one number, and the one that
+                      matters is what they pay now. */}
+                  <RdChkPrice sumOpen={sumOpen} priceLabel={promoPreview ? fmt(promoPreview.first_month_price) : priceLabel} perLabel={sum?.perLabel} />
                   <span style={{
                     display: "inline-block",
                     transition: "transform 0.2s",
@@ -4729,11 +5018,14 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
                     }}>{billingShort}</span>
                     <span style={{
                       fontFamily: "var(--nb1-font-primary)",
-                      fontSize: "40px",
+                      fontSize: promoPreview ? "22px" : "40px",
                       lineHeight: "1",
-                      whiteSpace: "nowrap"
+                      whiteSpace: "nowrap",
+                      ...(promoPreview
+                        ? { textDecoration: 'line-through', opacity: 0.45 }
+                        : null),
                     }}>
-                      {priceLabel}
+                      {promoPreview ? fmt(promoPreview.monthly_price) : priceLabel}
                       <span style={{
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
@@ -4741,6 +5033,60 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
                       }}>{sum?.perLabel}</span>
                     </span>
                   </div>
+                  {/* WHAT THE DISCOUNT ACTUALLY DID.
+                      `applyPromo` has always stored `promo_discount`,
+                      `first_month_price` and `monthly_price`; the last two were
+                      written and never read, so the only sign a code had landed
+                      was a line of green text and the total never moved.
+
+                      These two rows are the SHIPPED checkout's own treatment,
+                      from CheckoutForm/Component.client.tsx L3996-4032: strike
+                      the ongoing monthly rate, show what came off, then show the
+                      first month in the accent colour. Same three figures, same
+                      order, same `t.promoUi` labels — only the type and spacing
+                      are this design's. */}
+                  {promoPreview ? (
+                    <>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: "14px",
+                        padding: "2px 0px",
+                      }}>
+                        <span style={{ fontSize: "16px", color: "var(--muted)" }}>
+                          {t.promoUi?.discount ?? 'Discount'}
+                        </span>
+                        <span style={{ fontSize: "16px", fontWeight: 600 }}>
+                          {'\u2212'}{fmt(promoPreview.promo_discount)}
+                        </span>
+                      </div>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: "14px",
+                        padding: "2px 0px 6px",
+                      }}>
+                        <span style={{ fontSize: "16px", color: "var(--muted)" }}>
+                          {t.promoUi?.firstMonth ?? 'First month'}
+                        </span>
+                        <span style={{
+                          fontFamily: "var(--nb1-font-primary)",
+                          fontSize: "40px",
+                          lineHeight: "1",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {fmt(promoPreview.first_month_price)}
+                          <span style={{
+                            fontFamily: "var(--nb1-font-secondary)",
+                            fontSize: "14px",
+                            opacity: "0.7"
+                          }}>{sum?.perLabel}</span>
+                        </span>
+                      </div>
+                    </>
+                  ) : null}
                   <div style={{
                     display: "flex",
                     flexDirection: "column",

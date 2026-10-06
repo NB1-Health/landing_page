@@ -1,0 +1,259 @@
+/*
+ * MOVED OUT OF public/ — 2026-10-05.
+ *
+ * This file used to be fetched as `/journal-reskin.css` by a <link>. On staging
+ * that path is not proxied to Next: nginx serves an ALLOWLIST (`/en/`, the
+ * other locales, `/cms/`, `/_next/`) and falls everything else through to the
+ * login SPA's index.html WITH A 200. So the browser asked for a stylesheet,
+ * received 3,634 bytes of HTML, built an empty sheet, and the reskin silently
+ * did nothing — `--jr-ink` still resolved to the old navy. Measured, not
+ * guessed; the same fault took the webfonts out in October. See
+ * claude/stg-public-dir-not-proxied.md.
+ *
+ * It is now imported by `[locale]/layout.tsx`, so webpack emits it under
+ * `/_next/static/css/…`, which IS proxied — and content-hashed and immutably
+ * cacheable as a bonus. A path that cannot be fetched now fails the build
+ * instead of 200-ing into the login SPA.
+ *
+ * WHAT CHANGED IN THE RULES. Being imported means it loads on EVERY page, so
+ * the switch can no longer be "is the <link> rendered". Every rule is now
+ * behind `[data-jr-reskin]`, a hidden marker element that
+ * src/components/JournalReskin renders on exactly the five journal routes it
+ * used to render the <link> on. Same five routes, same one-line switch.
+ *
+ * THIS MATTERS MOST FOR THE NAV. Three of these six rules target `.nb1-nav`,
+ * which is the SITE header and is present on every page. Scoping them to
+ * `.jr-page` would not have been enough and scoping them to nothing would have
+ * recoloured the header across the whole site the moment this file was
+ * imported. The marker is what keeps them to the journal.
+ *
+ * Specificity only went up, so nothing that won before loses now.
+ */
+
+/* ===========================================================================
+   nb1 Journal reskin — Journal index, topic/hub pages, pillars, terms,
+   scientific articles.
+   ---------------------------------------------------------------------------
+   Styling only. No markup, no copy, no URLs, no CMS content, no SEO, no
+   tracking. Loaded as a <link> by <JournalReskin />, which renders only when
+   the reskin is on — see src/utilities/journalReskin.ts. Remove the switch and
+   the old design is back, unchanged, with nothing to undo.
+
+   WHY THIS IS NOT THE SUPPLIED nb1-reskin.css
+   ---------------------------------------------------------------------------
+   The brief's file restyles ~15 components through `.REPLACE-…` placeholders
+   and 40-odd `!important` declarations, because it was written without sight of
+   the markup. The markup turns out not to need it.
+
+   `src/styles/journal-tokens.css` already defines the whole journal palette as
+   38 custom properties prefixed `--jr-`, and the journal's own stylesheets use
+   them 275 times against 19 remaining literal colours — measured, not assumed:
+   67 var() uses in journal-index.css and 208 in journal-article.css. The
+   journal is already a token-driven design system. So the reskin is a NEW SET
+   OF TOKEN VALUES, not a pile of overrides.
+
+   What that buys, beyond being a quarter of the size:
+     · no `!important` on anything the journal itself owns, so the cascade still
+       works and the next person can override a rule normally;
+     · no placeholder selectors to map, so there is nothing to get wrong and
+       nothing to re-map when a class is renamed;
+     · every component picks it up — including the ones with no record yet
+       (scientific articles) and any built later.
+
+   THE FONTS ARE ALREADY HOSTED. The brief's step 1 says to add three woff2
+   files; `src/app/(frontend)/[locale]/fonts.css` already serves all three from
+   /fonts/, self-hosted, with `local()` first. The supplied file's @font-face
+   block points at `fonts/MartinaPlantijn-Regular.woff2`, which does not exist
+   here — copying it would have replaced working faces with 404s. It is not
+   repeated below; the faces are simply named.
+
+   `:root:root` rather than `:root` — specificity 0-2-0 against 0-1-0, so these
+   win over journal-tokens.css whether this file loads before or after it. A
+   <link> rendered from a page component and a CSS file imported by that same
+   page are not ordered against each other by anything this code controls, and
+   "load it last" is a hope rather than a guarantee. Specificity is a fact.
+   ======================================================================== */
+
+:root:root:has([data-jr-reskin]) {
+  /* ---- ink ---------------------------------------------------------------
+     Navy becomes dark brown. The ramp keeps the same four steps the journal
+     already uses so nothing changes weight, only hue. */
+  --jr-navy: #514745;
+  --jr-navy-deep: color-mix(in oklab, #514745 86%, #000);
+  --jr-navy-2: color-mix(in oklab, #514745 88%, #f0f5ff);
+
+  --jr-ink: #514745;
+  --jr-ink-80: rgba(81, 71, 69, 0.86); /* the brief's lede/breadcrumb value */
+  --jr-ink-70: rgba(81, 71, 69, 0.72);
+  --jr-ink-55: rgba(81, 71, 69, 0.55);
+  --jr-ink-45: rgba(81, 71, 69, 0.45);
+  --jr-ink-40: rgba(81, 71, 69, 0.4);
+
+  --jr-line: rgba(81, 71, 69, 0.1);
+  --jr-line-2: rgba(81, 71, 69, 0.07);
+
+  /* ---- the signal colour -------------------------------------------------
+     THE ONE JUDGEMENT CALL IN THIS FILE, and it is flagged rather than buried.
+
+     journal-tokens.css documents teal as "SIGNAL ONLY: labels, marks, data,
+     links". The nb1 system has no teal and the brief says to remove it, but it
+     does not say what inherits that job — its own reference pages (About,
+     Our Standards, the legal pages) use dark-brown ink and reserve lime for
+     the CTA, so they answer "nothing does".
+
+     So the text-level signal folds into the ink, and the TINTS — which are
+     backgrounds, not type — become the system's blue-grey, the same hue the
+     hero band is built from. Marks and data keep a tinted ground and lose a
+     coloured foreground. If that reads flat once there is real content, this
+     is the block to change, and it is four values. */
+  --jr-teal: #514745;
+  --jr-teal-l: color-mix(in oklab, #514745 88%, #f0f5ff);
+  --jr-teal-tint: color-mix(in oklab, #b3e7f3 22%, #f0f5ff);
+  --jr-teal-tint2: color-mix(in oklab, #b3e7f3 34%, #f0f5ff);
+  --jr-teal-border: rgba(81, 71, 69, 0.22);
+
+  /* ---- conversion --------------------------------------------------------
+     Lime owns conversion actions and nothing else — the same rule in both
+     systems, so only the values move. Black text, per the brief. */
+  --jr-lime: #d9ff65;
+  --jr-lime-d: color-mix(in oklab, #d9ff65 88%, #000);
+  --jr-on-lime: #000;
+
+  /* ---- surfaces ----------------------------------------------------------
+     Cool grey is the page ground. Cards stay white — the brief's card rule is
+     explicit about that, and white on cool grey is what gives them their edge
+     without a border. `--jr-panel` is the hero band and the author box, so it
+     takes the tint: cool grey mixed with 34% blue-grey, the brief's value. */
+  --jr-paper: #ffffff;
+  --jr-off: #f0f5ff;
+  --jr-panel: color-mix(in oklab, #b3e7f3 34%, #f0f5ff);
+  --jr-panel-2: #f0f5ff;
+  --jr-cream: #f0f5ff;
+  --jr-warm: #f0f5ff;
+
+  /* ---- on dark -----------------------------------------------------------
+     Cool grey, not white: on dark brown, white is harsher than the system's
+     own ink-on-dark. Same four steps. */
+  --jr-w-90: rgba(240, 245, 255, 0.9);
+  --jr-w-70: rgba(240, 245, 255, 0.7);
+  --jr-w-55: rgba(240, 245, 255, 0.55);
+  --jr-w-40: rgba(240, 245, 255, 0.4);
+
+  /* ---- type --------------------------------------------------------------
+     The faces are already loaded by fonts.css. The fallback stacks are the
+     ones rd-tokens.css uses, so a journal page and a redesigned page fall back
+     the same way rather than diverging on a slow connection. */
+  --jr-font: 'F37 Zagma', 'Neue Haas Grotesk Display', 'Helvetica Neue', Arial, sans-serif;
+  --jr-display: 'Martina Plantijn', 'Freight Text Pro', Georgia, serif;
+  --jr-mono: 'OO Theran', 'Space Mono', ui-monospace, Menlo, monospace;
+
+  /* ---- shape -------------------------------------------------------------
+     The brief gives two radii: 16px for cards, 999px for pills. `--jr-r-panel`
+     is not in the brief; it takes the card value so panels and cards agree,
+     which is what the reference pages do. */
+  --jr-r-panel: 16px;
+  --jr-r-card: 16px;
+  --jr-r-pill: 999px;
+
+  --jr-shadow-card: 0 24px 44px -32px rgba(81, 71, 69, 0.5);
+  --jr-shadow-feat: 0 30px 60px -46px rgba(81, 71, 69, 0.5);
+}
+
+/* ===========================================================================
+   The ground
+   ---------------------------------------------------------------------------
+   `body` is not token-driven — it is Tailwind Preflight plus globals.css,
+   which sets white. The journal pages are cool grey in the new system, and
+   `.jr-page` does not cover the area behind the footer on a short page.
+   Scoped to `:has()` so it only applies on a page that actually renders a
+   journal root: this file is only linked on journal routes, and that is the
+   belt; `:has()` is the braces.
+   ======================================================================== */
+body:has([data-jr-reskin]):has(.jr-page) {
+  background: #f0f5ff;
+}
+
+/* ===========================================================================
+   The nineteen literal colours
+   ---------------------------------------------------------------------------
+   Everything above moves 275 token uses. These are the rest, measured out of
+   journal-index.css and journal-article.css: the category thumbnails, which
+   are decorative gradients written as raw hex, and two navy literals.
+
+   The thumbnails are five hand-picked hues (brown, sand, green, indigo, teal)
+   standing in for photography that does not exist yet. In the new system they
+   are the one place a saturated colour would appear, so they become the tint —
+   the same band the hero uses. When real images land this rule stops applying
+   to anything.
+   ======================================================================== */
+body:has([data-jr-reskin]) :is(.jr-thumb,
+.jr-thumb--stories,
+.jr-thumb--science,
+.jr-thumb--gut,
+.jr-thumb--nutrition,
+.jr-thumb--protocols) {
+  background: color-mix(in oklab, #b3e7f3 34%, #f0f5ff);
+  color: rgba(81, 71, 69, 0.55);
+}
+
+/* ===========================================================================
+   Site chrome — the nav only
+   ---------------------------------------------------------------------------
+   THE FOOTER IS DELIBERATELY NOT HERE. It was, and it came out: the footer is
+   a CHOICE now, not a theme. `SiteSettings > Journal index page > Redesign
+   footer` picks which footer the journal wears, so recolouring the site one
+   from this file would fight that choice — set the picker to the redesign
+   footer and you would get the real thing; leave it empty and you would get a
+   site footer wearing someone else's colours whether you wanted them or not.
+   A switch that restyles something you can already select is a switch that
+   takes the decision away.
+
+   The nav stays, for now, only because there is no equivalent picker for it:
+   `SiteSettings.journal.header` points at `headers`, not `rd-headers`, so the
+   journal cannot choose the redesign nav yet. The moment it can, this block
+   should come out the same way and for the same reason. Say so and it is four
+   rules.
+
+   The nav is NOT part of the journal's token system — it is the site header,
+   styled with styled-jsx.
+
+   `!important` here and nowhere else, and for a reason that is mechanical
+   rather than lazy: styled-jsx compiles `.nb1-nav` to
+   `.nb1-nav.jsx-<hash>`, specificity 0-2-0. A plain `.nb1-nav` loses,
+   `html .nb1-nav` is 0-1-1 and loses by more, and `.nb1-nav.nb1-nav` ties —
+   leaving source order to decide, which is exactly the thing this file does
+   not control. No selector wins outright, so the one lever left is the
+   cascade's own override.
+
+   Only on journal pages: this file is linked by <JournalReskin /> and nothing
+   else loads it, so the marketing pages' chrome is untouched.
+   ======================================================================== */
+
+/* Nav: cool-grey bar, dark-brown links. Same links, same layout. */
+body:has([data-jr-reskin]) .nb1-nav {
+  background: #f0f5ff !important;
+  border-bottom: 1px solid rgba(81, 71, 69, 0.1) !important;
+}
+body:has([data-jr-reskin]) :is(.nb1-nav a,
+.nb1-nav button,
+.nb1-nav-login) {
+  color: #514745 !important;
+  font-family: 'F37 Zagma', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+/* "Order your kit": one lime pill, uppercase, black text.
+   The ↗ is NOT added here. The brief's file appends it with ::after, which
+   would double the arrow on any locale whose label already carries one — and
+   the redesign's own CTA label is seeded with it. Whether the glyph is in the
+   copy is a content question, so this styles the pill and leaves the label
+   alone. */
+body:has([data-jr-reskin]) .nb1-nav-cta {
+  background: #d9ff65 !important;
+  color: #000 !important;
+  border-radius: 999px !important;
+  font-family: 'OO Theran', 'Space Mono', ui-monospace, monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 400 !important;
+  white-space: nowrap !important;
+}

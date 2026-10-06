@@ -6,6 +6,9 @@ import MentionMeTag from '@/components/MentionMe/MentionMeTag'
 import { toMentionMeLocale } from '@/components/MentionMe/locale'
 import type { AppLocale } from '@/i18n/config'
 
+import { referralRedesignEnabled } from '@/utilities/referralRedesign'
+import { ReferralWidgetComponentLegacy } from './Component.legacy'
+
 export type ReferralWidgetBlockType = {
   blockType?: 'referralWidget'
   situation?: string | null
@@ -18,7 +21,7 @@ export type ReferralWidgetBlockType = {
 // decide whether to show the placeholder (MentionMeTag itself no-ops without it).
 const PARTNER_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_MENTION_ME_PARTNER_CODE)
 
-export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
+const ReferralWidgetComponentRedesign: React.FC<ReferralWidgetBlockType> = ({
   situation,
   localeOverride,
   showPlaceholder,
@@ -31,98 +34,178 @@ export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = ({
   const showPh = (showPlaceholder ?? true) && !PARTNER_CONFIGURED
 
   return (
-    <section ref={ref} className="rf-hero" data-screen-label="Hero">
+    // `rd-block` is load-bearing, not decoration. rd-tokens.css turns the plain
+    // wrapper RenderBlocks puts around every block into the named `nb1page`
+    // container (`div:not(.rd-block *):has(> .rd-block)`) and supplies the brand
+    // tokens and the reset. Without it `cqi` and every `@container nb1page`
+    // query below resolve against nothing and the section renders at its phone
+    // values on desktop — which is exactly how the `abgrid` bug looked.
+    <section ref={ref} className="rd-block rfw-sec" data-screen-label="Hero">
       <style jsx>{`
-        .rf-hero {
-          padding: clamp(80px, 9vh, 104px) clamp(20px, 4vw, 32px) clamp(40px, 5vw, 60px);
-          background: #fff;
+        /*
+         * The mockup's own page-local token. It is NOT in rd-tokens.css, so it
+         * is declared here with the mockup's expression verbatim rather than
+         * approximated to a hex — color-mix in oklab is what produces the exact
+         * band colour, and an eyedropped hex would drift from the other pages
+         * that will eventually use the same tint.
+         */
+        /*
+         * The VERTICAL padding is on the section and the HORIZONTAL on the pad,
+         * which is a deliberate split, not the mockup's own arrangement.
+         *
+         * rd-tokens.css carries this project's phone rhythm:
+         *   @container nb1page (max-width:560px){ .rd-block:is(section){
+         *     padding-top:44px!important; padding-bottom:44px!important } }
+         * It can only do its job if the section is where the vertical padding
+         * lives. Keep it all on the inner wrapper, as the mockup does, and the
+         * phone gets 44px of section padding ON TOP of a desktop 40/56 — taller
+         * on a small screen than on a large one. Splitting it means every other
+         * redesign section and this one tighten identically on a phone.
+         *
+         * data-d="pad" only ever sets padding-left/right, so the ≥900px step to
+         * 48px gutters still lands on the wrapper.
+         */
+        .rfw-sec {
+          --tint: color-mix(in oklab, var(--nb1-blue-grey) 34%, var(--nb1-cool-grey));
+          background: var(--tint);
+          border-bottom: 1px solid rgba(81, 71, 69, 0.16);
+          padding: 40px 0 56px;
         }
-        /* Contained to the widget's own card width. The Mention Me demo campaign is
-           fixed-size (isResponsive=false), so any width beyond what the live campaign
-           actually renders shows up as white gutters either side. */
-        .rf-embed {
-          position: relative;
-          width: 100%;
+        .rfw-pad {
+          max-width: 1240px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+
+        /*
+         * The card IS the widget frame, in both states. The Mention Me iframe
+         * mounts into this same box, so the radius, the inset hairline and the
+         * 520px floor apply to the live campaign as well as the placeholder —
+         * which is what the mockup shows ("This whole block is the widget").
+         */
+        .rfw-card {
+          /*
+           * 960px, restored. The mockup draws this card at the full 1240px pad
+           * because its placeholder is a paragraph, which will fill whatever it
+           * is given. The live Mention Me campaign will not: it is fixed-size
+           * (isResponsive=false), so every pixel of card beyond what the
+           * campaign renders comes out as white gutter either side of the dark
+           * panel. 960 is the width the block shipped with and the width the
+           * campaign was sized against.
+           */
           max-width: 960px;
           margin: 0 auto;
-          /* overflow:hidden is what actually clips the mounted iframe to the
-             radius — border-radius alone does not clip a replaced element. */
-          border-radius: 20px;
+          display: grid;
+          place-items: center;
+          min-height: 520px;
+          padding: 32px;
+          border-radius: 24px;
+          background: #fff;
+          box-shadow:
+            0 1px 2px rgba(81, 71, 69, 0.08),
+            0 18px 36px -26px rgba(81, 71, 69, 0.45),
+            inset 0 0 0 1.5px rgba(81, 71, 69, 0.18);
+        }
+        /*
+         * The live state drops the padding and stretches.
+         *
+         * Padding: 32px of it would leave the campaign 896px inside a 960px
+         * card — narrower than the 960 it previously had to itself, which for a
+         * fixed-size campaign means it either overflows or is scaled down. The
+         * widget brings its own dark panel right to its own edge, so the inset
+         * is the placeholder's to want, not the campaign's.
+         *
+         * Stretch: place-items:center shrink-wraps the grid item, which is
+         * right for the placeholder note and wrong for the iframe.
+         */
+        .rfw-card.live {
+          justify-items: stretch;
+          padding: 0;
+        }
+        /*
+         * overflow:hidden is what actually clips the mounted iframe to the
+         * radius — border-radius alone does not clip a replaced element. This
+         * is a minimum height, not a maximum, so a campaign taller than 520px
+         * grows the card rather than being cut off by it.
+         */
+        .rfw-card.live {
           overflow: hidden;
         }
-        /* Navy card look is only for the placeholder; the real Mention Me widget
-           brings its own styling. Radius/clipping now come from .rf-embed. */
-        .rf-embed.ph {
-          background: #12314d;
-          box-shadow: 0 44px 88px -54px rgba(18, 49, 77, 0.55);
-        }
-        /* The Mention Me tag mounts its iframe inside #mmWrapper. Let the widget
-           size its own height (do NOT force height:100% — that collapses it). */
-        .rf-embed :global(#mmWrapper) {
+        .rfw-card :global(#mmWrapper) {
           width: 100%;
         }
-        .rf-embed :global(iframe) {
+        /* Flush to the card now that the live state has no padding, so the
+           iframe takes the card's own radius rather than an inset one. */
+        .rfw-card :global(iframe) {
           display: block;
           width: 100%;
           border: 0;
-          border-radius: 20px;
+          border-radius: 24px;
         }
-        .rf-embed-ph {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: clamp(380px, 44vw, 520px);
-          padding: clamp(24px, 3vw, 40px);
-          background: linear-gradient(165deg, #154663 0%, #0e2740 62%, #0a1c2e 100%);
-        }
-        .rf-slot-note {
+
+        .rfw-note {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
+          gap: 12px;
           text-align: center;
-          width: 100%;
-          min-height: clamp(280px, 30vw, 360px);
-          border: 1.5px dashed rgba(255, 255, 255, 0.3);
-          border-radius: 14px;
-          padding: clamp(22px, 3vw, 34px);
-        }
-        .rf-slot-k {
-          font-family: ui-monospace, Menlo, monospace;
-          font-size: 11.5px;
-          font-weight: 600;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: #5bc0d8;
-        }
-        .rf-slot-note p {
-          font-size: 14.5px;
-          line-height: 1.6;
-          color: rgba(255, 255, 255, 0.6);
-          margin-top: 12px;
           max-width: 44ch;
         }
+        .rfw-badge {
+          font-family: var(--nb1-font-tertiary);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          font-size: 12px;
+          padding: 0.45em 0.8em;
+          border-radius: 10px;
+          background: var(--nb1-cool-grey);
+          white-space: nowrap;
+        }
+        .rfw-note p {
+          font-family: var(--nb1-font-secondary);
+          font-size: 16px;
+          line-height: 1.65;
+          color: rgba(81, 71, 69, 0.88);
+          margin: 0;
+        }
+
       `}</style>
 
-      <div className={`rf-embed${showPh ? ' ph' : ''}`} id="referralWidget" data-rv="">
-        {showPh ? (
-          <div className="rf-embed-ph">
-            <div className="rf-slot-note">
-              <span className="rf-slot-k">Mention Me iframe</span>
+      <div className="rfw-pad" data-d="pad">
+        <div className={`rfw-card${showPh ? '' : ' live'}`} id="referralWidget" data-rv="">
+          {showPh ? (
+            <div className="rfw-note">
+              <span className="rfw-badge">Mention Me iframe</span>
               <p>
                 This whole block is the widget. The Mention Me referral iframe mounts here at full
                 width, replacing this placeholder.
               </p>
             </div>
-          </div>
-        ) : (
-          <MentionMeTag
-            variant="referrer"
-            situation={situation || 'landingpage'}
-            locale={mmLocale}
-          />
-        )}
+          ) : (
+            <MentionMeTag
+              variant="referrer"
+              situation={situation || 'landingpage'}
+              locale={mmLocale}
+            />
+          )}
+        </div>
       </div>
     </section>
   )
 }
+
+/*
+ * WHICH DESIGN RENDERS — the only thing in this file that is not the redesign.
+ *
+ * One constant decides, the same way the journal and the kit-instruction pages
+ * decide, and the sibling Component.legacy.tsx holds what was there before.
+ * See src/utilities/referralRedesign.ts for the switch and why it is a constant.
+ *
+ * Read at RENDER TIME, not at module scope. A module-scope `const Chosen = …`
+ * would be evaluated once when the bundle loads, which is the same answer in
+ * practice but makes the branch look like configuration rather than a decision
+ * the component takes — and it is the shape that quietly breaks if the switch
+ * ever becomes anything but a constant.
+ */
+export const ReferralWidgetComponent: React.FC<ReferralWidgetBlockType> = (props) =>
+  referralRedesignEnabled() ? <ReferralWidgetComponentRedesign {...props} /> : <ReferralWidgetComponentLegacy {...props} />
