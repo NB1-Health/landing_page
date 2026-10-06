@@ -117,7 +117,7 @@ function computeTiers(
       monthlyRate: formatPrice(rate, currency, locale),
       saveLabel: formatSavingsLabel(savings, currency, locale),
       isBestValue: p.is_preferred,
-      checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details-v1`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
+      checkoutHref: `${checkoutBasePath ?? `/${locale}/order-details`}?plan=${planKey}&cycle=${p.month === 1 ? 'monthly' : p.month}`,
     }
   })
 }

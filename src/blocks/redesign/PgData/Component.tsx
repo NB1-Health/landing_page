@@ -3,9 +3,12 @@
 import React, { useState } from 'react'
 import RichText from '@/components/RichText'
 import type { RdPgDataBlock as Props } from '@/payload-types'
+import { getDictionary } from '@/i18n/getDictionary'
 
 // GENERATED from manifests/section-06.json + bindings/RdPgData.json by
-// tools/block_component.py — do not hand-edit; regenerate.
+// tools/block_component.py — NO LONGER REGENERABLE WITHOUT LOSS: the mock-up
+// strings below were moved into the locale dictionaries and a regeneration
+// would hardcode all 55 of them back into English.
 //
 // Styles copied verbatim from the mockup; bindings replace content only.
 // Layout and breakpoints come from rd-pg.css — the Our Plans stylesheet, ported
@@ -18,7 +21,23 @@ import type { RdPgDataBlock as Props } from '@/payload-types'
 const mediaUrl = (m: unknown): string | undefined =>
   m && typeof m === 'object' && 'url' in m ? ((m as { url?: string }).url ?? undefined) : undefined
 
-export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panels, reportAvatar, tabs }) => {
+export const RdPgData: React.FC<Props & { locale?: string | null }> = ({ anchorId, cta, heading, intro, panels, reportAvatar, tabs, locale }) => {
+  /*
+   * THE PHONE MOCK-UP IS NOT CMS CONTENT, and it is not English-only any more.
+   *
+   * Every word inside the device, the bacterial-team chart, the four-bar panel
+   * and the reading→ingredient strip used to be a literal in this file, so a
+   * German reader got "Hello, Jane" and "Up from 73.6". Fifty-five strings, all
+   * of them translated in the rebrand sheet, none of them reachable.
+   *
+   * They live in the locale dictionaries rather than in rdPgData's config
+   * because this is a fixed illustration, not copy anyone edits: the numbers
+   * are sample data, the layout depends on them staying roughly this length,
+   * and the five dictionaries already cover the nine locales (ch->de, be->nl,
+   * uk/uae->en). Putting them in the CMS would have meant ~20 new localized
+   * fields, a migration, and a translator filling 55 cells nine times.
+   */
+  const d = getDictionary(locale ?? undefined).pgData
   const [activeTab, setActiveTab] = useState(0)
 
   return (
@@ -439,7 +458,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                 fontFamily: "var(--nb1-font-tertiary)",
                 fontSize: "13px"
               }}>
-                <span>{"9:00"}</span>
+                <span>{d.device.time}</span>
                 <span style={{
                   display: "flex",
                   gap: "5px",
@@ -484,9 +503,9 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     fontSize: "21px",
                     lineHeight: "1.2"
                   }}>
-                    {"Hello, Jane \u2014"}
+                    {d.device.greeting}
                     <br />
-                    {"here is your overall microbiome score"}
+                    {d.device.sub}
                   </div>
                   <div style={{
                     display: "flex",
@@ -500,7 +519,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                       letterSpacing: "0.06em",
                       fontSize: "11px",
                       opacity: "0.6"
-                    }}>{"Excellent"}</span>
+                    }}>{d.device.verdict}</span>
                     <span style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -524,13 +543,13 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         padding: "0.5em 0.7em 0.5em 0.55em",
                         borderRadius: "999px",
                         marginLeft: "-0.35em"
-                      }}>{"11.9 pts"}</span>
+                      }}>{d.device.delta}</span>
                     </span>
                     <span style={{
                       fontFamily: "var(--nb1-font-tertiary)",
                       fontSize: "11px",
                       opacity: "0.5"
-                    }}>{"Up from 73.6"}</span>
+                    }}>{d.device.deltaFrom}</span>
                   </div>
                   <div style={{
                     width: "168px",
@@ -546,7 +565,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                       fontFamily: "var(--nb1-font-primary)",
                       fontSize: "46px",
                       lineHeight: "1"
-                    }}>{"85.5"}</span>
+                    }}>{d.device.score}</span>
                   </div>
                   <div style={{
                     display: "flex",
@@ -566,11 +585,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           letterSpacing: "0.06em",
                           fontSize: "9.5px",
                           opacity: "0.55"
-                        }}>{"Health"}</div>
+                        }}>{d.device.metrics[0].label}</div>
                         <div style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontSize: "18px"
-                        }}>{"18.7"}</div>
+                        }}>{d.device.metrics[0].value}</div>
                       </div>
                       <div style={{
                         position: "relative",
@@ -595,7 +614,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
                         opacity: "0.6"
-                      }}>{"20"}</span>
+                      }}>{d.device.metrics[0].max}</span>
                     </div>
                     <div style={{
                       display: "grid",
@@ -610,11 +629,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           letterSpacing: "0.06em",
                           fontSize: "9.5px",
                           opacity: "0.55"
-                        }}>{"Diversity"}</div>
+                        }}>{d.device.metrics[1].label}</div>
                         <div style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontSize: "18px"
-                        }}>{"14.8"}</div>
+                        }}>{d.device.metrics[1].value}</div>
                       </div>
                       <div style={{
                         position: "relative",
@@ -639,7 +658,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
                         opacity: "0.6"
-                      }}>{"20"}</span>
+                      }}>{d.device.metrics[1].max}</span>
                     </div>
                     <div style={{
                       display: "grid",
@@ -654,11 +673,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           letterSpacing: "0.06em",
                           fontSize: "9.5px",
                           opacity: "0.55"
-                        }}>{"Metabolic"}</div>
+                        }}>{d.device.metrics[2].label}</div>
                         <div style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontSize: "18px"
-                        }}>{"20"}</div>
+                        }}>{d.device.metrics[2].value}</div>
                       </div>
                       <div style={{
                         position: "relative",
@@ -683,7 +702,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
                         opacity: "0.6"
-                      }}>{"20"}</span>
+                      }}>{d.device.metrics[2].max}</span>
                     </div>
                     <div style={{
                       display: "grid",
@@ -698,11 +717,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           letterSpacing: "0.06em",
                           fontSize: "9.5px",
                           opacity: "0.55"
-                        }}>{"Team balance"}</div>
+                        }}>{d.device.metrics[3].label}</div>
                         <div style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontSize: "18px"
-                        }}>{"22"}</div>
+                        }}>{d.device.metrics[3].value}</div>
                       </div>
                       <div style={{
                         position: "relative",
@@ -727,7 +746,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
                         opacity: "0.6"
-                      }}>{"30"}</span>
+                      }}>{d.device.metrics[3].max}</span>
                     </div>
                     <div style={{
                       display: "grid",
@@ -742,11 +761,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           letterSpacing: "0.06em",
                           fontSize: "9.5px",
                           opacity: "0.55"
-                        }}>{"Safety"}</div>
+                        }}>{d.device.metrics[4].label}</div>
                         <div style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontSize: "18px"
-                        }}>{"10"}</div>
+                        }}>{d.device.metrics[4].value}</div>
                       </div>
                       <div style={{
                         position: "relative",
@@ -771,7 +790,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontFamily: "var(--nb1-font-secondary)",
                         fontSize: "14px",
                         opacity: "0.6"
-                      }}>{"10"}</span>
+                      }}>{d.device.metrics[4].max}</span>
                     </div>
                   </div>
                 </div>
@@ -782,9 +801,9 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     lineHeight: "1.2",
                     marginBottom: "8px"
                   }}>
-                    {"What's happening,"}
+                    {d.systems.titleA}
                     <br />
-                    {"today"}
+                    {d.systems.titleB}
                   </div>
                   <div style={{
                     fontFamily: "var(--nb1-font-tertiary)",
@@ -793,7 +812,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     fontSize: "10px",
                     opacity: "0.55",
                     marginBottom: "22px"
-                  }}>{"Four systems, read today"}</div>
+                  }}>{d.systems.subtitle}</div>
                   <div style={{
                     display: "flex",
                     flexDirection: "column",
@@ -806,11 +825,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontSize: "15px",
                         marginBottom: "9px"
                       }}>
-                        <span>{"Gut lining protection"}</span>
+                        <span>{d.systems.bars[0].label}</span>
                         <b style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontWeight: "350"
-                        }}>{"90%"}</b>
+                        }}>{d.systems.bars[0].value}</b>
                       </div>
                       <div style={{
                         position: "relative",
@@ -838,11 +857,11 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontSize: "15px",
                         marginBottom: "9px"
                       }}>
-                        <span>{"Inflammation control"}</span>
+                        <span>{d.systems.bars[1].label}</span>
                         <b style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontWeight: "350"
-                        }}>{"95%"}</b>
+                        }}>{d.systems.bars[1].value}</b>
                       </div>
                       <div style={{
                         position: "relative",
@@ -870,12 +889,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontSize: "15px",
                         marginBottom: "9px"
                       }}>
-                        <span>{"Fibre processing"}</span>
+                        <span>{d.systems.bars[2].label}</span>
                         <b style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontWeight: "350",
                           color: "var(--nb1-orange)"
-                        }}>{"73%"}</b>
+                        }}>{d.systems.bars[2].value}</b>
                       </div>
                       <div style={{
                         position: "relative",
@@ -903,12 +922,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                         fontSize: "15px",
                         marginBottom: "9px"
                       }}>
-                        <span>{"Bifidobacteria"}</span>
+                        <span>{d.systems.bars[3].label}</span>
                         <b style={{
                           fontFamily: "var(--nb1-font-secondary)",
                           fontWeight: "350",
                           color: "var(--nb1-orange)"
-                        }}>{"60%"}</b>
+                        }}>{d.systems.bars[3].value}</b>
                       </div>
                       <div style={{
                         position: "relative",
@@ -937,7 +956,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     fontSize: "21px",
                     lineHeight: "1.2",
                     marginBottom: "8px"
-                  }}>{"Six bacterial teams"}</div>
+                  }}>{d.teams.title}</div>
                   <div style={{
                     fontFamily: "var(--nb1-font-tertiary)",
                     textTransform: "uppercase",
@@ -945,7 +964,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     fontSize: "10px",
                     opacity: "0.55",
                     marginBottom: "22px"
-                  }}>{"Measured against a healthy range"}</div>
+                  }}>{d.teams.subtitle}</div>
                   <div style={{
                     display: "flex",
                     flexDirection: "column",
@@ -958,14 +977,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     }}>
                       <span style={{
                         fontSize: "14px"
-                      }}>{"Butyrate producers"}</span>
+                      }}>{d.teams.rows[0].label}</span>
                       <span style={{
                         fontFamily: "var(--nb1-font-tertiary)",
                         fontSize: "9.5px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         opacity: "0.6"
-                      }}>{"Healthy"}</span>
+                      }}>{d.teams.rows[0].status}</span>
                       <div style={{
                         gridColumn: "1 / -1",
                         position: "relative",
@@ -991,14 +1010,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     }}>
                       <span style={{
                         fontSize: "14px"
-                      }}>{"Bifidobacteria"}</span>
+                      }}>{d.teams.rows[1].label}</span>
                       <span style={{
                         fontFamily: "var(--nb1-font-tertiary)",
                         fontSize: "9.5px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         opacity: "0.6"
-                      }}>{"Healthy"}</span>
+                      }}>{d.teams.rows[1].status}</span>
                       <div style={{
                         gridColumn: "1 / -1",
                         position: "relative",
@@ -1024,14 +1043,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     }}>
                       <span style={{
                         fontSize: "14px"
-                      }}>{"Cross-feeders"}</span>
+                      }}>{d.teams.rows[2].label}</span>
                       <span style={{
                         fontFamily: "var(--nb1-font-tertiary)",
                         fontSize: "9.5px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         opacity: "0.6"
-                      }}>{"Healthy"}</span>
+                      }}>{d.teams.rows[2].status}</span>
                       <div style={{
                         gridColumn: "1 / -1",
                         position: "relative",
@@ -1057,14 +1076,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     }}>
                       <span style={{
                         fontSize: "14px"
-                      }}>{"Fibre degraders"}</span>
+                      }}>{d.teams.rows[3].label}</span>
                       <span style={{
                         fontFamily: "var(--nb1-font-tertiary)",
                         fontSize: "9.5px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         color: "var(--nb1-orange)"
-                      }}>{"Below range"}</span>
+                      }}>{d.teams.rows[3].status}</span>
                       <div style={{
                         gridColumn: "1 / -1",
                         position: "relative",
@@ -1090,14 +1109,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     }}>
                       <span style={{
                         fontSize: "14px"
-                      }}>{"Proteolytic guild"}</span>
+                      }}>{d.teams.rows[4].label}</span>
                       <span style={{
                         fontFamily: "var(--nb1-font-tertiary)",
                         fontSize: "9.5px",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
                         opacity: "0.6"
-                      }}>{"Controlled"}</span>
+                      }}>{d.teams.rows[4].status}</span>
                       <div style={{
                         gridColumn: "1 / -1",
                         position: "relative",
@@ -1125,9 +1144,9 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     lineHeight: "1.2",
                     marginBottom: "8px"
                   }}>
-                    {"From reading"}
+                    {d.trace.titleA}
                     <br />
-                    {"to ingredient"}
+                    {d.trace.titleB}
                   </div>
                   <div style={{
                     fontFamily: "var(--nb1-font-tertiary)",
@@ -1136,7 +1155,7 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                     fontSize: "10px",
                     opacity: "0.55",
                     marginBottom: "14px"
-                  }}>{"Every ingredient traces to your data"}</div>
+                  }}>{d.trace.subtitle}</div>
                   <div style={{
                     display: "flex",
                     flexDirection: "column"
@@ -1161,12 +1180,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           borderRadius: "50%",
                           background: "var(--nb1-orange)"
                         }} />
-                        {"Team balance low"}
+                        {d.trace.rows[0].reading}
                       </div>
                       <div style={{
                         fontSize: "15px",
                         marginTop: "4px"
-                      }}>{"Fibre-fermenting strains"}</div>
+                      }}>{d.trace.rows[0].ingredient}</div>
                     </div>
                     <div style={{
                       padding: "15px 0px",
@@ -1188,12 +1207,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           borderRadius: "50%",
                           background: "var(--nb1-orange)"
                         }} />
-                        {"Bifidobacteria 60%"}
+                        {d.trace.rows[1].reading}
                       </div>
                       <div style={{
                         fontSize: "15px",
                         marginTop: "4px"
-                      }}>{"Targeted probiotic dose"}</div>
+                      }}>{d.trace.rows[1].ingredient}</div>
                     </div>
                     <div style={{
                       padding: "15px 0px",
@@ -1215,12 +1234,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           borderRadius: "50%",
                           background: "var(--nb1-soft-pink)"
                         }} />
-                        {"Sleep 4 / 10"}
+                        {d.trace.rows[2].reading}
                       </div>
                       <div style={{
                         fontSize: "15px",
                         marginTop: "4px"
-                      }}>{"Evening magnesium, Restore"}</div>
+                      }}>{d.trace.rows[2].ingredient}</div>
                     </div>
                     <div style={{
                       padding: "15px 0px",
@@ -1243,12 +1262,12 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
                           borderRadius: "50%",
                           background: "var(--nb1-blue)"
                         }} />
-                        {"Fibre fermentation 95%"}
+                        {d.trace.rows[3].reading}
                       </div>
                       <div style={{
                         fontSize: "15px",
                         marginTop: "4px"
-                      }}>{"Maintained, no change"}</div>
+                      }}>{d.trace.rows[3].ingredient}</div>
                     </div>
                   </div>
                 </div>
@@ -1270,14 +1289,14 @@ export const RdPgData: React.FC<Props> = ({ anchorId, cta, heading, intro, panel
               }}>
                 <span style={{
                   opacity: "0.5"
-                }}>{"Home"}</span>
-                <span>{"Health"}</span>
+                }}>{d.device.tabs.home}</span>
+                <span>{d.device.tabs.health}</span>
                 <span style={{
                   opacity: "0.5"
-                }}>{"Guide"}</span>
+                }}>{d.device.tabs.guide}</span>
                 <span style={{
                   opacity: "0.5"
-                }}>{"More"}</span>
+                }}>{d.device.tabs.more}</span>
               </div>
             </div>
           </div>
