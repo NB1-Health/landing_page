@@ -428,6 +428,7 @@ export default async function Page({ params }: Args) {
       {!hub.header.hide && (
         <JournalHeader
           locale={locale}
+          id={hub.header.id}
           localizedDocument={pillarSwitcherPaths}
         />
       )}

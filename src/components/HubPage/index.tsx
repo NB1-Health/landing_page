@@ -113,6 +113,7 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
       {!hub.header.hide && (
         <JournalHeader
           locale={locale}
+          id={hub.header.id}
           // Which locales this hub actually exists in. Without it the
           // language switcher offers all eight and sends a reader to a 404.
           localizedDocument={hubLocalizedDocument(hub.slugsByLocale)}

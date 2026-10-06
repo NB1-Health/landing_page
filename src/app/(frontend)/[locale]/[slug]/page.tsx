@@ -36,7 +36,6 @@ import { HubPage } from '@/components/HubPage'
 import { buildHubMetadata } from '@/utilities/hubMetadata'
 import { getCachedHubBySlug } from '@/utilities/hubQueries'
 import { JournalReskin } from '@/components/JournalReskin'
-import { JournalFooter } from '@/components/JournalFooter'
 import { HelpReskin } from '@/components/HelpReskin'
 
 const PAGE_RENDER_POPULATE = {
@@ -310,11 +309,25 @@ export default async function Page({ params: paramsPromise }: Args) {
         </PriceTokensProvider>
       </article>
 
+      {/*
+        THE FALLBACK IS THE OLD FOOTER, and it has to stay that way.
+
+        A page opts INTO the redesign by having `rdFooter` set. A page with no
+        `rdFooter` has not been redesigned, and must come out of here wearing
+        the navy chrome it always had — the same rule the header above follows.
+
+        This briefly read `<JournalFooter>`, which resolves the redesign footer
+        unconditionally. That is how privacy-policy, imprint and every other
+        page without an explicit `rdFooter` ended up dark brown, with the
+        redesign's wordmark, under an old navy header. The header and the
+        footer disagreeing is the tell: whatever stands here must mirror line
+        277.
+      */}
       {!hideFooter &&
         (rdFooterId ? (
           <RdFooterServer locale={locale} id={rdFooterId} />
         ) : (
-          <JournalFooter locale={locale} id={footerId} />
+          <Footer locale={locale} id={footerId} />
         ))}
     </>
   )

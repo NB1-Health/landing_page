@@ -65,6 +65,7 @@ export default async function Page({ params: paramsPromise }: Args) {
       {!copy.header.hide && (
         <JournalHeader
           locale={localeParam}
+          id={copy.header.id}
           localizedDocument={journalIndexLocalizedDocument()}
         />
       )}
