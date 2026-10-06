@@ -395,4 +395,130 @@ export const nl = {
     relatedResearch: 'Gerelateerd onderzoek',
     relatedReading: 'Verder lezen',
   },
+  /*
+   * The Our Plans "your biology, made visible" illustration — the phone screen,
+   * the four-bar panel, the bacterial-team chart and the reading->ingredient
+   * strip. Sample data, not editable copy, which is why it is here rather than
+   * in rdPgData's CMS config.
+   *
+   * Values come from the rebrand sheet ("Our Plans", rows 156-244) verbatim.
+   * The English is the component's own wording, which differs from the sheet's
+   * in casing and punctuation because CSS does the uppercasing.
+   */
+  pgData: {
+    device: {
+      time: '9:00',
+      greeting: 'Hallo, Jane,',
+      sub: 'hier is je totale microbioomscore',
+      verdict: 'Uitstekend',
+      delta: '11,9 ptn',
+      deltaFrom: 'Omhoog vanaf 73,6',
+      score: '85,5',
+      metrics: [
+        {
+          label: 'Gezondheid',
+          value: '18,7',
+          max: '20',
+        },
+        {
+          label: 'Diversiteit',
+          value: '14,8',
+          max: '20',
+        },
+        {
+          label: 'Metabool',
+          value: '20',
+          max: '20',
+        },
+        {
+          label: 'Balans',
+          value: '22',
+          max: '30',
+        },
+        {
+          label: 'Veiligheid',
+          value: '10',
+          max: '10',
+        },
+      ],
+      tabs: {
+        home: 'Home',
+        guide: 'Gids',
+        more: '+ meer',
+        health: 'Gezondheid',
+      },
+    },
+    systems: {
+      titleA: 'Wat er gebeurt',
+      titleB: 'Vandaag',
+      subtitle: 'Vier systemen, vandaag gelezen',
+      bars: [
+        {
+          label: 'Bescherming van de darmwand',
+          value: '90%',
+        },
+        {
+          label: 'Ontstekingscontrole',
+          value: '95%',
+        },
+        {
+          label: 'Vezelverwerking',
+          value: '73%',
+        },
+        {
+          label: 'Bifidobacteriën',
+          value: '60%',
+        },
+      ],
+    },
+    teams: {
+      title: 'Zes bacterieteams',
+      subtitle: 'Gemeten tegen een gezond bereik',
+      rows: [
+        {
+          label: 'Butyraatproducenten',
+          status: 'Gezond',
+        },
+        {
+          label: 'Bifidobacteriën',
+          status: 'Gezond',
+        },
+        {
+          label: 'Cross-feeders',
+          status: 'Gezond',
+        },
+        {
+          label: 'Vezelafbrekers',
+          status: 'Onder de referentiewaarde',
+        },
+        {
+          label: 'Proteolytisch gilde',
+          status: 'Onder controle',
+        },
+      ],
+    },
+    trace: {
+      titleA: 'Van meting',
+      titleB: 'naar ingrediënt',
+      subtitle: 'Elk ingrediënt herleid tot jouw data',
+      rows: [
+        {
+          reading: 'Teambalans laag',
+          ingredient: 'Vezelfermenterende stammen',
+        },
+        {
+          reading: 'Bifidobacteriën 60%',
+          ingredient: 'Gerichte probioticadosis',
+        },
+        {
+          reading: 'Slaap 4 / 10',
+          ingredient: 'Magnesium ’s avonds, Restore',
+        },
+        {
+          reading: 'Vezelfermentatie 95%',
+          ingredient: 'Behouden, geen aanpassing nodig',
+        },
+      ],
+    },
+  },
 }

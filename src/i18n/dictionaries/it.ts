@@ -424,4 +424,130 @@ export const it = {
     relatedResearch: 'Ricerche correlate',
     relatedReading: 'Letture correlate',
   },
+  /*
+   * The Our Plans "your biology, made visible" illustration — the phone screen,
+   * the four-bar panel, the bacterial-team chart and the reading->ingredient
+   * strip. Sample data, not editable copy, which is why it is here rather than
+   * in rdPgData's CMS config.
+   *
+   * Values come from the rebrand sheet ("Our Plans", rows 156-244) verbatim.
+   * The English is the component's own wording, which differs from the sheet's
+   * in casing and punctuation because CSS does the uppercasing.
+   */
+  pgData: {
+    device: {
+      time: '9:00',
+      greeting: 'Ciao, Jane,',
+      sub: 'ecco il tuo punteggio generale del microbioma',
+      verdict: 'Eccellente',
+      delta: '11,9 pti',
+      deltaFrom: 'In aumento da 73,6',
+      score: '85,5',
+      metrics: [
+        {
+          label: 'Salute',
+          value: '18,7',
+          max: '20',
+        },
+        {
+          label: 'Diversità',
+          value: '14,8',
+          max: '20',
+        },
+        {
+          label: 'Metabolico',
+          value: '20',
+          max: '20',
+        },
+        {
+          label: 'Equilibrio del microbiota',
+          value: '22',
+          max: '30',
+        },
+        {
+          label: 'Sicurezza',
+          value: '10',
+          max: '10',
+        },
+      ],
+      tabs: {
+        home: 'Home',
+        guide: 'Guida',
+        more: 'e altro',
+        health: 'Salute',
+      },
+    },
+    systems: {
+      titleA: 'Cosa succede',
+      titleB: 'Oggi',
+      subtitle: 'Quattro sistemi, letti oggi',
+      bars: [
+        {
+          label: 'Protezione del rivestimento intestinale',
+          value: '90%',
+        },
+        {
+          label: 'Controllo dell’infiammazione',
+          value: '95%',
+        },
+        {
+          label: 'Elaborazione delle fibre',
+          value: '73%',
+        },
+        {
+          label: 'Bifidobatteri',
+          value: '60%',
+        },
+      ],
+    },
+    teams: {
+      title: 'Sei gruppi batterici',
+      subtitle: 'Misurato rispetto a un intervallo sano',
+      rows: [
+        {
+          label: 'Produttori di butirrato',
+          status: 'Sano',
+        },
+        {
+          label: 'Bifidobatteri',
+          status: 'Sano',
+        },
+        {
+          label: 'Cross-feeder',
+          status: 'Sano',
+        },
+        {
+          label: 'Degradatori di fibre',
+          status: 'Sotto l’intervallo di riferimento',
+        },
+        {
+          label: 'Gilda proteolitica',
+          status: 'Controllata',
+        },
+      ],
+    },
+    trace: {
+      titleA: 'Dall\'analisi',
+      titleB: 'all\'ingrediente',
+      subtitle: 'Ogni ingrediente risale ai tuoi dati',
+      rows: [
+        {
+          reading: 'Equilibrio basso',
+          ingredient: 'Ceppi che fermentano le fibre',
+        },
+        {
+          reading: 'Bifidobatteri 60%',
+          ingredient: 'Dose probiotica mirata',
+        },
+        {
+          reading: 'Sonno 4 / 10',
+          ingredient: 'Magnesio serale, Restore',
+        },
+        {
+          reading: 'Fermentazione 95%',
+          ingredient: 'Mantenere, nessuna modifica necessaria',
+        },
+      ],
+    },
+  },
 }

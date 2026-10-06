@@ -397,4 +397,130 @@ export const de = {
     relatedResearch: 'Verwandte Forschung',
     relatedReading: 'Weiterführende Artikel',
   },
+  /*
+   * The Our Plans "your biology, made visible" illustration — the phone screen,
+   * the four-bar panel, the bacterial-team chart and the reading->ingredient
+   * strip. Sample data, not editable copy, which is why it is here rather than
+   * in rdPgData's CMS config.
+   *
+   * Values come from the rebrand sheet ("Our Plans", rows 156-244) verbatim.
+   * The English is the component's own wording, which differs from the sheet's
+   * in casing and punctuation because CSS does the uppercasing.
+   */
+  pgData: {
+    device: {
+      time: '9:00',
+      greeting: 'Hallo, Jane,',
+      sub: 'hier ist dein gesamter Mikrobiom-Score',
+      verdict: 'Ausgezeichnet',
+      delta: '11,9 Pkt.',
+      deltaFrom: 'Gestiegen von 73,6',
+      score: '85,5',
+      metrics: [
+        {
+          label: 'Gesundheit',
+          value: '18,7',
+          max: '20',
+        },
+        {
+          label: 'Vielfalt',
+          value: '14,8',
+          max: '20',
+        },
+        {
+          label: 'Stoffwechsel',
+          value: '20',
+          max: '20',
+        },
+        {
+          label: 'Balance der funktionellen Gruppen',
+          value: '22',
+          max: '30',
+        },
+        {
+          label: 'Sicherheit',
+          value: '10',
+          max: '10',
+        },
+      ],
+      tabs: {
+        home: 'Start',
+        guide: 'Anleitung',
+        more: '+ mehr',
+        health: 'Gesundheit',
+      },
+    },
+    systems: {
+      titleA: 'Was passiert',
+      titleB: 'Heute',
+      subtitle: 'Vier Funktionen, heute analysiert',
+      bars: [
+        {
+          label: 'Schutz der Darmschleimhaut',
+          value: '90%',
+        },
+        {
+          label: 'Entzündungsbalance',
+          value: '95%',
+        },
+        {
+          label: 'Ballaststoffverarbeitung',
+          value: '73%',
+        },
+        {
+          label: 'Bifidobakterien',
+          value: '60%',
+        },
+      ],
+    },
+    teams: {
+      title: 'Sechs Bakterien-Teams',
+      subtitle: 'Gemessen an einem gesunden Referenzbereich',
+      rows: [
+        {
+          label: 'Butyrat-Produzenten',
+          status: 'Gesund',
+        },
+        {
+          label: 'Bifidobakterien',
+          status: 'Gesund',
+        },
+        {
+          label: 'Mitversorger (Cross-Feeder)',
+          status: 'Gesund',
+        },
+        {
+          label: 'Ballaststoffabbauer',
+          status: 'Unter dem Referenzbereich',
+        },
+        {
+          label: 'Proteolytische Gilde',
+          status: 'Kontrolliert',
+        },
+      ],
+    },
+    trace: {
+      titleA: 'Von der Analyse',
+      titleB: 'zur Zutat',
+      subtitle: 'Jede Zutat lässt sich auf deine Daten zurückführen',
+      rows: [
+        {
+          reading: 'Team-Balance niedrig',
+          ingredient: 'Ballaststofffermentierende Stämme',
+        },
+        {
+          reading: 'Bifidobakterien 60 %',
+          ingredient: 'Gezielt dosiertes Probiotikum',
+        },
+        {
+          reading: 'Schlaf 4 / 10',
+          ingredient: 'Abendliches Magnesium, Restore',
+        },
+        {
+          reading: 'Ballaststofffermentation 95 %',
+          ingredient: 'Erhalten, keine Anpassung erforderlich',
+        },
+      ],
+    },
+  },
 }

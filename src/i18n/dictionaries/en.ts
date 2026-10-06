@@ -399,4 +399,130 @@ export const en = {
     relatedResearch: 'Related research',
     relatedReading: 'Related reading',
   },
+  /*
+   * The Our Plans "your biology, made visible" illustration — the phone screen,
+   * the four-bar panel, the bacterial-team chart and the reading->ingredient
+   * strip. Sample data, not editable copy, which is why it is here rather than
+   * in rdPgData's CMS config.
+   *
+   * Values come from the rebrand sheet ("Our Plans", rows 156-244) verbatim.
+   * The English is the component's own wording, which differs from the sheet's
+   * in casing and punctuation because CSS does the uppercasing.
+   */
+  pgData: {
+    device: {
+      time: '9:00',
+      greeting: 'Hello, Jane —',
+      sub: 'here is your overall microbiome score',
+      verdict: 'Excellent',
+      delta: '11.9 pts',
+      deltaFrom: 'Up from 73.6',
+      score: '85.5',
+      metrics: [
+        {
+          label: 'Health',
+          value: '18.7',
+          max: '20',
+        },
+        {
+          label: 'Diversity',
+          value: '14.8',
+          max: '20',
+        },
+        {
+          label: 'Metabolic',
+          value: '20',
+          max: '20',
+        },
+        {
+          label: 'Team balance',
+          value: '22',
+          max: '30',
+        },
+        {
+          label: 'Safety',
+          value: '10',
+          max: '10',
+        },
+      ],
+      tabs: {
+        home: 'Home',
+        guide: 'Guide',
+        more: 'More',
+        health: 'Health',
+      },
+    },
+    systems: {
+      titleA: 'What\'s happening,',
+      titleB: 'today',
+      subtitle: 'Four systems, read today',
+      bars: [
+        {
+          label: 'Gut lining protection',
+          value: '90%',
+        },
+        {
+          label: 'Inflammation control',
+          value: '95%',
+        },
+        {
+          label: 'Fibre processing',
+          value: '73%',
+        },
+        {
+          label: 'Bifidobacteria',
+          value: '60%',
+        },
+      ],
+    },
+    teams: {
+      title: 'Six bacterial teams',
+      subtitle: 'Measured against a healthy range',
+      rows: [
+        {
+          label: 'Butyrate producers',
+          status: 'Healthy',
+        },
+        {
+          label: 'Bifidobacteria',
+          status: 'Healthy',
+        },
+        {
+          label: 'Cross-feeders',
+          status: 'Healthy',
+        },
+        {
+          label: 'Fibre degraders',
+          status: 'Below range',
+        },
+        {
+          label: 'Proteolytic guild',
+          status: 'Controlled',
+        },
+      ],
+    },
+    trace: {
+      titleA: 'From reading',
+      titleB: 'to ingredient',
+      subtitle: 'Every ingredient traces to your data',
+      rows: [
+        {
+          reading: 'Team balance low',
+          ingredient: 'Fibre-fermenting strains',
+        },
+        {
+          reading: 'Bifidobacteria 60%',
+          ingredient: 'Targeted probiotic dose',
+        },
+        {
+          reading: 'Sleep 4 / 10',
+          ingredient: 'Evening magnesium, Restore',
+        },
+        {
+          reading: 'Fibre fermentation 95%',
+          ingredient: 'Maintained, no change',
+        },
+      ],
+    },
+  },
 }
