@@ -92,7 +92,7 @@ export const CycleSelector: Block = {
       admin: {
         hidden: true,
         condition: (_, siblingData) => siblingData?.showMonthlyOption,
-        placeholder: '/order-details?plan=core&cycle=monthly',
+        placeholder: '/order-details-v1?plan=core&cycle=monthly',
       },
     },
     {

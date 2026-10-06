@@ -9,7 +9,7 @@ export async function RenderBlocks(props: {
   pageSlugs?: Partial<Record<AppLocale, string>> | null
 }) {
   const checkoutBasePath = props.blocks.some((block) => block.blockType === 'cycleSelector')
-    ? await getLocalizedPagePath('order-details', props.locale)
+    ? await getLocalizedPagePath('order-details-v1', props.locale)
     : undefined
   return <RenderBlocksClient {...props} checkoutBasePath={checkoutBasePath} />
 }
