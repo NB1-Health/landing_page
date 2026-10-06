@@ -12,7 +12,7 @@ import RichText from '@/components/RichText'
 
 import type { Post } from '@/payload-types'
 
-import { Header } from '@/Header/Component'
+import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
 import { Footer } from '@/Footer/Component'
 import { JournalArticleHero } from '@/heros/JournalArticleHero'
 import { ArticleToc } from '@/components/ArticleToc'
@@ -151,9 +151,14 @@ export default async function PostPage({ params: paramsPromise }: Args) {
 
   return (
     <>
+      {/* The redesign header, as the rest of the site wears it. No `id`:
+          RdHeaderServer without one resolves the rd-header marked `isDefault`,
+          the same document every redesign page gets. The old per-page
+          `header.id` is dropped on purpose — it names a document in the
+          `headers` collection, which is not what this renders any more. The
+          `hide` toggle still works. */}
       {!post.hideHeader && (
-        <Header
-          id={headerId}
+        <RdHeaderServer
           locale={locale}
           localizedDocument={{ route: 'post', slugs: journalSwitcherSlugs(publishedSlugs) }}
         />

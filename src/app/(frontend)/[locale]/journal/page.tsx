@@ -10,7 +10,7 @@ import React from 'react'
 
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { Footer } from '@/Footer/Component'
-import { Header } from '@/Header/Component'
+import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
 import { HubStrip } from '@/components/HubStrip'
 import { JournalGrid } from '@/components/JournalGrid'
 import { Pagination } from '@/components/Pagination'
@@ -78,9 +78,14 @@ export default async function Page({ params }: { params?: Promise<{ locale?: str
 
   return (
     <>
+      {/* The redesign header, as the rest of the site wears it. No `id`:
+          RdHeaderServer without one resolves the rd-header marked `isDefault`,
+          the same document every redesign page gets. The old per-page
+          `header.id` is dropped on purpose — it names a document in the
+          `headers` collection, which is not what this renders any more. The
+          `hide` toggle still works. */}
       {!copy.header.hide && (
-        <Header
-          id={copy.header.id}
+        <RdHeaderServer
           locale={locale}
           localizedDocument={journalIndexLocalizedDocument()}
         />

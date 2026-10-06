@@ -658,26 +658,39 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
       }}>
         <RdChkExpress ready={expressReady} express={express} />
       </div>
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        margin: "18px 0px 14px",
-        fontSize: "14px",
-        color: "var(--muted)"
-      }}>
-        <span style={{
-          flex: "1 1 0%",
-          height: "1px",
-          background: "var(--nb1-hairline)"
-        }} />
-        {pay?.orLabel}
-        <span style={{
-          flex: "1 1 0%",
-          height: "1px",
-          background: "var(--nb1-hairline)"
-        }} />
-      </div>
+      {/* "or pay another way" — ONLY when a wallet actually rendered.
+          The shipped form gates its own divider on the same flag
+          (`{expressReady && <div className="nb1-pay-divider">}`); this block
+          drew it unconditionally, so a browser with no Apple or Google Pay got
+          an "or" with nothing above it. `expressReady` is false until the
+          element reports `availablePaymentMethods`, so this is also the
+          server-render state — no divider flashes in before the wallet does.
+
+          Note the row above stays MOUNTED and merely hidden when not ready:
+          unmounting it would mean `onReady` never fires and the flag could
+          never turn true. */}
+      {expressReady ? (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          margin: "18px 0px 14px",
+          fontSize: "14px",
+          color: "var(--muted)"
+        }}>
+          <span style={{
+            flex: "1 1 0%",
+            height: "1px",
+            background: "var(--nb1-hairline)"
+          }} />
+          {pay?.orLabel}
+          <span style={{
+            flex: "1 1 0%",
+            height: "1px",
+            background: "var(--nb1-hairline)"
+          }} />
+        </div>
+      ) : null}
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -700,15 +713,15 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
                 }}>
                   {m.label}
                 </span>
-                <span style={{
-                  fontFamily: "var(--nb1-font-tertiary)",
-                  fontSize: "11.5px",
-                  letterSpacing: "0.06em",
-                  color: "var(--muted)",
-                  whiteSpace: "nowrap"
-                }}>
-                  {m.meta}
-                </span>
+                {/* The `meta` caption — "VISA · MC · AMEX", "KLARNA", "PAYPAL",
+                    "BACS" — is no longer drawn. Andra's call: the card row
+                    already carries the scheme marks, and the rest restated the
+                    row's own label in a second typeface.
+
+                    THE FIELD IS LEFT IN PLACE, in the block config and in the
+                    seeds. Removing it would be a schema change and a migration
+                    for something that is now simply not rendered, and the stored
+                    values are still there if the caption is ever wanted back. */}
               </button>
               {(payMethod === m.key && m.key === 'card') ? (
                 <div style={{
@@ -1883,7 +1896,7 @@ const RdChkCardField: React.FC<{
 }
 
 /**
- * The express wallet row — Apple Pay, Google Pay, Link, PayPal.
+ * The express wallet row — Apple Pay, Google Pay.
  *
  * Stripe's ExpressCheckoutElement draws every button it has, inside an iframe
  * it controls, so the mockup's two hand-drawn buttons are a picture of what
@@ -1891,9 +1904,39 @@ const RdChkCardField: React.FC<{
  * around it, and whether it appears at all: an element with no wallet to offer
  * renders nothing, and the mockup's divider below would then sit above an empty
  * box. `expressReady` is the shipped form's own flag for exactly that.
+ *
+ * ITS OWN `<Elements>`, AND THAT IS THE WHOLE POINT OF THIS ROW.
+ *
+ * `ExpressLinkRow` here is byte-identical to the shipped form's — diffed, not
+ * assumed. What was NOT carried across was the Elements group it lives in. The
+ * shipped form mounts it inside a dedicated DEFERRED group; this block had it
+ * inheriting the page-wide `<Elements stripe={stripePromise}>` at the bottom of
+ * this file, which carries no options at all. Two things follow from that:
+ *
+ *   WHICH WALLETS APPEAR. With no `mode`, `currency` or `paymentMethodTypes`,
+ *   the element offers whatever the browser can do — which is why Apple Pay
+ *   turned up on an iPhone here and not on the old checkout. Restricting the
+ *   group to `['card', 'link']`, as the shipped form does, is what decides it.
+ *
+ *   WHETHER CONFIRM CAN EVEN RUN. `onConfirm` calls `elements.submit()` and
+ *   `stripe.confirmSetup({ elements })`, and both REQUIRE a deferred group.
+ *   Without `mode: 'setup'` the submit throws, so the sheet could open and the
+ *   confirm behind it could not complete.
+ *
+ * `appearance` is deliberately NOT copied from the shipped form: its values are
+ * the old navy theme, and these are the redesign's buttons. Appearance does not
+ * decide which methods appear, which is what this change is about.
  */
 const RdChkExpress: React.FC<ChkPartProps> = ({ ready, express }) => (
   <div style={{ display: ready === false ? 'none' : 'block' }}>
+    <Elements
+      stripe={stripePromise}
+      options={{
+        mode: 'setup',
+        currency: String(express?.currency || 'eur').toLowerCase(),
+        paymentMethodTypes: ['card', 'link'],
+      }}
+    >
     <ExpressLinkRow
       onReadyChange={express.onReadyChange}
       validate={express.validate}
@@ -1902,6 +1945,7 @@ const RdChkExpress: React.FC<ChkPartProps> = ({ ready, express }) => (
       finalize={express.finalize}
       onError={express.onError}
     />
+    </Elements>
   </div>
 )
 
@@ -4385,6 +4429,10 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // card inputs because the wallet supplies the payment method, and the billing
   // address is still checked.
   const express = {
+    // Feeds the deferred Elements group in RdChkExpress. The shipped form
+    // passes the visitor's selected currency the same way, so the wallet sheet
+    // quotes what the summary quotes.
+    currency,
     onReadyChange: setExpressReady,
     validate: () => validateBeforePay(false),
     beginSubmit: () => {

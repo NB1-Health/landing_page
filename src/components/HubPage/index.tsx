@@ -8,7 +8,7 @@ import { getPayload } from 'payload'
 
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { DISCLAIMER_KEYS, getCachedDisclaimer } from '@/utilities/libraryQueries'
-import { Footer } from '@/Footer/Component'
+import { JournalFooter } from '@/components/JournalFooter'
 import { JournalCard } from '@/components/JournalCard'
 import { LexiconIndexPage } from '@/components/LexiconIndexPage'
 import {
@@ -18,7 +18,7 @@ import {
 } from '@/utilities/lexiconQueries'
 import { getPillarCardsForHub } from '@/utilities/pillarQueries'
 import { getHubDocumentCards } from '@/utilities/hubDocumentQueries'
-import { Header } from '@/Header/Component'
+import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
 import { hubLocalizedDocument } from '@/Header/localizedDocument'
 import { JsonLd } from '@/components/JsonLd'
 import { getDictionary } from '@/i18n/getDictionary'
@@ -110,9 +110,14 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
 
   return (
     <>
+      {/* The redesign header, as the rest of the site wears it. No `id`:
+          RdHeaderServer without one resolves the rd-header marked `isDefault`,
+          the same document every redesign page gets. The old per-page
+          `header.id` is dropped on purpose — it names a document in the
+          `headers` collection, which is not what this renders any more. The
+          `hide` toggle still works. */}
       {!hub.header.hide && (
-        <Header
-          id={hub.header.id}
+        <RdHeaderServer
           locale={locale}
           // Which locales this hub actually exists in. Without it the
           // language switcher offers all eight and sends a reader to a 404.
@@ -153,7 +158,7 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
           )}
         </div>
       </div>
-      {!hub.footer.hide && <Footer id={hub.footer.id} locale={locale} />}
+      {!hub.footer.hide && <JournalFooter id={hub.footer.id} locale={locale} />}
     </>
   )
 }
