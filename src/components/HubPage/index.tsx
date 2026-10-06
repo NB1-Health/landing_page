@@ -18,7 +18,7 @@ import {
 } from '@/utilities/lexiconQueries'
 import { getPillarCardsForHub } from '@/utilities/pillarQueries'
 import { getHubDocumentCards } from '@/utilities/hubDocumentQueries'
-import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
+import { JournalHeader } from '@/components/JournalHeader'
 import { hubLocalizedDocument } from '@/Header/localizedDocument'
 import { JsonLd } from '@/components/JsonLd'
 import { getDictionary } from '@/i18n/getDictionary'
@@ -110,14 +110,8 @@ export async function HubPage({ hub, locale }: { hub: Hub; locale: AppLocale }) 
 
   return (
     <>
-      {/* The redesign header, as the rest of the site wears it. No `id`:
-          RdHeaderServer without one resolves the rd-header marked `isDefault`,
-          the same document every redesign page gets. The old per-page
-          `header.id` is dropped on purpose — it names a document in the
-          `headers` collection, which is not what this renders any more. The
-          `hide` toggle still works. */}
       {!hub.header.hide && (
-        <RdHeaderServer
+        <JournalHeader
           locale={locale}
           // Which locales this hub actually exists in. Without it the
           // language switcher offers all eight and sends a reader to a 404.

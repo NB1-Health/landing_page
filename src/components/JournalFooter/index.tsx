@@ -1,58 +1,43 @@
 import React from 'react'
 
 import { RdFooterServer } from '@/components/RdChrome/FooterServer'
-import { getCachedGlobal } from '@/utilities/getGlobals'
-import { isAppLocale } from '@/i18n/config'
 
 /**
- * The Journal's footer: the redesign one, always.
+ * Which redesign footer the Journal wears, in one place.
  *
  * ONE PLACE decides, for the whole branch: the index, the paginated pages,
  * every article, and the hub, pillar, term and research pages. They all render
  * this instead of <Footer>, with the same props they passed before.
  *
- * HARD SET, 2026-10-06. This used to fall back to the site <Footer> whenever
- * `Site Settings -> Journal index page -> Redesign footer` was empty — and it
- * was empty in every environment, which is why the journal still wore the old
- * footer after the new header went on. "Empty means keep the old one" was a
- * sensible default while the redesign was optional; now that the journal is on
- * the redesign chrome it only produced a new header above an old footer.
+ * BY NAME, NOT BY ID — the sibling of components/JournalHeader, for the same
+ * reason: staging numbers this document 2 and production numbers it 1, so a
+ * hardcoded id is silently wrong in one of them. `isDefault` is no help either;
+ * on staging it is on "Redesign footer", which is not the one in use.
  *
- * THE PICKER STILL WORKS, and still means something: it chooses WHICH redesign
- * footer the branch wears. Empty now means the one marked `isDefault`, which is
- * what RdFooterServer resolves when given no id — the same document every other
- * redesign page gets. What is gone is the route back to the site footer.
+ * If the name does not resolve nothing renders, deliberately, and getRdChrome
+ * logs what it searched for. So this name has to exist in every environment.
  *
- * To put the site footer back, this component is the one place to change.
+ * WHAT THIS REPLACED. This used to read
+ * `Site Settings -> Journal index page -> Redesign footer` and fall back to the
+ * site <Footer> when empty — and it was empty everywhere, which is why the
+ * journal kept the old footer after the new header went on. That picker is no
+ * longer consulted. The field stays in the Site Settings config: removing it is
+ * a schema change and a migration for something now simply unread, and it is
+ * the obvious home if this should ever become an editorial choice again.
  *
  * `id` — the per-page and per-article site-footer choice — is no longer used,
- * and is kept in the signature only so the nine call sites do not all have to
- * change. The redesign footer uses its own document by design: the picker names
- * one footer for the branch, which is the point of it.
+ * and stays in the signature only so the nine call sites need not all change.
  */
-export async function JournalFooter({
+const JOURNAL_RD_FOOTER_NAME = 'Footer - main'
+
+export function JournalFooter({
   locale,
   id: _id,
 }: {
   locale: string
   id?: string | null
 }) {
-  const appLocale = isAppLocale(locale) ? locale : 'en'
-  const settings = await getCachedGlobal('site-settings', 0, appLocale)()
-  const picked = (settings as { journal?: { rdFooter?: unknown } } | null)?.journal?.rdFooter
-
-  // Depth 0, so a set relationship is an id rather than a document. Either is
-  // accepted: a later depth change here should not silently fall back to the
-  // default, which looks like "the setting did nothing".
-  const rdId =
-    typeof picked === 'number' || typeof picked === 'string'
-      ? picked
-      : picked && typeof picked === 'object' && 'id' in picked
-        ? (picked as { id: number | string }).id
-        : null
-
-  // No id -> RdFooterServer resolves the rd-footer marked `isDefault`.
-  return <RdFooterServer id={rdId !== '' ? rdId : null} locale={appLocale} />
+  return <RdFooterServer name={JOURNAL_RD_FOOTER_NAME} locale={locale} />
 }
 
 export default JournalFooter

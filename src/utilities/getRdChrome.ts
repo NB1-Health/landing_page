@@ -148,6 +148,67 @@ const fetchOne = async (
   return result.docs[0] ? await localizeUrls(result.docs[0], loc) : null
 }
 
+/**
+ * The same document, found by NAME rather than by id.
+ *
+ * WHY THIS EXISTS. The journal has to render the same chrome the rest of the
+ * site wears, and the ids for that chrome are NOT the same between
+ * environments — staging numbers them 2/2 and production 1/1. A hardcoded id
+ * is therefore wrong in one environment whichever number is picked, and wrong
+ * SILENTLY, because any rd-header renders perfectly well.
+ *
+ * Nor can it lean on `isDefault`: measured on staging, that flag sits on an
+ * rd-header no page uses, whose `transparent` and `lightText` are still null.
+ *
+ * The names are the stable identifier across environments, so they are what
+ * this looks up. `"Header - solid"` also says what it is at the call site,
+ * where `2` said nothing.
+ *
+ * NO FALLBACK, DELIBERATELY. A name that does not resolve returns null and the
+ * chrome does not render — loudly wrong rather than quietly wrong. Falling back
+ * to `isDefault` would put the WRONG header on the page and look fine, which is
+ * the failure this whole function exists to avoid. The console.error names the
+ * collection and the string searched so the cause is one log line away.
+ */
+const fetchByName = async (
+  collection: 'rd-headers' | 'rd-footers',
+  name: string,
+  locale?: string,
+): Promise<unknown> => {
+  const payload = await getPayload({ config: configPromise })
+  const loc = safeLocale(locale)
+  const result = await payload.find({
+    collection,
+    where: { name: { equals: name } },
+    limit: 1,
+    depth: 2,
+    locale: loc,
+  })
+  const doc = result.docs[0]
+  if (!doc) {
+    console.error(
+      `[rd-chrome] no ${collection} named ${JSON.stringify(name)} in this environment — ` +
+        `nothing will render. Check the document names in the admin.`,
+    )
+    return null
+  }
+  return await localizeUrls(doc, loc)
+}
+
+export const getCachedRdHeaderByName = (name: string, locale?: string) =>
+  unstable_cache(
+    async () => (await fetchByName('rd-headers', name, locale)) as RdHeader | null,
+    ['rd-header-by-name', name, locale ?? 'en'],
+    { tags: [`rd_header_name_${name}`] },
+  )
+
+export const getCachedRdFooterByName = (name: string, locale?: string) =>
+  unstable_cache(
+    async () => (await fetchByName('rd-footers', name, locale)) as RdFooter | null,
+    ['rd-footer-by-name', name, locale ?? 'en'],
+    { tags: [`rd_footer_name_${name}`] },
+  )
+
 export const getCachedRdHeader = (id: string | number | null | undefined, locale?: string) =>
   unstable_cache(
     async () => (await fetchOne('rd-headers', id, locale)) as RdHeader | null,

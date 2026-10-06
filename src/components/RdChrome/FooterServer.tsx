@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { getCachedRdFooter } from '@/utilities/getRdChrome'
+import { getCachedRdFooter, getCachedRdFooterByName } from '@/utilities/getRdChrome'
 import { getCachedHubLinks } from '@/utilities/hubQueries'
 import { isJournalLocale } from '@/utilities/journalEnabled'
 import { isAppLocale } from '@/i18n/config'
@@ -88,11 +88,15 @@ async function hubColumn(locale: string): Promise<Link[]> {
 export async function RdFooterServer({
   locale,
   id,
+  name,
 }: {
   locale: string
   id?: string | number | null
+  /** Find the footer by its admin NAME instead of its id. Preferred where
+   *  the same document has different ids per environment. */
+  name?: string | null
 }) {
-  const data = await getCachedRdFooter(id, locale)()
+  const data = name ? await getCachedRdFooterByName(name, locale)() : await getCachedRdFooter(id, locale)()
   if (!data) return null
 
   const pick = (data as { contentColumn?: string | null }).contentColumn

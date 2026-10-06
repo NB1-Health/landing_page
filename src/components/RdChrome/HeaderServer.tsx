@@ -1,7 +1,7 @@
 import React from 'react'
 import { connection } from 'next/server'
 
-import { getCachedRdHeader } from '@/utilities/getRdChrome'
+import { getCachedRdHeader, getCachedRdHeaderByName } from '@/utilities/getRdChrome'
 import { resolveCurrency } from '@/utilities/currency'
 import type { LocalizedDocument } from '@/Header/localizedDocument'
 import RdHeader from './Header'
@@ -45,14 +45,18 @@ const SCOPE: React.CSSProperties = { display: 'contents' }
 export async function RdHeaderServer({
   locale,
   id,
+  name,
   localizedDocument,
 }: {
   locale: string
   id?: string | number | null
+  /** Find the header by its admin NAME instead of its id. Preferred where the
+   *  same document has different ids per environment — see getRdChrome. */
+  name?: string | null
   localizedDocument?: LocalizedDocument | null
 }) {
   await connection()
-  const data = await getCachedRdHeader(id, locale)()
+  const data = name ? await getCachedRdHeaderByName(name, locale)() : await getCachedRdHeader(id, locale)()
   if (!data) return null
 
   return (

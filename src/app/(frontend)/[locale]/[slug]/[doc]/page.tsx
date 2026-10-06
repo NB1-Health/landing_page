@@ -13,7 +13,7 @@ import { AuthorBox } from '@/components/AuthorBox'
 import { Byline } from '@/components/Byline'
 import { Breadcrumb } from '@/components/Breadcrumb'
 import { Footer } from '@/Footer/Component'
-import { RdHeaderServer } from '@/components/RdChrome/HeaderServer'
+import { JournalHeader } from '@/components/JournalHeader'
 import { JsonLd } from '@/components/JsonLd'
 import { JournalArticleCta } from '@/components/JournalArticleCta'
 import RichText from '@/components/RichText'
@@ -425,14 +425,8 @@ export default async function Page({ params }: Args) {
 
   return (
     <>
-      {/* The redesign header, as the rest of the site wears it. No `id`:
-          RdHeaderServer without one resolves the rd-header marked `isDefault`,
-          the same document every redesign page gets. The old per-page
-          `header.id` is dropped on purpose — it names a document in the
-          `headers` collection, which is not what this renders any more. The
-          `hide` toggle still works. */}
       {!hub.header.hide && (
-        <RdHeaderServer
+        <JournalHeader
           locale={locale}
           localizedDocument={pillarSwitcherPaths}
         />
