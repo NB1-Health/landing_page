@@ -154,6 +154,7 @@ export default async function PostPage({ params: paramsPromise }: Args) {
       {!post.hideHeader && (
         <JournalHeader
           locale={locale}
+          id={headerId}
           localizedDocument={{ route: 'post', slugs: journalSwitcherSlugs(publishedSlugs) }}
         />
       )}
