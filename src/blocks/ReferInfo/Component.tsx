@@ -7,6 +7,9 @@ import RichText from '@/components/RichText'
 import { useReveal } from '@/hooks/useReveal'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
 
+import { referralRedesignEnabled } from '@/utilities/referralRedesign'
+import { ReferInfoComponentLegacy } from './Component.legacy'
+
 type MediaLike = { url?: string | null; alt?: string | null } | string | null | undefined
 
 type Step = {
@@ -36,7 +39,21 @@ function imgAlt(img?: MediaLike): string {
   return img.alt ?? ''
 }
 
-export const ReferInfoComponent: React.FC<ReferInfoBlockType> = ({
+/*
+ * The step marker is a four-layer radial gradient, and only ONE of the four
+ * layers changes between steps: the cool-grey core grows 3% → 25% → 47% → 69%
+ * (its fade-out edge tracking 38 points above it). That 22-point stride is the
+ * progress read — step 4's core nearly fills the orange disc.
+ *
+ * Reading the stride off the mockup rather than hard-coding four gradients means
+ * a fifth step an editor adds keeps progressing instead of repeating step four.
+ * Past 100% the stops clamp, which degrades to "full", the correct end state.
+ */
+const CORE_START = 3
+const CORE_STRIDE = 22
+const CORE_FADE = 38
+
+const ReferInfoComponentRedesign: React.FC<ReferInfoBlockType> = ({
   heading,
   media,
   steps,
@@ -49,196 +66,285 @@ export const ReferInfoComponent: React.FC<ReferInfoBlockType> = ({
   const mediaSrc = imgUrl(media)
 
   return (
-    <section ref={ref} className="rf-sec" data-screen-label="How it works">
+    // See the note in ReferralWidget: `rd-block` is what creates the `nb1page`
+    // container and brings in the tokens. Every `cqi` below depends on it.
+    <section ref={ref} className="rd-block rfi-sec" data-screen-label="How it works">
       <style jsx>{`
-        .rf-sec {
-          padding: clamp(56px, 7vw, 92px) 0;
-          background: #fff;
+        /*
+         * Vertical padding on the SECTION, horizontal on the wrappers — see the
+         * long note in ReferralWidget. The two bands split the mockup's rhythm:
+         * 88 above, 40+24 between them, 96 below. The outer 88/96 move up to the
+         * section so the phone rule in rd-tokens.css can replace them; the 64px
+         * gap between the bands is interior and stays where it is.
+         */
+        .rfi-sec {
+          background: var(--nb1-cool-grey);
+          padding: 88px 0 96px;
         }
-        .rfw {
-          max-width: 1120px;
+        .rfi-pad {
+          max-width: 1240px;
           margin: 0 auto;
-          padding: 0 clamp(20px, 4vw, 32px);
+          padding: 0 20px 40px;
+        }
+        .rfi-pad2 {
+          max-width: 1240px;
+          margin: 0 auto;
+          padding: 24px 20px 0;
         }
 
-        .rf-two {
+        /*
+         * auto-fit + minmax(min(100%, 420px), 1fr) is the mockup's own
+         * one-liner: two columns while each can hold 420px, one below that. It
+         * needs no breakpoint, so there is no hook here to forget to port.
+         */
+        .rfi-two {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: clamp(30px, 5vw, 64px);
-          align-items: center;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+          gap: 48px 64px;
+          align-items: start;
         }
-        .rf-media :global(img) {
-          display: block;
-          width: 100%;
-          height: clamp(300px, 36vw, 440px);
-          border-radius: 20px;
-          object-fit: cover;
-          box-shadow: 0 40px 76px -50px rgba(18, 49, 77, 0.46);
-        }
-        @media (max-width: 820px) {
-          .rf-two {
-            grid-template-columns: 1fr;
-            gap: 26px;
-          }
-          .rf-media :global(img) {
-            height: clamp(230px, 58vw, 320px);
-          }
+        .rfi-col {
+          display: flex;
+          flex-direction: column;
+          gap: 28px;
         }
 
-        .rf-h2 :global(h2) {
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: clamp(26px, 3.4vw, 40px);
-          line-height: 1.08;
-          letter-spacing: -0.026em;
-          color: #12314d;
+        .rfi-h2 :global(h2) {
+          font-family: var(--nb1-font-primary);
+          font-weight: 400;
+          font-size: clamp(30px, 4.4cqi, 46px);
+          line-height: 1.05;
+          letter-spacing: -0.02em;
           margin: 0;
-          max-width: 22ch;
           text-wrap: balance;
+          max-width: 14ch;
         }
-        .rf-h2 :global(h2 em) {
+        /* The old design tinted <em> teal. The new one has no accent colour, so
+           italic is all that survives — the tag still means emphasis. */
+        .rfi-h2 :global(h2 em) {
           font-style: italic;
-          color: #0a8fb0;
+          color: inherit;
         }
 
-        .rf-steps {
-          margin-top: 26px;
-          counter-reset: rs;
-          display: grid;
-          gap: 0;
-        }
-        .rf-step {
-          display: grid;
-          grid-template-columns: 38px 1fr;
-          gap: 16px;
-          padding: 20px 0;
-          border-top: 1px solid rgba(18, 49, 77, 0.1);
-          align-items: start;
-        }
-        .rf-step:first-child {
-          border-top: none;
-          padding-top: 0;
-        }
-        .rf-step .n {
-          counter-increment: rs;
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          border: 1.5px solid rgba(10, 143, 176, 0.34);
+        .rfi-steps {
           display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: 15px;
-          color: #0a8fb0;
-          flex: none;
+          flex-direction: column;
         }
-        .rf-step .n::before {
-          content: counter(rs);
-        }
-        .rf-step h3 {
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
-          font-weight: 600;
-          font-size: 17.5px;
-          letter-spacing: -0.012em;
-          color: #12314d;
-          margin: 5px 0 0;
-        }
-        .rf-step .body :global(p) {
-          font-size: 14.5px;
-          line-height: 1.6;
-          color: rgba(18, 49, 77, 0.7);
-          margin: 7px 0 0;
-          max-width: 46ch;
-        }
-        .rf-step .body :global(b),
-        .rf-step .body :global(strong) {
-          color: #12314d;
-          font-weight: 600;
-        }
-
-        .rf-elig {
+        .rfi-step {
           display: grid;
-          grid-template-columns: auto 1fr;
+          grid-template-columns: 40px minmax(0, 1fr);
           gap: 18px;
-          align-items: start;
-          border: 1.5px solid rgba(10, 143, 176, 0.28);
-          background: rgba(10, 143, 176, 0.08);
-          border-radius: 16px;
-          padding: clamp(20px, 2.4vw, 26px);
-          margin-top: clamp(26px, 3vw, 34px);
+          padding: 20px 0;
+          border-top: 1px solid rgba(81, 71, 69, 0.16);
         }
-        .rf-elig .ic {
-          width: 34px;
-          height: 34px;
-          border-radius: 9px;
-          background: #fff;
-          color: #0a8fb0;
+        .rfi-mark {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          flex: none;
+          gap: 8px;
         }
-        .rf-elig h3 {
-          font-family: 'Instrument Sans', 'Inter', sans-serif;
+        .rfi-orb {
+          position: relative;
+          display: block;
+          width: 40px;
+          height: 40px;
+        }
+        /*
+         * Four stacked discs, painted back to front by the browser as listed:
+         * the blue hairline ring, then the cool-grey progress core, then the
+         * orange disc, then the dark-brown field. --c0/--c1 are the only values
+         * that differ per step and arrive as inline custom properties.
+         */
+        .rfi-orb::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background:
+            radial-gradient(circle closest-side, transparent 0% 95%, var(--nb1-blue) 95% 100%),
+            radial-gradient(
+              circle closest-side,
+              var(--nb1-cool-grey) 0% var(--c0),
+              transparent var(--c1)
+            ),
+            radial-gradient(circle closest-side, var(--nb1-orange) 0% 57%, transparent 95%),
+            radial-gradient(circle closest-side, var(--nb1-dark-brown) 0% 95%, transparent 95%);
+        }
+        .rfi-num {
+          font-family: var(--nb1-font-tertiary);
+          font-size: 12px;
+          color: var(--nb1-dark-brown);
+        }
+
+        .rfi-body {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .rfi-body h3 {
+          font-family: var(--nb1-font-primary);
+          font-weight: 400;
+          font-size: clamp(21px, 2.4cqi, 24px);
+          line-height: 1.15;
+          margin: 0;
+        }
+        /*
+         * The inherited half of the type style sits on the WRAPPER, not on the
+         * <p>. RichText emits whatever the editor built — a paragraph today, a
+         * list or a bare run tomorrow — and anything that is not a <p> would
+         * otherwise fall back to the block defaults at full opacity. The <p>
+         * rule below is then only the things that cannot be inherited.
+         */
+        .rfi-body .txt {
+          font-family: var(--nb1-font-secondary);
+          font-size: 16px;
+          line-height: 1.65;
+          color: rgba(81, 71, 69, 0.88);
+        }
+        .rfi-body .txt :global(p) {
+          margin: 0;
+          max-width: 52ch;
+        }
+        .rfi-body .txt :global(b),
+        .rfi-body .txt :global(strong) {
           font-weight: 600;
-          font-size: 17.5px;
-          color: #12314d;
-          margin: 3px 0 0;
+          color: var(--nb1-dark-brown);
         }
-        .rf-elig ul {
+
+        /*
+         * The image is a background, not an <img>, because the mockup crops it
+         * at 58% horizontally inside a fixed 4/5 box. object-position on an
+         * <img> would do the same, but the alt text then has to live on the
+         * element; role="img" + aria-label keeps the announcement identical
+         * while the crop stays a paint concern.
+         */
+        .rfi-media {
+          border-radius: 24px;
+          overflow: hidden;
+          aspect-ratio: 4 / 5;
+          background-color: var(--nb1-blue-grey);
+          background-position: 58% center;
+          background-size: cover;
+          background-repeat: no-repeat;
+          box-shadow:
+            0 2px 4px rgba(81, 71, 69, 0.1),
+            0 30px 60px -30px rgba(81, 71, 69, 0.55);
+        }
+
+        .rfi-elig {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+          gap: 20px 48px;
+          padding: 32px 30px 20px;
+          border-radius: 24px;
+          background: #fff;
+          box-shadow:
+            0 1px 2px rgba(81, 71, 69, 0.08),
+            0 18px 36px -26px rgba(81, 71, 69, 0.45);
+        }
+        .rfi-elig h3 {
+          font-family: var(--nb1-font-primary);
+          font-weight: 400;
+          font-size: clamp(26px, 3cqi, 32px);
+          line-height: 1.1;
+          margin: 0;
+          max-width: 14ch;
+        }
+        .rfi-elig ul {
           list-style: none;
-          margin: 12px 0 0;
+          margin: 0;
           padding: 0;
+        }
+        .rfi-elig li {
           display: grid;
-          gap: 9px;
+          grid-template-columns: 28px minmax(0, 1fr);
+          gap: 14px;
+          align-items: start;
+          padding: 14px 0;
+          border-top: 1px solid rgba(81, 71, 69, 0.12);
         }
-        .rf-elig li {
+        .rfi-tick {
           display: grid;
-          grid-template-columns: 18px 1fr;
-          gap: 11px;
-          font-size: 14.5px;
-          line-height: 1.55;
-          color: rgba(18, 49, 77, 0.7);
+          place-items: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          color: var(--nb1-dark-brown);
+          font-size: 13px;
+          line-height: 1;
         }
-        .rf-elig li .txt :global(b),
-        .rf-elig li .txt :global(strong) {
-          color: #12314d;
-          font-weight: 600;
+        /* Included reads as a filled lime disc; excluded as an empty outline —
+           the shape carries the meaning, so it survives a colour-blind read. */
+        .rfi-tick.on {
+          background: var(--nb1-lime);
+          box-shadow: none;
         }
-        .rf-elig li .txt :global(p) {
+        .rfi-tick.off {
+          background: transparent;
+          box-shadow: inset 0 0 0 1.5px rgba(81, 71, 69, 0.5);
+        }
+        /* Same split as the steps: inherited properties on the wrapper span,
+           which is also where the mockup puts them. */
+        .rfi-elig li .txt {
+          font-family: var(--nb1-font-secondary);
+          font-size: 16px;
+          line-height: 1.65;
+          color: rgba(81, 71, 69, 0.88);
+        }
+        /* The row is a grid, so the text cell must not open a block of its own
+           or the tick and the first line stop sharing a baseline. */
+        .rfi-elig li .txt :global(p) {
           margin: 0;
           display: inline;
         }
-        .rf-elig li .m {
-          font-weight: 700;
-          color: #0a8fb0;
+        .rfi-elig li .txt :global(b),
+        .rfi-elig li .txt :global(strong) {
+          font-weight: 600;
+          color: var(--nb1-dark-brown);
         }
-        .rf-elig li .x {
-          font-weight: 700;
-          color: #c4453c;
-        }
+
       `}</style>
 
-      <div className="rfw">
-        <div className="rf-two">
-          <div data-rv="">
+      <div className="rfi-pad" data-d="pad">
+        {/*
+          NO data-m="stack" here, deliberately. The mockup's markup carries that
+          hook and the mockup's own stylesheet never defines it — but this
+          project's rd-tokens.css does:
+            @container nb1page (max-width:560px){
+              .rd-block [data-m="stack"]{padding-left:16px!important;...} }
+          Copying the attribute across therefore imports 16px of side padding
+          the design does not have, measured as a 32px-narrow content column on
+          a phone. The two-column collapse this hook is named for is already
+          handled by the auto-fit grid below, so the attribute buys nothing.
+        */}
+        <div className="rfi-two">
+          <div className="rfi-col" data-rv="">
             {heading && (
-              <div className="rf-h2">
+              <div className="rfi-h2">
                 <RichText data={heading} enableGutter={false} enableProse={false} />
               </div>
             )}
 
             {steps && steps.length > 0 && (
-              <div className="rf-steps">
+              <div className="rfi-steps">
                 {steps.map((s, i) => (
-                  <div className="rf-step" key={i}>
-                    <span className="n" />
-                    <div>
+                  <div className="rfi-step" key={i}>
+                    <div className="rfi-mark">
+                      <span
+                        className="rfi-orb"
+                        style={
+                          {
+                            '--c0': `${CORE_START + CORE_STRIDE * i}%`,
+                            '--c1': `${CORE_START + CORE_STRIDE * i + CORE_FADE}%`,
+                          } as React.CSSProperties
+                        }
+                      />
+                      <span className="rfi-num">{String(i + 1).padStart(2, '0')}</span>
+                    </div>
+                    <div className="rfi-body">
                       <h3>{s.title}</h3>
                       {s.body && (
-                        <div className="body">
+                        <div className="txt">
                           <RichText data={s.body} enableGutter={false} enableProse={false} />
                         </div>
                       )}
@@ -250,52 +356,60 @@ export const ReferInfoComponent: React.FC<ReferInfoBlockType> = ({
           </div>
 
           {mediaSrc && (
-            <div className="rf-media" data-rv="">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={mediaSrc} alt={imgAlt(media)} loading="lazy" />
-            </div>
+            <div
+              className="rfi-media"
+              data-rv=""
+              // role="img" with an empty label announces an unnamed image, which
+              // is worse than nothing; a decorative panel should be skipped.
+              {...(imgAlt(media)
+                ? { role: 'img', 'aria-label': imgAlt(media) }
+                : { role: 'presentation' })}
+              style={{ backgroundImage: `url(${JSON.stringify(mediaSrc)})` }}
+            />
           )}
         </div>
-
-        {eligibility && eligibility.length > 0 && (
-          <div className="rf-elig" data-rv="">
-            <span className="ic" aria-hidden="true">
-              <svg
-                width="19"
-                height="19"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
-              </svg>
-            </span>
-            <div>
-              {eligibilityHeading && <h3>{eligibilityHeading}</h3>}
-              <ul>
-                {eligibility.map((item, i) => {
-                  const excluded = item.type === 'exclude'
-                  return (
-                    <li key={i}>
-                      <span className={excluded ? 'x' : 'm'} aria-hidden="true">
-                        {excluded ? '✕' : '✓'}
-                      </span>
-                      {item.text && (
-                        <span className="txt">
-                          <RichText data={item.text} enableGutter={false} enableProse={false} />
-                        </span>
-                      )}
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          </div>
-        )}
       </div>
+
+      {eligibility && eligibility.length > 0 && (
+        <div className="rfi-pad2" data-d="pad">
+          <div className="rfi-elig" data-rv="">
+            {eligibilityHeading && <h3>{eligibilityHeading}</h3>}
+            <ul>
+              {eligibility.map((item, i) => {
+                const excluded = item.type === 'exclude'
+                return (
+                  <li key={i}>
+                    <span className={`rfi-tick ${excluded ? 'off' : 'on'}`} aria-hidden="true">
+                      {excluded ? '✕' : '✓'}
+                    </span>
+                    {item.text && (
+                      <span className="txt">
+                        <RichText data={item.text} enableGutter={false} enableProse={false} />
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
+
+/*
+ * WHICH DESIGN RENDERS — the only thing in this file that is not the redesign.
+ *
+ * One constant decides, the same way the journal and the kit-instruction pages
+ * decide, and the sibling Component.legacy.tsx holds what was there before.
+ * See src/utilities/referralRedesign.ts for the switch and why it is a constant.
+ *
+ * Read at RENDER TIME, not at module scope. A module-scope `const Chosen = …`
+ * would be evaluated once when the bundle loads, which is the same answer in
+ * practice but makes the branch look like configuration rather than a decision
+ * the component takes — and it is the shape that quietly breaks if the switch
+ * ever becomes anything but a constant.
+ */
+export const ReferInfoComponent: React.FC<ReferInfoBlockType> = (props) =>
+  referralRedesignEnabled() ? <ReferInfoComponentRedesign {...props} /> : <ReferInfoComponentLegacy {...props} />

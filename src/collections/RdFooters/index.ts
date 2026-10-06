@@ -8,12 +8,21 @@ import type { CollectionConfig } from 'payload'
  * design has no use for. Field names echo it where they overlap — logo, tagline,
  * legalLinks, copyright, disclaimer — so the vocabulary is familiar.
  *
- * THE SIGN-UP FORM IS NOT WIRED. The markup is reproduced and its submit is
- * prevented, so nothing is silently swallowed. The repo already has the
- * integration to use: `footers.form` is a relationship to a Payload Form Builder
- * form, labelled "Klaviyo Form (Payload submission)". The same relationship
- * belongs here once the wiring is done — it is on the punch list, and until then
- * the box deliberately collects nothing.
+ * THE SIGN-UP FORM IS WIRED, per locale, and off until it is configured.
+ *
+ * It does NOT use the hosted Klaviyo embed the old site footer uses. That embed
+ * brings its own input and button and would have replaced the designed field,
+ * so this posts to Klaviyo's client subscriptions endpoint from our own submit
+ * handler instead and keeps the markup. See components/RdChrome/Footer.tsx.
+ *
+ * The consequence is that `klaviyoListId` is a LIST id, not a form id. The old
+ * footer's `TPTv44` / `SadZpb` are form ids and will not work here. It is
+ * localized, so the nine locales are no longer sharing two lists because of
+ * where the ids happened to live.
+ *
+ * Empty list id -> the form is disabled and says so. That is the default, so a
+ * footer nobody has configured behaves like the old unwired one rather than
+ * failing in front of a visitor.
  *
  * The three link columns are three separate arrays rather than one array of
  * columns. The mockup gives them different lengths and the headings are fixed
@@ -137,6 +146,75 @@ export const RdFooters: CollectionConfig = {
       label: "Sign-up note",
       defaultValue: "Occasional notes on the science and the product. No spam.",
     },
+
+    /*
+     * ─── what the sign-up box actually does ──────────────────────────────
+     *
+     * The field above are copy. These three are the wiring, and the order
+     * matters: without `klaviyoListId` the form stays the no-op it has been
+     * since this collection shipped, which is the safe default — a footer
+     * nobody has configured collects nothing rather than erroring at someone.
+     */
+    {
+      name: 'klaviyoListId',
+      type: 'text',
+      localized: true,
+      label: "Klaviyo list ID",
+      admin: {
+        description:
+          "The LIST id from Klaviyo (Lists & Segments -> the list -> Settings), not a form id. "
+          + "Localized, because the old footer ran two Klaviyo forms across nine locales and that "
+          + "was a limit of where the ids lived, not a decision. Leave a locale empty and its "
+          + "footer collects nothing, visibly: the button is disabled and the note says so.",
+      },
+    },
+    {
+      name: 'form',
+      label: 'Klaviyo Form (Payload submission)',
+      type: 'relationship',
+      relationTo: 'forms',
+      admin: {
+        description:
+          "Optional, and NOT what subscribes anyone — Klaviyo does that. This logs a copy of each "
+          + "address into Payload and, if the selected form's confirmation type is Redirect, sends "
+          + "people to its URL afterwards. Same field and same meaning as the old site footer, so "
+          + "the two can point at one form and keep a single submissions list.",
+      },
+    },
+    {
+      name: 'signupSending',
+      type: 'text',
+      localized: true,
+      label: "Sign-up — sending",
+      admin: {
+        description: "Replaces the note while the request is in flight.",
+      },
+      defaultValue: "Signing you up…",
+    },
+    {
+      name: 'signupSuccess',
+      type: 'text',
+      localized: true,
+      label: "Sign-up — success",
+      admin: {
+        description:
+          "Replaces the note once Klaviyo has accepted the address. If the list is set to double "
+          + "opt-in, this is the moment to say a confirmation email is coming — Klaviyo accepts the "
+          + "request either way, so the wording is the only thing that tells people which it was.",
+      },
+      defaultValue: "You're on the list. Check your inbox to confirm.",
+    },
+    {
+      name: 'signupError',
+      type: 'text',
+      localized: true,
+      label: "Sign-up — error",
+      admin: {
+        description: "Replaces the note when the request fails. The address stays in the field.",
+      },
+      defaultValue: "That didn't go through. Please try again.",
+    },
+
     {
       name: 'columnOneTitle',
       type: 'text',

@@ -1431,6 +1431,26 @@ export interface RdFooter {
    */
   signupButtonLabel?: string | null;
   signupNote?: string | null;
+  /**
+   * The LIST id from Klaviyo (Lists & Segments -> the list -> Settings), not a form id. Localized, because the old footer ran two Klaviyo forms across nine locales and that was a limit of where the ids lived, not a decision. Leave a locale empty and its footer collects nothing, visibly: the button is disabled and the note says so.
+   */
+  klaviyoListId?: string | null;
+  /**
+   * Optional, and NOT what subscribes anyone — Klaviyo does that. This logs a copy of each address into Payload and, if the selected form's confirmation type is Redirect, sends people to its URL afterwards. Same field and same meaning as the old site footer, so the two can point at one form and keep a single submissions list.
+   */
+  form?: (number | null) | Form;
+  /**
+   * Replaces the note while the request is in flight.
+   */
+  signupSending?: string | null;
+  /**
+   * Replaces the note once Klaviyo has accepted the address. If the list is set to double opt-in, this is the moment to say a confirmation email is coming — Klaviyo accepts the request either way, so the wording is the only thing that tells people which it was.
+   */
+  signupSuccess?: string | null;
+  /**
+   * Replaces the note when the request fails. The address stays in the field.
+   */
+  signupError?: string | null;
   columnOneTitle?: string | null;
   /**
    * First footer column.
@@ -19540,6 +19560,11 @@ export interface RdFootersSelect<T extends boolean = true> {
   signupInputLabel?: T;
   signupButtonLabel?: T;
   signupNote?: T;
+  klaviyoListId?: T;
+  form?: T;
+  signupSending?: T;
+  signupSuccess?: T;
+  signupError?: T;
   columnOneTitle?: T;
   columnOneLinks?:
     | T

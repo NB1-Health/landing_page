@@ -230,6 +230,9 @@ const PlansCompareGrid: React.FC<{
       justifyContent: "center"
     }} data-m="cmpcta">
       <a href={plansPath(cta?.coreUrl, locale)} style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "1.1em",
         fontFamily: "var(--nb1-font-tertiary)",
         textTransform: "uppercase",
         letterSpacing: "0.08em",
@@ -240,7 +243,13 @@ const PlansCompareGrid: React.FC<{
         borderRadius: "999px",
         whiteSpace: "nowrap"
       }}>
-        {cta?.coreLabel}
+        {/* Same arrow asymmetry as the card above; the label here was already
+            bound correctly, so this is the arrow alone. */}
+        <span>{cta?.coreLabel}</span>
+        <span style={{
+          fontSize: "1.05em",
+          lineHeight: "1"
+        }}>{'\u2197'}</span>
       </a>
     </div>
     <div style={{
@@ -398,8 +407,26 @@ export const RdPlans: React.FC<Props & { locale?: string | null }> = (props) => 
               </li>
             ))}
           </ul>
+          {/*
+            TWO FIXES HERE, both Core-only.
+
+            1. The label was the literal "Start with Core". `core.cta.label` is
+               a localized field, it is filled in all nine locales, and it was
+               never read — so every non-English page printed English. It went
+               unnoticed because the hardcoded string is character-for-character
+               what the English field says.
+
+            2. The arrow. Advanced renders <span>label</span><span>↗</span>;
+               this rendered bare text, so no arrow and no gap to put one in.
+               The box picks up inline-flex and the same 1.1em gap Advanced
+               uses, so the two buttons now differ only in their skin.
+          */}
           <a style={{
             marginTop: "24px",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "1.1em",
             textAlign: "center",
             fontFamily: "var(--nb1-font-tertiary)",
             textTransform: "uppercase",
@@ -408,7 +435,13 @@ export const RdPlans: React.FC<Props & { locale?: string | null }> = (props) => 
             border: "1.5px solid var(--nb1-dark-brown)",
             padding: "1.05em",
             borderRadius: "999px"
-          }} href={plansPath(core?.cta?.url, locale)}>{"Start with Core"}</a>
+          }} href={plansPath(core?.cta?.url, locale)}>
+            <span>{core?.cta?.label}</span>
+            <span style={{
+              fontSize: "1.05em",
+              lineHeight: "1"
+            }}>{"\u2197"}</span>
+          </a>
           <p style={{
             fontFamily: "var(--nb1-font-secondary)",
             fontSize: "12.5px",

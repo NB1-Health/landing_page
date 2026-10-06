@@ -6,7 +6,7 @@
  * visual system or the one they shipped with. Nothing else knows about it.
  *
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  TO PUT THE OLD DESIGN BACK: change `true` to `false` below, and deploy. │
+ * │  CURRENTLY OFF. To put the new design back: change `false` to `true`.   │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * Off means the <link> is never rendered, the six help blocks are untouched,
@@ -28,7 +28,7 @@
  * `body:has([data-help-article])` so that a third help page added later picks
  * it up and no other page can, whatever the route decides to load.
  */
-export const HELP_RESKIN: boolean = true
+export const HELP_RESKIN: boolean = false
 
 export function helpReskinEnabled(): boolean {
   return HELP_RESKIN
