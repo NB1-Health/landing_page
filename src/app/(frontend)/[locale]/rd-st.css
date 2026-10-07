@@ -58,8 +58,24 @@
  * has 48, and a 60px heading where it has 62. Only the hooks this block's
  * markup actually carries are kept; the rest belong to the nav, the footer
  * and the pages this block does not render. */
+/* 112px of hero top padding on mobile, where the mockup draws 48.
+ *
+ * `.rd-header` carries `margin-bottom: -64px` so a TRANSPARENT header can sit
+ * over the block beneath it. This page's header is solid (`data-over="0"`) and
+ * the pull applies anyway, so the section starts 64px higher than its own box
+ * claims: measured on stg at a 402px container, the header's bottom edge is at
+ * 73 and the h1's top at 9 + 48 = 57. The first line of
+ * "The hard part is what we leave out." was 16px underneath it.
+ *
+ * 48 + 64 restores exactly the 48px of air the design asks for. The same
+ * compensation is already on PgHero (22 -> 86) for the same reason.
+ *
+ * THE REAL FIX IS UPSTREAM: the -64px should not apply when data-over="0".
+ * That is one rule in rd-tokens.css and it would let both pages drop their
+ * compensation — but every solid-header page that has already been nudged
+ * would then gain 64px, so it wants its own pass rather than a quiet edit. */
 @container nb1page (max-width: 599px) {
-  .rd-st [data-m="stdhero"], .rd-st-rules [data-m="stdhero"], .rd-st-source [data-m="stdhero"], .rd-st-factory [data-m="stdhero"], .rd-st-clean [data-m="stdhero"], .rd-st-board [data-m="stdhero"], .rd-st-proof [data-m="stdhero"], .rd-st-plans [data-m="stdhero"], .rd-st[data-m="stdhero"], .rd-st-rules[data-m="stdhero"], .rd-st-source[data-m="stdhero"], .rd-st-factory[data-m="stdhero"], .rd-st-clean[data-m="stdhero"], .rd-st-board[data-m="stdhero"], .rd-st-proof[data-m="stdhero"], .rd-st-plans[data-m="stdhero"] { padding: 48px 20px 40px !important; }
+  .rd-st [data-m="stdhero"], .rd-st-rules [data-m="stdhero"], .rd-st-source [data-m="stdhero"], .rd-st-factory [data-m="stdhero"], .rd-st-clean [data-m="stdhero"], .rd-st-board [data-m="stdhero"], .rd-st-proof [data-m="stdhero"], .rd-st-plans [data-m="stdhero"], .rd-st[data-m="stdhero"], .rd-st-rules[data-m="stdhero"], .rd-st-source[data-m="stdhero"], .rd-st-factory[data-m="stdhero"], .rd-st-clean[data-m="stdhero"], .rd-st-board[data-m="stdhero"], .rd-st-proof[data-m="stdhero"], .rd-st-plans[data-m="stdhero"] { padding: 112px 20px 40px !important; }
   .rd-st [data-d~="bigpad"], .rd-st-rules [data-d~="bigpad"], .rd-st-source [data-d~="bigpad"], .rd-st-factory [data-d~="bigpad"], .rd-st-clean [data-d~="bigpad"], .rd-st-board [data-d~="bigpad"], .rd-st-proof [data-d~="bigpad"], .rd-st-plans [data-d~="bigpad"], .rd-st[data-d~="bigpad"], .rd-st-rules[data-d~="bigpad"], .rd-st-source[data-d~="bigpad"], .rd-st-factory[data-d~="bigpad"], .rd-st-clean[data-d~="bigpad"], .rd-st-board[data-d~="bigpad"], .rd-st-proof[data-d~="bigpad"], .rd-st-plans[data-d~="bigpad"] { padding-top: 52px !important; padding-bottom: 52px !important; }
   .rd-st [data-k="rules"], .rd-st-rules [data-k="rules"], .rd-st-source [data-k="rules"], .rd-st-factory [data-k="rules"], .rd-st-clean [data-k="rules"], .rd-st-board [data-k="rules"], .rd-st-proof [data-k="rules"], .rd-st-plans [data-k="rules"], .rd-st[data-k="rules"], .rd-st-rules[data-k="rules"], .rd-st-source[data-k="rules"], .rd-st-factory[data-k="rules"], .rd-st-clean[data-k="rules"], .rd-st-board[data-k="rules"], .rd-st-proof[data-k="rules"], .rd-st-plans[data-k="rules"] { margin-top: 28px !important; gap: 0px !important; }
   .rd-st [data-k="rules"] > div, .rd-st-rules [data-k="rules"] > div, .rd-st-source [data-k="rules"] > div, .rd-st-factory [data-k="rules"] > div, .rd-st-clean [data-k="rules"] > div, .rd-st-board [data-k="rules"] > div, .rd-st-proof [data-k="rules"] > div, .rd-st-plans [data-k="rules"] > div, .rd-st[data-k="rules"] > div, .rd-st-rules[data-k="rules"] > div, .rd-st-source[data-k="rules"] > div, .rd-st-factory[data-k="rules"] > div, .rd-st-clean[data-k="rules"] > div, .rd-st-board[data-k="rules"] > div, .rd-st-proof[data-k="rules"] > div, .rd-st-plans[data-k="rules"] > div { grid-template-columns: 34px 1fr; column-gap: 10px; display: grid !important; padding: 16px 0px 18px !important; border-top-width: 1.5px !important; }

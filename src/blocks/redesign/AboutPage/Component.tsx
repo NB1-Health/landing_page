@@ -469,7 +469,23 @@ const RdAbClose: React.FC<{ close?: Props['close'] | null, locale?: AppLocale }>
           height: "84px",
           width: "auto",
           color: "var(--nb1-blue-grey)",
-          marginBottom: "30px"
+          /* `margin: 0 auto 30px`, not `marginBottom: 30px`.
+           *
+           * Tailwind's preflight (@tailwind base, in globals.css) sets
+           * `img, svg, video, canvas, audio, iframe, embed, object { display:
+           * block }`. So this svg is a BLOCK-level replaced element, and the
+           * `textAlign: "center"` on its wrapper — which centres the h2, the
+           * p and the button — does nothing to it: text-align aligns inline
+           * content, and a block child is not inline content.
+           *
+           * With `width: auto` it takes its intrinsic 75px and, with no auto
+           * margins, sits flush against the content box's left edge. Measured
+           * on stg: wrapper 213-1213 with 48px padding, svg left 261 — exactly
+           * the padding edge — and its centre 414px left of the heading's.
+           *
+           * The auto margins are what centre a block box. Keeping the 30px
+           * bottom in the same shorthand so the two cannot drift apart. */
+          margin: "0px auto 30px"
         }} viewBox="0 0 125 140" fill="none" aria-hidden="true">
           <g stroke="currentColor" strokeWidth="1.1" opacity="0.85">
             <circle cx="109.323" cy="15.2996" r="14.8824" />

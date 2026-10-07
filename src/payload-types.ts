@@ -4806,7 +4806,7 @@ export interface RdOrderBlock {
            */
           perLabel?: string | null;
           /**
-           * Shown until the live price arrives, and kept if the request fails. Not what the visitor is charged.
+           * Shown until the live price arrives, and kept if the request fails. Not what the visitor is charged. Write it as a currency token — {{99}} — so it follows the visitor's currency instead of showing everyone pounds.
            */
           seededPrice?: string | null;
           eyebrow?: string | null;
@@ -4847,8 +4847,15 @@ export interface RdOrderBlock {
       | null;
     noteHeading?: string | null;
     note?: string | null;
+    /**
+     * Not rendered. The live Trustpilot widget supplies this word itself.
+     */
     trustLabel?: string | null;
     trustName?: string | null;
+    /**
+     * Show the live Trustpilot rating under the plan picker. The localized widget source is resolved from the page locale in code, the same way the homepage hero does it. Off hides the whole row — it does not fall back to a drawn one.
+     */
+    showTrustpilotRating?: boolean | null;
   };
   cost?: {
     heading?: string | null;
@@ -6552,6 +6559,8 @@ export interface RdLbFormulaBlock {
   basics?: {
     body?: string | null;
     figureAlt?: string | null;
+    figureCaptionAlone?: string | null;
+    figureCaptionFed?: string | null;
     defs?:
       | {
           name: string;
@@ -6612,6 +6621,8 @@ export interface RdLbFormulaBlock {
     doseTooLittle?: string | null;
     doseRight?: string | null;
     doseTooMuch?: string | null;
+    doseTooMuchSub?: string | null;
+    doseTooLittleSub?: string | null;
     noteLead?: string | null;
     noteRest?: string | null;
   };
@@ -15206,6 +15217,7 @@ export interface RdOrderBlockSelect<T extends boolean = true> {
         note?: T;
         trustLabel?: T;
         trustName?: T;
+        showTrustpilotRating?: T;
       };
   cost?:
     | T
@@ -16395,6 +16407,8 @@ export interface RdLbFormulaBlockSelect<T extends boolean = true> {
     | {
         body?: T;
         figureAlt?: T;
+        figureCaptionAlone?: T;
+        figureCaptionFed?: T;
         defs?:
           | T
           | {
@@ -16436,6 +16450,8 @@ export interface RdLbFormulaBlockSelect<T extends boolean = true> {
         doseTooLittle?: T;
         doseRight?: T;
         doseTooMuch?: T;
+        doseTooMuchSub?: T;
+        doseTooLittleSub?: T;
         noteLead?: T;
         noteRest?: T;
       };

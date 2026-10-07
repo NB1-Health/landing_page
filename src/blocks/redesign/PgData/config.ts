@@ -27,9 +27,15 @@ import { localizedLink } from '@/fields/localizedLink'
  * `localization.fallback` is true, so a locale that sets no image of its own shows
  * the default locale's; only a locale that wants a different face has to fill it in.
  *
- * The nb1 mark beside it is still a static file under `public/rd-pg/`,
- * byte-for-byte the mockup's own: the mockup's `assets/<uuid>.png` path would 404
- * in the app, and nothing has asked for that one to be editable.
+ * The nb1 mark beside it is NOT a field. It is byte-for-byte the mockup's own
+ * image, imported by the component from `src/styles/images/nb1-mark.png` so
+ * webpack emits it under `/_next/static/media/` — the path it used to carry,
+ * `/rd-pg/nb1-mark.png`, is unreachable on stg because nginx never proxies
+ * `public/` to Next, and it rendered as a broken image there. It stays a build
+ * asset rather than an upload because it is the brand mark on a fixed
+ * illustration: nothing has asked for that one to be editable, and making it a
+ * field would mean someone has to upload it in nine locales to get back what
+ * the import already guarantees.
  *
  * `tabs` and `panels` are bound BY INDEX and are four long. Each tab button and
  * each panel is its own node in the markup, so a fifth row would store fine and

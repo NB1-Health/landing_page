@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import { unstable_cache } from 'next/cache'
+import { cookies } from 'next/headers'
+
+import { resolveCurrency } from '@/utilities/currency'
 import { redirect } from 'next/navigation'
 
 import { PayloadRedirects } from '@/components/PayloadRedirects'
@@ -239,6 +242,25 @@ export default async function Page({ params: paramsPromise }: Args) {
         return []
       })
     : []
+  // THE VISITOR'S CURRENCY, RESOLVED HERE RATHER THAN AFTER HYDRATION.
+  //
+  // `nb1_currency` is set by the header's picker and is not httpOnly, so it
+  // arrives with the request. Without this the server had no `document` to
+  // read, fell back to the LOCALE default, and rendered every price on `/en`
+  // in GBP for everyone — then the browser corrected it, which is the price
+  // "changing on load" that was reported.
+  //
+  // `resolveCurrency` is the same pure function the client calls, and it
+  // validates against the locale's allow-list, so a stale or hand-edited
+  // cookie cannot put CHF on a Dutch page.
+  //
+  // This costs no caching: the route is already `force-dynamic`, the edge
+  // grant in marketingCachePolicy is withheld from any request carrying a
+  // Cookie header, and `order` / `checkout` are excluded from it outright.
+  const initialCurrency = resolveCurrency(
+    (await cookies()).get('nb1_currency')?.value,
+    locale,
+  )
   // The checkout PlanSelector is distinct from the generic marketing Plans block.
   // If an editor deliberately places this checkout selector on another page,
   // that page is treated as the first order-selection experience too.
@@ -303,6 +325,7 @@ export default async function Page({ params: paramsPromise }: Args) {
           locale={locale}
           initialPrices={initialPrices}
           enabled={hasPrices}
+          initialCurrency={initialCurrency}
         >
           {hero ? <RenderHero {...hero} /> : null}
           <RenderBlocks blocks={layout || []} locale={locale} pageSlugs={pageSlugsByLocale} />

@@ -4,6 +4,26 @@ import React, { useState } from 'react'
 import RichText from '@/components/RichText'
 import type { RdPgDataBlock as Props } from '@/payload-types'
 import { getDictionary } from '@/i18n/getDictionary'
+// The nb1 wordmark, IMPORTED rather than linked.
+//
+// It used to be `src="/rd-pg/nb1-mark.png"`, served out of `public/`. Nothing
+// in `public/` is reachable on stg: nginx there proxies an allowlist of
+// prefixes to Next (`/en/…`, the other locales, `/cms/…`, `/_next/…`) and
+// falls back to the login SPA's index.html for everything else — so that path
+// answered 200 with `text/html`, the browser could not decode an HTML document
+// as a PNG, and the header drew a broken-image glyph with this tag's alt text.
+//
+// A static import hands the file to webpack instead. It is emitted to
+// `/_next/static/media/nb1-mark.<hash>.png`, which IS proxied, and `mark.src`
+// is that url. Two things come free, exactly as with the three brand faces
+// moved out of `public/fonts/` for the same reason on 2026-10-02: the file is
+// content-hashed and immutably cacheable, and a wrong path now fails the build
+// instead of silently 200-ing into the login SPA.
+//
+// No `next/image` here on purpose. The mark is a fixed 20px-tall chrome
+// element in a decorative phone, so the optimiser would add a round trip and a
+// sharp re-encode to save nothing; `mark.src` on a plain <img> skips it.
+import nb1Mark from '@/styles/images/nb1-mark.png'
 
 // GENERATED from manifests/section-06.json + bindings/RdPgData.json by
 // tools/block_component.py — NO LONGER REGENERABLE WITHOUT LOSS: the mock-up
@@ -475,7 +495,7 @@ export const RdPgData: React.FC<Props & { locale?: string | null }> = ({ anchorI
                 <img style={{
                   height: "20px",
                   width: "auto"
-                }} src={'/rd-pg/nb1-mark.png'} alt="nb1" />
+                }} src={nb1Mark.src} alt="nb1" />
                 <div style={{
                   display: "flex",
                   alignItems: "center",

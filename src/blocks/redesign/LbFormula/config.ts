@@ -116,6 +116,12 @@ export const RdLbFormulaBlock: Block = {
       fields: [
         { name: "body", type: "textarea", localized: true, defaultValue: "The live cultures and prebiotic in your formula, dosed to work as one and decided by your reading." },
         { name: "figureAlt", type: "text", localized: true, defaultValue: "A live culture washes through on its own; paired with the right prebiotic fibre, it stays and works" },
+        // The two captions UNDER the diagram's halves. They were <text> nodes
+        // inside the SVG in English, so every locale read them in English while
+        // `figureAlt` beside them was translated. They are not the alt text:
+        // that is one longer sentence describing the whole figure.
+        { name: "figureCaptionAlone", type: "text", localized: true, label: "Figure caption \u2014 left half", defaultValue: "On its own, it washes through" },
+        { name: "figureCaptionFed", type: "text", localized: true, label: "Figure caption \u2014 right half", defaultValue: "Fed the right fibre, it stays and works" },
         {
           name: "defs", type: 'array',
           defaultValue: [
@@ -277,6 +283,12 @@ export const RdLbFormulaBlock: Block = {
         { name: "doseTooLittle", type: "text", localized: true, defaultValue: "Too little" },
         { name: "doseRight", type: "text", localized: true, defaultValue: "Right for you" },
         { name: "doseTooMuch", type: "text", localized: true, defaultValue: "Too much" },
+        // The small grey line under "too much" and "too little" INSIDE the
+        // chart, saying what each end costs you. Hardcoded English until now;
+        // the three fields above were already translated, which is why the
+        // chart showed half of itself in the reader's language.
+        { name: "doseTooMuchSub", type: "text", localized: true, label: "Dose chart \u2014 under \u201ctoo much\u201d", defaultValue: "bloating and gas" },
+        { name: "doseTooLittleSub", type: "text", localized: true, label: "Dose chart \u2014 under \u201ctoo little\u201d", defaultValue: "no impact at all" },
         { name: "noteLead", type: "text", localized: true, defaultValue: "A few fibres, chosen from dozens." },
         { name: "noteRest", type: "textarea", localized: true, defaultValue: " Only the ones your strains can actually use, each paired to the strain it feeds and dosed to the range you handle. Too little does nothing, too much brings the bloat. Two people never get the same blend." },
       ],

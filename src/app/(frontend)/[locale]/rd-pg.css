@@ -106,7 +106,10 @@ div:not(.rd-pg *):has(> .rd-pg) {
     .rd-pg [data-cmprow], .rd-pg:is([data-cmprow]){grid-template-columns:1fr 88px 88px!important;gap:0!important;font-size:13px!important;}
     .rd-pg [data-cmprow] > div, .rd-pg:is([data-cmprow] > div), .rd-pg:is([data-cmprow]) > div{padding-left:10px!important;padding-right:10px!important;}
     /* the header prices must fit their column, so scale them with it */
-    .rd-pg [data-m="cmpprice"], .rd-pg:is([data-m="cmpprice"]){font-size:19px!important;}
+    /* 17px, down from 19. 88px columns less 10+10 of padding leave 68px, and
+       "AED 629" measures 74px at 19px — over by six, so the UAE clipped here
+       too, just less obviously than on the homepage. 66px at 17px. */
+    .rd-pg [data-m="cmpprice"], .rd-pg:is([data-m="cmpprice"]){font-size:17px!important;}
     .rd-pg [data-m="cmpprice"] span, .rd-pg:is([data-m="cmpprice"] span), .rd-pg:is([data-m="cmpprice"]) span{font-size:11px!important;display:block!important;margin-top:3px;opacity:.7;}
     /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
    It would match OUR markup only, because React serialises the style

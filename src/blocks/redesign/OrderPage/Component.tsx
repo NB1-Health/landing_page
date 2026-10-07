@@ -6,9 +6,12 @@ import type { RdOrderBlock as Props } from '@/payload-types'
 import { useAmountTokens } from '@/blocks/redesign/_shared/amountTokens'
 import type { AppLocale } from '@/i18n/config'
 import { fetchPlansClient, getClientCurrency, formatPrice } from '@/lib/plans/clientUtils'
+import RdTrustRating from '@/components/Trustpilot/RdTrustRating'
 
 // GENERATED from manifests/section-02.json + bindings/RdOrder.json by
-// tools/block_component.py — do not hand-edit; regenerate.
+// tools/block_component.py — NO LONGER REGENERABLE WITHOUT LOSS: the trust
+// row below is the live TrustBox; a regeneration would restore the mockup’s
+// five hand-drawn stars.
 //
 // Styles copied verbatim from the mockup; bindings replace content only.
 // Layout and breakpoints come from rd-or.css — this page's stylesheet,
@@ -183,6 +186,7 @@ const RdOrderSteps: React.FC<{ steps?: OrSteps | null; locale?: AppLocale; curre
 }
 
 export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorId, cost, faq, hero, locale, plans, proof, steps, sticky, timeline }) => {
+  const showTrustpilotRating = plans?.showTrustpilotRating !== false
   // ---------------------------------------------------------------- state
   //
   // Four pieces, measured off the mockup by driving each control from a fresh
@@ -948,84 +952,36 @@ export const RdOrderInner: React.FC<Props & { locale?: AppLocale }> = ({ anchorI
                 }}>{plans?.note}</p>
               </div>
             </div>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexWrap: "wrap",
-              gap: "10px 14px",
-              marginTop: "16px",
-              padding: "14px",
-              borderRadius: "14px",
-              boxShadow: "rgba(81, 71, 69, 0.16) 0px 0px 0px 1px inset"
-            }}>
-              <span style={{
-                fontSize: "17px",
-                color: "var(--nb1-black)"
-              }}>{plans?.trustLabel}</span>
-              <span style={{
-                display: "inline-flex",
-                gap: "2px"
-              }}>
-                <span style={{
-                  width: "22px",
-                  height: "22px",
-                  background: "rgb(0, 182, 122)",
-                  color: "rgb(255, 255, 255)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "14px"
-                }}>{"\u2605"}</span>
-                <span style={{
-                  width: "22px",
-                  height: "22px",
-                  background: "rgb(0, 182, 122)",
-                  color: "rgb(255, 255, 255)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "14px"
-                }}>{"\u2605"}</span>
-                <span style={{
-                  width: "22px",
-                  height: "22px",
-                  background: "rgb(0, 182, 122)",
-                  color: "rgb(255, 255, 255)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "14px"
-                }}>{"\u2605"}</span>
-                <span style={{
-                  width: "22px",
-                  height: "22px",
-                  background: "rgb(0, 182, 122)",
-                  color: "rgb(255, 255, 255)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "14px"
-                }}>{"\u2605"}</span>
-                <span style={{
-                  width: "22px",
-                  height: "22px",
-                  background: "linear-gradient(90deg, rgb(0, 182, 122) 50%, rgb(220, 220, 230) 50%)",
-                  color: "rgb(255, 255, 255)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "14px"
-                }}>{"\u2605"}</span>
-              </span>
-              <span style={{
-                display: "inline-flex",
+            {/*
+              THE REAL TRUSTBOX, not the mockup's drawing of one.
+
+              This was five <span> tiles, the fifth a 50/50 gradient — a picture
+              of 4.5 stars, hardcoded. Static, untranslated, and wrong the moment
+              the score moves. The homepage hero already solved this; see the
+              note at the top of blocks/redesign/Hero/config.ts and the component
+              in components/Trustpilot/RdTrustRating.
+
+              `trustLabel` is no longer read: the TrustBox prints "Excellent"
+              itself, ahead of its own stars.
+
+              Off hides the whole row. It does NOT fall back to the drawing —
+              showing a rating nobody measured is worse than showing none.
+            */}
+            {showTrustpilotRating ? (
+              <div className="rd-tp" style={{
+                display: "flex",
                 alignItems: "center",
-                gap: "5px",
-                fontSize: "16px",
-                color: "var(--nb1-black)"
+                justifyContent: "center",
+                flexWrap: "wrap",
+                gap: "10px 14px",
+                marginTop: "16px",
+                padding: "14px",
+                borderRadius: "14px",
+                boxShadow: "rgba(81, 71, 69, 0.16) 0px 0px 0px 1px inset"
               }}>
-                <span style={{
-                  color: "rgb(0, 182, 122)"
-                }}>{"\u2605"}</span>
-                {plans?.trustName}
-              </span>
-            </div>
+                <RdTrustRating locale={locale} label={plans?.trustName || 'Trustpilot'} />
+              </div>
+            ) : null}
           </section>
           <div style={{
             height: "1px",

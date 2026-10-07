@@ -33,7 +33,25 @@ const SectionTop: React.FC<Partial<Sec<'top'>>> = ({ anchorId, intro, title }) =
       <div style={{
         maxWidth: "1240px",
         margin: "0px auto",
-        padding: "72px 20px 48px"
+        /* 136px top, where the mockup draws 72.
+         *
+         * `.rd-header` carries `margin-bottom: -64px` so a TRANSPARENT header
+         * can sit over the block beneath it. The legal pages' header is solid
+         * and the pull applies anyway, so this section starts 64px higher than
+         * its own box claims: the header's bottom edge is at 73 and the h1's
+         * top landed at 9 + 72 = 81, eight pixels clear of it instead of the
+         * seventy-two the design asks for.
+         *
+         * 72 + 64 restores exactly that gap. The same compensation is on
+         * PgHero (22 -> 86) and the Standards hero (48 -> 112) for the same
+         * reason; the real fix is to stop applying the pull when
+         * data-over="0", which wants its own pass across every page already
+         * nudged.
+         *
+         * Only the top needs it. rd-lg.css overrides the SIDE padding above
+         * 900px and never touches padding-top, so this one value covers every
+         * width. */
+        padding: "136px 20px 48px"
       }} data-d="pad">
         <h1 style={{
           fontFamily: "var(--nb1-font-primary)",
