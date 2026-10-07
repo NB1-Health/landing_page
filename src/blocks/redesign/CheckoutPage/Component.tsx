@@ -1475,45 +1475,65 @@ const RdChkEmlField: React.FC<ChkPartProps> = ({
  * validation strings do: the mockup offers no value for a panel it does not
  * draw, and these fourteen strings are already translated into nine locales.
  */
+/* The billing panel's field styles and its one field component, AT MODULE
+   SCOPE — which is the whole point of them being here.
+ *
+ * `Field` used to be declared inside RdChkBilling's body. A component defined
+ * in a render body is a NEW FUNCTION IDENTITY on every render, so React cannot
+ * match it to the previous tree: it unmounts the old <input> and mounts a
+ * fresh one. The DOM node the browser had focus on is gone, so focus is lost
+ * after every keystroke and the panel could only be filled one character per
+ * click. The values were landing in state correctly the whole time — it was
+ * the caret, not the data.
+ *
+ * Nothing closes over the panel's props, so hoisting is free: the four styles
+ * are constants and `set` arrives as a prop. RdChkBilling keeps short local
+ * aliases so the markup below reads as it did.
+ */
+const BILL_BOX: React.CSSProperties = {
+  height: '52px',
+  borderRadius: '12px',
+  border: '0px',
+  boxShadow: 'rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset',
+  background: 'rgb(255, 255, 255)',
+  padding: '0px 16px',
+  fontSize: '16px',
+  outline: 'none',
+  minWidth: '0px',
+  width: '100%',
+}
+const billErrBox = (e?: string): React.CSSProperties =>
+  e ? { ...BILL_BOX, boxShadow: `${CHK_ERR} 0px 0px 0px 1.5px inset` } : BILL_BOX
+const billCell = (full?: boolean): React.CSSProperties => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
+  minWidth: 0,
+  ...(full ? { gridColumn: '1 / -1' } : null),
+})
+const BILL_LABEL: React.CSSProperties = { fontSize: '15px', color: 'rgb(0, 0, 0)' }
+
+const RdChkBillField: React.FC<any> = ({ lab, val, set, ac, full, err, ph }) => (
+  <label style={billCell(full)}>
+    <span style={BILL_LABEL}>{lab}</span>
+    <input
+      style={billErrBox(err)}
+      value={val ?? ''}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => set(e.target.value)}
+      autoComplete={ac}
+      placeholder={ph || undefined}
+    />
+    <RdChkFieldErr of={err} />
+  </label>
+)
+
 const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
   if (!bill || bill.same) return null
   const t = bill.t
-  const box: React.CSSProperties = {
-    height: '52px',
-    borderRadius: '12px',
-    border: '0px',
-    boxShadow: 'rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset',
-    background: 'rgb(255, 255, 255)',
-    padding: '0px 16px',
-    fontSize: '16px',
-    outline: 'none',
-    minWidth: '0px',
-    width: '100%',
-  }
-  const errBox = (e?: string): React.CSSProperties =>
-    e ? { ...box, boxShadow: `${CHK_ERR} 0px 0px 0px 1.5px inset` } : box
-  const cell = (full?: boolean): React.CSSProperties => ({
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    minWidth: 0,
-    ...(full ? { gridColumn: '1 / -1' } : null),
-  })
-  const label: React.CSSProperties = { fontSize: '15px', color: 'rgb(0, 0, 0)' }
-
-  const Field = ({ lab, val, set, ac, full, err, ph }: any) => (
-    <label style={cell(full)}>
-      <span style={label}>{lab}</span>
-      <input
-        style={errBox(err)}
-        value={val ?? ''}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => set(e.target.value)}
-        autoComplete={ac}
-        placeholder={ph || undefined}
-      />
-      <RdChkFieldErr of={err} />
-    </label>
-  )
+  const box = BILL_BOX
+  const errBox = billErrBox
+  const cell = billCell
+  const label = BILL_LABEL
 
   return (
     <div style={{ marginTop: '14px', display: 'grid',
@@ -1551,16 +1571,16 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
 
       {bill.type === 'company' ? (
         <>
-          <Field lab={t.companyName} val={bill.company} set={bill.setCompany}
+          <RdChkBillField lab={t.companyName} val={bill.company} set={bill.setCompany}
                  ac="organization" full err={bill.err.bCompany} />
-          <Field lab={t.taxId} val={bill.taxId} set={bill.setTaxId} />
-          <Field lab={t.registrationNumber} val={bill.regNum} set={bill.setRegNum} />
+          <RdChkBillField lab={t.taxId} val={bill.taxId} set={bill.setTaxId} />
+          <RdChkBillField lab={t.registrationNumber} val={bill.regNum} set={bill.setRegNum} />
         </>
       ) : null}
 
-      <Field lab={t.firstName} val={bill.fn} set={bill.setFn}
+      <RdChkBillField lab={t.firstName} val={bill.fn} set={bill.setFn}
              ac="billing given-name" err={bill.err.bFn} />
-      <Field lab={t.lastName} val={bill.ln} set={bill.setLn}
+      <RdChkBillField lab={t.lastName} val={bill.ln} set={bill.setLn}
              ac="billing family-name" err={bill.err.bLn} />
 
       <label style={cell(true)}>
@@ -1597,13 +1617,42 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
         </select>
       </label>
 
-      <Field lab={t.addressLabel} val={bill.a1} set={bill.setA1}
-             ac="billing address-line1" full err={bill.err.bA1} />
-      <Field lab={t.apt} val={bill.a2} set={bill.setA2}
+      {/* THE BILLING STREET IS A LOOKUP TOO.
+        *
+        * It was the one plain box among the eight, which left the two address
+        * blocks on this page behaving differently: delivery offered Google
+        * suggestions and filled the postcode and city from the chosen one,
+        * billing made you type all three. Same component, same api key, same
+        * className — so it is the same control, not a second one that looks
+        * like it.
+        *
+        * `countries` follows the BILLING country select, not the delivery one.
+        * There is no `allowedCities`: the two-emirate restriction exists
+        * because NB1 only SHIPS to Dubai and Abu Dhabi, and getPayErrors puts
+        * no such rule on the billing city. A card can be billed anywhere.
+        *
+        * The <label> wrapper is the delivery side's own shape — the component
+        * renders a positioning div around its input for the dropdown, and
+        * RdChkAdr already nests exactly that inside a label. */}
+      <label style={cell(true)}>
+        <span style={label}>{t.addressLabel}</span>
+        <AddressAutocomplete
+          className={bill.err.bA1 ? 'rd-chk-street rd-chk-street-err' : 'rd-chk-street'}
+          value={bill.a1 ?? ''}
+          autoComplete="billing address-line1"
+          apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+          language={bill.locale}
+          countries={bill.streetCountries}
+          onValueChange={bill.onStreetValue}
+          onPick={bill.onPick}
+        />
+        <RdChkFieldErr of={bill.err.bA1} />
+      </label>
+      <RdChkBillField lab={t.apt} val={bill.a2} set={bill.setA2}
              ac="billing address-line2" full />
-      <Field lab={t.postalCode} val={bill.zip} set={bill.setZip}
+      <RdChkBillField lab={t.postalCode} val={bill.zip} set={bill.setZip}
              ac="billing postal-code" err={bill.err.bZip} />
-      <Field lab={t.city} val={bill.city} set={bill.setCity}
+      <RdChkBillField lab={t.city} val={bill.city} set={bill.setCity}
              ac="billing address-level2" err={bill.err.bCity} />
     </div>
   )
@@ -4080,6 +4129,63 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     if (c) setBPhoneCountry(c)
   }
 
+  /* The billing street's two handlers, mirroring the delivery pair.
+   *
+   * handleBAddressPick is handleAddressPick with the UAE branch REMOVED, not
+   * forgotten. Delivery normalizes the emirate to Dubai / Abu Dhabi and blanks
+   * anything else, because getAddrErrors only accepts those two and the city
+   * field there is a restricted dropdown. getPayErrors puts no such rule on
+   * bCity — a card is billed wherever its holder lives — so normalizing here
+   * would silently erase a legitimate billing city.
+   *
+   * It also does NOT touch bCountry. The delivery pick leaves country alone
+   * too: the select is the source of truth for the key that COUNTRY_CODES is
+   * read with, and a picked suggestion is already restricted to that country.
+   */
+  const handleBAddressPick = (place: GooglePlace, description?: string) => {
+    const comps = place?.address_components || []
+    const get = (type: string) => comps.find((c) => c.types?.includes(type))?.long_name || ''
+    const route = get('route')
+    const num = get('street_number')
+    // Same reason as delivery: Google often omits street_number even when the
+    // prediction the customer clicked carries it, so the structured pair is
+    // used only when BOTH halves are present and the prediction's own main
+    // text is the fallback.
+    const descMain = (description || '').split(/\s[-\u2013]\s|,/)[0].trim()
+    const line1 =
+      (route && num ? `${route} ${num}`.trim() : '') ||
+      descMain ||
+      (place?.name || '').trim() ||
+      route ||
+      (place?.formatted_address || '').split(',')[0].trim()
+    const postal = get('postal_code')
+    const cityName =
+      get('locality') ||
+      get('postal_town') ||
+      get('administrative_area_level_2') ||
+      get('sublocality') ||
+      get('administrative_area_level_1') ||
+      ''
+    if (line1) setBA1(line1)
+    if (postal) setBZip(postal)
+    if (cityName) setBCity(cityName)
+  }
+
+  const onBStreetValue = (v: string) => {
+    setBA1(v)
+    // Clearing the street invalidates the rest of the billing address, so the
+    // lookup starts from a clean slate rather than leaving a postcode from a
+    // street the customer has deleted. No UAE 00000 placeholder here: that one
+    // exists because the DELIVERY validator demands a postcode in a country
+    // that has none, and getPayErrors makes the same demand of bZip, so the
+    // customer types it — but the placeholder belongs to the shipping rule.
+    if (!v.trim()) {
+      setBZip('')
+      setBCity('')
+      setBA2('')
+    }
+  }
+
   const onEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
     setEmailSuggestion(null)
@@ -4403,6 +4509,15 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     zip: bZip, setZip: setBZip,
     city: bCity, setCity: setBCity,
     err: payErr,
+    // What the billing street lookup needs. `streetCountries` follows the
+    // BILLING country select; `locale` is Google's `language` so suggestions
+    // come back in the page's language.
+    locale,
+    streetCountries: COUNTRY_CODES[bCountry]
+      ? [COUNTRY_CODES[bCountry].toLowerCase()]
+      : null,
+    onStreetValue: onBStreetValue,
+    onPick: handleBAddressPick,
   }
 
   // ---- the errors --------------------------------------------------------

@@ -34,6 +34,7 @@ import {
   getDefaultCurrency,
   resolveCurrencyTokens,
 } from '@/lib/plans/clientUtils'
+import { useTokenCurrency } from '@/lib/plans/PriceTokensProvider'
 
 /** `{{ … }}` whose body is numeric — the same shape AMOUNT_TOKEN_RE matches. */
 const HAS_AMOUNT = /\{\{\s*(?:floor|ceil|round|[\d+\-*/().\s])+?\s*\}\}/i
@@ -67,18 +68,30 @@ function walk<T>(value: T, currency: ReturnType<typeof getDefaultCurrency>, loca
  */
 export function useAmountTokens<T>(props: T, locale?: string | null): T {
   const loc = locale || 'en'
-  // getDefaultCurrency, not getClientCurrency: the cookie the latter reads
-  // does not exist on the server, so seeding state from it would make the
-  // first client render disagree with the server's. PriceTokensProvider
-  // seeds itself exactly this way for the same reason.
-  const [currency, setCurrency] = useState(() => getDefaultCurrency(loc))
+
+  // THE PROVIDER IS THE SOURCE OF TRUTH WHEN THERE IS ONE.
+  //
+  // PriceTokensProvider is seeded on the server from the `nb1_currency`
+  // cookie, so its value is already the visitor's own currency in the HTML.
+  // Reading it here is what stops this hook rendering the locale default
+  // first — `/en` defaults to GBP — and correcting itself after hydration,
+  // which is what made a Berlin visitor watch £99 become €99.
+  const provided = useTokenCurrency()
+
+  // The fallback path, for a block mounted outside the provider. It keeps the
+  // old behaviour exactly: locale default on the server and the first client
+  // render (so hydration still matches), then the cookie.
+  const [own, setOwn] = useState(() => getDefaultCurrency(loc))
 
   useEffect(() => {
-    const sync = () => setCurrency(getClientCurrency(loc))
+    if (provided) return
+    const sync = () => setOwn(getClientCurrency(loc))
     sync()
     window.addEventListener('nb1:currencychange', sync)
     return () => window.removeEventListener('nb1:currencychange', sync)
-  }, [loc])
+  }, [loc, provided])
+
+  const currency = provided ?? own
 
   return useMemo(() => walk(props, currency, loc), [props, currency, loc])
 }

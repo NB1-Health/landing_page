@@ -223,8 +223,20 @@ div:not(.rd-block *):has(> .rd-block) {
     .rd-block nav img, .rd-block:is(nav img){height:18px!important;}
     .rd-block [data-m="stack"], .rd-block:is([data-m="stack"]){padding-left:16px!important;padding-right:16px!important;}
     .rd-block [data-m="card"], .rd-block:is([data-m="card"]){padding:22px 20px!important;}
-    .rd-block [data-cmprow], .rd-block:is([data-cmprow]){grid-template-columns:1fr 68px 68px!important;}
-    .rd-block [data-cmprow] > div, .rd-block:is([data-cmprow] > div){padding-left:12px!important;padding-right:12px!important;}
+    /* 92px, not the mockup's 68. The design was drawn in POUNDS: at the head
+       cell's 26px, "£99" measures 42px and fits 68 minus 12+12 of padding with
+       two to spare. "AED 629" measures 101px at the same size, so in the UAE
+       the number was cut in half by the `overflow:hidden` on [data-m="cmpinner"]
+       and the ADVANCED column ran off the right edge. Widths measured with
+       canvas measureText in the page's own face, not estimated.
+       92 - 24 = 68px of content against a widest string of 66px at 17px below. */
+    .rd-block [data-cmprow], .rd-block:is([data-cmprow]){grid-template-columns:1fr 92px 92px!important;}
+    .rd-block [data-cmprow] > div, .rd-block:is([data-cmprow] > div){padding-left:12px!important;padding-right:12px!important;min-width:0!important;}
+    /* The header prices must fit their column, so scale them with it — the same
+       treatment Our Plans already carries in rd-pg.css, which this block never
+       got. The suffix goes to its own line so "/mo" costs height, not width. */
+    .rd-block [data-m="cmpprice"], .rd-block:is([data-m="cmpprice"]){font-size:17px!important;}
+    .rd-block [data-m="cmpprice"] span, .rd-block:is([data-m="cmpprice"] span){font-size:11px!important;display:block!important;margin-top:3px;opacity:.7;}
     /* DEAD IN THE MOCKUP — 0 matches there, so not part of the design.
        It would match OUR markup only, because React serialises the style
        attribute without the space the browser puts in. See tools/dead_rules.py.
@@ -330,7 +342,17 @@ div:not(.rd-block *):has(> .rd-block) {
   --rd-tp-scale: 0.8056;
 }
 
-.rd-block .rd-tp__box {
+/*
+ * `.rd-or` is in the list because the order page's root is `rd-or`, NOT
+ * `rd-block` — and the clip is not cosmetic. Without it the TrustBox renders at
+ * full width and draws its OWN wordmark, which lands beside the one
+ * RdTrustRating draws: two Trustpilot wordmarks side by side, which the
+ * component's own note calls worse than none. The width is what hides it.
+ *
+ * Scoped to a root rather than left bare so the rules cannot reach the old
+ * chrome or any page that is not part of the redesign.
+ */
+:is(.rd-block, .rd-or) .rd-tp__box {
   display: block;
   width: var(--rd-tp-slice, 176px);
   height: 19px;
@@ -339,7 +361,7 @@ div:not(.rd-block *):has(> .rd-block) {
   line-height: 0;
 }
 
-.rd-block .rd-tp__box .trustpilot-widget {
+:is(.rd-block, .rd-or) .rd-tp__box .trustpilot-widget {
   width: var(--rd-tp-layout, 219px);
   transform: scale(var(--rd-tp-scale, 0.8056));
   transform-origin: left top;

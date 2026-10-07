@@ -114,7 +114,7 @@ const PlanHead: React.FC<{ plan?: Plan | null; cell: React.CSSProperties; name: 
       fontSize: "26px",
       lineHeight: "1",
       marginTop: "6px"
-    }}>
+    }} data-m="cmpprice">
       {plan?.price}
       <span style={{
         fontFamily: "var(--nb1-font-secondary)",

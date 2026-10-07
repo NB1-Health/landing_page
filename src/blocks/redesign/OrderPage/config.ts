@@ -17,6 +17,23 @@ import { makeRedesignHeadingEditor } from '@/fields/redesignLexical'
  * costs. Each card keeps a `seededPrice` that shows until the fetch lands and
  * stays if it fails.
  *
+ * `seededPrice` IS A CURRENCY TOKEN, NOT A PRICE. It defaults to `{{99}}` and
+ * `{{149}}`, which `useAmountTokens` resolves against the visitor's selected
+ * currency before the component sees them: 99 EUR, 99 GBP, 99 CHF, AED 419.
+ *
+ * It used to default to the mockup's literal pound figures. That was never
+ * wrong on a SEEDED page, because seed-rd-order.ts writes the tokens — but a
+ * `defaultValue` only applies at document creation, so a card added in admin
+ * instead of by the seed got pounds, in all nine locales, permanently, with
+ * nothing in the system to correct it. A visitor in Berlin would have been
+ * shown GBP until the live price arrived.
+ *
+ * This is a DELIBERATE DEPARTURE from the standing rule that every
+ * `defaultValue` is the mockup's own value. The rule exists so nobody
+ * paraphrases copy, and a token is not a paraphrase: it is the same figure
+ * with the currency left to the reader. Recorded here because
+ * `validate_defaults` compares against the mockup and will flag it.
+ *
  * THE PLAN CARDS ARE TWO, BY INDEX. `plans.cards` is an array so both cards are
  * edited and translated like anything else, but the component binds card 0 and
  * card 1 to their own markup rather than repeating a template: in the design the
@@ -160,7 +177,7 @@ export const RdOrderBlock: Block = {
               ],
               "foot": "Add a retest whenever you want to see what changed",
               "key": "core",
-              "seededPrice": "£99",
+              "seededPrice": "{{99}}",
               "blurb": "All of it in one kit, matched to your analysis.",
               "ticks": [
                 {
@@ -202,7 +219,7 @@ export const RdOrderBlock: Block = {
                 }
               ],
               "key": "advanced",
-              "seededPrice": "£149",
+              "seededPrice": "{{149}}",
               "blurb": "All of it in one kit, matched to your analysis, plus blood biomarkers from cycle 2.",
               "ticks": [
                 {
@@ -224,7 +241,7 @@ export const RdOrderBlock: Block = {
             { name: "name", type: "text", localized: true, required: true },
             { name: "meta", type: "text", localized: true },
             { name: "perLabel", type: "text", localized: true, label: "Price suffix", admin: { description: "Shown after the price, e.g. /mo." } },
-            { name: "seededPrice", type: "text", localized: true, label: "Fallback price", admin: { description: "Shown until the live price arrives, and kept if the request fails. Not what the visitor is charged." } },
+            { name: "seededPrice", type: "text", localized: true, label: "Fallback price", admin: { description: "Shown until the live price arrives, and kept if the request fails. Not what the visitor is charged. Write it as a currency token \u2014 {{99}} \u2014 so it follows the visitor's currency instead of showing everyone pounds." } },
             { name: "eyebrow", type: "text", localized: true },
             { name: "foot", type: "text", localized: true, label: "Footnote", admin: { description: "Below the feature list. Leave empty to omit the line entirely." } },
             { name: "icon", type: "upload", relationTo: "media", label: "Kit icon" },
@@ -247,8 +264,28 @@ export const RdOrderBlock: Block = {
         },
         { name: "noteHeading", type: "text", localized: true, label: "Reassurance heading", defaultValue: "You won't be charged today." },
         { name: "note", type: "text", localized: true, label: "Reassurance body", defaultValue: "Your first payment lands around week three, only once your analysis is back and your formula enters production. Continuing starts the analysis, not the billing." },
-        { name: "trustLabel", type: "text", localized: true, defaultValue: "Excellent" },
+        // UNUSED since the row became the live widget. The TrustBox draws its
+        // own "Excellent" ahead of its own stars, so reading this would print
+        // the word twice. Kept rather than dropped: removing it is a migration
+        // that throws away nine locales of copy to save one unread column.
+        { name: "trustLabel", type: "text", localized: true, label: "Rating word (no longer shown)", admin: { description: "Not rendered. The live Trustpilot widget supplies this word itself." }, defaultValue: "Excellent" },
+        // Still read — as the wordmark beside the widget. Trustpilot is a brand
+        // name and is not translated, but the field stays localized because it
+        // always was, and a locale that wants it absent can empty it.
         { name: "trustName", type: "text", localized: true, defaultValue: "Trustpilot" },
+        {
+          name: "showTrustpilotRating",
+          type: "checkbox",
+          defaultValue: true,
+          label: "Show Trustpilot rating",
+          admin: {
+            description:
+              "Show the live Trustpilot rating under the plan picker. The localized "
+              + "widget source is resolved from the page locale in code, the same way "
+              + "the homepage hero does it. Off hides the whole row \u2014 it does not "
+              + "fall back to a drawn one.",
+          },
+        },
       ],
     },
     {

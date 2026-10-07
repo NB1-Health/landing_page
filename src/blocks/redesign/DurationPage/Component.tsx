@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import type { RdDurBlock as Props } from '@/payload-types'
 import type { AppLocale } from '@/i18n/config'
 import { fetchPlansClient, getClientCurrency, formatPrice } from '@/lib/plans/clientUtils'
+import { useTokenCurrency } from '@/lib/plans/PriceTokensProvider'
 
 // GENERATED from manifests/section-08.json + bindings/RdDur.json by
 // tools/block_component.py — do not hand-edit; regenerate.
@@ -425,7 +426,17 @@ export const RdDur: React.FC<Props & { locale?: AppLocale }> = ({ anchorId, faq,
     }
   }, [locale, plan])
 
-  const money = (n: number) => formatPrice(n, getClientCurrency(locale || 'en'), locale || 'en')
+  /* THE CURRENCY COMES FROM THE PROVIDER, NOT FROM THE COOKIE DIRECTLY.
+   *
+   * `getClientCurrency` reads `document.cookie`, which does not exist during a
+   * server render, so it returned the LOCALE default — GBP on `/en`. Every
+   * seeded figure on this page therefore shipped in pounds and the browser
+   * rewrote them a moment later. PriceTokensProvider is seeded on the server
+   * from the same cookie, so its value is already right in the HTML.
+   *
+   * The `??` keeps the page working if it is ever mounted outside a provider. */
+  const pageCurrency = useTokenCurrency() ?? getClientCurrency(locale || 'en')
+  const money = (n: number) => formatPrice(n, pageCurrency, locale || 'en')
 
   // The SEEDED rate for a term, in the page's own currency-free numbers.
   //

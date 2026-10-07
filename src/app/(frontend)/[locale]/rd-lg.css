@@ -161,3 +161,33 @@ div:not(.rd-lg *):has(> .rd-lg) {
   color: var(--nb1-cool-grey);
   border-bottom: 1px solid rgba(240, 245, 255, 0.5);
 }
+
+/* ...and so is EVERYTHING ELSE the card's rich text renders. The rule above
+ * inverted the link and stopped there, which is the whole bug: on that card
+ * `Email` and `Data Protection Officer` are link nodes and read correctly,
+ * while `Company` and `Address` are plain runs and came out of
+ * `.rd-lg .rd-lgrt p` at rgba(81, 71, 69, 0.9) — dark brown text on the dark
+ * brown panel. The content was never wrong: it is localised in all nine
+ * locales (Wien/Oesterreich, Vienne/Autriche, Wenen/Oostenrijk) and present in
+ * the DOM the whole time. It was painted in the background colour.
+ *
+ * <b>/<strong> are listed with <p> although no contact value carries a bold
+ * run today, verified by parsing the four `details` arrays in
+ * scripts/seed-rd-legal.ts. They are included because the rule they would fall
+ * through to sets `color: var(--nb1-dark-brown)` outright, so the first editor
+ * to bold a company name would reproduce this bug exactly, and finding it the
+ * second time costs what finding it the first time cost.
+ *
+ * `inherit`, not a literal. The card's own root carries
+ * `color: var(--nb1-cool-grey)`, and the mockup has no <p> here at all —
+ * Lexical's renderer introduces one, so inheriting is what the markup being
+ * reproduced actually does. A literal would be a third copy of the cool grey
+ * to keep in step with the card and with the <a> above.
+ *
+ * Specificity: 0,3,1 against `.rd-lg .rd-lgrt p`'s 0,2,1. It wins on weight,
+ * not on source order. */
+.rd-lg [data-m="lgco"] .rd-lgrt p,
+.rd-lg [data-m="lgco"] .rd-lgrt b,
+.rd-lg [data-m="lgco"] .rd-lgrt strong {
+  color: inherit;
+}

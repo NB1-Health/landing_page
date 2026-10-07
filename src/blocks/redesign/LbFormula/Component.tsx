@@ -5,7 +5,9 @@ import RichText from '@/components/RichText'
 import type { RdLbFormulaBlock as Props } from '@/payload-types'
 
 // GENERATED from manifests/section-07.json + bindings/RdLbFormula.json by
-// tools/block_component.py — do not hand-edit; regenerate.
+// tools/block_component.py — NO LONGER REGENERABLE WITHOUT LOSS: seven
+// strings in the figure and the dose chart were bound to CMS fields and a
+// regeneration would hardcode them back into English.
 //
 // Styles copied verbatim from the mockup; bindings replace content only.
 // Layout and breakpoints come from rd-lb.css — this page's stylesheet,
@@ -146,7 +148,7 @@ export const RdLbFormula: React.FC<Props> = ({ advanced, anchorId, basics, closi
                     <g transform="translate(134 165) rotate(8)" opacity="0.09">
                       <rect x="-8" y="-3.4" width="16" height="6.8" rx="3.4" fill="#8FD4E4" />
                     </g>
-                    <text className="sc-cap" x="127" y="188" fontFamily="F37 Zagma,sans-serif" fontSize="13" fontWeight="400" fill="rgba(81,71,69,.72)" textAnchor="middle">{"On its own, it washes through"}</text>
+                    <text className="sc-cap" x="127" y="188" fontFamily="F37 Zagma,sans-serif" fontSize="13" fontWeight="400" fill="rgba(81,71,69,.72)" textAnchor="middle">{basics?.figureCaptionAlone}</text>
                   </g>
                   <text className="plus" x="253" y="102" fontFamily="Martina Plantijn,serif" fontSize="34" fill="rgba(81,71,69,.42)" textAnchor="middle">{"+"}</text>
                   <g className="pre" fill="none" strokeLinecap="round">
@@ -172,7 +174,7 @@ export const RdLbFormula: React.FC<Props> = ({ advanced, anchorId, basics, closi
                       <rect x="-11" y="-5" width="22" height="10" rx="5" fill="#7A6E6B" />
                     </g>
                     <path d="M601 95 C 625 89, 651 99, 683 93" stroke="#B3E7F3" strokeWidth="3" fill="none" strokeLinecap="round" />
-                    <text className="sc-cap" x="633" y="188" fontFamily="F37 Zagma,sans-serif" fontSize="13" fontWeight="400" fill="#514745" textAnchor="middle">{"Fed the right fibre, it stays and works"}</text>
+                    <text className="sc-cap" x="633" y="188" fontFamily="F37 Zagma,sans-serif" fontSize="13" fontWeight="400" fill="#514745" textAnchor="middle">{basics?.figureCaptionFed}</text>
                   </g>
                 </svg>
                 <div style={{
@@ -760,11 +762,11 @@ export const RdLbFormula: React.FC<Props> = ({ advanced, anchorId, basics, closi
                   display: "block"
                 }} data-m="dosesvg" fontFamily="F37 Zagma,sans-serif" viewBox="0 0 520 190" aria-hidden="true">
                   <rect x="102" y="74" width="398" height="46" rx="10" fill="rgba(179,231,243,.5)" />
-                  <text x="90" y="56" textAnchor="end" fontSize="10.5" fill="rgba(81,71,69,.86)">{"too much"}</text>
-                  <text x="90" y="70" textAnchor="end" fontSize="9.5" fill="rgba(81,71,69,.8)">{"bloating and gas"}</text>
-                  <text x="90" y="101" textAnchor="end" fontSize="11" fontWeight="400" fill="#514745">{"right for you"}</text>
-                  <text x="90" y="139" textAnchor="end" fontSize="10.5" fill="rgba(81,71,69,.86)">{"too little"}</text>
-                  <text x="90" y="153" textAnchor="end" fontSize="9.5" fill="rgba(81,71,69,.8)">{"no impact at all"}</text>
+                  <text x="90" y="56" textAnchor="end" fontSize="10.5" fill="rgba(81,71,69,.86)">{prebiotics?.doseTooMuch}</text>
+                  <text x="90" y="70" textAnchor="end" fontSize="9.5" fill="rgba(81,71,69,.8)">{prebiotics?.doseTooMuchSub}</text>
+                  <text x="90" y="101" textAnchor="end" fontSize="11" fontWeight="400" fill="#514745">{prebiotics?.doseRight}</text>
+                  <text x="90" y="139" textAnchor="end" fontSize="10.5" fill="rgba(81,71,69,.86)">{prebiotics?.doseTooLittle}</text>
+                  <text x="90" y="153" textAnchor="end" fontSize="9.5" fill="rgba(81,71,69,.8)">{prebiotics?.doseTooLittleSub}</text>
                   <line x1="102" y1="160" x2="500" y2="160" stroke="rgba(81,71,69,.2)" strokeWidth="1" />
                   <rect x="125" y="112" width="30" height="48" rx="9" fill="#514745" />
                   <rect x="190" y="86" width="30" height="74" rx="9" fill="#6B5F5C" />
