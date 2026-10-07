@@ -1554,6 +1554,41 @@ function CheckoutFormInner({ backHref, locale }: Props) {
         idempotency_key: idempotencyKeyRef.current || undefined,
         payment_method_type:
           payMethod === 'paypal' ? 'paypal' : payMethod === 'klarna' ? 'klarna' : null,
+        // Klarna/PayPal leave the site next and the return can land in a tab without
+        // sessionStorage: the backend keeps this address on the SetupIntent for /confirm
+        // (ClickUp 1247bx04cwx). Same shape as the confirm payload in finalizeCheckout.
+        shipping_address: {
+          first_name: fn,
+          last_name: ln,
+          email,
+          phone: phone || '',
+          address_line1: a1,
+          address_line2: a2 || null,
+          city,
+          state: null,
+          postal_code: zip,
+          country,
+          country_code: COUNTRY_CODES[country] ?? '',
+        },
+        // Only when it differs from shipping; otherwise /confirm derives it as today.
+        billing_address: billingSame
+          ? undefined
+          : {
+              address_type: bAddrType,
+              first_name: bFn || fn,
+              last_name: bLn || ln,
+              company_name: bCompany || null,
+              tax_id: bTaxId || null,
+              registration_number: bRegNum || null,
+              email: bEmail || email,
+              phone: bPhone || phone || null,
+              address_line1: bA1,
+              address_line2: bA2 || null,
+              city: bCity,
+              state: null,
+              postal_code: bZip,
+              country: COUNTRY_CODES[bCountry] ?? bCountry,
+            },
       })
 
       if (paymentFlow === 'redirect') persistCurrentCheckoutRedirectContext()

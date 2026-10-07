@@ -13,6 +13,11 @@ export type CheckoutPaymentIntentIn = {
   customer_phone?: string | null
   idempotency_key?: string | null
   payment_method_type?: string | null
+  // Sent before any redirect (Klarna/PayPal) so the backend keeps the address on the
+  // SetupIntent: the return can land in a tab without sessionStorage (ClickUp 1247bx04cwx).
+  // billing_address is only sent when it differs from shipping.
+  shipping_address?: PublicShippingAddressIn
+  billing_address?: BillingAddressIn
 }
 
 export type CheckoutPaymentIntentOut = {
