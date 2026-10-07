@@ -104,10 +104,15 @@ export function clearInfluencerOffer(): void {
   } catch {
     // Storage can be unavailable in privacy-restricted browser contexts.
   }
-  // Expire the host-only and the shared .nb1.com copies alike.
-  const expired = `${LINK_DISCOUNT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
-  document.cookie = expired
-  if (/(^|\.)nb1\.com$/.test(window.location.hostname)) {
-    document.cookie = `${expired}; Domain=.nb1.com`
+  // Expire the host-only and the shared .nb1.com copies alike. Runs right before the order
+  // confirmation renders, so a context that rejects cookie writes must never throw here.
+  try {
+    const expired = `${LINK_DISCOUNT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
+    document.cookie = expired
+    if (/(^|\.)nb1\.com$/.test(window.location.hostname)) {
+      document.cookie = `${expired}; Domain=.nb1.com`
+    }
+  } catch {
+    // Cookies can be unavailable (sandboxed frames, some in-app browsers).
   }
 }

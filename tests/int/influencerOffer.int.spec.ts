@@ -102,4 +102,22 @@ describe('influencer offer session handoff', () => {
     expect(readCheckoutOffer()).toBeNull()
     expect(document.cookie).not.toContain('nb1_discount')
   })
+
+  it('never throws when the browser rejects cookie writes (runs before the order confirmation)', () => {
+    storeInfluencerOffer({ code: '20OFF', sourceSlug: 'creator-example' })
+    const descriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie')!
+    Object.defineProperty(document, 'cookie', {
+      configurable: true,
+      get: () => descriptor.get!.call(document),
+      set: () => {
+        throw new DOMException('The operation is insecure.', 'SecurityError')
+      },
+    })
+    try {
+      expect(() => clearInfluencerOffer()).not.toThrow()
+      expect(readInfluencerOffer()).toBeNull()
+    } finally {
+      delete (document as unknown as Record<string, unknown>).cookie
+    }
+  })
 })
