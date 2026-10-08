@@ -14,7 +14,7 @@ type Props = {
 }
 
 // armin.cx (chatarmin) chat widget. Widget id is public (not a secret); overridable via env.
-const WIDGET_ID = process.env.NEXT_PUBLIC_ARMIN_WIDGET_ID || 'widget_XnwrHfEPievV'
+const WIDGET_ID = process.env.NEXT_PUBLIC_ARMIN_WIDGET_ID || 'widget_rAKPMKwdiduU'
 const WIDGET_SRC = 'https://cxwidget.chatarmin.com/index.js'
 const WIDGET_ROOT_ID = 'cx-armin-chat-widget-v2'
 const CHECKOUT_SELECTOR = '[data-nb1-order-entry="true"]'
