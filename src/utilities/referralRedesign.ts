@@ -5,7 +5,7 @@
  * it shipped with. Nothing else in the codebase knows about it.
  *
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  CURRENTLY OFF. To put the new design back: change `false` to `true`.   │
+ * │  CURRENTLY ON. To put the old design back: change `true` to `false`.    │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * HOW THIS DIFFERS FROM THE JOURNAL AND HELP SWITCHES, which it is modelled on.
@@ -49,7 +49,7 @@
  * provably dead code — which some lint configurations remove and others flag.
  * Annotated, the branch stays real and flipping the value just works.
  */
-export const REFERRAL_REDESIGN: boolean = false
+export const REFERRAL_REDESIGN: boolean = true
 
 export function referralRedesignEnabled(): boolean {
   return REFERRAL_REDESIGN

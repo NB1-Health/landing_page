@@ -5,7 +5,7 @@
  * the one they shipped with. Nothing else in the codebase knows about it.
  *
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │  CURRENTLY OFF. To put the new design back: change `false` to `true`.   │
+ * │  CURRENTLY ON. To put the old design back: change `true` to `false`.    │
  * └─────────────────────────────────────────────────────────────────────────┘
  *
  * That is the whole procedure. Off means the <link> is never rendered, the
@@ -35,7 +35,7 @@
  * provably dead code — which some lint configurations remove and others flag.
  * Annotated, the branch stays real and flipping the value just works.
  */
-export const JOURNAL_RESKIN: boolean = false
+export const JOURNAL_RESKIN: boolean = true
 
 export function journalReskinEnabled(): boolean {
   return JOURNAL_RESKIN

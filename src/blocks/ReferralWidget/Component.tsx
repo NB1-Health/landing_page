@@ -65,11 +65,51 @@ const ReferralWidgetComponentRedesign: React.FC<ReferralWidgetBlockType> = ({
          * data-d="pad" only ever sets padding-left/right, so the ≥900px step to
          * 48px gutters still lands on the wrapper.
          */
+        /*
+         * 104px top, where the design draws 40.
+         *
+         * .rd-header carries margin-bottom:-64px so a TRANSPARENT header can
+         * sit over the block beneath it. This page's header is solid
+         * (data-over="0") and the pull applies regardless, so the section
+         * starts 64px higher than its own box claims and the card's top edge
+         * tucked under the header instead of clearing it. 40 + 64 restores
+         * exactly the gap the design asks for.
+         *
+         * Fourth page needing this compensation, after PgHero (22 -> 86), the
+         * Standards hero (48 -> 112) and the Legal hero (72 -> 136). The real
+         * fix is to stop applying the pull when data-over is "0" -- one rule in
+         * rd-tokens.css -- which would let all four drop their nudge. It is not
+         * done here because every page already compensating would then gain
+         * 64px, so it needs an audit rather than a quiet edit.
+         */
         .rfw-sec {
           --tint: color-mix(in oklab, var(--nb1-blue-grey) 34%, var(--nb1-cool-grey));
           background: var(--tint);
           border-bottom: 1px solid rgba(81, 71, 69, 0.16);
-          padding: 40px 0 56px;
+          padding: 104px 0 56px;
+        }
+        /*
+         * AND THE SAME ON A PHONE, which the rule above cannot reach.
+         *
+         * rd-tokens.css carries the project's phone rhythm as a padding-top of
+         * 44px, marked important, on every rd-block that is a section. It
+         * overrides the 104 and the card tucks under the header again, by 20px
+         * this time. An important declaration beats specificity, so matching it
+         * is the only way to exempt this one section without editing a rule
+         * every other block depends on.
+         *
+         * Specificity still decides between the two: rd-block + rfw-sec is two
+         * classes, against one class plus a type selector for the shared rule
+         * (:is takes the highest specificity of its argument, and section is a
+         * type). Two classes wins.
+         *
+         * 44 + 64, so the phone keeps its own tighter rhythm rather than
+         * inheriting the desktop figure.
+         */
+        @container nb1page (max-width: 560px) {
+          .rd-block.rfw-sec {
+            padding-top: 108px !important;
+          }
         }
         .rfw-pad {
           max-width: 1240px;
