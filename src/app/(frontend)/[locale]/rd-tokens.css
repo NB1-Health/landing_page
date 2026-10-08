@@ -204,6 +204,39 @@ div:not(.rd-block *):has(> .rd-block) {
     .rd-block [data-m="herostage"], .rd-block:is([data-m="herostage"]){min-height:640px!important;}
     .rd-block [data-m="bubsm"], .rd-block:is([data-m="bubsm"]){display:none!important;}
     .rd-block [data-m="bub"] > div:first-child, .rd-block:is([data-m="bub"] > div:first-child){width:52px!important;height:52px!important;}
+    /* THE BUBBLES MUST NEVER REACH THE COPY, IN ANY LANGUAGE.
+     *
+     * The five bubbles are absolutely positioned at a PERCENTAGE of the stage
+     * (17 / 24 / 47 / 34 / 52) and the copy is a bottom-aligned flex item. A
+     * longer headline grows upward into them: English is one line and clears
+     * them, French ("Fini les approximations") is two and lands on RESILIENCE
+     * and SLEEP.
+     *
+     * Percentages alone cannot be made safe, because the moment the stage is
+     * allowed to grow for tall copy every percentage moves down with it and
+     * the collision returns. So on a phone the two are decoupled:
+     *
+     *   1. the bubbles are pinned in PIXELS from the top of the stage. The
+     *      values are the mockup's own percentages resolved against the 640px
+     *      mobile stage above, so at the default height nothing moves at all:
+     *      17% -> 109, 24% -> 154, 34% -> 218, 47% -> 301, 52% -> 333.
+     *
+     *   2. the copy gets a 430px top MARGIN, which is the lowest bubble (333)
+     *      plus its 52px orb plus its label and gap. Because the stage is
+     *      min-height rather than height, short copy still sits bottom-aligned
+     *      at 640 and looks exactly as it does today, while tall copy makes the
+     *      stage grow and starts no higher than 430. The bubbles do not follow,
+     *      because they are no longer measured in percent.
+     *
+     * nth-child rather than a hook on each bubble: all five are unconditional
+     * elements in the component (they read bubbles?.[0..4] but always render),
+     * so the order is fixed — 1 image, 2 gradient, 3-7 bubbles, 8 copy. */
+    .rd-block [data-m="herostage"] > div:nth-child(3), .rd-block:is([data-m="herostage"]) > div:nth-child(3){top:109px!important;}
+    .rd-block [data-m="herostage"] > div:nth-child(4), .rd-block:is([data-m="herostage"]) > div:nth-child(4){top:154px!important;}
+    .rd-block [data-m="herostage"] > div:nth-child(5), .rd-block:is([data-m="herostage"]) > div:nth-child(5){top:301px!important;}
+    .rd-block [data-m="herostage"] > div:nth-child(6), .rd-block:is([data-m="herostage"]) > div:nth-child(6){top:218px!important;}
+    .rd-block [data-m="herostage"] > div:nth-child(7), .rd-block:is([data-m="herostage"]) > div:nth-child(7){top:333px!important;}
+    .rd-block [data-m="herocopy"], .rd-block:is([data-m="herocopy"]){margin-top:430px!important;}
     .rd-block [data-m="tight"], .rd-block:is([data-m="tight"]){padding-top:40px!important;padding-bottom:40px!important;}
     .rd-block [data-m="chip"], .rd-block:is([data-m="chip"]){padding:.85em 1.15em!important;}
     .rd-block [data-m="board"], .rd-block:is([data-m="board"]){height:auto!important;aspect-ratio:3 / 4.4!important;}
