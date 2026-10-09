@@ -535,26 +535,48 @@ const SURVEY_ENABLED = false
  * a remount after an answer — appending `embed.js` twice would run Kno twice
  * against the same container.
  */
-// const KNO_ID = process.env.NEXT_PUBLIC_KNO_ID
-// const KNO_SURVEY_ID = process.env.NEXT_PUBLIC_KNO_SURVEY_ID
-const KNO_ID = 'KF4EMR1-Q9Y4BN4-NA5YDJH-NRRJT33'
-const KNO_SURVEY_ID = '638b447c-db72-416a-9a20-44b6d0ca061b'
-
 /**
- * The `?id=` on embed.js. On the snippet we were given it is the same UUID as
- * the survey id, so it defaults to that and only needs setting if KnoCommerce
- * ever hands out a loader whose id differs from the survey's.
+ * THREE IDS, ALL DIFFERENT. The generated snippet proves it — the survey is
+ * `b7746f09-…` while embed.js is loaded with `?id=638b447c-…`, and the account
+ * key is a fourth shape entirely (`KF4EMR1-…`). An earlier version of this
+ * file defaulted the loader id to the survey id on the assumption they were
+ * the same; they are not, and that would have fetched the wrong script with
+ * nothing on screen to say so. Each one is its own variable, with no fallback.
  */
-const KNO_EMBED_ID = process.env.NEXT_PUBLIC_KNO_EMBED_ID || KNO_SURVEY_ID
+const KNO_ID = 'KF4EMR1-Q9Y4BN4-NA5YDJH-NRRJT33'
+const KNO_SURVEY_ID = 'b7746f09-d45c-4dca-847c-7268adb805db'
+const KNO_EMBED_ID = '638b447c-db72-416a-9a20-44b6d0ca061b'
 const KNO_SRC = KNO_EMBED_ID ? `https://www.knocdn.com/v2/embed.js?id=${KNO_EMBED_ID}` : null
+const KNO_READY = Boolean(KNO_ID && KNO_SURVEY_ID && KNO_SRC)
 
 const RdChkKno: React.FC = () => {
   useEffect(() => {
-    if (!KNO_ID || !KNO_SURVEY_ID || !KNO_SRC) return
+    // Spelled out rather than `!KNO_READY`, so TypeScript narrows KNO_SRC to
+    // a string for the append below.
+    if (!KNO_ID || !KNO_SURVEY_ID || !KNO_SRC) {
+      // Silence in production, one line in development — otherwise a missing
+      // variable is indistinguishable from a survey that simply did not fire.
+      if (process.env.NODE_ENV !== 'production') {
+        const missing = [
+          !KNO_ID && 'NEXT_PUBLIC_KNO_ID',
+          !KNO_SURVEY_ID && 'NEXT_PUBLIC_KNO_SURVEY_ID',
+          !KNO_EMBED_ID && 'NEXT_PUBLIC_KNO_EMBED_ID',
+        ].filter(Boolean)
+        console.warn(`[kno] not rendered — missing ${missing.join(', ')}`)
+      }
+      return
+    }
+
     ;(window as unknown as { Kno?: unknown }).Kno = {
       kno_id: KNO_ID,
+      // The generated snippet omits this; the Custom-integration docs set it.
+      // We have no Shopify order to hand Kno, so anonymous is the honest value.
       anonymous: true,
       survey: {
+        // NOT `after_shipping`. The snippet KnoCommerce generates names a
+        // Shopify checkout slot, and there is no such slot on this page — it
+        // would resolve to nothing and render nothing. The Custom integration
+        // takes a CSS selector instead, which is the container below.
         selector: 'div#kno-script-container',
         id: KNO_SURVEY_ID,
       },
@@ -567,7 +589,7 @@ const RdChkKno: React.FC = () => {
     document.body.appendChild(tag)
   }, [])
 
-  if (!KNO_ID || !KNO_SURVEY_ID || !KNO_SRC) return null
+  if (!KNO_READY) return null
   return <div id="kno-script-container" style={{ marginTop: '14px' }} />
 }
 
