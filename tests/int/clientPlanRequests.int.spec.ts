@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -33,16 +34,38 @@ describe('shared browser plan requests', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
-  it('allows retry after an API failure', async () => {
+  // A failed request is retried once after a 1.5s pause, so a single blip never
+  // reaches the price components.
+  it('retries a transient failure once before giving up', async () => {
     vi.resetModules()
+    vi.useFakeTimers()
     const { fetchPlansClient } = await import('@/lib/plans/clientUtils')
     const fetch = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 503 })
       .mockResolvedValueOnce({ ok: true, json: async () => [] })
     vi.stubGlobal('fetch', fetch)
-    await expect(fetchPlansClient()).rejects.toThrow('503')
-    await expect(fetchPlansClient()).resolves.toEqual([])
+    const request = fetchPlansClient()
+    await vi.advanceTimersByTimeAsync(1500)
+    await expect(request).resolves.toEqual([])
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('allows retry after the retry also fails', async () => {
+    vi.resetModules()
+    vi.useFakeTimers()
+    const { fetchPlansClient } = await import('@/lib/plans/clientUtils')
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+    vi.stubGlobal('fetch', fetch)
+    const failing = fetchPlansClient()
+    const failed = expect(failing).rejects.toThrow('503')
+    await vi.advanceTimersByTimeAsync(1500)
+    await failed
+    await expect(fetchPlansClient()).resolves.toEqual([])
+    expect(fetch).toHaveBeenCalledTimes(3)
   })
 })

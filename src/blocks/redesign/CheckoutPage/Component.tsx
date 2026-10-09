@@ -59,7 +59,9 @@ import {
 import { createFirebaseAccount } from '@/lib/createAccount'
 import { openArminChat } from '@/components/ArminWidget'
 import 'react-phone-number-input/style.css'
-import AddressAutocomplete, { type GooglePlace } from '@/blocks/checkoutBlocks/CheckoutForm/AddressAutocomplete'
+import AddressAutocomplete, {
+  type GooglePlace,
+} from '@/blocks/checkoutBlocks/CheckoutForm/AddressAutocomplete'
 import PhoneInput, {
   getCountryCallingCode,
   isSupportedCountry,
@@ -95,7 +97,6 @@ import Link from 'next/link'
 //
 // The checkout page — step 3 of the funnel, and the last.
 
-
 const mediaUrl = (m: unknown): string | undefined =>
   m && typeof m === 'object' && 'url' in m ? ((m as { url?: string }).url ?? undefined) : undefined
 
@@ -107,8 +108,7 @@ const mediaAlt = (m: unknown): string =>
    shipped form, re-capture, and regenerate. Every difference from what ships is
    an anchored patch in that tool, and there are five. */
 
-
-  // ---- module level --------------------------------------------------------
+// ---- module level --------------------------------------------------------
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '')
 const BACKEND_OWNS_META_PURCHASE = process.env.NEXT_PUBLIC_META_PURCHASE_OWNER === 'backend'
 
@@ -468,194 +468,444 @@ const SURVEY_PLACEMENT = 'checkout_confirmation'
 const QUESTION_KEY = 'discovery_source'
 const QUESTION_VERSION = 1
 
-const RdChkPrice: React.FC<ChkPartProps> = ({ perLabel, priceLabel, sumOpen }) => {
-  return (
-    (!sumOpen) ? (
-          <span style={{
-            fontFamily: "var(--nb1-font-primary)",
-            fontSize: "20px",
-            whiteSpace: "nowrap"
-          }} className="rd-chk-price">
-            {priceLabel}
-            <span style={{
-              fontFamily: "var(--nb1-font-secondary)",
-              fontSize: "12.5px",
-              opacity: "0.7"
-            }}>{perLabel}</span>
-          </span>
-        ) : null
-  )
+/**
+ * ─────────────────────────────────────────────────────────────────────────
+ * THE ATTRIBUTION SURVEY IS SWITCHED OFF. Andra's call. Flip to `true` to
+ * bring it back; nothing else has to change.
+ * ─────────────────────────────────────────────────────────────────────────
+ *
+ * A FLAG RATHER THAN COMMENT MARKERS, for two reasons that are not style:
+ *
+ *   · the card's JSX contains a `/* … *\/` comment of its own, and block
+ *     comments do not nest — the inner terminator would end the outer one
+ *     part-way through and leave the rest as live code.
+ *   · commenting the markup out orphans `RdChkSurveyMore`, `survOpts`,
+ *     `recordAnswer` and four handlers. Under `noUnusedLocals` that is a
+ *     build failure, so hiding the section would mean deleting the machinery
+ *     behind it — and then switching it back on is a rewrite, not a word.
+ *
+ * TWO THINGS ARE GATED, not one. The card at the bottom of the confirmed
+ * screen, and the `postPurchaseSurveyViewed` event — a view reported for a
+ * survey nobody can see would quietly poison the answer rate it is the
+ * denominator of.
+ *
+ * Everything else stays: the question constants above are still what the
+ * backend files an answer under, so a later re-enable keeps reporting
+ * continuity with the answers already collected.
+ */
+const SURVEY_ENABLED = false
+
+/**
+ * The Kno attribution survey, in the old survey's place.
+ *
+ * BOTH IDS ARE ENV, NOT CONSTANTS. They differ between environments and the
+ * survey id changes whenever a new survey is published, so neither belongs in
+ * the repo. `NEXT_PUBLIC_` because this is read in the browser — Next inlines
+ * these at BUILD time, which has two consequences worth knowing: the names
+ * have to be written out literally (destructuring `process.env` gives you
+ * undefined), and changing a value means a rebuild, not just a restart.
+ *
+ * NOTHING RENDERS UNTIL BOTH ARE SET. An empty container with a half-built
+ * `window.Kno` beside it is worse than no container: the vendor script finds
+ * its selector, fails on the id, and leaves a blank gap under the timeline
+ * that looks like a styling bug rather than a missing key.
+ *
+ * `window.Kno` IS SET IN AN EFFECT, not an inline <script>. React does not
+ * execute script tags it inserts on the client, and this screen is a state
+ * flip reached after the order is placed — so it is always client-rendered,
+ * and an inline tag here would never run at all. The effect fires after the
+ * container is committed, so Kno's `div#kno-script-container` selector
+ * resolves whenever the loader gets there.
+ *
+ * THE LOADER IS INJECTED HERE, NOT PUT IN THE PAGE HEAD, and that is the one
+ * place this install departs from KnoCommerce's instructions. Their steps say
+ * to paste `embed.js` into the HTML of "the page where you want the
+ * questionnaire" — but this screen is not a page. It is a state flip reached
+ * after the order is placed, so `div#kno-script-container` DOES NOT EXIST at
+ * document load. A loader in the head would query its selector, find nothing,
+ * and do nothing, with no error to explain it. Appending it from this effect
+ * puts it after the container is committed, which is correct whether or not
+ * their script retries.
+ *
+ * ORDER IS LOAD-BEARING: `window.Kno` is assigned BEFORE the tag is appended,
+ * because the loader reads the config when it runs. That is the same ordering
+ * their step 6 means by "paste the embed script snippet below it".
+ *
+ * The src guard is for React's double-invoked effects in development, and for
+ * a remount after an answer — appending `embed.js` twice would run Kno twice
+ * against the same container.
+ */
+/**
+ * THREE IDS, ALL DIFFERENT. The generated snippet proves it — the survey is
+ * `b7746f09-…` while embed.js is loaded with `?id=638b447c-…`, and the account
+ * key is a fourth shape entirely (`KF4EMR1-…`). An earlier version of this
+ * file defaulted the loader id to the survey id on the assumption they were
+ * the same; they are not, and that would have fetched the wrong script with
+ * nothing on screen to say so. Each one is its own variable, with no fallback.
+ */
+const KNO_ID = process.env.NEXT_PUBLIC_KNO_ID
+const KNO_SURVEY_ID = process.env.NEXT_PUBLIC_KNO_SURVEY_ID
+const KNO_EMBED_ID = process.env.NEXT_PUBLIC_KNO_EMBED_ID
+const KNO_SRC = KNO_EMBED_ID ? `https://www.knocdn.com/v2/embed.js?id=${KNO_EMBED_ID}` : null
+const KNO_READY = Boolean(KNO_ID && KNO_SURVEY_ID && KNO_SRC)
+
+const RdChkKno: React.FC = () => {
+  useEffect(() => {
+    // Spelled out rather than `!KNO_READY`, so TypeScript narrows KNO_SRC to
+    // a string for the append below.
+    if (!KNO_ID || !KNO_SURVEY_ID || !KNO_SRC) {
+      // Silence in production, one line in development — otherwise a missing
+      // variable is indistinguishable from a survey that simply did not fire.
+      if (process.env.NODE_ENV !== 'production') {
+        const missing = [
+          !KNO_ID && 'NEXT_PUBLIC_KNO_ID',
+          !KNO_SURVEY_ID && 'NEXT_PUBLIC_KNO_SURVEY_ID',
+          !KNO_EMBED_ID && 'NEXT_PUBLIC_KNO_EMBED_ID',
+        ].filter(Boolean)
+        console.warn(`[kno] not rendered — missing ${missing.join(', ')}`)
+      }
+      return
+    }
+
+    ;(window as unknown as { Kno?: unknown }).Kno = {
+      kno_id: KNO_ID,
+      // The generated snippet omits this; the Custom-integration docs set it.
+      // We have no Shopify order to hand Kno, so anonymous is the honest value.
+      anonymous: true,
+      survey: {
+        // NOT `after_shipping`. The snippet KnoCommerce generates names a
+        // Shopify checkout slot, and there is no such slot on this page — it
+        // would resolve to nothing and render nothing. The Custom integration
+        // takes a CSS selector instead, which is the container below.
+        selector: 'div#kno-script-container',
+        id: KNO_SURVEY_ID,
+      },
+    }
+
+    if (document.querySelector(`script[src="${KNO_SRC}"]`)) return
+    const tag = document.createElement('script')
+    tag.src = KNO_SRC
+    tag.async = true
+    document.body.appendChild(tag)
+  }, [])
+
+  if (!KNO_READY) return null
+  return <div id="kno-script-container" style={{ marginTop: '14px' }} />
 }
 
-const RdChkHead: React.FC<ChkPartProps> = ({ done, editLabel, idx, numStyle, onOpen, summary, title, titleStyle }) => {
+const RdChkPrice: React.FC<ChkPartProps> = ({ perLabel, priceLabel, sumOpen }) => {
+  return !sumOpen ? (
+    <span
+      style={{
+        fontFamily: 'var(--nb1-font-primary)',
+        fontSize: '20px',
+        whiteSpace: 'nowrap',
+      }}
+      className="rd-chk-price"
+    >
+      {priceLabel}
+      <span
+        style={{
+          fontFamily: 'var(--nb1-font-secondary)',
+          fontSize: '12.5px',
+          opacity: '0.7',
+        }}
+      >
+        {perLabel}
+      </span>
+    </span>
+  ) : null
+}
+
+const RdChkHead: React.FC<ChkPartProps> = ({
+  done,
+  editLabel,
+  idx,
+  numStyle,
+  onOpen,
+  summary,
+  title,
+  titleStyle,
+}) => {
   return (
-    <button style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "16px",
-      width: "100%",
-      padding: "24px",
-      border: "0px",
-      background: "transparent",
-      cursor: "pointer",
-      textAlign: "left"
-    }} className="rd-chk-head" onClick={onOpen}>
-      <span style={numStyle}>
-        {done ? '✓' : String(idx + 1)}
-      </span>
-      <span style={titleStyle}>
-        {title}
-      </span>
-      {(done) ? (
-        <span style={{
-          fontSize: "14.5px",
-          color: "var(--muted)",
-          textAlign: "right"
-        }}>
+    <button
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        width: '100%',
+        padding: '24px',
+        border: '0px',
+        background: 'transparent',
+        cursor: 'pointer',
+        textAlign: 'left',
+      }}
+      className="rd-chk-head"
+      onClick={onOpen}
+    >
+      <span style={numStyle}>{done ? '✓' : String(idx + 1)}</span>
+      <span style={titleStyle}>{title}</span>
+      {done ? (
+        <span
+          style={{
+            fontSize: '14.5px',
+            color: 'var(--muted)',
+            textAlign: 'right',
+          }}
+        >
           {summary}
         </span>
       ) : null}
-      {(done) ? (
-        <span style={{
-          fontSize: "14px",
-          textDecoration: "underline",
-          textUnderlineOffset: "3px"
-        }}>{editLabel}</span>
+      {done ? (
+        <span
+          style={{
+            fontSize: '14px',
+            textDecoration: 'underline',
+            textUnderlineOffset: '3px',
+          }}
+        >
+          {editLabel}
+        </span>
       ) : null}
     </button>
   )
 }
 
-const RdChkEml: React.FC<ChkPartProps> = ({ email, emailErr, emailSuggestion, eml, nextLabel, onEmail, onEmailBlur, onNext }) => {
+const RdChkEml: React.FC<ChkPartProps> = ({
+  email,
+  emailErr,
+  emailSuggestion,
+  eml,
+  nextLabel,
+  onEmail,
+  onEmailBlur,
+  onNext,
+}) => {
   return (
-    <div style={{
-      padding: "0px 24px 26px"
-    }} className="rd-chk-eml">
-      <label style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        minWidth: "0px"
-      }}>
-        <span style={{
-          fontSize: "15px",
-          color: "rgb(0, 0, 0)"
-        }}>{eml?.label}</span>
-        <RdChkEmlField value={email} placeholder={eml?.placeholder || 'you@email.com'} onChange={onEmail} onBlur={onEmailBlur} err={emailErr} suggestion={emailSuggestion} />
+    <div
+      style={{
+        padding: '0px 24px 26px',
+      }}
+      className="rd-chk-eml"
+    >
+      <label
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          minWidth: '0px',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '15px',
+            color: 'rgb(0, 0, 0)',
+          }}
+        >
+          {eml?.label}
+        </span>
+        <RdChkEmlField
+          value={email}
+          placeholder={eml?.placeholder || 'you@email.com'}
+          onChange={onEmail}
+          onBlur={onEmailBlur}
+          err={emailErr}
+          suggestion={emailSuggestion}
+        />
       </label>
-      <p style={{
-        fontSize: "14.5px",
-        lineHeight: "1.55",
-        color: "var(--muted)",
-        marginTop: "12px"
-      }}>{eml?.help}</p>
-      <button style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "1.1em",
-        marginTop: "22px",
-        border: "0px",
-        cursor: "pointer",
-        borderRadius: "999px",
-        background: "var(--nb1-lime)",
-        color: "rgb(0, 0, 0)",
-        fontFamily: "var(--nb1-font-tertiary)",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        fontSize: "13.5px",
-        padding: "1em 1.5em",
-        whiteSpace: "nowrap",
-        flexShrink: "0"
-      }} onClick={onNext}>
+      <p
+        style={{
+          fontSize: '14.5px',
+          lineHeight: '1.55',
+          color: 'var(--muted)',
+          marginTop: '12px',
+        }}
+      >
+        {eml?.help}
+      </p>
+      <button
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '1.1em',
+          marginTop: '22px',
+          border: '0px',
+          cursor: 'pointer',
+          borderRadius: '999px',
+          background: 'var(--nb1-lime)',
+          color: 'rgb(0, 0, 0)',
+          fontFamily: 'var(--nb1-font-tertiary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          fontSize: '13.5px',
+          padding: '1em 1.5em',
+          whiteSpace: 'nowrap',
+          flexShrink: '0',
+        }}
+        onClick={onNext}
+      >
         <span>{nextLabel}</span>
-        <span style={{
-          fontSize: "1.05em",
-          lineHeight: "1"
-        }}>{"\u2197"}</span>
+        <span
+          style={{
+            fontSize: '1.05em',
+            lineHeight: '1',
+          }}
+        >
+          {'\u2197'}
+        </span>
       </button>
     </div>
   )
 }
 
-const RdChkAdr: React.FC<ChkPartProps> = ({ ADDR_AUTOCOMPLETE, addrErrAt, addrValue, adr, ctl, fieldStyle, nextLabel, onAddr, onAddressPick, onNext }) => {
+const RdChkAdr: React.FC<ChkPartProps> = ({
+  ADDR_AUTOCOMPLETE,
+  addrErrAt,
+  addrValue,
+  adr,
+  ctl,
+  fieldStyle,
+  nextLabel,
+  onAddr,
+  onAddressPick,
+  onNext,
+}) => {
   return (
-    <div style={{
-      padding: "0px 24px 26px"
-    }} className="rd-chk-adr">
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "14px"
-      }}>
+    <div
+      style={{
+        padding: '0px 24px 26px',
+      }}
+      className="rd-chk-adr"
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '14px',
+        }}
+      >
         {(adr?.fields || []).map((f, fIdx) => (
           <label key={fIdx} style={fieldStyle(fIdx)}>
-            <span style={{
-              fontSize: "15px",
-              color: "rgb(0, 0, 0)"
-            }}>{f.label}</span>
-            <RdChkAddrField idx={fIdx} field={f} value={addrValue(fIdx)} onChange={onAddr(fIdx)} autoComplete={ADDR_AUTOCOMPLETE[fIdx]} onPick={onAddressPick} err={addrErrAt(fIdx)} ctl={ctl} />
+            <span
+              style={{
+                fontSize: '15px',
+                color: 'rgb(0, 0, 0)',
+              }}
+            >
+              {f.label}
+            </span>
+            <RdChkAddrField
+              idx={fIdx}
+              field={f}
+              value={addrValue(fIdx)}
+              onChange={onAddr(fIdx)}
+              autoComplete={ADDR_AUTOCOMPLETE[fIdx]}
+              onPick={onAddressPick}
+              err={addrErrAt(fIdx)}
+              ctl={ctl}
+            />
           </label>
         ))}
       </div>
-      <p style={{
-        fontSize: "14.5px",
-        lineHeight: "1.55",
-        color: "var(--muted)",
-        marginTop: "12px"
-      }}>{adr?.note}</p>
-      <button style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "1.1em",
-        marginTop: "22px",
-        border: "0px",
-        cursor: "pointer",
-        borderRadius: "999px",
-        background: "var(--nb1-lime)",
-        color: "rgb(0, 0, 0)",
-        fontFamily: "var(--nb1-font-tertiary)",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        fontSize: "13.5px",
-        padding: "1em 1.5em",
-        whiteSpace: "nowrap",
-        flexShrink: "0"
-      }} onClick={onNext}>
+      <p
+        style={{
+          fontSize: '14.5px',
+          lineHeight: '1.55',
+          color: 'var(--muted)',
+          marginTop: '12px',
+        }}
+      >
+        {adr?.note}
+      </p>
+      <button
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '1.1em',
+          marginTop: '22px',
+          border: '0px',
+          cursor: 'pointer',
+          borderRadius: '999px',
+          background: 'var(--nb1-lime)',
+          color: 'rgb(0, 0, 0)',
+          fontFamily: 'var(--nb1-font-tertiary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          fontSize: '13.5px',
+          padding: '1em 1.5em',
+          whiteSpace: 'nowrap',
+          flexShrink: '0',
+        }}
+        onClick={onNext}
+      >
         <span>{nextLabel}</span>
-        <span style={{
-          fontSize: "1.05em",
-          lineHeight: "1"
-        }}>{"\u2197"}</span>
+        <span
+          style={{
+            fontSize: '1.05em',
+            lineHeight: '1',
+          }}
+        >
+          {'\u2197'}
+        </span>
       </button>
     </div>
   )
 }
 
 const RdChkNote: React.FC<ChkPartProps> = ({ note }) => {
-  return (
-    (note) ? (
-          <p style={{
-            fontSize: "14.5px",
-            lineHeight: "1.55",
-            color: "var(--muted)",
-            padding: "0px 16px 18px 44px"
-          }} className="rd-chk-note">
-            {note}
-          </p>
-        ) : null
-  )
+  return note ? (
+    <p
+      style={{
+        fontSize: '14.5px',
+        lineHeight: '1.55',
+        color: 'var(--muted)',
+        padding: '0px 16px 18px 44px',
+      }}
+      className="rd-chk-note"
+    >
+      {note}
+    </p>
+  ) : null
 }
 
-const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFieldStyle, cardName, cardRows, express, expressReady, methodDot, methodDotInner, methodRow, methodShown, methodStyle, onBillingSame, onCardElementDone, onCardName, onPick, onPlaceOrder, pay, payErrors, payMethod, placing }) => {
+const RdChkPay: React.FC<ChkPayProps> = ({
+  bill,
+  billingSame,
+  cardErrAt,
+  cardFieldStyle,
+  cardName,
+  cardRows,
+  express,
+  expressReady,
+  methodDot,
+  methodDotInner,
+  methodRow,
+  methodShown,
+  methodStyle,
+  onBillingSame,
+  onCardElementDone,
+  onCardName,
+  onPick,
+  onPlaceOrder,
+  pay,
+  payErrors,
+  payMethod,
+  placing,
+}) => {
   return (
-    <div style={{
-      padding: "0px 24px 26px"
-    }} className="rd-chk-pay">
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        gap: "10px"
-      }}>
+    <div
+      style={{
+        padding: '0px 24px 26px',
+      }}
+      className="rd-chk-pay"
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '10px',
+        }}
+      >
         <RdChkExpress ready={expressReady} express={express} />
       </div>
       {/* "or pay another way" — ONLY when a wallet actually rendered.
@@ -670,47 +920,61 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
           unmounting it would mean `onReady` never fires and the flag could
           never turn true. */}
       {expressReady ? (
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          margin: "18px 0px 14px",
-          fontSize: "14px",
-          color: "var(--muted)"
-        }}>
-          <span style={{
-            flex: "1 1 0%",
-            height: "1px",
-            background: "var(--nb1-hairline)"
-          }} />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            margin: '18px 0px 14px',
+            fontSize: '14px',
+            color: 'var(--muted)',
+          }}
+        >
+          <span
+            style={{
+              flex: '1 1 0%',
+              height: '1px',
+              background: 'var(--nb1-hairline)',
+            }}
+          />
           {pay?.orLabel}
-          <span style={{
-            flex: "1 1 0%",
-            height: "1px",
-            background: "var(--nb1-hairline)"
-          }} />
+          <span
+            style={{
+              flex: '1 1 0%',
+              height: '1px',
+              background: 'var(--nb1-hairline)',
+            }}
+          />
         </div>
       ) : null}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        borderRadius: "14px",
-        background: "rgb(255, 255, 255)",
-        boxShadow: "rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset",
-        overflow: "hidden"
-      }}>
-        {(pay?.methods || []).map((m, mIdx) => (
-          (methodShown(m.key)) ? (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '14px',
+          background: 'rgb(255, 255, 255)',
+          boxShadow: 'rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset',
+          overflow: 'hidden',
+        }}
+      >
+        {(pay?.methods || []).map((m, mIdx) =>
+          methodShown(m.key) ? (
             <div key={m.key || mIdx} style={methodRow(m.key)}>
-              <button style={methodStyle(m.key)} aria-pressed={payMethod === m.key ? 'true' : 'false'} onClick={onPick(m.key)}>
+              <button
+                style={methodStyle(m.key)}
+                aria-pressed={payMethod === m.key ? 'true' : 'false'}
+                onClick={onPick(m.key)}
+              >
                 <span style={methodDot(m.key)}>
                   <span style={methodDotInner(m.key)} />
                 </span>
-                <span style={{
-                  flex: "1 1 0%",
-                  fontSize: "16px",
-                  color: "rgb(0, 0, 0)"
-                }}>
+                <span
+                  style={{
+                    flex: '1 1 0%',
+                    fontSize: '16px',
+                    color: 'rgb(0, 0, 0)',
+                  }}
+                >
                   {m.label}
                 </span>
                 {/* The `meta` caption — "VISA · MC · AMEX", "KLARNA", "PAYPAL",
@@ -723,327 +987,461 @@ const RdChkPay: React.FC<ChkPayProps> = ({ bill, billingSame, cardErrAt, cardFie
                     for something that is now simply not rendered, and the stored
                     values are still there if the caption is ever wanted back. */}
               </button>
-              {(payMethod === m.key && m.key === 'card') ? (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: "14px",
-                  padding: "4px 16px 18px"
-                }}>
+              {payMethod === m.key && m.key === 'card' ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                    gap: '14px',
+                    padding: '4px 16px 18px',
+                  }}
+                >
                   {((cardRows?.(m) ?? []) || []).map((cf, cIdx) => (
                     <label key={cIdx} style={cardFieldStyle(cIdx)}>
-                      <span style={{
-                        fontSize: "15px",
-                        color: "rgb(0, 0, 0)"
-                      }}>{cf.label}</span>
-                      <RdChkCardField idx={cIdx} field={cf} onName={onCardName} cardName={cardName} onDone={onCardElementDone} err={cardErrAt(cIdx)} />
+                      <span
+                        style={{
+                          fontSize: '15px',
+                          color: 'rgb(0, 0, 0)',
+                        }}
+                      >
+                        {cf.label}
+                      </span>
+                      <RdChkCardField
+                        idx={cIdx}
+                        field={cf}
+                        onName={onCardName}
+                        cardName={cardName}
+                        onDone={onCardElementDone}
+                        err={cardErrAt(cIdx)}
+                      />
                     </label>
                   ))}
                 </div>
               ) : null}
               <RdChkNote note={payMethod === m.key && m.key !== 'card' ? m.note : ''} />
             </div>
-          ) : null
-        ))}
+          ) : null,
+        )}
       </div>
-      <label style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        marginTop: "16px",
-        fontSize: "15px",
-        cursor: "pointer"
-      }}>
-        <input style={{
-          width: "18px",
-          height: "18px",
-          accentColor: "rgb(81, 71, 69)"
-        }} type="checkbox" checked={billingSame ?? undefined} onChange={onBillingSame} />
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginTop: '16px',
+          fontSize: '15px',
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          style={{
+            width: '18px',
+            height: '18px',
+            accentColor: 'rgb(81, 71, 69)',
+          }}
+          type="checkbox"
+          checked={billingSame ?? undefined}
+          onChange={onBillingSame}
+        />
         {pay?.billingSame}
       </label>
-        <RdChkBilling bill={bill} />
-      <button style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "1.1em",
-        width: "100%",
-        marginTop: "22px",
-        border: "0px",
-        cursor: "pointer",
-        borderRadius: "999px",
-        background: "var(--nb1-lime)",
-        color: "rgb(0, 0, 0)",
-        fontFamily: "var(--nb1-font-tertiary)",
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        fontSize: "14px",
-        padding: "1.2em 1.6em",
-        whiteSpace: "nowrap"
-      }} className="rd-chk-cta" disabled={placing || undefined} onClick={onPlaceOrder}>
+      <RdChkBilling bill={bill} />
+      <button
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1.1em',
+          width: '100%',
+          marginTop: '22px',
+          border: '0px',
+          cursor: 'pointer',
+          borderRadius: '999px',
+          background: 'var(--nb1-lime)',
+          color: 'rgb(0, 0, 0)',
+          fontFamily: 'var(--nb1-font-tertiary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          fontSize: '14px',
+          padding: '1.2em 1.6em',
+          whiteSpace: 'nowrap',
+        }}
+        className="rd-chk-cta"
+        disabled={placing || undefined}
+        onClick={onPlaceOrder}
+      >
         <span>{pay?.cta}</span>
-        <span style={{
-          fontSize: "1.05em",
-          lineHeight: "1"
-        }}>{"\u2197"}</span>
+        <span
+          style={{
+            fontSize: '1.05em',
+            lineHeight: '1',
+          }}
+        >
+          {'\u2197'}
+        </span>
       </button>
-        <RdChkErrors of={payErrors} />
-      <p style={{
-        fontSize: "13.5px",
-        lineHeight: "1.6",
-        color: "var(--muted)",
-        marginTop: "14px"
-      }}>{pay?.terms}</p>
+      <RdChkErrors of={payErrors} />
+      <p
+        style={{
+          fontSize: '13.5px',
+          lineHeight: '1.6',
+          color: 'var(--muted)',
+          marginTop: '14px',
+        }}
+      >
+        {pay?.terms}
+      </p>
     </div>
   )
 }
 
-const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, doneHeading, dotStyle, lineStyle, onTopOpt, orderLine, path, planName, priceLabel, promo, survOpts, survey }) => {
+const RdChkDone: React.FC<ChkDoneProps> = ({
+  activeSurvOpt,
+  billingShort,
+  done,
+  doneHeading,
+  dotStyle,
+  lineStyle,
+  onTopOpt,
+  orderLine,
+  path,
+  planName,
+  priceLabel,
+  promo,
+  survOpts,
+  survey,
+}) => {
   // `#` and empty both mean "no destination" — the seed writes `#`. Anything
   // else is a real url an editor meant.
   const chatRaw = (done?.helpChatUrl || '').trim()
   const chatHref = chatRaw && chatRaw !== '#' ? chatRaw : null
   return (
-    <div style={{
-      maxWidth: "1040px",
-      margin: "0px auto",
-      padding: "40px 20px 56px"
-    }} className="rd-chk-done" data-m="pad">
-      <div style={{
-        textAlign: "center",
-        maxWidth: "640px",
-        margin: "0px auto"
-      }}>
-        <div style={{
-          width: "62px",
-          height: "62px",
-          borderRadius: "50%",
-          background: "var(--nb1-lime)",
-          display: "grid",
-          placeItems: "center",
-          fontSize: "28px",
-          color: "rgb(0, 0, 0)",
-          margin: "0px auto 22px",
-          boxShadow: "rgba(81, 71, 69, 0.5) 0px 14px 34px -16px"
-        }}>{"\u2713"}</div>
-        <div style={{
-          fontFamily: "var(--nb1-font-tertiary)",
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          fontSize: "12.5px",
-          color: "var(--muted)"
-        }}>{orderLine}</div>
-        <h1 style={{
-          fontFamily: "var(--nb1-font-primary)",
-          fontWeight: "400",
-          fontSize: "clamp(36px, 6.4cqi, 52px)",
-          lineHeight: "1.05",
-          letterSpacing: "-0.025em",
-          marginTop: "12px"
-        }}>{doneHeading}</h1>
-        <p style={{
-          fontSize: "17px",
-          lineHeight: "1.55",
-          color: "var(--muted)",
-          marginTop: "14px"
-        }}>{done?.intro}</p>
-      </div>
-      <div style={{
-        marginTop: "30px",
-        padding: "26px 28px",
-        borderRadius: "18px",
-        background: "rgb(255, 255, 255)",
-        boxShadow: "var(--elev)",
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: "18px 28px"
-      }}>
-        <div style={{
-          flex: "1 1 0%",
-          minWidth: "240px"
-        }}>
-          <h2 style={{
-            fontFamily: "var(--nb1-font-primary)",
-            fontWeight: "400",
-            fontSize: "23px"
-          }}>{done?.acctHeading}</h2>
-          <p style={{
-            fontSize: "15px",
-            lineHeight: "1.5",
-            color: "var(--muted)",
-            marginTop: "6px",
-            maxWidth: "46ch"
-          }}>{done?.acctBody}</p>
+    <div
+      style={{
+        maxWidth: '1040px',
+        margin: '0px auto',
+        padding: '40px 20px 56px',
+      }}
+      className="rd-chk-done"
+      data-m="pad"
+    >
+      <div
+        style={{
+          textAlign: 'center',
+          maxWidth: '640px',
+          margin: '0px auto',
+        }}
+      >
+        <div
+          style={{
+            width: '62px',
+            height: '62px',
+            borderRadius: '50%',
+            background: 'var(--nb1-lime)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '28px',
+            color: 'rgb(0, 0, 0)',
+            margin: '0px auto 22px',
+            boxShadow: 'rgba(81, 71, 69, 0.5) 0px 14px 34px -16px',
+          }}
+        >
+          {'\u2713'}
         </div>
-        <a style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "1.1em",
-          whiteSpace: "nowrap",
-          flexShrink: "0",
-          borderRadius: "999px",
-          background: "var(--nb1-lime)",
-          color: "rgb(0, 0, 0)",
-          fontFamily: "var(--nb1-font-tertiary)",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          fontSize: "13.5px",
-          padding: "1.05em 1.6em"
-        }} href={path(done?.acctSlug)}>
+        <div
+          style={{
+            fontFamily: 'var(--nb1-font-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            fontSize: '12.5px',
+            color: 'var(--muted)',
+          }}
+        >
+          {orderLine}
+        </div>
+        <h1
+          style={{
+            fontFamily: 'var(--nb1-font-primary)',
+            fontWeight: '400',
+            fontSize: 'clamp(36px, 6.4cqi, 52px)',
+            lineHeight: '1.05',
+            letterSpacing: '-0.025em',
+            marginTop: '12px',
+          }}
+        >
+          {doneHeading}
+        </h1>
+        <p
+          style={{
+            fontSize: '17px',
+            lineHeight: '1.55',
+            color: 'var(--muted)',
+            marginTop: '14px',
+          }}
+        >
+          {done?.intro}
+        </p>
+      </div>
+      <div
+        style={{
+          marginTop: '30px',
+          padding: '26px 28px',
+          borderRadius: '18px',
+          background: 'rgb(255, 255, 255)',
+          boxShadow: 'var(--elev)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '18px 28px',
+        }}
+      >
+        <div
+          style={{
+            flex: '1 1 0%',
+            minWidth: '240px',
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: 'var(--nb1-font-primary)',
+              fontWeight: '400',
+              fontSize: '23px',
+            }}
+          >
+            {done?.acctHeading}
+          </h2>
+          <p
+            style={{
+              fontSize: '15px',
+              lineHeight: '1.5',
+              color: 'var(--muted)',
+              marginTop: '6px',
+              maxWidth: '46ch',
+            }}
+          >
+            {done?.acctBody}
+          </p>
+        </div>
+        <a
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '1.1em',
+            whiteSpace: 'nowrap',
+            flexShrink: '0',
+            borderRadius: '999px',
+            background: 'var(--nb1-lime)',
+            color: 'rgb(0, 0, 0)',
+            fontFamily: 'var(--nb1-font-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            fontSize: '13.5px',
+            padding: '1.05em 1.6em',
+          }}
+          href={path(done?.acctSlug)}
+        >
           <span>{done?.acctCta}</span>
-          <span style={{
-            fontSize: "1.05em",
-            lineHeight: "1"
-          }}>{"\u2197"}</span>
+          <span
+            style={{
+              fontSize: '1.05em',
+              lineHeight: '1',
+            }}
+          >
+            {'\u2197'}
+          </span>
         </a>
       </div>
-      <div style={{
-        marginTop: "14px",
-        padding: "22px 26px",
-        borderRadius: "18px",
-        background: "rgb(255, 255, 255)",
-        boxShadow: "rgba(81, 71, 69, 0.16) 0px 0px 0px 1px inset",
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: "16px 26px"
-      }}>
-        <div style={{
-          flex: "0 0 auto",
-          maxWidth: "300px"
-        }}>
-          <h3 style={{
-            fontFamily: "var(--nb1-font-primary)",
-            fontWeight: "400",
-            fontSize: "20px"
-          }}>
-            {done?.survHeading}
-          </h3>
-          <p style={{
-            fontSize: "14px",
-            lineHeight: "1.45",
-            color: "var(--muted)",
-            marginTop: "4px"
-          }}>
-            {done?.survIntro}
-          </p>
-          <RdChkSurveyMore survey={survey} />
-        </div>
-        <div style={{
-          flex: "1 1 0%",
-          minWidth: "260px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "9px"
-        }}>
-          {(survOpts || []).map((so, sIdx) => {
-            /* PRESSED HAS TO BE VISIBLE, not only announced. This style was an
+      {/* The attribution survey — OFF. See SURVEY_ENABLED at the top of this file. */}
+      {SURVEY_ENABLED ? (
+        <div
+          style={{
+            marginTop: '14px',
+            padding: '22px 26px',
+            borderRadius: '18px',
+            background: 'rgb(255, 255, 255)',
+            boxShadow: 'rgba(81, 71, 69, 0.16) 0px 0px 0px 1px inset',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '16px 26px',
+          }}
+        >
+          <div
+            style={{
+              flex: '0 0 auto',
+              maxWidth: '300px',
+            }}
+          >
+            <h3
+              style={{
+                fontFamily: 'var(--nb1-font-primary)',
+                fontWeight: '400',
+                fontSize: '20px',
+              }}
+            >
+              {done?.survHeading}
+            </h3>
+            <p
+              style={{
+                fontSize: '14px',
+                lineHeight: '1.45',
+                color: 'var(--muted)',
+                marginTop: '4px',
+              }}
+            >
+              {done?.survIntro}
+            </p>
+            <RdChkSurveyMore survey={survey} />
+          </div>
+          <div
+            style={{
+              flex: '1 1 0%',
+              minWidth: '260px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '9px',
+            }}
+          >
+            {(survOpts || []).map((so, sIdx) => {
+              /* PRESSED HAS TO BE VISIBLE, not only announced. This style was an
                unconditional literal and `activeSurvOpt` reached nothing but
                `aria-pressed` — so a screen reader knew which bubble was chosen
                and nobody else did. The block is styled inline throughout, so
                there is no stylesheet to carry an `[aria-pressed="true"]` rule;
                the state has to branch here. */
-            const pressed = activeSurvOpt?.code === so.code
-            return (
-            <button key={so.code || sIdx} style={{
-              border: "0px",
-              cursor: "pointer",
-              borderRadius: "999px",
-              background: pressed ? "var(--nb1-dark-brown)" : "rgb(255, 255, 255)",
-              color: pressed ? "var(--nb1-cool-grey)" : undefined,
-              boxShadow: pressed
-                ? "var(--nb1-dark-brown) 0px 0px 0px 1.5px inset"
-                : "rgba(81, 71, 69, 0.2) 0px 0px 0px 1.5px inset",
-              padding: "0.7em 1.1em",
-              fontSize: "14.5px",
-              transition: "background 140ms ease, color 140ms ease"
-            }} aria-pressed={pressed ? 'true' : 'false'} onClick={onTopOpt(so)}>
-              {so.label}
-            </button>
-            )
-          })}
+              const pressed = activeSurvOpt?.code === so.code
+              return (
+                <button
+                  key={so.code || sIdx}
+                  style={{
+                    border: '0px',
+                    cursor: 'pointer',
+                    borderRadius: '999px',
+                    background: pressed ? 'var(--nb1-dark-brown)' : 'rgb(255, 255, 255)',
+                    color: pressed ? 'var(--nb1-cool-grey)' : undefined,
+                    boxShadow: pressed
+                      ? 'var(--nb1-dark-brown) 0px 0px 0px 1.5px inset'
+                      : 'rgba(81, 71, 69, 0.2) 0px 0px 0px 1.5px inset',
+                    padding: '0.7em 1.1em',
+                    fontSize: '14.5px',
+                    transition: 'background 140ms ease, color 140ms ease',
+                  }}
+                  aria-pressed={pressed ? 'true' : 'false'}
+                  onClick={onTopOpt(so)}
+                >
+                  {so.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr",
-        gap: "32px",
-        marginTop: "40px",
-        alignItems: "start"
-      }} data-m="cmp">
+      ) : null}
+      <RdChkKno />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr',
+          gap: '32px',
+          marginTop: '40px',
+          alignItems: 'start',
+        }}
+        data-m="cmp"
+      >
         <div>
-          <h2 style={{
-            fontFamily: "var(--nb1-font-primary)",
-            fontWeight: "400",
-            fontSize: "24px"
-          }}>{done?.timeHeading}</h2>
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            marginTop: "20px"
-          }}>
+          <h2
+            style={{
+              fontFamily: 'var(--nb1-font-primary)',
+              fontWeight: '400',
+              fontSize: '24px',
+            }}
+          >
+            {done?.timeHeading}
+          </h2>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              marginTop: '20px',
+            }}
+          >
             {(done?.timeRows || []).map((tr, tIdx) => (
-              <div key={tIdx} style={{
-                display: "grid",
-                gridTemplateColumns: "34px 1fr",
-                gap: "16px"
-              }}>
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center"
-                }}>
-                  <span style={dotStyle(tIdx)}>
-                    {String(tIdx + 1)}
-                  </span>
+              <div
+                key={tIdx}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '34px 1fr',
+                  gap: '16px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                  }}
+                >
+                  <span style={dotStyle(tIdx)}>{String(tIdx + 1)}</span>
                   <span style={lineStyle(tIdx)} />
                 </div>
-                <div style={{
-                  padding: "4px 0px 22px"
-                }}>
-                  <div style={{
-                    fontFamily: "var(--nb1-font-tertiary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontSize: "12px",
-                    color: "var(--muted)"
-                  }}>
+                <div
+                  style={{
+                    padding: '4px 0px 22px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--nb1-font-tertiary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      fontSize: '12px',
+                      color: 'var(--muted)',
+                    }}
+                  >
                     {tr.when}
                   </div>
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    marginTop: "4px"
-                  }}>
-                    <span style={{
-                      fontSize: "17px",
-                      color: "rgb(0, 0, 0)"
-                    }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      marginTop: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '17px',
+                        color: 'rgb(0, 0, 0)',
+                      }}
+                    >
                       {tr.title}
                     </span>
-                    {(tr.badge) ? (
-                      <span style={{
-                        fontFamily: "var(--nb1-font-tertiary)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        fontSize: "11px",
-                        background: "var(--nb1-lime)",
-                        color: "rgb(0, 0, 0)",
-                        padding: "0.35em 0.65em",
-                        borderRadius: "6px",
-                        whiteSpace: "nowrap"
-                      }}>{tr.badge}</span>
+                    {tr.badge ? (
+                      <span
+                        style={{
+                          fontFamily: 'var(--nb1-font-tertiary)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          fontSize: '11px',
+                          background: 'var(--nb1-lime)',
+                          color: 'rgb(0, 0, 0)',
+                          padding: '0.35em 0.65em',
+                          borderRadius: '6px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {tr.badge}
+                      </span>
                     ) : null}
                   </div>
-                  <p style={{
-                    fontSize: "15px",
-                    lineHeight: "1.55",
-                    color: "var(--muted)",
-                    marginTop: "4px"
-                  }}>
+                  <p
+                    style={{
+                      fontSize: '15px',
+                      lineHeight: '1.55',
+                      color: 'var(--muted)',
+                      marginTop: '4px',
+                    }}
+                  >
                     {tr.body}
                   </p>
                 </div>
@@ -1052,108 +1450,148 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
           </div>
         </div>
         <aside>
-          <div style={{
-            background: "rgb(255, 255, 255)",
-            borderRadius: "16px",
-            padding: "24px",
-            boxShadow: "inset 0 0 0 1px rgba(81,71,69,.14), var(--elev)"
-          }}>
-            <div style={{
-              fontFamily: "var(--nb1-font-primary)",
-              fontSize: "19px"
-            }}>{done?.sumHeading}</div>
-            <div style={{
-              marginTop: "10px"
-            }}>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "14px",
-                padding: "9px 0px",
-                fontSize: "14.5px"
-              }}>
-                <span style={{
-                  color: "var(--muted)"
-                }}>
+          <div
+            style={{
+              background: 'rgb(255, 255, 255)',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: 'inset 0 0 0 1px rgba(81,71,69,.14), var(--elev)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--nb1-font-primary)',
+                fontSize: '19px',
+              }}
+            >
+              {done?.sumHeading}
+            </div>
+            <div
+              style={{
+                marginTop: '10px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '9px 0px',
+                  fontSize: '14.5px',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--muted)',
+                  }}
+                >
                   {done?.sumPlanLabel}
                 </span>
-                <span style={{
-                  color: "rgb(0, 0, 0)",
-                  textAlign: "right"
-                }}>
+                <span
+                  style={{
+                    color: 'rgb(0, 0, 0)',
+                    textAlign: 'right',
+                  }}
+                >
                   {planName}
                 </span>
               </div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "14px",
-                padding: "9px 0px",
-                fontSize: "14.5px"
-              }}>
-                <span style={{
-                  color: "var(--muted)"
-                }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '9px 0px',
+                  fontSize: '14.5px',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--muted)',
+                  }}
+                >
                   {done?.sumCycleLabel}
                 </span>
-                <span style={{
-                  color: "rgb(0, 0, 0)",
-                  textAlign: "right"
-                }}>
+                <span
+                  style={{
+                    color: 'rgb(0, 0, 0)',
+                    textAlign: 'right',
+                  }}
+                >
                   {billingShort}
                 </span>
               </div>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "14px",
-                padding: "9px 0px",
-                fontSize: "14.5px"
-              }}>
-                <span style={{
-                  color: "var(--muted)"
-                }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '9px 0px',
+                  fontSize: '14.5px',
+                }}
+              >
+                <span
+                  style={{
+                    color: 'var(--muted)',
+                  }}
+                >
                   {done?.sumDelivLabel}
                 </span>
-                <span style={{
-                  color: "rgb(0, 0, 0)",
-                  textAlign: "right"
-                }}>
+                <span
+                  style={{
+                    color: 'rgb(0, 0, 0)',
+                    textAlign: 'right',
+                  }}
+                >
                   {done?.sumDelivValue}
                 </span>
               </div>
             </div>
-            <div style={{
-              height: "1px",
-              background: "var(--nb1-hairline)",
-              margin: "7px 0px"
-            }} />
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "14px",
-              padding: "9px 0px"
-            }}>
-              <span style={{
-                fontSize: "15px",
-                color: "var(--muted)"
-              }}>{billingShort}</span>
-              <span style={{
-                fontFamily: "var(--nb1-font-primary)",
-                fontSize: promo ? "15px" : "24px",
-                lineHeight: "1",
-                ...(promo ? { textDecoration: 'line-through', opacity: 0.45 } : null),
-              }}>
+            <div
+              style={{
+                height: '1px',
+                background: 'var(--nb1-hairline)',
+                margin: '7px 0px',
+              }}
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '14px',
+                padding: '9px 0px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '15px',
+                  color: 'var(--muted)',
+                }}
+              >
+                {billingShort}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--nb1-font-primary)',
+                  fontSize: promo ? '15px' : '24px',
+                  lineHeight: '1',
+                  ...(promo ? { textDecoration: 'line-through', opacity: 0.45 } : null),
+                }}
+              >
                 {promo ? promo.monthly : priceLabel}
-                <span style={{
-                  fontFamily: "var(--nb1-font-secondary)",
-                  fontSize: "12px",
-                  opacity: "0.7"
-                }}>{done?.sumPerLabel}</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--nb1-font-secondary)',
+                    fontSize: '12px',
+                    opacity: '0.7',
+                  }}
+                >
+                  {done?.sumPerLabel}
+                </span>
               </span>
             </div>
             {/* The discount survived the payment, so it belongs on the receipt.
@@ -1164,63 +1602,98 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
                 did not apply. */}
             {promo ? (
               <>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  alignItems: "center", gap: "14px", padding: "2px 0px",
-                }}>
-                  <span style={{ fontSize: "15px", color: "var(--muted)" }}>{promo.discountLabel}</span>
-                  <span style={{ fontSize: "15px", fontWeight: 600 }}>{'\u2212'}{promo.discount}</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '14px',
+                    padding: '2px 0px',
+                  }}
+                >
+                  <span style={{ fontSize: '15px', color: 'var(--muted)' }}>
+                    {promo.discountLabel}
+                  </span>
+                  <span style={{ fontSize: '15px', fontWeight: 600 }}>
+                    {'\u2212'}
+                    {promo.discount}
+                  </span>
                 </div>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  alignItems: "center", gap: "14px", padding: "2px 0px 9px",
-                }}>
-                  <span style={{ fontSize: "15px", color: "var(--muted)" }}>{promo.firstMonthLabel}</span>
-                  <span style={{
-                    fontFamily: "var(--nb1-font-primary)",
-                    fontSize: "24px",
-                    lineHeight: "1",
-                  }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '14px',
+                    padding: '2px 0px 9px',
+                  }}
+                >
+                  <span style={{ fontSize: '15px', color: 'var(--muted)' }}>
+                    {promo.firstMonthLabel}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--nb1-font-primary)',
+                      fontSize: '24px',
+                      lineHeight: '1',
+                    }}
+                  >
                     {promo.firstMonth}
-                    <span style={{
-                      fontFamily: "var(--nb1-font-secondary)",
-                      fontSize: "12px",
-                      opacity: "0.7"
-                    }}>{done?.sumPerLabel}</span>
+                    <span
+                      style={{
+                        fontFamily: 'var(--nb1-font-secondary)',
+                        fontSize: '12px',
+                        opacity: '0.7',
+                      }}
+                    >
+                      {done?.sumPerLabel}
+                    </span>
                   </span>
                 </div>
               </>
             ) : null}
-            <div style={{
-              marginTop: "14px",
-              padding: "11px",
-              borderRadius: "10px",
-              background: "var(--tint)",
-              color: "rgb(0, 0, 0)",
-              textAlign: "center",
-              fontSize: "14.5px"
-            }}>{done?.chargedToday}</div>
-            <p style={{
-              fontSize: "13.5px",
-              lineHeight: "1.5",
-              textAlign: "center",
-              color: "var(--muted)",
-              marginTop: "10px"
-            }}>
+            <div
+              style={{
+                marginTop: '14px',
+                padding: '11px',
+                borderRadius: '10px',
+                background: 'var(--tint)',
+                color: 'rgb(0, 0, 0)',
+                textAlign: 'center',
+                fontSize: '14.5px',
+              }}
+            >
+              {done?.chargedToday}
+            </div>
+            <p
+              style={{
+                fontSize: '13.5px',
+                lineHeight: '1.5',
+                textAlign: 'center',
+                color: 'var(--muted)',
+                marginTop: '10px',
+              }}
+            >
               {done?.chargePrefix}
-              <b style={{
-                fontWeight: "400",
-                color: "rgb(0, 0, 0)"
-              }}>{done?.chargeBold}</b>
+              <b
+                style={{
+                  fontWeight: '400',
+                  color: 'rgb(0, 0, 0)',
+                }}
+              >
+                {done?.chargeBold}
+              </b>
               {done?.chargeSuffix}
             </p>
           </div>
-          <div style={{
-            textAlign: "center",
-            fontSize: "13.5px",
-            color: "var(--muted)",
-            marginTop: "12px"
-          }}>
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: '13.5px',
+              color: 'var(--muted)',
+              marginTop: '12px',
+            }}
+          >
             {/* CHAT WITH US OPENS THE WIDGET.
                 The shipped confirmation screen does exactly this —
                 ConfirmationScreen.tsx L406, `onClick={() => openArminChat()}` on
@@ -1234,21 +1707,32 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
                 <a> with a click handler: there is no href to follow, so a link
                 would be a lie to the keyboard and to a middle-click. */}
             {chatHref ? (
-              <a style={{
-                textDecoration: "underline",
-                textUnderlineOffset: "2px"
-              }} href={chatHref}>{done?.helpChat}</a>
+              <a
+                style={{
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                }}
+                href={chatHref}
+              >
+                {done?.helpChat}
+              </a>
             ) : (
-              <button type="button" onClick={() => openArminChat()} style={{
-                border: "0px",
-                background: "transparent",
-                padding: "0px",
-                font: "inherit",
-                color: "inherit",
-                cursor: "pointer",
-                textDecoration: "underline",
-                textUnderlineOffset: "2px"
-              }}>{done?.helpChat}</button>
+              <button
+                type="button"
+                onClick={() => openArminChat()}
+                style={{
+                  border: '0px',
+                  background: 'transparent',
+                  padding: '0px',
+                  font: 'inherit',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: '2px',
+                }}
+              >
+                {done?.helpChat}
+              </button>
             )}
             {/* THE SPACES ARE THE MARKUP'S, NOT THE FIELD'S.
                 This rendered "Chat with usorsupport@nb1.com". The config default
@@ -1257,18 +1741,22 @@ const RdChkDone: React.FC<ChkDoneProps> = ({ activeSurvOpt, billingShort, done, 
                 string exactly. Padding the separator survives both, and
                 survives a translator who writes "oder" without thinking about
                 whitespace. */}
-            <span style={{ padding: "0px 0.45em" }}>{done?.helpOr}</span>
-            <a style={{
-              textDecoration: "underline",
-              textUnderlineOffset: "2px"
-            }} href={done?.helpEmailUrl || '#'}>{done?.helpEmail}</a>
+            <span style={{ padding: '0px 0.45em' }}>{done?.helpOr}</span>
+            <a
+              style={{
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+              }}
+              href={done?.helpEmailUrl || '#'}
+            >
+              {done?.helpEmail}
+            </a>
           </div>
         </aside>
       </div>
     </div>
   )
 }
-
 
 /* ── The dispatchers ─────────────────────────────────────────────────────── */
 
@@ -1301,9 +1789,7 @@ const RdChkFieldErr: React.FC<{ of?: string | null }> = ({ of }) =>
  * is left with the ones that have nowhere else to go: a declined card, an
  * account that could not be created.
  */
-const RdChkErrors: React.FC<{ of?: Record<string, string> | string | null }> = ({
-  of,
-}) => {
+const RdChkErrors: React.FC<{ of?: Record<string, string> | string | null }> = ({ of }) => {
   const list = typeof of === 'string' ? (of ? [of] : []) : Object.values(of ?? {})
   if (!list.length) return null
   return (
@@ -1324,9 +1810,14 @@ const RdChkErrors: React.FC<{ of?: Record<string, string> | string | null }> = (
  * and nothing of the other two, so no capture holds more than one and each is
  * generated from its own extract. This only chooses.
  */
-const RdChkBody: React.FC<{ idx: number; eml?: ChkEml | null;
-  adr?: ChkAdr | null; pay?: ChkPay | null; nextLabel?: string | null;
-  form: ChkForm }> = ({ idx, eml, adr, pay, nextLabel, form }) => {
+const RdChkBody: React.FC<{
+  idx: number
+  eml?: ChkEml | null
+  adr?: ChkAdr | null
+  pay?: ChkPay | null
+  nextLabel?: string | null
+  form: ChkForm
+}> = ({ idx, eml, adr, pay, nextLabel, form }) => {
   if (idx === 0)
     return (
       <>
@@ -1346,44 +1837,44 @@ const RdChkBody: React.FC<{ idx: number; eml?: ChkEml | null;
     return (
       <>
         <RdChkAdr
-        adr={adr}
-        ADDR_AUTOCOMPLETE={form.ADDR_AUTOCOMPLETE}
-        addrValue={form.addrValue}
-        onAddr={form.onAddr}
-        fieldStyle={form.fieldStyle}
-        onNext={form.onNextAddr}
-        nextLabel={nextLabel}
-        addrErrAt={form.addrErrAt}
-        ctl={form.ctl}
-        onAddressPick={form.onAddressPick}
+          adr={adr}
+          ADDR_AUTOCOMPLETE={form.ADDR_AUTOCOMPLETE}
+          addrValue={form.addrValue}
+          onAddr={form.onAddr}
+          fieldStyle={form.fieldStyle}
+          onNext={form.onNextAddr}
+          nextLabel={nextLabel}
+          addrErrAt={form.addrErrAt}
+          ctl={form.ctl}
+          onAddressPick={form.onAddressPick}
         />
       </>
     )
   return (
     <>
       <RdChkPay
-      pay={pay}
-      payMethod={form.payMethod}
-      methodShown={form.methodShown}
-      payErrors={form.payErrors}
-      onPick={form.onPick}
-      methodRow={form.methodRow}
-      methodStyle={form.methodStyle}
-      methodDot={form.methodDot}
-      methodDotInner={form.methodDotInner}
-      cardRows={form.cardRows}
-      cardFieldStyle={form.cardFieldStyle}
-      cardName={form.cardName}
-      onCardName={form.onCardName}
-      onCardElementDone={form.onCardElementDone}
-      cardErrAt={form.cardErrAt}
-      billingSame={form.billingSame}
-      bill={form.bill}
-      onBillingSame={form.onBillingSame}
-      onPlaceOrder={form.onPlaceOrder}
-      placing={form.placing}
-      expressReady={form.expressReady}
-      express={form.express}
+        pay={pay}
+        payMethod={form.payMethod}
+        methodShown={form.methodShown}
+        payErrors={form.payErrors}
+        onPick={form.onPick}
+        methodRow={form.methodRow}
+        methodStyle={form.methodStyle}
+        methodDot={form.methodDot}
+        methodDotInner={form.methodDotInner}
+        cardRows={form.cardRows}
+        cardFieldStyle={form.cardFieldStyle}
+        cardName={form.cardName}
+        onCardName={form.onCardName}
+        onCardElementDone={form.onCardElementDone}
+        cardErrAt={form.cardErrAt}
+        billingSame={form.billingSame}
+        bill={form.bill}
+        onBillingSame={form.onBillingSame}
+        onPlaceOrder={form.onPlaceOrder}
+        placing={form.placing}
+        expressReady={form.expressReady}
+        express={form.express}
       />
     </>
   )
@@ -1402,7 +1893,12 @@ const RdChkBody: React.FC<{ idx: number; eml?: ChkEml | null;
  * like one set. The error colour is the shipped form's `#c0392b`.
  */
 const RdChkEmlField: React.FC<ChkPartProps> = ({
-  value, placeholder, onChange, onBlur, err, suggestion,
+  value,
+  placeholder,
+  onChange,
+  onBlur,
+  err,
+  suggestion,
 }) => {
   const box: React.CSSProperties = {
     height: '52px',
@@ -1440,15 +1936,25 @@ const RdChkEmlField: React.FC<ChkPartProps> = ({
       />
       <RdChkFieldErr of={err} />
       {!err && suggestion?.domain ? (
-        <span style={{ fontSize: '13.5px', display: 'flex',
-                       alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <span
+          style={{
+            fontSize: '13.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+          }}
+        >
           {suggestion.text}{' '}
           <button type="button" style={linkish} onClick={suggestion.apply}>
             {suggestion.useLabel}
           </button>
-          <button type="button" style={{ ...linkish, textDecoration: 'none',
-                                         opacity: 0.6, fontSize: '16px' }}
-                  aria-label="Dismiss" onClick={suggestion.dismiss}>
+          <button
+            type="button"
+            style={{ ...linkish, textDecoration: 'none', opacity: 0.6, fontSize: '16px' }}
+            aria-label="Dismiss"
+            onClick={suggestion.dismiss}
+          >
             {'×'}
           </button>
         </span>
@@ -1536,30 +2042,61 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
   const label = BILL_LABEL
 
   return (
-    <div style={{ marginTop: '14px', display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: '14px' }}>
-
+    <div
+      style={{
+        marginTop: '14px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '14px',
+      }}
+    >
       {/* individual / company — the shipped toggle, in this screen's radio row */}
-      <div style={{ gridColumn: '1 / -1', display: 'grid',
-                    gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      <div
+        style={{
+          gridColumn: '1 / -1',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '10px',
+        }}
+      >
         {(['individual', 'company'] as const).map((type) => (
           <button
             key={type}
             type="button"
             onClick={() => bill.setType(type)}
-            style={{ ...box, display: 'flex', alignItems: 'center', gap: '10px',
-                     cursor: 'pointer', textAlign: 'left',
-                     boxShadow: bill.type === type
-                       ? 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset'
-                       : 'rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset' }}
+            style={{
+              ...box,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: 'pointer',
+              textAlign: 'left',
+              boxShadow:
+                bill.type === type
+                  ? 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset'
+                  : 'rgba(81, 71, 69, 0.22) 0px 0px 0px 1px inset',
+            }}
           >
-            <span style={{ width: '18px', height: '18px', borderRadius: '999px',
-                           display: 'grid', placeItems: 'center', flex: '0 0 auto',
-                           boxShadow: 'rgba(81, 71, 69, 0.4) 0px 0px 0px 1.5px inset' }}>
+            <span
+              style={{
+                width: '18px',
+                height: '18px',
+                borderRadius: '999px',
+                display: 'grid',
+                placeItems: 'center',
+                flex: '0 0 auto',
+                boxShadow: 'rgba(81, 71, 69, 0.4) 0px 0px 0px 1.5px inset',
+              }}
+            >
               {bill.type === type ? (
-                <span style={{ width: '10px', height: '10px', borderRadius: '999px',
-                               background: 'rgb(81, 71, 69)' }} />
+                <span
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '999px',
+                    background: 'rgb(81, 71, 69)',
+                  }}
+                />
               ) : null}
             </span>
             <span style={{ fontSize: '14px' }}>
@@ -1571,30 +2108,50 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
 
       {bill.type === 'company' ? (
         <>
-          <RdChkBillField lab={t.companyName} val={bill.company} set={bill.setCompany}
-                 ac="organization" full err={bill.err.bCompany} />
+          <RdChkBillField
+            lab={t.companyName}
+            val={bill.company}
+            set={bill.setCompany}
+            ac="organization"
+            full
+            err={bill.err.bCompany}
+          />
           <RdChkBillField lab={t.taxId} val={bill.taxId} set={bill.setTaxId} />
           <RdChkBillField lab={t.registrationNumber} val={bill.regNum} set={bill.setRegNum} />
         </>
       ) : null}
 
-      <RdChkBillField lab={t.firstName} val={bill.fn} set={bill.setFn}
-             ac="billing given-name" err={bill.err.bFn} />
-      <RdChkBillField lab={t.lastName} val={bill.ln} set={bill.setLn}
-             ac="billing family-name" err={bill.err.bLn} />
+      <RdChkBillField
+        lab={t.firstName}
+        val={bill.fn}
+        set={bill.setFn}
+        ac="billing given-name"
+        err={bill.err.bFn}
+      />
+      <RdChkBillField
+        lab={t.lastName}
+        val={bill.ln}
+        set={bill.setLn}
+        ac="billing family-name"
+        err={bill.err.bLn}
+      />
 
       <label style={cell(true)}>
         <span style={label}>{t.email}</span>
-        <input style={errBox(bill.err.bEmail)} value={bill.email ?? ''}
-               onChange={bill.onEmail} onBlur={bill.onEmailBlur}
-               autoComplete="billing email" type="email" />
+        <input
+          style={errBox(bill.err.bEmail)}
+          value={bill.email ?? ''}
+          onChange={bill.onEmail}
+          onBlur={bill.onEmailBlur}
+          autoComplete="billing email"
+          type="email"
+        />
         <RdChkFieldErr of={bill.err.bEmail} />
       </label>
 
       <label style={cell(true)}>
         <span style={label}>{t.phone}</span>
-        <div className={bill.err.bPhone
-          ? 'rd-chk-phone rd-chk-phone-err' : 'rd-chk-phone'}>
+        <div className={bill.err.bPhone ? 'rd-chk-phone rd-chk-phone-err' : 'rd-chk-phone'}>
           <PhoneInput
             defaultCountry={bill.phoneCountry}
             onCountryChange={bill.onPhoneCountry}
@@ -1609,31 +2166,37 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
 
       <label style={cell(true)}>
         <span style={label}>{t.country}</span>
-        <select style={{ ...box, appearance: 'auto' }} value={bill.country ?? ''}
-                onChange={bill.onCountry} autoComplete="billing country-name">
+        <select
+          style={{ ...box, appearance: 'auto' }}
+          value={bill.country ?? ''}
+          onChange={bill.onCountry}
+          autoComplete="billing country-name"
+        >
           {(bill.COUNTRIES ?? []).map((c: string) => (
-            <option key={c} value={c}>{bill.countryLabel(c)}</option>
+            <option key={c} value={c}>
+              {bill.countryLabel(c)}
+            </option>
           ))}
         </select>
       </label>
 
       {/* THE BILLING STREET IS A LOOKUP TOO.
-        *
-        * It was the one plain box among the eight, which left the two address
-        * blocks on this page behaving differently: delivery offered Google
-        * suggestions and filled the postcode and city from the chosen one,
-        * billing made you type all three. Same component, same api key, same
-        * className — so it is the same control, not a second one that looks
-        * like it.
-        *
-        * `countries` follows the BILLING country select, not the delivery one.
-        * There is no `allowedCities`: the two-emirate restriction exists
-        * because NB1 only SHIPS to Dubai and Abu Dhabi, and getPayErrors puts
-        * no such rule on the billing city. A card can be billed anywhere.
-        *
-        * The <label> wrapper is the delivery side's own shape — the component
-        * renders a positioning div around its input for the dropdown, and
-        * RdChkAdr already nests exactly that inside a label. */}
+       *
+       * It was the one plain box among the eight, which left the two address
+       * blocks on this page behaving differently: delivery offered Google
+       * suggestions and filled the postcode and city from the chosen one,
+       * billing made you type all three. Same component, same api key, same
+       * className — so it is the same control, not a second one that looks
+       * like it.
+       *
+       * `countries` follows the BILLING country select, not the delivery one.
+       * There is no `allowedCities`: the two-emirate restriction exists
+       * because NB1 only SHIPS to Dubai and Abu Dhabi, and getPayErrors puts
+       * no such rule on the billing city. A card can be billed anywhere.
+       *
+       * The <label> wrapper is the delivery side's own shape — the component
+       * renders a positioning div around its input for the dropdown, and
+       * RdChkAdr already nests exactly that inside a label. */}
       <label style={cell(true)}>
         <span style={label}>{t.addressLabel}</span>
         <AddressAutocomplete
@@ -1648,12 +2211,21 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
         />
         <RdChkFieldErr of={bill.err.bA1} />
       </label>
-      <RdChkBillField lab={t.apt} val={bill.a2} set={bill.setA2}
-             ac="billing address-line2" full />
-      <RdChkBillField lab={t.postalCode} val={bill.zip} set={bill.setZip}
-             ac="billing postal-code" err={bill.err.bZip} />
-      <RdChkBillField lab={t.city} val={bill.city} set={bill.setCity}
-             ac="billing address-level2" err={bill.err.bCity} />
+      <RdChkBillField lab={t.apt} val={bill.a2} set={bill.setA2} ac="billing address-line2" full />
+      <RdChkBillField
+        lab={t.postalCode}
+        val={bill.zip}
+        set={bill.setZip}
+        ac="billing postal-code"
+        err={bill.err.bZip}
+      />
+      <RdChkBillField
+        lab={t.city}
+        val={bill.city}
+        set={bill.setCity}
+        ac="billing address-level2"
+        err={bill.err.bCity}
+      />
     </div>
   )
 }
@@ -1668,7 +2240,14 @@ const RdChkBilling: React.FC<{ bill?: any }> = ({ bill }) => {
  * like one set.
  */
 const RdChkAddrField: React.FC<ChkPartProps> = ({
-  idx, field, value, onChange, autoComplete, onPick, err, ctl,
+  idx,
+  field,
+  value,
+  onChange,
+  autoComplete,
+  onPick,
+  err,
+  ctl,
 }) => {
   // The box the mockup actually RENDERS, read off the node rather than
   // from its source's `half` const — which is dead code, like its
@@ -1706,7 +2285,9 @@ const RdChkAddrField: React.FC<ChkPartProps> = ({
           autoComplete="country-name"
         >
           {(ctl?.COUNTRIES ?? []).map((c: string) => (
-            <option key={c} value={c}>{ctl?.countryLabel?.(c) ?? c}</option>
+            <option key={c} value={c}>
+              {ctl?.countryLabel?.(c) ?? c}
+            </option>
           ))}
         </select>
         <RdChkFieldErr of={err} />
@@ -1755,7 +2336,9 @@ const RdChkAddrField: React.FC<ChkPartProps> = ({
         >
           <option value=""></option>
           {(ctl?.UAE_ALLOWED_CITIES ?? []).map((c: string) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
         <RdChkFieldErr of={err} />
@@ -1776,23 +2359,23 @@ const RdChkAddrField: React.FC<ChkPartProps> = ({
     // simpler shape that would pass and then differ.
     return (
       <>
-      <AddressAutocomplete
-        className={err ? 'rd-chk-street rd-chk-street-err' : 'rd-chk-street'}
-        value={value ?? ''}
-        placeholder={field?.placeholder || undefined}
-        autoComplete="address-line1"
-        // Four props the first mount left off. `apiKey` is the fatal one:
-        // AddressAutocomplete returns at `if (!apiKey) return` before it ever
-        // injects Google's script, so the field was a plain box whose dropdown
-        // could not open. The other three are what the shipped form passes.
-        apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-        language={ctl?.locale}
-        countries={ctl?.streetCountries}
-        allowedCities={ctl?.streetCities}
-        onValueChange={ctl?.onStreetValue}
-        onPick={onPick}
-      />
-      <RdChkFieldErr of={err} />
+        <AddressAutocomplete
+          className={err ? 'rd-chk-street rd-chk-street-err' : 'rd-chk-street'}
+          value={value ?? ''}
+          placeholder={field?.placeholder || undefined}
+          autoComplete="address-line1"
+          // Four props the first mount left off. `apiKey` is the fatal one:
+          // AddressAutocomplete returns at `if (!apiKey) return` before it ever
+          // injects Google's script, so the field was a plain box whose dropdown
+          // could not open. The other three are what the shipped form passes.
+          apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+          language={ctl?.locale}
+          countries={ctl?.streetCountries}
+          allowedCities={ctl?.streetCities}
+          onValueChange={ctl?.onStreetValue}
+          onPick={onPick}
+        />
+        <RdChkFieldErr of={err} />
       </>
     )
   return (
@@ -1986,14 +2569,14 @@ const RdChkExpress: React.FC<ChkPartProps> = ({ ready, express }) => (
         paymentMethodTypes: ['card', 'link'],
       }}
     >
-    <ExpressLinkRow
-      onReadyChange={express.onReadyChange}
-      validate={express.validate}
-      beginSubmit={express.beginSubmit}
-      createIntent={express.createIntent}
-      finalize={express.finalize}
-      onError={express.onError}
-    />
+      <ExpressLinkRow
+        onReadyChange={express.onReadyChange}
+        validate={express.validate}
+        beginSubmit={express.beginSubmit}
+        createIntent={express.createIntent}
+        finalize={express.finalize}
+        onError={express.onError}
+      />
     </Elements>
   </div>
 )
@@ -2263,13 +2846,8 @@ const RdOrderSteps: React.FC<{
     fontFamily: 'var(--nb1-font-tertiary)',
     fontSize: '12px',
     background:
-      i === STEP_CURRENT
-        ? '#514745'
-        : i < STEP_CURRENT
-          ? 'var(--nb1-lime)'
-          : 'rgba(81,71,69,.12)',
-    color:
-      i === STEP_CURRENT ? '#F0F5FF' : i < STEP_CURRENT ? '#000' : 'rgba(81,71,69,.7)',
+      i === STEP_CURRENT ? '#514745' : i < STEP_CURRENT ? 'var(--nb1-lime)' : 'rgba(81,71,69,.12)',
+    color: i === STEP_CURRENT ? '#F0F5FF' : i < STEP_CURRENT ? '#000' : 'rgba(81,71,69,.7)',
   })
 
   const stepName = (i: number): React.CSSProperties => ({
@@ -2289,80 +2867,103 @@ const RdOrderSteps: React.FC<{
   const path = (s?: string | null) => `/${locale || 'en'}${s ? `/${s}` : ''}`
 
   return (
-      <header style={{
-        position: "sticky",
-        top: "0px",
-        zIndex: "40",
-        background: "var(--nb1-cool-grey)",
-        borderBottom: "1px solid var(--nb1-hairline)"
-      }} className="rd-or-steps">
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "14px",
-          maxWidth: "1040px",
-          margin: "0px auto",
-          padding: "14px 20px"
-        }} data-m="pad">
-          <a style={{
-            display: "block",
-            flex: "0 0 auto"
-          }} href={path(steps?.homeSlug)}>
-            <img style={{
-              height: "19px",
-              width: "auto",
-              display: "block"
-            }} src={mediaUrl(steps?.logo)} alt={mediaAlt(steps?.logo) || steps?.logoAlt || ''} />
-          </a>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px"
-          }}>
-            {(steps?.items || []).map((st, stIdx) => (
-              <div key={stIdx} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px"
-              }}>
-                <button style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  border: "0px",
-                  background: "transparent",
-                  padding: "0px",
-                  cursor: "pointer"
-                }}>
-                  <span style={stepDot(stIdx)}>
-                    {stIdx < STEP_CURRENT ? '✓' : String(stIdx + 1)}
-                  </span>
-                  <span style={stepName(stIdx)} data-m="stepname">
-                    {st.label}
-                  </span>
-                </button>
-                {(stIdx < (steps?.items?.length ?? 0) - 1) ? (
-                  <span style={{
-                    width: "24px",
-                    height: "1px",
-                    background: "rgba(81, 71, 69, 0.28)"
-                  }} aria-hidden="true" />
-                ) : null}
-              </div>
-            ))}
-          </div>
-          <button style={{
-            border: "0px",
-            background: "transparent",
-            cursor: "pointer",
-            fontFamily: "var(--nb1-font-tertiary)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            fontSize: "12px",
-            padding: "6px 0px",
-            whiteSpace: "nowrap"
-          }} onClick={() => {
+    <header
+      style={{
+        position: 'sticky',
+        top: '0px',
+        zIndex: '40',
+        background: 'var(--nb1-cool-grey)',
+        borderBottom: '1px solid var(--nb1-hairline)',
+      }}
+      className="rd-or-steps"
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '14px',
+          maxWidth: '1040px',
+          margin: '0px auto',
+          padding: '14px 20px',
+        }}
+        data-m="pad"
+      >
+        <a
+          style={{
+            display: 'block',
+            flex: '0 0 auto',
+          }}
+          href={path(steps?.homeSlug)}
+        >
+          <img
+            style={{
+              height: '19px',
+              width: 'auto',
+              display: 'block',
+            }}
+            src={mediaUrl(steps?.logo)}
+            alt={mediaAlt(steps?.logo) || steps?.logoAlt || ''}
+          />
+        </a>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+          }}
+        >
+          {(steps?.items || []).map((st, stIdx) => (
+            <div
+              key={stIdx}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: '0px',
+                  background: 'transparent',
+                  padding: '0px',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={stepDot(stIdx)}>{stIdx < STEP_CURRENT ? '✓' : String(stIdx + 1)}</span>
+                <span style={stepName(stIdx)} data-m="stepname">
+                  {st.label}
+                </span>
+              </button>
+              {stIdx < (steps?.items?.length ?? 0) - 1 ? (
+                <span
+                  style={{
+                    width: '24px',
+                    height: '1px',
+                    background: 'rgba(81, 71, 69, 0.28)',
+                  }}
+                  aria-hidden="true"
+                />
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <button
+          style={{
+            border: '0px',
+            background: 'transparent',
+            cursor: 'pointer',
+            fontFamily: 'var(--nb1-font-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            fontSize: '12px',
+            padding: '6px 0px',
+            whiteSpace: 'nowrap',
+          }}
+          onClick={() => {
             /* BACK IS A STEP, NOT A HISTORY ENTRY.
                The funnel is Plan -> Duration -> Checkout, but the middle step is
                two pages — `duration-core` and `duration-advanced` — and Checkout
@@ -2381,18 +2982,38 @@ const RdOrderSteps: React.FC<{
                Still a <button>, not an <a>: the mockup draws a button and this
                is its markup. An empty `backHref` falls through to history, so a
                page seeded before this field existed behaves as it did. */
-            if (backHref) { window.location.assign(backHref); return }
-            try { window.history.back() } catch { /* no history */ }
-          }}>
-            {steps?.backLabel}
-          </button>
-        </div>
-      </header>
+            if (backHref) {
+              window.location.assign(backHref)
+              return
+            }
+            try {
+              window.history.back()
+            } catch {
+              /* no history */
+            }
+          }}
+        >
+          {steps?.backLabel}
+        </button>
+      </div>
+    </header>
   )
 }
 
-export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr, anchorId, done, eml, hero, locale, next, pay, steps, sum }) => {
-/* GENERATED by tools/checkout_body.py from out/checkout/mechanism.md, which
+export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({
+  acc,
+  adr,
+  anchorId,
+  done,
+  eml,
+  hero,
+  locale,
+  next,
+  pay,
+  steps,
+  sum,
+}) => {
+  /* GENERATED by tools/checkout_body.py from out/checkout/mechanism.md, which
    holds the shipped checkout's own code verbatim. Do not hand-edit: change the
    shipped form, re-capture, and regenerate. Every difference from what ships is
    an anchored patch in that tool, and there are five. */
@@ -2715,7 +3336,6 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     if (!iso || !isSupportedCountry(iso)) return
     setPhoneCountry(iso)
     setPhone((prev) => (hasNationalNumber(prev) ? prev : (dialCode(iso) ?? prev)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [country])
 
   useEffect(() => {
@@ -2723,7 +3343,6 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     if (!iso || !isSupportedCountry(iso)) return
     setBPhoneCountry(iso)
     setBPhone((prev) => (hasNationalNumber(prev) ? prev : (dialCode(iso) ?? prev)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bCountry])
   /* account creation */
   const [accountStatus, setAccountStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -3299,7 +3918,8 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     // unlocked via DevTools or sessionStorage cannot pay with missing data.
     if (!validateBeforePay(true)) return
 
-    const cardElement = payMethod === 'card' ? (elements?.getElement(CardNumberElement) ?? null) : null
+    const cardElement =
+      payMethod === 'card' ? (elements?.getElement(CardNumberElement) ?? null) : null
     const paymentReady = isPaymentAttemptReady({
       paymentType: payMethod,
       stripeReady: Boolean(stripe),
@@ -4112,8 +4732,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     setBCountry(next)
     const nextPhoneCountry = COUNTRY_CODES[next] as Country | undefined
     if (nextPhoneCountry && isSupportedCountry(nextPhoneCountry)) {
-      const prevIso =
-        (COUNTRY_CODES[bCountry] as Country | undefined) ?? bPhoneCountry
+      const prevIso = (COUNTRY_CODES[bCountry] as Country | undefined) ?? bPhoneCountry
       const rebuilt = rePrefixPhone(bPhone, prevIso, nextPhoneCountry)
       setBPhoneCountry(nextPhoneCountry)
       if (rebuilt !== null) setBPhone(rebuilt)
@@ -4217,40 +4836,44 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   const accSummary = (i: number): string =>
     i === 0 ? email : i === 1 ? [a1, city].filter(Boolean).join(', ') : ''
 
-  const cardStyle = (i: number): React.CSSProperties =>
-    ({
+  const cardStyle = (i: number): React.CSSProperties => ({
     background: '#fff',
     borderRadius: '20px',
-    boxShadow: i === accOpen ? 'inset 0 0 0 2px #514745, var(--elev)' : 'inset 0 0 0 1px rgba(81,71,69,.16)',
+    boxShadow:
+      i === accOpen ? 'inset 0 0 0 2px #514745, var(--elev)' : 'inset 0 0 0 1px rgba(81,71,69,.16)',
   })
 
   const numStyle = (i: number): React.CSSProperties => {
     const open = i === accOpen
     const done = i < accDone && !open
     return {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'grid',
-    placeItems: 'center',
-    flex: 'none',
-    fontSize: '14px',
-    background: done ? 'var(--nb1-lime)' : 'transparent',
-    color: open ? '#514745' : done ? '#000' : 'rgba(81,71,69,.55)',
-    boxShadow: done ? 'none' : open ? 'inset 0 0 0 1.5px #514745' : 'inset 0 0 0 1.5px rgba(81,71,69,.22)',
-  }
+      width: '32px',
+      height: '32px',
+      borderRadius: '50%',
+      display: 'grid',
+      placeItems: 'center',
+      flex: 'none',
+      fontSize: '14px',
+      background: done ? 'var(--nb1-lime)' : 'transparent',
+      color: open ? '#514745' : done ? '#000' : 'rgba(81,71,69,.55)',
+      boxShadow: done
+        ? 'none'
+        : open
+          ? 'inset 0 0 0 1.5px #514745'
+          : 'inset 0 0 0 1.5px rgba(81,71,69,.22)',
+    }
   }
 
   const titleStyle = (i: number): React.CSSProperties => {
     const open = i === accOpen
     const done = i < accDone && !open
     return {
-    flex: 1,
-    fontFamily: 'var(--nb1-font-primary)',
-    fontSize: 'clamp(21px,3.6cqi,26px)',
-    lineHeight: 1.15,
-    color: open || done ? '#000' : 'rgba(81,71,69,.55)',
-  }
+      flex: 1,
+      fontFamily: 'var(--nb1-font-primary)',
+      fontSize: 'clamp(21px,3.6cqi,26px)',
+      lineHeight: 1.15,
+      color: open || done ? '#000' : 'rgba(81,71,69,.55)',
+    }
   }
 
   // ---- the order summary ---------------------------------------------------
@@ -4263,8 +4886,14 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // stale — it lists Country first and the page renders it third — which is why
   // neither of these is taken from it.
   const ADDR_AUTOCOMPLETE = [
-    'given-name', 'family-name', 'country-name', 'address-line1',
-    'address-line2', 'postal-code', 'address-level2', 'tel',
+    'given-name',
+    'family-name',
+    'country-name',
+    'address-line1',
+    'address-line2',
+    'postal-code',
+    'address-level2',
+    'tel',
   ] as const
 
   // Which validation key each field answers to, in the same rendered order.
@@ -4274,9 +4903,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // NOT called `addrErr`: that is the mechanism's own state, spliced verbatim,
   // and shadowing it here would have made every field read an empty message
   // from a function instead of the record the validators fill.
-  const ADDR_ERR_KEY = [
-    'fn', 'ln', null, 'a1', null, 'zip', 'city', 'phone',
-  ] as const
+  const ADDR_ERR_KEY = ['fn', 'ln', null, 'a1', null, 'zip', 'city', 'phone'] as const
   const addrErrAt = (i: number): string => {
     const k = ADDR_ERR_KEY[i]
     return k ? (addrErr[k] ?? '') : ''
@@ -4301,9 +4928,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     locale,
     // Restrict suggestions to the chosen country, and inside the UAE to the
     // two emirates served — Google's own filter is country-only.
-    streetCountries: COUNTRY_CODES[country]
-      ? [COUNTRY_CODES[country].toLowerCase()]
-      : null,
+    streetCountries: COUNTRY_CODES[country] ? [COUNTRY_CODES[country].toLowerCase()] : null,
     streetCities: COUNTRY_CODES[country] === 'AE' ? UAE_ALLOWED_CITIES : null,
   }
 
@@ -4319,8 +4944,14 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   })
 
   const ADDR_GET = [
-    () => fn, () => ln, () => country, () => a1,
-    () => a2, () => zip, () => city, () => phone,
+    () => fn,
+    () => ln,
+    () => country,
+    () => a1,
+    () => a2,
+    () => zip,
+    () => city,
+    () => phone,
   ]
   const ADDR_SET = [setFn, setLn, setCountry, setA1, setA2, setZip, setCity, setPhone]
 
@@ -4345,7 +4976,6 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     minWidth: 0,
     ...(CARD_FULL.has(i) ? { gridColumn: '1 / -1' } : null),
   })
-
 
   // One setter per Stripe element. The combined CardElement reported `complete`
   // once for the whole box; three elements report it three times, and
@@ -4394,11 +5024,11 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   const methodRow = (k?: string | null): React.CSSProperties =>
     methods.findIndex((x) => x.key === k) > 0
       ? {
-    borderTop: '1px solid var(--nb1-hairline)',
-  }
+          borderTop: '1px solid var(--nb1-hairline)',
+        }
       : {
-    borderTop: '0px',
-  }
+          borderTop: '0px',
+        }
 
   const methodStyle = (): React.CSSProperties => ({
     display: 'flex',
@@ -4413,32 +5043,34 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   })
 
   const methodDot = (k?: string | null): React.CSSProperties =>
-    payMethod === k ? {
-    width: '22px',
-    height: '22px',
-    borderRadius: '50%',
-    flex: '0 0 auto',
-    display: 'grid',
-    placeItems: 'center',
-    boxShadow: 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset',
-  } : {
-    width: '22px',
-    height: '22px',
-    borderRadius: '50%',
-    flex: '0 0 auto',
-    display: 'grid',
-    placeItems: 'center',
-    boxShadow: 'rgba(81, 71, 69, 0.35) 0px 0px 0px 1.5px inset',
-  }
+    payMethod === k
+      ? {
+          width: '22px',
+          height: '22px',
+          borderRadius: '50%',
+          flex: '0 0 auto',
+          display: 'grid',
+          placeItems: 'center',
+          boxShadow: 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset',
+        }
+      : {
+          width: '22px',
+          height: '22px',
+          borderRadius: '50%',
+          flex: '0 0 auto',
+          display: 'grid',
+          placeItems: 'center',
+          boxShadow: 'rgba(81, 71, 69, 0.35) 0px 0px 0px 1.5px inset',
+        }
 
   const methodDotInner = (k?: string | null): React.CSSProperties => ({
     ...{
-    width: '11px',
-    height: '11px',
-    borderRadius: '50%',
-    background: 'rgb(81, 71, 69)',
-    opacity: '1',
-  },
+      width: '11px',
+      height: '11px',
+      borderRadius: '50%',
+      background: 'rgb(81, 71, 69)',
+      opacity: '1',
+    },
     opacity: payMethod === k ? 1 : 0,
   })
 
@@ -4446,8 +5078,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
     if (k) setPayMethod(k as typeof payMethod)
   }
 
-  const onBillingSame = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setBillingSame(e.target.checked)
+  const onBillingSame = (e: React.ChangeEvent<HTMLInputElement>) => setBillingSame(e.target.checked)
 
   // ---- the discount and referral panels ------------------------------------
   // The mockup draws two underlined buttons — `Add discount code` and `Been
@@ -4493,29 +5124,43 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   const bill = {
     same: billingSame,
     t: { ...t.address, ...t.payment, email: t.email.label },
-    type: bAddrType, setType: setBAddrType,
-    company: bCompany, setCompany: setBCompany,
-    taxId: bTaxId, setTaxId: setBTaxId,
-    regNum: bRegNum, setRegNum: setBRegNum,
-    fn: bFn, setFn: setBFn,
-    ln: bLn, setLn: setBLn,
-    email: bEmail, onEmail: onBEmail, onEmailBlur: handleBEmailBlur,
-    phone: bPhone, setPhone: setBPhone,
-    phoneCountry: bPhoneCountry, onPhoneCountry: onBPhoneCountry,
-    country: bCountry, onCountry: onBCountrySelect,
-    COUNTRIES, countryLabel: (c: string) => dict.countries[c] ?? c,
-    a1: bA1, setA1: setBA1,
-    a2: bA2, setA2: setBA2,
-    zip: bZip, setZip: setBZip,
-    city: bCity, setCity: setBCity,
+    type: bAddrType,
+    setType: setBAddrType,
+    company: bCompany,
+    setCompany: setBCompany,
+    taxId: bTaxId,
+    setTaxId: setBTaxId,
+    regNum: bRegNum,
+    setRegNum: setBRegNum,
+    fn: bFn,
+    setFn: setBFn,
+    ln: bLn,
+    setLn: setBLn,
+    email: bEmail,
+    onEmail: onBEmail,
+    onEmailBlur: handleBEmailBlur,
+    phone: bPhone,
+    setPhone: setBPhone,
+    phoneCountry: bPhoneCountry,
+    onPhoneCountry: onBPhoneCountry,
+    country: bCountry,
+    onCountry: onBCountrySelect,
+    COUNTRIES,
+    countryLabel: (c: string) => dict.countries[c] ?? c,
+    a1: bA1,
+    setA1: setBA1,
+    a2: bA2,
+    setA2: setBA2,
+    zip: bZip,
+    setZip: setBZip,
+    city: bCity,
+    setCity: setBCity,
     err: payErr,
     // What the billing street lookup needs. `streetCountries` follows the
     // BILLING country select; `locale` is Google's `language` so suggestions
     // come back in the page's language.
     locale,
-    streetCountries: COUNTRY_CODES[bCountry]
-      ? [COUNTRY_CODES[bCountry].toLowerCase()]
-      : null,
+    streetCountries: COUNTRY_CODES[bCountry] ? [COUNTRY_CODES[bCountry].toLowerCase()] : null,
     onStreetValue: onBStreetValue,
     onPick: handleBAddressPick,
   }
@@ -4533,11 +5178,20 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // the whole record here printed each of them twice: once under the field and
   // once more in a stack at the bottom of the step.
   const PAY_FIELD_KEYS = new Set([
-    'cardNumber', 'cardName',
-    'bFn', 'bLn', 'bEmail', 'bPhone', 'bA1', 'bZip', 'bCity', 'bCompany',
+    'cardNumber',
+    'cardName',
+    'bFn',
+    'bLn',
+    'bEmail',
+    'bPhone',
+    'bA1',
+    'bZip',
+    'bCity',
+    'bCompany',
   ])
   const payLoose = Object.fromEntries(
-    Object.entries(payErr).filter(([k]) => !PAY_FIELD_KEYS.has(k)))
+    Object.entries(payErr).filter(([k]) => !PAY_FIELD_KEYS.has(k)),
+  )
 
   // `accountErr` carries both the account-creation failure and whatever Stripe
   // said when a confirm was refused; `paymentFailed` is set by the redirect
@@ -4566,9 +5220,13 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
 
   const promo = {
     open: promoOpenForm,
-    input: promoInput, setInput: setPromoInput,
-    apply: applyPromo, remove: removePromo,
-    loading: promoLoading, msg: promoMsg, applied: promoApplied,
+    input: promoInput,
+    setInput: setPromoInput,
+    apply: applyPromo,
+    remove: removePromo,
+    loading: promoLoading,
+    msg: promoMsg,
+    applied: promoApplied,
     creatorOfferFailure,
     t: t.promoUi,
   }
@@ -4626,18 +5284,52 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // `accountStatus` is 'idle' | 'sending' | 'sent' | 'error'. `saving` was a
   // guess and never matched, so the button never showed itself busy.
   const placing = accountStatus === 'sending'
-  const onPlaceOrder = () => { void nextPayment() }
+  const onPlaceOrder = () => {
+    void nextPayment()
+  }
 
   // The three bodies take one bundle rather than twenty props each. It is the
   // dispatcher's whole job to hand each shape what it needs.
   const form = {
-    email, onEmail, onEmailBlur: handleEmailBlur, emailErr,
-    emailSuggestion: emailSuggest, onNextEmail: nextEmail,
-    adr, ADDR_AUTOCOMPLETE, addrValue, onAddr, addrErrAt, ctl, fieldStyle, onNextAddr: nextAddr,
-    pay, methods, methodShown, payMethod, onPick, payErrors, methodRow, methodStyle, methodDot, methodDotInner,
-    cardRows, cardFieldStyle, cardName, onCardName, onCardElementDone, cardErrAt,
-    billingSame, onBillingSame, bill, onPlaceOrder, placing, expressReady, express,
-    errors, onAddressPick: handleAddressPick,
+    email,
+    onEmail,
+    onEmailBlur: handleEmailBlur,
+    emailErr,
+    emailSuggestion: emailSuggest,
+    onNextEmail: nextEmail,
+    adr,
+    ADDR_AUTOCOMPLETE,
+    addrValue,
+    onAddr,
+    addrErrAt,
+    ctl,
+    fieldStyle,
+    onNextAddr: nextAddr,
+    pay,
+    methods,
+    methodShown,
+    payMethod,
+    onPick,
+    payErrors,
+    methodRow,
+    methodStyle,
+    methodDot,
+    methodDotInner,
+    cardRows,
+    cardFieldStyle,
+    cardName,
+    onCardName,
+    onCardElementDone,
+    cardErrAt,
+    billingSame,
+    onBillingSame,
+    bill,
+    onPlaceOrder,
+    placing,
+    expressReady,
+    express,
+    errors,
+    onAddressPick: handleAddressPick,
   }
 
   // ---- what the summary and the confirmed screen display --------------------
@@ -4659,9 +5351,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // this screen's words are the design's, so both halves are fields.
   const billingShort = cycleKey === 'monthly' ? TERM_FLEX : cycleLabel
   const billingName =
-    cycleKey === 'monthly'
-      ? (sum?.billingFlex ?? '')
-      : `${cycleLabel}${sum?.billingSuffix ?? ''}`
+    cycleKey === 'monthly' ? (sum?.billingFlex ?? '') : `${cycleLabel}${sum?.billingSuffix ?? ''}`
   const priceLabel = rate
 
   // The discount, formatted once, for the confirmation screen. Built here
@@ -4747,6 +5437,9 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   const [otherVal, setOtherVal] = useState('')
 
   useEffect(() => {
+    // Gated with the card itself: a view reported for a survey that never
+    // rendered is a denominator with no numerator.
+    if (!SURVEY_ENABLED) return
     if (!acquisitionEventId || !transactionId || !customerId) return
     trackPostPurchaseSurveyViewed({
       checkoutId,
@@ -4760,15 +5453,7 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
       surveyVersion: SURVEY_VERSION,
       surveyPlacement: SURVEY_PLACEMENT,
     })
-  }, [
-    acquisitionEventId,
-    checkoutId,
-    customerId,
-    email,
-    locale,
-    orderNumber,
-    transactionId,
-  ])
+  }, [acquisitionEventId, checkoutId, customerId, email, locale, orderNumber, transactionId])
   function recordAnswer(
     answerCode: string,
     answerDetailCode?: string,
@@ -4862,84 +5547,90 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
   // VERBATIM from the shipped form (L2110-L2125). Each option carries the code
   // the backend files an answer under, and `social_media` carries the three
   // details that make the survey ask a second question.
-    const SURV_OPTS = [
-      {
-        code: 'social_media',
-        label: 'Social media',
-        details: [
-          { code: 'instagram', label: 'Instagram' },
-          { code: 'tiktok', label: 'TikTok' },
-          { code: 'youtube', label: 'YouTube' },
-        ],
-      },
-      { code: 'search_engine', detailCode: 'google', label: 'Google' },
-      { code: 'creator', label: 'Influencer / creator' },
-      { code: 'word_of_mouth', detailCode: 'friend', label: 'A friend' },
-      { code: 'podcast', label: 'Podcast' },
-      { code: 'event', detailCode: 'hyrox', label: 'HYROX / event' },
-    ]
+  const SURV_OPTS = [
+    {
+      code: 'social_media',
+      label: 'Social media',
+      details: [
+        { code: 'instagram', label: 'Instagram' },
+        { code: 'tiktok', label: 'TikTok' },
+        { code: 'youtube', label: 'YouTube' },
+      ],
+    },
+    { code: 'search_engine', detailCode: 'google', label: 'Google' },
+    { code: 'creator', label: 'Influencer / creator' },
+    { code: 'word_of_mouth', detailCode: 'friend', label: 'A friend' },
+    { code: 'podcast', label: 'Podcast' },
+    { code: 'event', detailCode: 'hyrox', label: 'HYROX / event' },
+  ]
 
   // The mockup draws SEVEN buttons; the seventh is not an option. `Something
   // else` is the free-text path, so it is appended with the label the design
   // gives it and dispatched to onOther rather than to recordAnswer.
-  const survOpts: SurvOpt[] = [
-    ...SURV_OPTS,
-    { code: 'other', label: done?.survOther ?? '' },
-  ]
+  const survOpts: SurvOpt[] = [...SURV_OPTS, { code: 'other', label: done?.survOther ?? '' }]
 
-  const onTopOpt = (opt: any) => () =>
-    opt?.code === 'other' ? onOther() : onTopOptRaw(opt)
+  const onTopOpt = (opt: any) => () => (opt?.code === 'other' ? onOther() : onTopOptRaw(opt))
 
   const survey = {
-    state: survState, opt: activeSurvOpt, showOther, otherVal, setOtherVal,
-    onSub: onSubOpt, onOther, onSend: onSurvSend, t: t.done,
+    state: survState,
+    opt: activeSurvOpt,
+    showOther,
+    otherVal,
+    setOtherVal,
+    onSub: onSubOpt,
+    onOther,
+    onSend: onSurvSend,
+    t: t.done,
   }
-
 
   // Both read off the RENDERED rows. The last row's connector is transparent —
   // there is nothing below it to join — and the row that carries the first
   // charge has a lime bubble where the others are white.
   const lineStyle = (i: number): React.CSSProperties =>
-    i === (done?.timeRows?.length ?? 0) - 1 ? {
-    width: '1.5px',
-    flex: '1 1 0%',
-    minHeight: '18px',
-    background: 'transparent',
-  } : {
-    width: '1.5px',
-    flex: '1 1 0%',
-    minHeight: '18px',
-    background: 'rgba(81, 71, 69, 0.2)',
-  }
+    i === (done?.timeRows?.length ?? 0) - 1
+      ? {
+          width: '1.5px',
+          flex: '1 1 0%',
+          minHeight: '18px',
+          background: 'transparent',
+        }
+      : {
+          width: '1.5px',
+          flex: '1 1 0%',
+          minHeight: '18px',
+          background: 'rgba(81, 71, 69, 0.2)',
+        }
 
   const dotStyle = (i: number): React.CSSProperties =>
-    done?.timeRows?.[i]?.badge ? {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'grid',
-    placeItems: 'center',
-    flex: '0 0 auto',
-    fontSize: '13.5px',
-    background: 'var(--nb1-lime)',
-    color: 'rgb(0, 0, 0)',
-    boxShadow: 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset',
-  } : {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'grid',
-    placeItems: 'center',
-    flex: '0 0 auto',
-    fontSize: '13.5px',
-    background: 'rgb(255, 255, 255)',
-    color: 'rgb(0, 0, 0)',
-    boxShadow: 'rgba(81, 71, 69, 0.3) 0px 0px 0px 1.5px inset',
-  }
+    done?.timeRows?.[i]?.badge
+      ? {
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          display: 'grid',
+          placeItems: 'center',
+          flex: '0 0 auto',
+          fontSize: '13.5px',
+          background: 'var(--nb1-lime)',
+          color: 'rgb(0, 0, 0)',
+          boxShadow: 'rgb(81, 71, 69) 0px 0px 0px 1.5px inset',
+        }
+      : {
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          display: 'grid',
+          placeItems: 'center',
+          flex: '0 0 auto',
+          fontSize: '13.5px',
+          background: 'rgb(255, 255, 255)',
+          color: 'rgb(0, 0, 0)',
+          boxShadow: 'rgba(81, 71, 69, 0.3) 0px 0px 0px 1.5px inset',
+        }
 
   return (
-      <>
-        {/* THE WAIT HAS TO BE VISIBLE.
+    <>
+      {/* THE WAIT HAS TO BE VISIBLE.
             `placing` already existed and already disabled the pay button, but a
             greyed button is the whole of the feedback while the card is
             authorised, the subscription created and the account provisioned —
@@ -4954,236 +5645,323 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
             The copy is `t.confirm.processing` — already in the dictionary, in
             all nine locales, and already used by the offer-resolving guard. No
             new field, no migration, nothing to seed. */}
-        {placing ? (
-          <div
-            role="status"
-            aria-busy="true"
-            aria-live="polite"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 200,
-              display: 'grid',
-              placeItems: 'center',
-              gap: '18px',
-              background: 'rgba(240, 245, 255, 0.86)',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-            }}
-          >
-            <div style={{ display: 'grid', justifyItems: 'center', gap: '18px' }}>
-              <span
-                aria-hidden="true"
-                style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '50%',
-                  border: '2.5px solid rgba(81, 71, 69, 0.18)',
-                  borderTopColor: 'var(--nb1-dark-brown)',
-                  animation: 'rd-chk-spin 820ms linear infinite',
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: 'var(--nb1-font-tertiary)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  fontSize: '13px',
-                  color: 'var(--nb1-dark-brown)',
-                }}
-              >
-                {t.confirm?.processing}
-              </span>
-            </div>
-            {/* The keyframes ride with the element rather than going into a
+      {placing ? (
+        <div
+          role="status"
+          aria-busy="true"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            display: 'grid',
+            placeItems: 'center',
+            gap: '18px',
+            background: 'rgba(240, 245, 255, 0.86)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+          }}
+        >
+          <div style={{ display: 'grid', justifyItems: 'center', gap: '18px' }}>
+            <span
+              aria-hidden="true"
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                border: '2.5px solid rgba(81, 71, 69, 0.18)',
+                borderTopColor: 'var(--nb1-dark-brown)',
+                animation: 'rd-chk-spin 820ms linear infinite',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: 'var(--nb1-font-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                fontSize: '13px',
+                color: 'var(--nb1-dark-brown)',
+              }}
+            >
+              {t.confirm?.processing}
+            </span>
+          </div>
+          {/* The keyframes ride with the element rather than going into a
                 stylesheet: this block carries all of its own styling inline,
                 and an animation is the one thing inline style cannot express.
                 `prefers-reduced-motion` stops the spin and leaves the wording,
                 which is the part that actually says what is happening. */}
-            <style>{`
+          <style>{`
               @keyframes rd-chk-spin { to { transform: rotate(360deg) } }
               @media (prefers-reduced-motion: reduce) {
                 [role="status"] [aria-hidden="true"] { animation: none !important }
               }
             `}</style>
-          </div>
-        ) : null}
-        <RdChkChrome promo={promoRow} backHref={backHref} steps={steps} locale={locale} confirmed={confirmed} done={done} planName={planName} billingShort={billingShort} priceLabel={priceLabel} orderLine={orderLine} doneHeading={doneHeading} lineStyle={lineStyle} dotStyle={dotStyle} path={path} survOpts={survOpts} onTopOpt={onTopOpt} activeSurvOpt={activeSurvOpt} survey={survey} />
-        {(!confirmed) ? (
-          <div style={{
-            maxWidth: "720px",
-            margin: "0px auto",
-            padding: "36px 20px 56px"
-          }} className="rd-chk" data-m="pad" id={anchorId || undefined}>
-            <h1 style={{
-              fontFamily: "var(--nb1-font-primary)",
-              fontWeight: "400",
-              fontSize: "clamp(36px, 7cqi, 56px)",
-              lineHeight: "1.02",
-              letterSpacing: "-0.025em"
-            }}>{hero?.heading}</h1>
-            <p style={{
-              fontSize: "17px",
-              lineHeight: "1.55",
-              color: "var(--muted)",
-              marginTop: "14px"
-            }}>{hero?.intro}</p>
-            <div style={{
-              marginTop: "28px",
-              borderRadius: "20px",
-              background: "rgb(255, 255, 255)",
-              boxShadow: "inset 0 0 0 1px rgba(81,71,69,.14), var(--elev)",
-              padding: "6px 24px 22px"
-            }}>
-              <button style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "16px",
-                width: "100%",
-                padding: "18px 0px",
-                border: "0px",
-                background: "transparent",
-                cursor: "pointer",
-                textAlign: "left"
-              }} aria-expanded={sumOpen ? 'true' : 'false'} onClick={toggleSum}>
-                <span style={{
-                  fontFamily: "var(--nb1-font-primary)",
-                  fontSize: "24px",
-                  whiteSpace: "nowrap",
-                  flex: "0 0 auto"
-                }}>{sum?.toggleLabel}</span>
-                <span style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "14px"
-                }}>
-                  {/* Collapsed, there is room for one number, and the one that
+        </div>
+      ) : null}
+      <RdChkChrome
+        promo={promoRow}
+        backHref={backHref}
+        steps={steps}
+        locale={locale}
+        confirmed={confirmed}
+        done={done}
+        planName={planName}
+        billingShort={billingShort}
+        priceLabel={priceLabel}
+        orderLine={orderLine}
+        doneHeading={doneHeading}
+        lineStyle={lineStyle}
+        dotStyle={dotStyle}
+        path={path}
+        survOpts={survOpts}
+        onTopOpt={onTopOpt}
+        activeSurvOpt={activeSurvOpt}
+        survey={survey}
+      />
+      {!confirmed ? (
+        <div
+          style={{
+            maxWidth: '720px',
+            margin: '0px auto',
+            padding: '36px 20px 56px',
+          }}
+          className="rd-chk"
+          data-m="pad"
+          id={anchorId || undefined}
+        >
+          <h1
+            style={{
+              fontFamily: 'var(--nb1-font-primary)',
+              fontWeight: '400',
+              fontSize: 'clamp(36px, 7cqi, 56px)',
+              lineHeight: '1.02',
+              letterSpacing: '-0.025em',
+            }}
+          >
+            {hero?.heading}
+          </h1>
+          <p
+            style={{
+              fontSize: '17px',
+              lineHeight: '1.55',
+              color: 'var(--muted)',
+              marginTop: '14px',
+            }}
+          >
+            {hero?.intro}
+          </p>
+          <div
+            style={{
+              marginTop: '28px',
+              borderRadius: '20px',
+              background: 'rgb(255, 255, 255)',
+              boxShadow: 'inset 0 0 0 1px rgba(81,71,69,.14), var(--elev)',
+              padding: '6px 24px 22px',
+            }}
+          >
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                width: '100%',
+                padding: '18px 0px',
+                border: '0px',
+                background: 'transparent',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+              aria-expanded={sumOpen ? 'true' : 'false'}
+              onClick={toggleSum}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--nb1-font-primary)',
+                  fontSize: '24px',
+                  whiteSpace: 'nowrap',
+                  flex: '0 0 auto',
+                }}
+              >
+                {sum?.toggleLabel}
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                }}
+              >
+                {/* Collapsed, there is room for one number, and the one that
                       matters is what they pay now. */}
-                  <RdChkPrice sumOpen={sumOpen} priceLabel={promoPreview ? fmt(promoPreview.first_month_price) : priceLabel} perLabel={sum?.perLabel} />
-                  <span style={{
-                    display: "inline-block",
-                    transition: "transform 0.2s",
-                    transform: "rotate(180deg)"
-                  }} aria-hidden="true">{"\u25be"}</span>
+                <RdChkPrice
+                  sumOpen={sumOpen}
+                  priceLabel={promoPreview ? fmt(promoPreview.first_month_price) : priceLabel}
+                  perLabel={sum?.perLabel}
+                />
+                <span
+                  style={{
+                    display: 'inline-block',
+                    transition: 'transform 0.2s',
+                    transform: 'rotate(180deg)',
+                  }}
+                  aria-hidden="true"
+                >
+                  {'\u25be'}
                 </span>
-              </button>
-              {(sumOpen) ? (
-                <div>
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "14px",
-                    padding: "14px 0px",
-                    borderTop: "1px solid var(--nb1-hairline)",
-                    fontSize: "16px"
-                  }}>
-                    <span style={{
-                      color: "var(--muted)"
-                    }}>
-                      {sum?.planLabel}
+              </span>
+            </button>
+            {sumOpen ? (
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: '14px',
+                    padding: '14px 0px',
+                    borderTop: '1px solid var(--nb1-hairline)',
+                    fontSize: '16px',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {sum?.planLabel}
+                  </span>
+                  <span
+                    style={{
+                      color: 'rgb(0, 0, 0)',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {planName}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: '14px',
+                    padding: '14px 0px',
+                    borderTop: '1px solid var(--nb1-hairline)',
+                    fontSize: '16px',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {sum?.billingLabel}
+                  </span>
+                  <span
+                    style={{
+                      color: 'rgb(0, 0, 0)',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {billingName}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: '14px',
+                    padding: '14px 0px',
+                    borderTop: '1px solid var(--nb1-hairline)',
+                    fontSize: '16px',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {sum?.analysisLabel}
+                  </span>
+                  <span
+                    style={{
+                      color: 'rgb(47, 122, 77)',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {sum?.analysisValue}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: '14px',
+                    padding: '14px 0px',
+                    borderTop: '1px solid var(--nb1-hairline)',
+                    fontSize: '16px',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {sum?.shipLabel}
+                  </span>
+                  <span
+                    style={{
+                      color: 'rgb(0, 0, 0)',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {sum?.shipValue}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    gap: '14px',
+                    padding: '16px 0px 6px',
+                    borderTop: '1px solid var(--nb1-hairline)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {billingShort}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: 'var(--nb1-font-primary)',
+                      fontSize: promoPreview ? '22px' : '40px',
+                      lineHeight: '1',
+                      whiteSpace: 'nowrap',
+                      ...(promoPreview ? { textDecoration: 'line-through', opacity: 0.45 } : null),
+                    }}
+                  >
+                    {promoPreview ? fmt(promoPreview.monthly_price) : priceLabel}
+                    <span
+                      style={{
+                        fontFamily: 'var(--nb1-font-secondary)',
+                        fontSize: '14px',
+                        opacity: '0.7',
+                      }}
+                    >
+                      {sum?.perLabel}
                     </span>
-                    <span style={{
-                      color: "rgb(0, 0, 0)",
-                      textAlign: "right"
-                    }}>
-                      {planName}
-                    </span>
-                  </div>
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "14px",
-                    padding: "14px 0px",
-                    borderTop: "1px solid var(--nb1-hairline)",
-                    fontSize: "16px"
-                  }}>
-                    <span style={{
-                      color: "var(--muted)"
-                    }}>
-                      {sum?.billingLabel}
-                    </span>
-                    <span style={{
-                      color: "rgb(0, 0, 0)",
-                      textAlign: "right"
-                    }}>
-                      {billingName}
-                    </span>
-                  </div>
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "14px",
-                    padding: "14px 0px",
-                    borderTop: "1px solid var(--nb1-hairline)",
-                    fontSize: "16px"
-                  }}>
-                    <span style={{
-                      color: "var(--muted)"
-                    }}>
-                      {sum?.analysisLabel}
-                    </span>
-                    <span style={{
-                      color: "rgb(47, 122, 77)",
-                      textAlign: "right"
-                    }}>
-                      {sum?.analysisValue}
-                    </span>
-                  </div>
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "14px",
-                    padding: "14px 0px",
-                    borderTop: "1px solid var(--nb1-hairline)",
-                    fontSize: "16px"
-                  }}>
-                    <span style={{
-                      color: "var(--muted)"
-                    }}>
-                      {sum?.shipLabel}
-                    </span>
-                    <span style={{
-                      color: "rgb(0, 0, 0)",
-                      textAlign: "right"
-                    }}>
-                      {sum?.shipValue}
-                    </span>
-                  </div>
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "14px",
-                    padding: "16px 0px 6px",
-                    borderTop: "1px solid var(--nb1-hairline)"
-                  }}>
-                    <span style={{
-                      fontSize: "16px",
-                      color: "var(--muted)"
-                    }}>{billingShort}</span>
-                    <span style={{
-                      fontFamily: "var(--nb1-font-primary)",
-                      fontSize: promoPreview ? "22px" : "40px",
-                      lineHeight: "1",
-                      whiteSpace: "nowrap",
-                      ...(promoPreview
-                        ? { textDecoration: 'line-through', opacity: 0.45 }
-                        : null),
-                    }}>
-                      {promoPreview ? fmt(promoPreview.monthly_price) : priceLabel}
-                      <span style={{
-                        fontFamily: "var(--nb1-font-secondary)",
-                        fontSize: "14px",
-                        opacity: "0.7"
-                      }}>{sum?.perLabel}</span>
-                    </span>
-                  </div>
-                  {/* WHAT THE DISCOUNT ACTUALLY DID.
+                  </span>
+                </div>
+                {/* WHAT THE DISCOUNT ACTUALLY DID.
                       `applyPromo` has always stored `promo_discount`,
                       `first_month_price` and `monthly_price`; the last two were
                       written and never read, so the only sign a code had landed
@@ -5195,149 +5973,218 @@ export const RdChkInner: React.FC<Props & { locale?: AppLocale }> = ({ acc, adr,
                       first month in the accent colour. Same three figures, same
                       order, same `t.promoUi` labels — only the type and spacing
                       are this design's. */}
-                  {promoPreview ? (
-                    <>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        gap: "14px",
-                        padding: "2px 0px",
-                      }}>
-                        <span style={{ fontSize: "16px", color: "var(--muted)" }}>
-                          {t.promoUi?.discount ?? 'Discount'}
+                {promoPreview ? (
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                        gap: '14px',
+                        padding: '2px 0px',
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', color: 'var(--muted)' }}>
+                        {t.promoUi?.discount ?? 'Discount'}
+                      </span>
+                      <span style={{ fontSize: '16px', fontWeight: 600 }}>
+                        {'\u2212'}
+                        {fmt(promoPreview.promo_discount)}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
+                        gap: '14px',
+                        padding: '2px 0px 6px',
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', color: 'var(--muted)' }}>
+                        {t.promoUi?.firstMonth ?? 'First month'}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: 'var(--nb1-font-primary)',
+                          fontSize: '40px',
+                          lineHeight: '1',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {fmt(promoPreview.first_month_price)}
+                        <span
+                          style={{
+                            fontFamily: 'var(--nb1-font-secondary)',
+                            fontSize: '14px',
+                            opacity: '0.7',
+                          }}
+                        >
+                          {sum?.perLabel}
                         </span>
-                        <span style={{ fontSize: "16px", fontWeight: 600 }}>
-                          {'\u2212'}{fmt(promoPreview.promo_discount)}
-                        </span>
-                      </div>
-                      <div style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        gap: "14px",
-                        padding: "2px 0px 6px",
-                      }}>
-                        <span style={{ fontSize: "16px", color: "var(--muted)" }}>
-                          {t.promoUi?.firstMonth ?? 'First month'}
-                        </span>
-                        <span style={{
-                          fontFamily: "var(--nb1-font-primary)",
-                          fontSize: "40px",
-                          lineHeight: "1",
-                          whiteSpace: "nowrap",
-                        }}>
-                          {fmt(promoPreview.first_month_price)}
-                          <span style={{
-                            fontFamily: "var(--nb1-font-secondary)",
-                            fontSize: "14px",
-                            opacity: "0.7"
-                          }}>{sum?.perLabel}</span>
-                        </span>
-                      </div>
-                    </>
-                  ) : null}
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    gap: "10px",
-                    marginTop: "12px"
-                  }}>
-                    <button style={{
-                      border: "0px",
-                      background: "transparent",
-                      padding: "0px",
-                      cursor: "pointer",
-                      fontSize: "15.5px",
-                      textDecoration: "underline",
-                      textUnderlineOffset: "3px"
-                    }} onClick={openPromo}>{sum?.discountLabel}</button>
-                    <MentionMeRefereeLink label={sum?.referralLabel ?? ''} situation="checkout" locale={toMentionMeLocale(locale)} />
-                    <RdChkPromo promo={promo} />
-                  </div>
-                  <div style={{
-                    marginTop: "20px",
-                    padding: "18px 20px",
-                    borderRadius: "14px",
-                    background: "var(--tint)"
-                  }}>
-                    <div style={{
-                      fontSize: "17px",
-                      color: "rgb(0, 0, 0)"
-                    }}>{sum?.noteHeading}</div>
-                    <p style={{
-                      fontSize: "15px",
-                      lineHeight: "1.55",
-                      marginTop: "6px"
-                    }}>{sum?.note}</p>
-                  </div>
-                  <div style={{
-                    textAlign: "center",
-                    fontSize: "14.5px",
-                    color: "var(--muted)",
-                    marginTop: "16px"
-                  }}>{sum?.secureLabel}</div>
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    marginTop: '12px',
+                  }}
+                >
+                  <button
+                    style={{
+                      border: '0px',
+                      background: 'transparent',
+                      padding: '0px',
+                      cursor: 'pointer',
+                      fontSize: '15.5px',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '3px',
+                    }}
+                    onClick={openPromo}
+                  >
+                    {sum?.discountLabel}
+                  </button>
+                  <MentionMeRefereeLink
+                    label={sum?.referralLabel ?? ''}
+                    situation="checkout"
+                    locale={toMentionMeLocale(locale)}
+                  />
+                  <RdChkPromo promo={promo} />
                 </div>
-              ) : null}
+                <div
+                  style={{
+                    marginTop: '20px',
+                    padding: '18px 20px',
+                    borderRadius: '14px',
+                    background: 'var(--tint)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '17px',
+                      color: 'rgb(0, 0, 0)',
+                    }}
+                  >
+                    {sum?.noteHeading}
+                  </div>
+                  <p
+                    style={{
+                      fontSize: '15px',
+                      lineHeight: '1.55',
+                      marginTop: '6px',
+                    }}
+                  >
+                    {sum?.note}
+                  </p>
+                </div>
+                <div
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '14.5px',
+                    color: 'var(--muted)',
+                    marginTop: '16px',
+                  }}
+                >
+                  {sum?.secureLabel}
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+              marginTop: '22px',
+            }}
+          >
+            {(acc?.items || []).map((a, aIdx) => (
+              <div key={aIdx} style={cardStyle(aIdx)}>
+                <RdChkHead
+                  idx={aIdx}
+                  title={a.title}
+                  done={aIdx < accDone}
+                  open={aIdx === accOpen}
+                  summary={accSummary(aIdx)}
+                  editLabel={acc?.editLabel}
+                  onOpen={onOpen(aIdx)}
+                  numStyle={numStyle(aIdx)}
+                  titleStyle={titleStyle(aIdx)}
+                />
+                {aIdx === accOpen ? (
+                  <RdChkBody
+                    idx={aIdx}
+                    eml={eml}
+                    adr={adr}
+                    pay={pay}
+                    nextLabel={acc?.nextLabel}
+                    form={form}
+                  />
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              marginTop: '24px',
+              padding: '24px',
+              borderRadius: '20px',
+              background: 'color-mix(in oklab,var(--nb1-warm-grey) 12%,var(--nb1-cool-grey))',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--nb1-font-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                fontSize: '12.5px',
+                color: 'var(--muted)',
+              }}
+            >
+              {next?.heading}
             </div>
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "18px",
-              marginTop: "22px"
-            }}>
-              {(acc?.items || []).map((a, aIdx) => (
-                <div key={aIdx} style={cardStyle(aIdx)}>
-                  <RdChkHead idx={aIdx} title={a.title} done={aIdx < accDone} open={aIdx === accOpen} summary={accSummary(aIdx)} editLabel={acc?.editLabel} onOpen={onOpen(aIdx)} numStyle={numStyle(aIdx)} titleStyle={titleStyle(aIdx)} />
-                  {(aIdx === accOpen) ? (
-                    <RdChkBody idx={aIdx} eml={eml} adr={adr} pay={pay} nextLabel={acc?.nextLabel} form={form} />
-                  ) : null}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
+                marginTop: '14px',
+              }}
+            >
+              {(next?.rows || []).map((nr, nIdx) => (
+                <div
+                  key={nIdx}
+                  style={{
+                    display: 'flex',
+                    gap: '14px',
+                    fontSize: '16px',
+                    lineHeight: '1.55',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: 'rgb(81, 71, 69)',
+                      flex: '0 0 auto',
+                      marginTop: '9px',
+                    }}
+                    aria-hidden="true"
+                  />
+                  {nr.text}
                 </div>
               ))}
             </div>
-            <div style={{
-              marginTop: "24px",
-              padding: "24px",
-              borderRadius: "20px",
-              background: "color-mix(in oklab,var(--nb1-warm-grey) 12%,var(--nb1-cool-grey))"
-            }}>
-              <div style={{
-                fontFamily: "var(--nb1-font-tertiary)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontSize: "12.5px",
-                color: "var(--muted)"
-              }}>{next?.heading}</div>
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-                marginTop: "14px"
-              }}>
-                {(next?.rows || []).map((nr, nIdx) => (
-                  <div key={nIdx} style={{
-                    display: "flex",
-                    gap: "14px",
-                    fontSize: "16px",
-                    lineHeight: "1.55"
-                  }}>
-                    <span style={{
-                      width: "8px",
-                      height: "8px",
-                      borderRadius: "50%",
-                      background: "rgb(81, 71, 69)",
-                      flex: "0 0 auto",
-                      marginTop: "9px"
-                    }} aria-hidden="true" />
-                    {nr.text}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
-        ) : null}
-      </>
+        </div>
+      ) : null}
+    </>
   )
 }
 

@@ -72,6 +72,7 @@ async function main() {
           trashContent: true,
           uploadMedia: true,
           updatePostDraft: true,
+          upsertDrafts: true,
         },
         user: user.id,
       },
@@ -129,6 +130,7 @@ async function main() {
       'trash_content',
       'update_post_draft',
       'upload_media',
+      'upsert_drafts',
     ]
     if (JSON.stringify(toolNames) !== JSON.stringify(expectedTools)) {
       throw new Error(`Unexpected enabled tool surface: ${toolNames.join(', ')}`)
@@ -139,6 +141,13 @@ async function main() {
       name: 'find_content',
     })
     if (result.isError) throw new Error('find_content returned an MCP tool error.')
+
+    // The content library reads through the same tool, paged wider.
+    const libraryResult = await client.callTool({
+      arguments: { collection: 'lexicon-terms', limit: 100, locale: 'en' },
+      name: 'find_content',
+    })
+    if (libraryResult.isError) throw new Error('find_content on lexicon-terms returned an error.')
 
     const unique = Date.now().toString(36)
     const sourcePage = await payload.create({
@@ -358,6 +367,7 @@ async function main() {
       mediaUpload: 'ok',
       pageClone: 'ok',
       pagePatch: 'ok',
+      libraryReadToolCall: 'ok',
       readToolCall: 'ok',
     }
   } finally {

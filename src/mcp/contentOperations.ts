@@ -13,10 +13,13 @@ import {
 
 import { isAgentEditor } from '@/access/roles'
 import { isAppLocale, type AppLocale } from '@/i18n/config'
+import { isLibraryCollection, libraryPaths, type LibraryCollection } from '@/mcp/libraryCollections'
 import { parseHtmlToContent } from '@/utilities/parseHtmlToBlocks'
 
 export type ContentCollection = 'pages' | 'posts'
 export type TrashableCollection = ContentCollection | 'media'
+/** Everything `find_content` and `get_content` can read. */
+export type ReadableCollection = ContentCollection | LibraryCollection
 
 type RecordDoc = Record<string, unknown> & {
   _status?: unknown
@@ -332,7 +335,7 @@ function cleanCloneValue(value: unknown): unknown {
   )
 }
 
-function compactDocument(doc: RecordDoc, collection: ContentCollection) {
+function compactDocument(doc: RecordDoc, collection: ReadableCollection) {
   return {
     id: doc.id,
     collection,
@@ -353,7 +356,7 @@ function assertFresh(doc: RecordDoc, expectedUpdatedAt: string): void {
 
 async function findByID(
   req: PayloadRequest,
-  collection: TrashableCollection,
+  collection: TrashableCollection | LibraryCollection,
   id: number | string,
   locale: AppLocale,
   trash = false,
@@ -373,7 +376,11 @@ async function findByID(
       ? await req.payload.findByID({ collection: 'pages', draft: true, ...common })
       : collection === 'posts'
         ? await req.payload.findByID({ collection: 'posts', draft: true, ...common })
-        : await req.payload.findByID({ collection: 'media', ...common })
+        : collection === 'media'
+          ? await req.payload.findByID({ collection: 'media', ...common })
+          : // Narrowed to one literal: `findByID` is typed per collection, and the
+            // library collections share every option used here.
+            await req.payload.findByID({ collection: collection as 'pillars', draft: true, ...common })
 
   return doc as unknown as RecordDoc
 }
@@ -391,6 +398,23 @@ function numericDocumentID(id: number | string): number {
   return value
 }
 
+/** Row-lock documents for the rest of the current transaction. */
+export async function lockDocumentRows(
+  req: PayloadRequest,
+  table: string,
+  ids: Array<number | string>,
+): Promise<void> {
+  const transactionID = await req.transactionID
+  const database = req.payload.db as unknown as PostgresAdapter
+  const session = transactionID ? database.sessions[String(transactionID)] : undefined
+  if (!session) throw new APIError('Could not start a content mutation transaction.', 500)
+
+  await database.execute({
+    db: session.db,
+    raw: `SELECT "id" FROM ${quoteSQLIdentifier(table)} WHERE "id" IN (${ids.map(numericDocumentID).join(', ')}) FOR UPDATE`,
+  })
+}
+
 /** Hold the document's Postgres row lock across freshness/live checks and its write. */
 async function withDocumentLock<T>(
   req: PayloadRequest,
@@ -400,15 +424,7 @@ async function withDocumentLock<T>(
 ): Promise<T> {
   const shouldCommit = await initTransaction(req)
   try {
-    const transactionID = await req.transactionID
-    const database = req.payload.db as unknown as PostgresAdapter
-    const session = transactionID ? database.sessions[String(transactionID)] : undefined
-    if (!session) throw new APIError('Could not start a content mutation transaction.', 500)
-
-    await database.execute({
-      db: session.db,
-      raw: `SELECT "id" FROM "${lockTables[collection]}" WHERE "id" = ${numericDocumentID(id)} FOR UPDATE`,
-    })
+    await lockDocumentRows(req, lockTables[collection], [id])
     const result = await run()
     if (shouldCommit) await commitTransaction(req)
     return result
@@ -495,47 +511,69 @@ async function assertMediaIsUnreferenced(req: PayloadRequest, id: number | strin
 
 export async function findContent({
   collection,
+  externalId,
   locale,
   limit,
+  page = 1,
   req,
   search,
 }: {
-  collection: ContentCollection
+  collection: ReadableCollection
+  externalId?: string
   locale: AppLocale
   limit: number
+  page?: number
   req: PayloadRequest
   search?: string
 }) {
   assertAgentRequest(req)
+  const library = isLibraryCollection(collection)
+  if (externalId && !library) badRequest('externalId applies to the content library collections only.')
+
   const trimmedSearch = search?.trim()
-  const where: Where | undefined = trimmedSearch
-    ? {
-        or: [{ title: { like: trimmedSearch } }, { slug: { like: trimmedSearch } }],
-      }
-    : undefined
+  const conditions: Where[] = []
+  if (trimmedSearch) {
+    conditions.push({
+      or: [{ title: { like: trimmedSearch } }, { slug: { like: trimmedSearch } }],
+    })
+  }
+  if (externalId) conditions.push({ externalId: { equals: externalId } })
+
   const common = {
     depth: 0,
     draft: true,
     fallbackLocale: false as const,
-    limit: Math.min(Math.max(limit, 1), 20),
+    // The library is exported a page at a time to build internal links, so it
+    // pages wider than Pages and Posts, which are looked up one at a time.
+    limit: Math.min(Math.max(limit, 1), library ? 100 : 20),
     locale,
     overrideAccess: false,
-    pagination: false as const,
+    page: Math.max(page, 1),
     req,
     sort: '-updatedAt',
-    where,
+    where: conditions.length > 0 ? { and: conditions } : undefined,
   }
 
   const result =
     collection === 'pages'
       ? await req.payload.find({ collection: 'pages', ...common })
-      : await req.payload.find({ collection: 'posts', ...common })
+      : collection === 'posts'
+        ? await req.payload.find({ collection: 'posts', ...common })
+        : await req.payload.find({ collection: collection as 'pillars', ...common })
+
+  const docs = result.docs as unknown as RecordDoc[]
+  const paths = library ? await libraryPaths(req, collection, locale, docs) : undefined
 
   return {
     collection,
-    docs: (result.docs as unknown as RecordDoc[]).map((doc) => compactDocument(doc, collection)),
+    docs: docs.map((doc) => ({
+      ...compactDocument(doc, collection),
+      ...(paths ? { externalId: doc.externalId ?? null, path: paths.get(String(doc.id)) } : {}),
+    })),
     locale,
+    page: result.page,
     totalDocs: result.totalDocs,
+    totalPages: result.totalPages,
   }
 }
 
@@ -545,7 +583,7 @@ export async function getContent({
   locale,
   req,
 }: {
-  collection: ContentCollection
+  collection: ReadableCollection
   id: number | string
   locale: AppLocale
   req: PayloadRequest
