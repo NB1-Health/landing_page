@@ -54,6 +54,21 @@ for (const path of protectedPaths) {
   )
 }
 
+// The one path exempt from Basic Auth (ops/nginx/staging-basic-auth.conf): MCP
+// clients authenticate with their own Bearer key, which shares the Authorization
+// header. Exempt must still mean closed — Payload's own 401, not an open endpoint.
+const mcpResponse = await request('/cms/api/mcp', { method: 'POST' })
+assert.equal(
+  mcpResponse.status,
+  401,
+  `Anonymous /cms/api/mcp returned ${mcpResponse.status}, expected Payload's 401`,
+)
+assert.doesNotMatch(
+  mcpResponse.headers.get('www-authenticate') ?? '',
+  /^Basic\b/i,
+  '/cms/api/mcp is still behind Basic Auth, so no MCP client can reach staging — apply ops/nginx/staging-basic-auth.conf and reload nginx',
+)
+
 const authenticatedHeaders = { Authorization: authorization }
 const pageResponse = await request('/en', { headers: authenticatedHeaders, redirect: 'follow' })
 assert.equal(pageResponse.status, 200, `Authenticated /en returned ${pageResponse.status}`)

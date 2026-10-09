@@ -74,3 +74,25 @@ replaced with:
 ```nginx
 include /var/www/landing_page/ops/nginx/staging-basic-auth.conf;
 ```
+
+## MCP endpoint exemption
+
+`/cms/api/mcp` is exempt from Basic Auth. MCP clients send their key as
+`Authorization: Bearer …`, and a request carries one Authorization header, so
+behind Basic Auth no MCP client can reach staging at all. The endpoint stays
+closed: Payload rejects requests without an enabled, unexpired MCP key, and the
+staging workflow asserts that an anonymous request gets Payload's 401 rather
+than a Basic Auth challenge.
+
+The exemption is in `staging-basic-auth.conf`. If the server block still has the
+two inline directives from step 2, replace them with the include (or paste the
+file's contents), then:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+Apply this before merging the change that adds the MCP assertion to
+`scripts/check-staging-containment.mjs`, or the post-deploy check fails.
+
