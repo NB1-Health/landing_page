@@ -247,6 +247,7 @@ import * as migration_20261006_100000_rd_footer_signup_wiring from './20261006_1
 import * as migration_20261006_110000_rd_lb_formula_figure_strings from './20261006_110000_rd_lb_formula_figure_strings'
 import * as migration_20261006_120000_rd_order_trustpilot_toggle from './20261006_120000_rd_order_trustpilot_toggle'
 import * as migration_20260930_100000_drop_unused_landing_blocks from './20260930_100000_drop_unused_landing_blocks'
+import * as migration_20261009_100000_mcp_content_library from './20261009_100000_mcp_content_library'
 
 export const migrations = [
   {
@@ -1493,5 +1494,10 @@ export const migrations = [
     up: migration_20261006_120000_rd_order_trustpilot_toggle.up,
     down: migration_20261006_120000_rd_order_trustpilot_toggle.down,
     name: '20261006_120000_rd_order_trustpilot_toggle',
+  },
+  {
+    up: migration_20261009_100000_mcp_content_library.up,
+    down: migration_20261009_100000_mcp_content_library.down,
+    name: '20261009_100000_mcp_content_library',
   },
 ]

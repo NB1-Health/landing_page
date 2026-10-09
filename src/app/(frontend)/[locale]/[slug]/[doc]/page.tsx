@@ -592,10 +592,13 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const siteURL = getServerSideURL()
   const canonical = new URL(`/${locale}/${hub.slug}/${record.slug}`, siteURL).toString()
 
-  // A lexicon term has no standfirst. Its one-sentence definition is the field
-  // written to be quoted elsewhere, so it is the description.
+  // The SEO override first, when written. Otherwise a lexicon term has no
+  // standfirst: its one-sentence definition is the field written to be quoted
+  // elsewhere, so it is the description.
+  const metaTitle: string = record.meta?.title?.trim() || record.title
   const description: string =
-    (hub.key === 'lexicon' ? record.definition : record.standfirst) ?? ''
+    record.meta?.description?.trim() ||
+    ((hub.key === 'lexicon' ? record.definition : record.standfirst) ?? '')
 
   // Built from the locales where BOTH the hub and the document have a slug. A
   // document translated into a locale whose hub is not would have no URL there, so
@@ -612,7 +615,9 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   )
 
   return {
-    title: `${record.title} | NB1`,
+    // Absolute: the root layout's `%s | NB1` template would add the suffix a
+    // second time ("… | NB1 | NB1").
+    title: { absolute: `${metaTitle} | NB1` },
     description,
     ...(record.noindex ? { robots: { index: false, follow: true } } : {}),
     alternates: {
@@ -621,7 +626,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
     },
     openGraph: {
       type: 'article',
-      title: record.title,
+      title: metaTitle,
       description,
       url: canonical,
       ...(record.publishedAt ? { publishedTime: record.publishedAt } : {}),

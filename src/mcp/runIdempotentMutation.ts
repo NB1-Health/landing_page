@@ -7,6 +7,7 @@ import {
   commitAgentMutationTransaction,
   rollbackAgentMutationTransaction,
 } from '@/mcp/mutationTransaction'
+import type { LibraryCollection } from '@/mcp/libraryCollections'
 
 const auditCollection = 'agent-operations'
 const writesPerMinute = 10
@@ -15,7 +16,7 @@ const sensitiveKey = /api.?key|authorization|cookie|password|secret|token/i
 const verboseKey = /body|content|html|markdown|prompt/i
 
 type AuditID = number | string
-type TargetCollection = 'media' | 'pages' | 'posts'
+type TargetCollection = 'media' | 'pages' | 'posts' | LibraryCollection
 
 type AgentOperation = {
   id: AuditID

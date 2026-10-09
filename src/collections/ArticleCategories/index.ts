@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor } from '../../access/roles'
 import { normalizeSlug } from '@/fields/slug'
 
 /**
@@ -27,11 +27,11 @@ export const ArticleCategories: CollectionConfig = {
   slug: 'article-categories',
   labels: { singular: 'Article category', plural: 'Article categories' },
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: adminOrEditor,
+    delete: adminOrEditor,
     // Public: the label is rendered on every article for anonymous readers.
     read: () => true,
-    update: authenticated,
+    update: adminOrEditor,
   },
   admin: {
     useAsTitle: 'title',

@@ -75,7 +75,15 @@ export const AgentOperations: CollectionConfig<'agent-operations'> = {
       name: 'targetCollection',
       type: 'select',
       admin: { readOnly: true },
-      options: ['pages', 'posts', 'media'],
+      options: [
+        'pages',
+        'posts',
+        'media',
+        'pillars',
+        'scientific-articles',
+        'lexicon-terms',
+        'lexicon-categories',
+      ],
     },
     {
       name: 'targetIDs',

@@ -21,12 +21,13 @@ import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { PullQuote } from '@/blocks/PullQuote/config'
 import { StepFlow } from '@/blocks/StepFlow/config'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor, contentEditor, enforceAgentDraftOperation } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import { costomSlugField } from '@/fields/slug'
 import { requiredOnPublish } from '@/collections/Posts/hooks/requiredOnPublish'
 import {
   authorsField,
+  metaField,
   noindexField,
   publishedAtField,
   referencesField,
@@ -78,11 +79,15 @@ const revalidation = createHubDocumentRevalidation({
 export const Pillars: CollectionConfig = {
   slug: 'pillars',
   labels: { singular: 'Pillar', plural: 'Pillars' },
+  // Same model as Pages and Posts: humans with an editor role, and agent editors
+  // only through the MCP tools and only as drafts (`enforceAgentDraftOperation`
+  // below). This was `authenticated`, which let any signed-in user — an agent key
+  // over REST included — publish or permanently delete.
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: contentEditor,
+    delete: adminOrEditor,
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: contentEditor,
   },
   // Everything a hub card needs, so the Microbiome listing stays at depth 1
   // instead of pulling whole 1,400-word documents.
@@ -253,6 +258,7 @@ export const Pillars: CollectionConfig = {
           'Optional manual picks for the "Related topics" strip. Left empty, the strip fills itself.',
       },
     },
+    metaField({ fallback: 'standfirst' }),
     // Gains the stamp-on-first-publish hook it never had: a pillar published
     // without a date emitted no `datePublished` in its Article schema.
     publishedAtField(),
@@ -274,7 +280,7 @@ export const Pillars: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeOperation: [revalidation.capture],
+    beforeOperation: [enforceAgentDraftOperation, revalidation.capture],
     afterChange: [revalidation.afterChange],
     afterDelete: [revalidation.afterDelete],
   },
