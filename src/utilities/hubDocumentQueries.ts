@@ -1,8 +1,10 @@
 import type { Payload } from 'payload'
 
-import { appLocales, type AppLocale } from '@/i18n/config'
+import type { AppLocale } from '@/i18n/config'
 import type { JournalCardData, JournalCardImage } from '@/utilities/journalCard'
 import { getMediaUrl } from '@/utilities/getMediaUrl'
+import { isJournalLocale } from '@/utilities/journalEnabled'
+import { resolvePublishedLocaleSlugs } from '@/utilities/publishedLocaleAvailability'
 
 /**
  * Reads shared by every collection that lives under a hub.
@@ -172,30 +174,23 @@ export async function getHubDocumentBySlug({
   return result.docs[0] ?? null
 }
 
-/** Every locale's slug for one document, for the hreflang cluster. */
+/**
+ * The locales a document is live in, with its slug in each — for the hreflang
+ * cluster and the language switcher.
+ *
+ * Live means published in that locale AND a Journal market. This used to read the
+ * slug map alone, and a slug is stored as soon as a translation exists: a German
+ * draft, or a German version that was unpublished, still advertised a `de`
+ * alternate whose URL 404s. Same rule the Journal article route applies.
+ */
 export async function getHubDocumentSlugsByLocale(
   payload: Payload,
   collection: HubCollection,
   id: number | string,
 ): Promise<Partial<Record<AppLocale, string>>> {
-  const doc = await payload.findByID({
-    collection: collection as 'pillars',
-    id,
-    depth: 0,
-    disableErrors: true,
-    locale: 'all',
-    overrideAccess: false,
-  })
+  const published = await resolvePublishedLocaleSlugs({ collection, id, payload })
 
-  const raw = (doc as unknown as { slug?: unknown } | null)?.slug
-  const slugs: Partial<Record<AppLocale, string>> = {}
-
-  if (raw && typeof raw === 'object') {
-    for (const locale of appLocales) {
-      const value = (raw as Record<string, unknown>)[locale]
-      if (typeof value === 'string' && value.trim()) slugs[locale] = value.trim()
-    }
-  }
-
-  return slugs
+  return Object.fromEntries(
+    Object.entries(published).filter(([locale]) => isJournalLocale(locale as AppLocale)),
+  ) as Partial<Record<AppLocale, string>>
 }

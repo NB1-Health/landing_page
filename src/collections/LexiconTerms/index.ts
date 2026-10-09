@@ -1,10 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor, contentEditor, enforceAgentDraftOperation } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import { costomSlugField } from '@/fields/slug'
 import { requiredOnPublish } from '@/collections/Posts/hooks/requiredOnPublish'
 import {
+  metaField,
   noindexField,
   publishedAtField,
   referencesField,
@@ -52,11 +53,15 @@ const revalidation = createHubDocumentRevalidation({
 export const LexiconTerms: CollectionConfig = {
   slug: 'lexicon-terms',
   labels: { singular: 'Lexicon term', plural: 'Lexicon terms' },
+  // Same model as Pages and Posts: humans with an editor role, and agent editors
+  // only through the MCP tools and only as drafts (`enforceAgentDraftOperation`
+  // below). This was `authenticated`, which let any signed-in user — an agent key
+  // over REST included — publish or permanently delete.
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: contentEditor,
+    delete: adminOrEditor,
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: contentEditor,
   },
   // The category page lists 436 of these with their definitions. Anything not in
   // this list is a column that page does not need and cannot afford.
@@ -182,6 +187,7 @@ export const LexiconTerms: CollectionConfig = {
       description: 'Required in practice on condition terms — it renders the reviewer line.',
     }),
     reviewedAtField(),
+    metaField({ fallback: 'definition' }),
     publishedAtField(),
     noindexField(),
     {
@@ -197,7 +203,7 @@ export const LexiconTerms: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeOperation: [revalidation.capture],
+    beforeOperation: [enforceAgentDraftOperation, revalidation.capture],
     afterChange: [revalidation.afterChange],
     afterDelete: [revalidation.afterDelete],
   },

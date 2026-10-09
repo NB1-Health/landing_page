@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../../access/authenticated'
+import { adminOrEditor, contentEditor, enforceAgentDraftOperation } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import { costomSlugField } from '@/fields/slug'
 import { noindexField, publishedAtField } from '@/fields/contentDocument'
@@ -51,11 +51,15 @@ function bustCategoryCaches() {
 export const LexiconCategories: CollectionConfig = {
   slug: 'lexicon-categories',
   labels: { singular: 'Lexicon category', plural: 'Lexicon categories' },
+  // Same model as Pages and Posts: humans with an editor role, and agent editors
+  // only through the MCP tools and only as drafts (`enforceAgentDraftOperation`
+  // below). This was `authenticated`, which let any signed-in user — an agent key
+  // over REST included — publish or permanently delete.
   access: {
-    create: authenticated,
-    delete: authenticated,
+    create: contentEditor,
+    delete: adminOrEditor,
     read: authenticatedOrPublished,
-    update: authenticated,
+    update: contentEditor,
   },
   // A term reads its category for the breadcrumb and the label; neither needs the
   // intro copy, and at 2,400 terms that saving is the whole cost of the read.
@@ -132,6 +136,7 @@ export const LexiconCategories: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [enforceAgentDraftOperation],
     afterChange: [({ doc }) => (bustCategoryCaches(), doc)],
     afterDelete: [({ doc }) => (bustCategoryCaches(), doc)],
   },

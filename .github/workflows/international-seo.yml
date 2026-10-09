@@ -45,7 +45,22 @@ jobs:
         run: npm ci
 
       - name: Verify the full migration chain
-        run: npm run migrate:fresh -- --force-accept-warning
+        # The Payload CLI occasionally exits 0 having done nothing: its loader
+        # promise never settles and Node exits on an empty event loop
+        # (intermittent: 3 of 60 runs since September, 2 of 6 in a repro). The
+        # database is then still empty, and the SEO tests below would push the
+        # schema themselves instead of testing the migration chain. So require
+        # the run to finish, retrying a silent exit.
+        run: |
+          for attempt in 1 2 3; do
+            npm run migrate:fresh -- --force-accept-warning 2>&1 | tee /tmp/migrate.log
+            if grep -q 'Migrated:' /tmp/migrate.log && grep -q 'Done\.' /tmp/migrate.log; then
+              exit 0
+            fi
+            echo "::warning::migrate:fresh exited without running migrations (attempt $attempt)"
+          done
+          echo "::error::migrate:fresh did not complete after 3 attempts"
+          exit 1
 
       - name: Run international SEO regression tests
         run: >-

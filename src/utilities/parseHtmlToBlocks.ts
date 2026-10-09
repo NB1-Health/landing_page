@@ -131,7 +131,7 @@ function headingNode(tag: 'h1' | 'h2' | 'h3' | 'h4', children: InlineNode[]) {
 }
 
 /** Wraps a parsed block's fields as a Lexical embedded block node */
-function blockNode(blockType: string, fields: Record<string, unknown>) {
+export function blockNode(blockType: string, fields: Record<string, unknown>) {
   return {
     type: 'block',
     version: 2,
