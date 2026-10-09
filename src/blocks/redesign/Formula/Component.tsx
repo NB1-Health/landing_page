@@ -89,15 +89,19 @@ export const RdFormula: React.FC<Props> = (props) => {
             letterSpacing: "0.08em",
             fontSize: "11px"
           }}>
+            {/* Andra's call: this row reads at full strength. The label was 0.55
+             * and the chips 0.8 with a 0.28-alpha border — three separate
+             * fades stacked on 11px uppercase type. All three are now solid;
+             * the border takes the text colour rather than an alpha of it. */}
             <span style={{
-              opacity: "0.55"
+              opacity: "1"
             }}>{replacesLabel}</span>
             {(replaces || []).map((rep, repIdx) => (
               <span key={repIdx} style={{
-                border: "1px solid rgba(240, 245, 255, 0.28)",
+                border: "1px solid var(--nb1-cool-grey)",
                 borderRadius: "999px",
                 padding: "0.4em 0.9em",
-                opacity: "0.8"
+                opacity: "1"
               }}>{rep.label}</span>
             ))}
           </div>
