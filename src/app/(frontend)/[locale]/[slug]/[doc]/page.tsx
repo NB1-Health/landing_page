@@ -615,7 +615,9 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   )
 
   return {
-    title: `${metaTitle} | NB1`,
+    // Absolute: the root layout's `%s | NB1` template would add the suffix a
+    // second time ("… | NB1 | NB1").
+    title: { absolute: `${metaTitle} | NB1` },
     description,
     ...(record.noindex ? { robots: { index: false, follow: true } } : {}),
     alternates: {
