@@ -543,9 +543,9 @@ const SURVEY_ENABLED = false
  * the same; they are not, and that would have fetched the wrong script with
  * nothing on screen to say so. Each one is its own variable, with no fallback.
  */
-const KNO_ID = 'KF4EMR1-Q9Y4BN4-NA5YDJH-NRRJT33'
-const KNO_SURVEY_ID = 'b7746f09-d45c-4dca-847c-7268adb805db'
-const KNO_EMBED_ID = '638b447c-db72-416a-9a20-44b6d0ca061b'
+const KNO_ID = process.env.NEXT_PUBLIC_KNO_ID
+const KNO_SURVEY_ID = process.env.NEXT_PUBLIC_KNO_SURVEY_ID
+const KNO_EMBED_ID = process.env.NEXT_PUBLIC_KNO_EMBED_ID
 const KNO_SRC = KNO_EMBED_ID ? `https://www.knocdn.com/v2/embed.js?id=${KNO_EMBED_ID}` : null
 const KNO_READY = Boolean(KNO_ID && KNO_SURVEY_ID && KNO_SRC)
 
